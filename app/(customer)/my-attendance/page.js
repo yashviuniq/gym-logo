@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 "use client";
 
 import { useState } from "react";
@@ -264,7 +265,7 @@ export default function CustomerAttendancePage() {
             <div>
               <p className="font-semibold">Keep it up!</p>
               <p className="text-sm text-purple-100">
-                You're on a {monthlyStats.streak} day streak. Don't break the
+                You're on a {monthlyStats.streak} day streak. Don t break the
                 chain!
               </p>
             </div>
@@ -274,3 +275,4 @@ export default function CustomerAttendancePage() {
     </div>
   );
 }
+

@@ -21,7 +21,7 @@ const quickLinks = [
   {
     label: "Attendance",
     icon: "📅",
-    href: "/attendance",
+    href: "/my-attendance",
     color: "bg-purple-100",
   },
   { label: "Schedule", icon: "🗓️", href: "/schedule", color: "bg-orange-100" },

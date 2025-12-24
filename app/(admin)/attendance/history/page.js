@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Header from "@/components/layout/Header";
 
@@ -42,7 +42,7 @@ const mockHistoryData = [
   },
 ];
 
-export default function AttendanceHistoryPage() {
+function AttendanceHistoryContent() {
   const searchParams = useSearchParams();
   const dateParam = searchParams.get("date") || "Jan 15, 2025";
   const [filterTime, setFilterTime] = useState("all");
@@ -124,5 +124,22 @@ export default function AttendanceHistoryPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function AttendanceHistoryPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 pb-24">
+        <Header title="Attendance History" />
+        <main className="px-4 py-4">
+          <div className="flex items-center justify-center py-8">
+            <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        </main>
+      </div>
+    }>
+      <AttendanceHistoryContent />
+    </Suspense>
   );
 }

@@ -76,7 +76,7 @@ export default function ScanAttendancePage() {
         </button>
 
         <button
-          onClick={() => router.push("/attendance")}
+          onClick={() => router.push("/my-attendance")}
           className="w-full py-4 bg-white/10 text-white rounded-xl font-medium"
         >
           Manual Entry
@@ -130,3 +130,4 @@ export default function ScanAttendancePage() {
     </div>
   );
 }
+

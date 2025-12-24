@@ -14,8 +14,8 @@ const variants = {
     "bg-white text-gray-900 hover:bg-gray-100 border border-gray-200 focus-visible:outline-black disabled:opacity-60 disabled:cursor-not-allowed",
 };
 
-export function Button({ className, variant = "primary", children, ...props }) {
-  return (
+export function Button({ className, variant = "primary", children, asChild, ...props }) {
+  const element = (
     <button
       className={clsx(baseStyles, variants[variant] ?? variants.primary, className)}
       {...props}
@@ -23,5 +23,12 @@ export function Button({ className, variant = "primary", children, ...props }) {
       {children}
     </button>
   );
+
+  // If asChild is true, render as a fragment to allow child elements to be used
+  if (asChild && children) {
+    return children;
+  }
+
+  return element;
 }
 

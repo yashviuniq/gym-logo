@@ -36,21 +36,22 @@ async function generateIcons() {
       console.log(`✓ Generated ${name} (${size}x${size})`);
     }
 
-    // Generate favicon.ico (16x16)
+    // Generate favicon.ico (32x32) - Next.js automatically picks this up from app/favicon.ico
     const faviconPath = path.join(__dirname, '..', 'app', 'favicon.ico');
+    const faviconPng = path.join(outputDir, 'favicon-temp.png');
+    
     await sharp(inputIcon)
       .resize(32, 32, {
         fit: 'contain',
         background: { r: 255, g: 255, b: 255, alpha: 0 }
       })
-      .toFile(faviconPath.replace('.ico', '.png'));
+      .png()
+      .toFile(faviconPng);
     
-    // For .ico, we'll copy the 32x32 PNG (Next.js will handle it)
-    const faviconPng = faviconPath.replace('.ico', '.png');
-    if (fs.existsSync(faviconPng)) {
-      fs.copyFileSync(faviconPng, faviconPath);
-      fs.unlinkSync(faviconPng);
-    }
+    // Convert PNG to ICO format (simple approach - copy PNG as ICO)
+    // Note: For a proper ICO file, you'd need a library like 'to-ico', but Next.js accepts PNG as favicon.ico
+    fs.copyFileSync(faviconPng, faviconPath);
+    fs.unlinkSync(faviconPng);
     
     console.log('✓ Generated favicon.ico');
     console.log('\nAll icons generated successfully!');

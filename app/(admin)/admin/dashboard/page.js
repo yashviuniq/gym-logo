@@ -74,7 +74,9 @@ export default function AdminDashboard() {
   useEffect(() => {
     const checkAuth = async () => {
       const { data } = await supabase.auth.getUser();
-      if (!data.user || data.user.role !== "admin") {
+      const userRole = data.user?.role;
+      // Allow owner, admin, and trainer roles
+      if (!data.user || !["owner", "admin", "trainer"].includes(userRole)) {
         router.push("/auth/login");
         return;
       }

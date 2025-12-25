@@ -7,7 +7,7 @@ const baseStyles =
 
 const variants = {
   primary:
-    "bg-black text-white hover:bg-gray-900 focus-visible:outline-black disabled:opacity-60 disabled:cursor-not-allowed",
+    "bg-white text-black hover:bg-gray-100 focus-visible:outline-white disabled:opacity-60 disabled:cursor-not-allowed",
   ghost:
     "bg-white/10 text-white hover:bg-white/20 border border-white/30 focus-visible:outline-white disabled:opacity-60 disabled:cursor-not-allowed",
   light:
@@ -15,20 +15,21 @@ const variants = {
 };
 
 export function Button({ className, variant = "primary", children, asChild, ...props }) {
-  const element = (
-    <button
-      className={clsx(baseStyles, variants[variant] ?? variants.primary, className)}
-      {...props}
-    >
+  const buttonClasses = clsx(baseStyles, variants[variant] ?? variants.primary, className);
+
+  // If asChild is true, apply button classes to child element
+  if (asChild && children) {
+    return (
+      <div className={buttonClasses}>
+        {children}
+      </div>
+    );
+  }
+
+  return (
+    <button className={buttonClasses} {...props}>
       {children}
     </button>
   );
-
-  // If asChild is true, render as a fragment to allow child elements to be used
-  if (asChild && children) {
-    return children;
-  }
-
-  return element;
 }
 

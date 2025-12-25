@@ -4,6 +4,7 @@ import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -40,22 +41,37 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-lg p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Create Account</h1>
-            <p className="text-gray-500 mt-2">Sign up to get started</p>
+    <div className="relative w-full min-h-screen text-white flex items-center justify-center px-4 sm:px-6 lg:px-8 overflow-y-auto">
+      {/* Full Background Image */}
+      <Image
+        src="/bgimages/loginbg.png"
+        alt="Machine background"
+        fill
+        priority
+        quality={100}
+        className="object-cover"
+      />
+      
+      {/* Gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/40 to-black/70" />
+      <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-white/80 via-white/40 to-transparent blur-xl" />
+
+      {/* Content Container */}
+      <div className="relative z-10 w-full max-w-md mx-auto px-6 py-12 flex items-center justify-center min-h-screen">
+        <div className="w-full space-y-6 bg-black/50 backdrop-blur-md rounded-2xl p-6 sm:p-8 max-h-[calc(100vh-3rem)] overflow-y-auto">
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-bold leading-tight">Create Account</h1>
+            <p className="text-sm sm:text-base text-white/80 mt-2">Join us to get started</p>
           </div>
 
-          <form onSubmit={handleRegister} className="space-y-6">
+          <form onSubmit={handleRegister} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-white/90 mb-2">
                 Full Name
               </label>
               <input
                 type="text"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition"
+                className="w-full px-4 py-2.5 sm:py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:ring-2 focus:ring-white/50 focus:border-transparent outline-none transition text-sm"
                 placeholder="Enter your name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -64,12 +80,12 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-white/90 mb-2">
                 Email
               </label>
               <input
                 type="email"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition"
+                className="w-full px-4 py-2.5 sm:py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:ring-2 focus:ring-white/50 focus:border-transparent outline-none transition text-sm"
                 placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -78,12 +94,12 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-white/90 mb-2">
                 Password
               </label>
               <input
                 type="password"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition"
+                className="w-full px-4 py-2.5 sm:py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:ring-2 focus:ring-white/50 focus:border-transparent outline-none transition text-sm"
                 placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -92,12 +108,12 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-white/90 mb-2">
                 Confirm Password
               </label>
               <input
                 type="password"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition"
+                className="w-full px-4 py-2.5 sm:py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:ring-2 focus:ring-white/50 focus:border-transparent outline-none transition text-sm"
                 placeholder="Confirm your password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -106,7 +122,7 @@ export default function RegisterPage() {
             </div>
 
             {error && (
-              <div className="bg-red-50 text-red-500 px-4 py-3 rounded-lg text-sm">
+              <div className="bg-red-500/20 text-red-200 px-3 py-2 rounded-lg text-xs sm:text-sm border border-red-500/30">
                 {error}
               </div>
             )}
@@ -114,21 +130,18 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-black text-white py-3 rounded-lg font-medium hover:bg-gray-800 transition disabled:opacity-50"
+              className="w-full bg-white text-black py-2.5 sm:py-3 rounded-lg font-semibold hover:bg-gray-100 transition disabled:opacity-50 text-sm sm:text-base"
             >
               {loading ? "Creating account..." : "Sign Up"}
             </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <Link
-              href="/auth/login"
-              className="text-sm text-gray-600 hover:text-black"
-            >
-              Already have an account?{" "}
-              <span className="font-medium">Sign in</span>
+          <p className="text-center text-xs sm:text-sm text-white/80">
+            Already have an account?{" "}
+            <Link href="/auth/login" className="font-semibold underline">
+              Sign In
             </Link>
-          </div>
+          </p>
         </div>
       </div>
     </div>

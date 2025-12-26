@@ -109,7 +109,7 @@ export default function FinancePage() {
   const netProfit = mockStats.monthlyRevenue - mockStats.monthlyExpenses;
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-page pb-24">
       <Header title="Finance" showBack={false} />
 
       <main className="px-4 py-4 space-y-4">
@@ -119,11 +119,10 @@ export default function FinancePage() {
             <button
               key={filter}
               onClick={() => setDateFilter(filter)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium capitalize ${
-                dateFilter === filter
-                  ? "bg-black text-white"
-                  : "bg-white text-gray-600 border border-gray-200"
-              }`}
+              className={`px-4 py-2 rounded-lg text-sm font-medium capitalize ${dateFilter === filter
+                ? "btn-gradient-orange text-white"
+                : "bg-white text-gray-600 border border-gray-200"
+                }`}
             >
               {filter}
             </button>
@@ -164,11 +163,10 @@ export default function FinancePage() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-2 rounded-xl text-sm font-medium capitalize ${
-                activeTab === tab
-                  ? "bg-black text-white"
-                  : "bg-white text-gray-600 border border-gray-200"
-              }`}
+              className={`flex-1 py-2 rounded-xl text-sm font-medium capitalize ${activeTab === tab
+                ? "btn-gradient-orange text-white"
+                : "bg-white text-gray-600 border border-gray-200"
+                }`}
             >
               {tab}
             </button>
@@ -194,8 +192,11 @@ export default function FinancePage() {
                     </div>
                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-black rounded-full"
-                        style={{ width: `${item.percentage}%` }}
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${item.percentage}%`,
+                          background: 'linear-gradient(135deg, #F97316 0%, #FF8C42 100%)'
+                        }}
                       ></div>
                     </div>
                   </div>
@@ -271,11 +272,10 @@ export default function FinancePage() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span
-                      className={`text-xs px-2 py-1 rounded-full ${
-                        member.daysOverdue > 0
-                          ? "bg-red-100 text-red-600"
-                          : "bg-yellow-100 text-yellow-600"
-                      }`}
+                      className={`text-xs px-2 py-1 rounded-full ${member.daysOverdue > 0
+                        ? "bg-red-100 text-red-600"
+                        : "bg-yellow-100 text-yellow-600"
+                        }`}
                     >
                       {member.daysOverdue > 0
                         ? `${member.daysOverdue} days overdue`
@@ -294,7 +294,7 @@ export default function FinancePage() {
                         onClick={() =>
                           router.push(`/members/${member.id}/payment`)
                         }
-                        className="px-3 py-1 text-sm bg-black text-white rounded-lg"
+                        className="px-3 py-1 text-sm btn-gradient-orange text-white rounded-lg"
                       >
                         Collect
                       </button>
@@ -313,7 +313,7 @@ export default function FinancePage() {
       {/* Add Payment FAB */}
       <button
         onClick={() => router.push("/finance/add-payment")}
-        className="fixed bottom-24 right-4 w-14 h-14 bg-black text-white rounded-full shadow-lg flex items-center justify-center text-2xl z-40"
+        className="fixed bottom-24 right-4 w-14 h-14 btn-gradient-orange text-white rounded-full shadow-lg flex items-center justify-center text-2xl z-40"
       >
         +
       </button>
@@ -364,7 +364,7 @@ function ExpensesSection({ router }) {
           </div>
           <button
             onClick={() => router.push("/finance/expenses/add")}
-            className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium"
+            className="px-4 py-2 btn-gradient-orange text-white rounded-lg text-sm font-medium"
           >
             + Add
           </button>

@@ -67,9 +67,9 @@ export default function LoginPage() {
 
 			{/* Content Container - Bottom on mobile, Left-aligned on desktop */}
 			<div className="relative z-10 w-full max-w-md lg:max-w-lg mx-auto lg:mx-0">
-				<div className="w-full space-y-6 bg-white/5 backdrop-blur-xl rounded-2xl p-6 sm:p-8 lg:p-10 border border-orange-500/60 shadow-[0_0_30px_rgba(249,115,22,0.4)]">
+				<div className="w-full space-y-6 bg-white/5 backdrop-blur-xl rounded-2xl p-6 sm:p-8 lg:p-10 border border-[#F97316]/60 shadow-[0_0_30px_rgba(249,115,22,0.4)]">
 					<div>
-						<h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight text-orange-500">
+						<h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight text-[#F97316]">
 							Welcome Back
 						</h1>
 						<p className="text-sm sm:text-base lg:text-lg text-white/80 mt-2">
@@ -84,7 +84,7 @@ export default function LoginPage() {
 							</label>
 							<input
 								type="email"
-								className="w-full px-4 py-2.5 sm:py-3 lg:py-3.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-lg text-white placeholder-white/50 focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 outline-none transition text-sm lg:text-base"
+								className="w-full px-4 py-2.5 sm:py-3 lg:py-3.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-lg text-white placeholder-white/50 focus:ring-2 focus:ring-[#F97316]/50 focus:border-[#F97316]/50 outline-none transition text-sm lg:text-base"
 								placeholder="Enter your email"
 								value={email}
 								onChange={(e) => setEmail(e.target.value)}
@@ -98,7 +98,7 @@ export default function LoginPage() {
 							</label>
 							<input
 								type="password"
-								className="w-full px-4 py-2.5 sm:py-3 lg:py-3.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-lg text-white placeholder-white/50 focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 outline-none transition text-sm lg:text-base"
+								className="w-full px-4 py-2.5 sm:py-3 lg:py-3.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-lg text-white placeholder-white/50 focus:ring-2 focus:ring-[#F97316]/50 focus:border-[#F97316]/50 outline-none transition text-sm lg:text-base"
 								placeholder="Enter your password"
 								value={password}
 								onChange={(e) => setPassword(e.target.value)}
@@ -115,7 +115,7 @@ export default function LoginPage() {
 						<button
 							type="submit"
 							disabled={loading}
-							className="w-3/5 lg:w-auto mx-auto block px-12 lg:px-16 bg-orange-500 text-white py-2.5 lg:py-3 rounded-lg font-semibold hover:bg-white hover:text-orange-500 transition-all duration-300 disabled:opacity-50 text-sm sm:text-base shadow-lg shadow-orange-500/30"
+							className="w-3/5 lg:w-auto mx-auto block px-12 lg:px-16 btn-gradient-orange text-white py-2.5 lg:py-3 rounded-lg font-semibold transition-all duration-300 disabled:opacity-50 text-sm sm:text-base shadow-lg"
 						>
 							{loading ? "Signing in..." : "Sign In"}
 						</button>

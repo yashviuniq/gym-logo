@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
+import Card from "@/components/shared/Card";
 
 // Mock data
 const mockAttendance = [
@@ -79,20 +80,20 @@ export default function AttendancePage() {
       prev.map((a) =>
         a.id === id
           ? {
-              ...a,
-              checkOut: new Date().toLocaleTimeString("en-US", {
-                hour: "2-digit",
-                minute: "2-digit",
-              }),
-              status: "checked-out",
-            }
+            ...a,
+            checkOut: new Date().toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            status: "checked-out",
+          }
           : a
       )
     );
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-page pb-24">
       <Header title="Attendance" showBack={false} />
 
       <main className="px-4 py-4">
@@ -102,13 +103,13 @@ export default function AttendancePage() {
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-black outline-none"
+            className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#F97316] outline-none transition-all"
           />
           <button
             onClick={() =>
               setSelectedDate(new Date().toISOString().split("T")[0])
             }
-            className="px-4 py-3 bg-black text-white rounded-xl text-sm font-medium"
+            className="px-4 py-3 btn-gradient-orange text-white rounded-xl text-sm font-semibold"
           >
             Today
           </button>
@@ -116,24 +117,24 @@ export default function AttendancePage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-3 gap-3 mb-4">
-          <div className="bg-white rounded-xl p-4 text-center shadow-sm">
+          <Card padding="md" className="text-center">
             <p className="text-2xl font-bold text-gray-900">
               {todayStats.total}
             </p>
-            <p className="text-xs text-gray-500">Total</p>
-          </div>
-          <div className="bg-white rounded-xl p-4 text-center shadow-sm">
+            <p className="text-xs text-gray-600 font-medium">Total</p>
+          </Card>
+          <Card padding="md" className="text-center">
             <p className="text-2xl font-bold text-green-600">
               {todayStats.checkedIn}
             </p>
-            <p className="text-xs text-gray-500">Active</p>
-          </div>
-          <div className="bg-white rounded-xl p-4 text-center shadow-sm">
+            <p className="text-xs text-gray-600 font-medium">Active</p>
+          </Card>
+          <Card padding="md" className="text-center">
             <p className="text-2xl font-bold text-blue-600">
               {todayStats.checkedOut}
             </p>
-            <p className="text-xs text-gray-500">Completed</p>
-          </div>
+            <p className="text-xs text-gray-600 font-medium">Completed</p>
+          </Card>
         </div>
 
         {/* Tabs */}
@@ -142,11 +143,10 @@ export default function AttendancePage() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-2 rounded-xl text-sm font-medium transition ${
-                activeTab === tab
-                  ? "bg-black text-white"
-                  : "bg-white text-gray-600 border border-gray-200"
-              }`}
+              className={`flex-1 py-2 rounded-xl text-sm font-medium transition ${activeTab === tab
+                ? "btn-gradient-orange text-white shadow-md"
+                : "bg-white text-gray-600 border border-gray-200"
+                }`}
             >
               {tab === "today" ? "Today's Log" : "History"}
             </button>
@@ -162,7 +162,7 @@ export default function AttendancePage() {
                 <p className="text-gray-500 mt-2">No attendance records yet</p>
                 <button
                   onClick={() => setShowMarkModal(true)}
-                  className="mt-4 px-6 py-2 bg-black text-white rounded-lg text-sm font-medium"
+                  className="mt-4 px-6 py-2 btn-gradient-orange text-white rounded-lg text-sm font-semibold"
                 >
                   Mark First Entry
                 </button>
@@ -175,7 +175,9 @@ export default function AttendancePage() {
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-gray-800 to-gray-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm" style={{
+                        background: 'linear-gradient(135deg, #F97316 0%, #FF8C42 100%)'
+                      }}>
                         {record.name.charAt(0)}
                       </div>
                       <div>
@@ -258,7 +260,7 @@ export default function AttendancePage() {
       {/* Mark Attendance FAB */}
       <button
         onClick={() => setShowMarkModal(true)}
-        className="fixed bottom-24 right-4 w-14 h-14 bg-black text-white rounded-full shadow-lg flex items-center justify-center text-2xl hover:bg-gray-800 transition z-40"
+        className="fixed bottom-24 right-4 w-14 h-14 btn-gradient-orange text-white rounded-full shadow-lg flex items-center justify-center text-2xl z-40"
       >
         ✓
       </button>
@@ -346,7 +348,9 @@ function MarkAttendanceModal({
                   onClick={() => onMarkAttendance(member)}
                   className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl transition"
                 >
-                  <div className="w-10 h-10 bg-gradient-to-br from-gray-800 to-gray-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm" style={{
+                    background: 'linear-gradient(135deg, #F97316 0%, #FF8C42 100%)'
+                  }}>
                     {member.name.charAt(0)}
                   </div>
                   <div className="flex-1 text-left">

@@ -51,7 +51,7 @@ export default function WelcomePage() {
 
 					<Link
 						href="/auth/login"
-						className="group inline-flex items-center justify-center w-full max-w-xs lg:max-w-sm text-base lg:text-lg py-3 lg:py-4 px-6 lg:px-8 rounded-lg font-semibold bg-orange-500 text-white hover:bg-white hover:text-orange-500 transition-all duration-300 ease-in-out shadow-lg hover:shadow-xl"
+						className="group inline-flex items-center justify-center w-full max-w-xs lg:max-w-sm text-base lg:text-lg py-3 lg:py-4 px-6 lg:px-8 rounded-lg font-semibold btn-gradient-orange text-white shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out"
 					>
 						Get Started
 						<span className="ml-2 inline-block transition-transform duration-300 ease-in-out group-hover:translate-x-1">

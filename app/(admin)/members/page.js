@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
+import Card from "@/components/shared/Card";
 
 // Mock data - will replace with Supabase later
 const mockMembers = [
@@ -81,30 +82,30 @@ export default function MembersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-page pb-24">
       <Header title="Members" showBack={false} />
 
       <main className="px-4 py-4">
         {/* Stats Summary */}
         <div className="grid grid-cols-3 gap-3 mb-4">
-          <div className="bg-white rounded-xl p-3 text-center shadow-sm">
+          <Card padding="sm" className="text-center">
             <p className="text-2xl font-bold text-gray-900">
               {mockMembers.length}
             </p>
-            <p className="text-xs text-gray-500">Total</p>
-          </div>
-          <div className="bg-white rounded-xl p-3 text-center shadow-sm">
+            <p className="text-xs text-gray-600 font-medium">Total</p>
+          </Card>
+          <Card padding="sm" className="text-center">
             <p className="text-2xl font-bold text-green-600">
               {mockMembers.filter((m) => m.status === "active").length}
             </p>
-            <p className="text-xs text-gray-500">Active</p>
-          </div>
-          <div className="bg-white rounded-xl p-3 text-center shadow-sm">
+            <p className="text-xs text-gray-600 font-medium">Active</p>
+          </Card>
+          <Card padding="sm" className="text-center">
             <p className="text-2xl font-bold text-red-600">
               {mockMembers.filter((m) => m.dueAmount > 0).length}
             </p>
-            <p className="text-xs text-gray-500">Dues</p>
-          </div>
+            <p className="text-xs text-gray-600 font-medium">Dues</p>
+          </Card>
         </div>
 
         {/* Search Bar */}
@@ -112,7 +113,7 @@ export default function MembersPage() {
           <input
             type="text"
             placeholder="Search by name or phone..."
-            className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+            className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -127,11 +128,10 @@ export default function MembersPage() {
             <button
               key={status}
               onClick={() => setFilterStatus(status)}
-              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition ${
-                filterStatus === status
-                  ? "bg-black text-white"
-                  : "bg-white text-gray-600 border border-gray-200"
-              }`}
+              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition ${filterStatus === status
+                ? "btn-gradient-orange text-white shadow-md"
+                : "bg-white text-gray-600 border border-gray-200 hover:border-[#F97316]/30"
+                }`}
             >
               {status.charAt(0).toUpperCase() + status.slice(1)}
             </button>
@@ -141,13 +141,16 @@ export default function MembersPage() {
         {/* Members List */}
         <div className="space-y-3">
           {filteredMembers.map((member) => (
-            <div
+            <Card
               key={member.id}
+              padding="md"
+              className="active:scale-[0.98] transition cursor-pointer hover:shadow-md"
               onClick={() => router.push(`/members/${member.id}`)}
-              className="bg-white rounded-xl p-4 shadow-sm active:scale-[0.98] transition cursor-pointer"
             >
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-gray-800 to-gray-600 rounded-full flex items-center justify-center text-white font-bold">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold" style={{
+                  background: 'linear-gradient(135deg, #F97316 0%, #FF8C42 100%)'
+                }}>
                   {member.name.charAt(0)}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -176,7 +179,7 @@ export default function MembersPage() {
                   </div>
                 </div>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
 
@@ -191,7 +194,7 @@ export default function MembersPage() {
       {/* Floating Add Button */}
       <button
         onClick={() => router.push("/members/add")}
-        className="fixed bottom-24 right-4 w-14 h-14 bg-black text-white rounded-full shadow-lg flex items-center justify-center text-2xl hover:bg-gray-800 transition z-40"
+        className="fixed bottom-24 right-4 w-14 h-14 btn-gradient-orange text-white rounded-full shadow-lg flex items-center justify-center text-2xl z-40"
       >
         +
       </button>

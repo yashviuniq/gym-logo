@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
+import Card from "@/components/shared/Card";
 
 // Mock data
 const mockStats = {
@@ -89,13 +90,13 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-4 border-[#F97316] border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-page pb-24">
       <Header title="Dashboard" showBack={false} />
 
       <main className="px-4 py-4 space-y-4">
@@ -137,31 +138,31 @@ export default function AdminDashboard() {
         </div>
 
         {/* Revenue Card */}
-        <div className="bg-gradient-to-br from-gray-900 to-gray-700 rounded-xl p-4 text-white">
-          <div className="flex items-center justify-between">
+        <Card variant="dark" padding="md" className="card-dark">
+          <div className="flex items-center justify-between mb-4">
             <div>
               <p className="text-gray-300 text-sm">Monthly Revenue</p>
-              <p className="text-2xl font-bold">
+              <p className="text-3xl font-bold text-white">
                 ₹{(mockStats.monthlyRevenue / 1000).toFixed(1)}K
               </p>
             </div>
             <div className="text-right">
               <p className="text-gray-300 text-sm">Pending Dues</p>
-              <p className="text-xl font-semibold text-red-400">
+              <p className="text-xl font-semibold text-[#F97316]">
                 ₹{(mockStats.pendingDues / 1000).toFixed(1)}K
               </p>
             </div>
           </div>
           <button
             onClick={() => router.push("/finance")}
-            className="mt-3 w-full py-2 bg-white/10 rounded-lg text-sm font-medium"
+            className="w-full py-2.5 btn-gradient-orange rounded-lg text-sm font-semibold text-white"
           >
             View Finance →
           </button>
-        </div>
+        </Card>
 
         {/* Quick Actions */}
-        <div className="bg-white rounded-xl p-4 shadow-sm">
+        <Card padding="md">
           <h3 className="font-semibold text-gray-900 mb-3">Quick Actions</h3>
           <div className="grid grid-cols-4 gap-2">
             {[
@@ -173,26 +174,26 @@ export default function AdminDashboard() {
               <button
                 key={action.label}
                 onClick={() => router.push(action.href)}
-                className="flex flex-col items-center p-2 rounded-lg hover:bg-gray-50"
+                className="flex flex-col items-center p-3 rounded-xl hover:bg-[#F97316]/10 transition-all border border-transparent hover:border-[#F97316]/20"
               >
-                <span className="text-2xl">{action.icon}</span>
-                <span className="text-xs text-gray-600 mt-1">
+                <span className="text-2xl mb-1">{action.icon}</span>
+                <span className="text-xs text-gray-600 font-medium">
                   {action.label}
                 </span>
               </button>
             ))}
           </div>
-        </div>
+        </Card>
 
         {/* Today's Attendance */}
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <Card padding="none" className="overflow-hidden">
           <div className="p-4 border-b border-gray-100 flex items-center justify-between">
             <h3 className="font-semibold text-gray-900">Today's Check-ins</h3>
             <button
               onClick={() => router.push("/attendance")}
-              className="text-sm text-blue-600"
+              className="text-sm text-[#F97316] font-medium hover:underline"
             >
-              View All
+              View All →
             </button>
           </div>
           <div className="divide-y divide-gray-100">
@@ -213,24 +214,23 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <span
-                  className={`w-2 h-2 rounded-full ${
-                    member.status === "active" ? "bg-green-500" : "bg-gray-300"
-                  }`}
+                  className={`w-2 h-2 rounded-full ${member.status === "active" ? "bg-green-500" : "bg-gray-300"
+                    }`}
                 ></span>
               </div>
             ))}
           </div>
-        </div>
+        </Card>
 
         {/* Pending Payments */}
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <Card padding="none" className="overflow-hidden">
           <div className="p-4 border-b border-gray-100 flex items-center justify-between">
             <h3 className="font-semibold text-gray-900">Pending Payments</h3>
             <button
               onClick={() => router.push("/finance")}
-              className="text-sm text-blue-600"
+              className="text-sm text-[#F97316] font-medium hover:underline"
             >
-              View All
+              View All →
             </button>
           </div>
           <div className="divide-y divide-gray-100">
@@ -253,10 +253,10 @@ export default function AdminDashboard() {
               </div>
             ))}
           </div>
-        </div>
+        </Card>
 
         {/* Recent Activity */}
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <Card padding="none" className="overflow-hidden">
           <div className="p-4 border-b border-gray-100">
             <h3 className="font-semibold text-gray-900">Recent Activity</h3>
           </div>
@@ -274,7 +274,7 @@ export default function AdminDashboard() {
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       </main>
     </div>
   );
@@ -283,10 +283,10 @@ export default function AdminDashboard() {
 // KPI Card Component
 function KPICard({ title, value, icon, color = "gray", onClick }) {
   const colorClasses = {
-    gray: "bg-white",
-    green: "bg-green-50",
-    red: "bg-red-50",
-    blue: "bg-blue-50",
+    gray: "bg-white border-gray-200",
+    green: "bg-green-50 border-green-200",
+    red: "bg-red-50 border-red-200",
+    blue: "bg-blue-50 border-blue-200",
   };
 
   const valueColors = {
@@ -299,13 +299,13 @@ function KPICard({ title, value, icon, color = "gray", onClick }) {
   return (
     <button
       onClick={onClick}
-      className={`${colorClasses[color]} rounded-xl p-4 shadow-sm text-left w-full`}
+      className={`${colorClasses[color]} rounded-xl p-4 border shadow-sm text-left w-full hover:shadow-md transition-all hover:scale-[1.02]`}
     >
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xl">{icon}</span>
+        <span className="text-2xl">{icon}</span>
       </div>
       <p className={`text-2xl font-bold ${valueColors[color]}`}>{value}</p>
-      <p className="text-xs text-gray-500">{title}</p>
+      <p className="text-xs text-gray-600 font-medium">{title}</p>
     </button>
   );
 }

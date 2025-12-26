@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
+import Card from "@/components/shared/Card";
 
 const settingsSections = [
   {
@@ -59,34 +60,36 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-page pb-24">
       <Header title="Settings" showBack={false} />
 
       <main className="px-4 py-4 space-y-4">
         {/* Profile Card */}
-        <div className="bg-gradient-to-br from-gray-900 to-gray-700 rounded-xl p-5 text-white">
+        <Card variant="dark" padding="md" className="card-dark">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center text-2xl">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center text-2xl" style={{
+              background: 'linear-gradient(135deg, #F97316 0%, #FF8C42 100%)'
+            }}>
               🏋️
             </div>
             <div>
-              <h2 className="text-xl font-bold">FitZone Gym</h2>
+              <h2 className="text-xl font-bold text-white">FitZone Gym</h2>
               <p className="text-gray-300 text-sm">Admin Dashboard</p>
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Settings Sections */}
         <div className="space-y-3">
           {settingsSections.map((section) => (
-            <div
+            <Card
               key={section.id}
+              padding="md"
               onClick={() => !section.badge && router.push(section.href)}
-              className={`bg-white rounded-xl p-4 shadow-sm flex items-center gap-4 ${
-                section.badge ? "opacity-60" : "cursor-pointer"
-              }`}
+              className={`flex items-center gap-4 ${section.badge ? "opacity-60" : "cursor-pointer hover:shadow-md transition-all"
+                }`}
             >
-              <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center text-2xl">
+              <div className="w-12 h-12 bg-[#F97316]/10 rounded-xl flex items-center justify-center text-2xl">
                 {section.icon}
               </div>
               <div className="flex-1">
@@ -100,20 +103,20 @@ export default function SettingsPage() {
                 </div>
                 <p className="text-sm text-gray-500">{section.description}</p>
               </div>
-              <span className="text-gray-400">→</span>
-            </div>
+              <span className="text-[#F97316]">→</span>
+            </Card>
           ))}
         </div>
 
         {/* Quick Actions */}
-        <div className="bg-white rounded-xl p-4 shadow-sm">
+        <Card padding="md">
           <h3 className="font-semibold text-gray-900 mb-3">Quick Actions</h3>
           <div className="grid grid-cols-3 gap-3">
             {quickActions.map((action) => (
               <button
                 key={action.action}
                 onClick={() => handleQuickAction(action.action)}
-                className="bg-gray-50 rounded-xl p-3 flex flex-col items-center gap-2"
+                className="bg-[#F97316]/5 hover:bg-[#F97316]/10 rounded-xl p-3 flex flex-col items-center gap-2 transition-all border border-transparent hover:border-[#F97316]/20"
               >
                 <span className="text-2xl">{action.icon}</span>
                 <span className="text-xs font-medium text-gray-700">
@@ -122,10 +125,10 @@ export default function SettingsPage() {
               </button>
             ))}
           </div>
-        </div>
+        </Card>
 
         {/* App Info */}
-        <div className="bg-white rounded-xl p-4 shadow-sm">
+        <Card padding="md">
           <h3 className="font-semibold text-gray-900 mb-3">App Information</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
@@ -141,7 +144,7 @@ export default function SettingsPage() {
               <span className="font-medium">256</span>
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Logout */}
         <button

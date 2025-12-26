@@ -29,11 +29,12 @@ export default function LoginPage() {
 			return;
 		}
 
-		// Redirect based on role
-		if (data.user?.role === "admin") {
+		// Redirect based on role/userType
+		const user = data.user;
+		if (user?.role === "owner" || user?.role === "admin" || user?.role === "trainer") {
 			router.push("/admin/dashboard");
 		} else {
-			router.push("/profile");
+			router.push("/user/dashboard");
 		}
 	};
 

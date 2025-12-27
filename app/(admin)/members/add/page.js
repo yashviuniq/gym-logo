@@ -28,6 +28,8 @@ export default function AddMemberPage() {
     paymentAmount: "",
     paymentMode: "cash",
     notes: "",
+    useCustomPrice: false,
+    customPrice: "",
   });
 
   const updateForm = (field, value) => {
@@ -54,19 +56,17 @@ export default function AddMemberPage() {
           {[1, 2, 3].map((s) => (
             <div key={s} className="flex items-center">
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                  step >= s
-                    ? "bg-black text-white"
-                    : "bg-gray-200 text-gray-500"
-                }`}
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= s
+                  ? "bg-black text-white"
+                  : "bg-gray-200 text-gray-500"
+                  }`}
               >
                 {s}
               </div>
               {s < 3 && (
                 <div
-                  className={`w-16 h-1 mx-2 ${
-                    step > s ? "bg-black" : "bg-gray-200"
-                  }`}
+                  className={`w-16 h-1 mx-2 ${step > s ? "bg-black" : "bg-gray-200"
+                    }`}
                 />
               )}
             </div>
@@ -196,12 +196,14 @@ export default function AddMemberPage() {
                 {membershipPlans.map((plan) => (
                   <div
                     key={plan.id}
-                    onClick={() => updateForm("planId", plan.id)}
-                    className={`p-4 rounded-xl border-2 cursor-pointer transition ${
-                      formData.planId === plan.id
-                        ? "border-black bg-gray-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
+                    onClick={() => {
+                      updateForm("planId", plan.id);
+                      updateForm("customPrice", plan.price.toString());
+                    }}
+                    className={`p-4 rounded-xl border-2 cursor-pointer transition ${formData.planId === plan.id
+                      ? "border-black bg-gray-50"
+                      : "border-gray-200 hover:border-gray-300"
+                      }`}
                   >
                     <div className="flex items-center justify-between">
                       <div>
@@ -219,6 +221,48 @@ export default function AddMemberPage() {
                   </div>
                 ))}
               </div>
+
+              {/* Custom Price Option */}
+              {formData.planId && (
+                <div className="mt-4 bg-orange-50 rounded-xl p-4 space-y-3 border border-orange-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="font-medium text-gray-900">Manual Price Override</span>
+                      <p className="text-xs text-gray-600 mt-0.5">Set custom price for this membership</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => updateForm("useCustomPrice", !formData.useCustomPrice)}
+                      className={`w-12 h-6 rounded-full transition ${formData.useCustomPrice ? "bg-[#F97316]" : "bg-gray-300"
+                        }`}
+                    >
+                      <div
+                        className={`w-5 h-5 bg-white rounded-full shadow transition transform ${formData.useCustomPrice ? "translate-x-6" : "translate-x-1"
+                          }`}
+                      ></div>
+                    </button>
+                  </div>
+
+                  {formData.useCustomPrice && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Custom Price (₹) *
+                      </label>
+                      <input
+                        type="number"
+                        className="w-full px-4 py-3 border border-orange-300 rounded-xl focus:ring-2 focus:ring-[#F97316] outline-none text-lg font-semibold"
+                        placeholder="Enter custom price"
+                        value={formData.customPrice}
+                        onChange={(e) => updateForm("customPrice", e.target.value)}
+                        required={formData.useCustomPrice}
+                      />
+                      <p className="text-xs text-gray-600 mt-1">
+                        Original price: ₹{selectedPlan?.price}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="mt-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -269,14 +313,29 @@ export default function AddMemberPage() {
                   <span className="text-gray-600">Duration</span>
                   <span className="font-medium">{selectedPlan?.duration}</span>
                 </div>
+                {formData.useCustomPrice && (
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-gray-600">Original Price</span>
+                    <span className="font-medium line-through text-gray-400">
+                      ₹{selectedPlan?.price}
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center pt-2 border-t border-gray-200">
                   <span className="font-medium text-gray-900">
                     Total Amount
                   </span>
                   <span className="text-xl font-bold">
-                    ₹{selectedPlan?.price}
+                    ₹{formData.useCustomPrice && formData.customPrice
+                      ? formData.customPrice
+                      : selectedPlan?.price}
                   </span>
                 </div>
+                {formData.useCustomPrice && (
+                  <div className="mt-2 text-xs text-orange-600 bg-orange-100 rounded-lg p-2">
+                    💡 Custom price applied
+                  </div>
+                )}
               </div>
 
               <div>
@@ -291,10 +350,14 @@ export default function AddMemberPage() {
                   onChange={(e) => updateForm("paymentAmount", e.target.value)}
                 />
                 {formData.paymentAmount &&
-                  formData.paymentAmount < selectedPlan?.price && (
+                  formData.paymentAmount < (formData.useCustomPrice && formData.customPrice
+                    ? parseFloat(formData.customPrice)
+                    : selectedPlan?.price) && (
                     <p className="text-sm text-orange-500 mt-1">
                       Due amount: ₹
-                      {selectedPlan?.price - formData.paymentAmount}
+                      {(formData.useCustomPrice && formData.customPrice
+                        ? parseFloat(formData.customPrice)
+                        : selectedPlan?.price) - formData.paymentAmount}
                     </p>
                   )}
               </div>
@@ -308,11 +371,10 @@ export default function AddMemberPage() {
                     <button
                       key={mode}
                       onClick={() => updateForm("paymentMode", mode)}
-                      className={`flex-1 py-2 rounded-lg text-sm font-medium capitalize transition ${
-                        formData.paymentMode === mode
-                          ? "bg-black text-white"
-                          : "bg-gray-100 text-gray-600"
-                      }`}
+                      className={`flex-1 py-2 rounded-lg text-sm font-medium capitalize transition ${formData.paymentMode === mode
+                        ? "bg-black text-white"
+                        : "bg-gray-100 text-gray-600"
+                        }`}
                     >
                       {mode}
                     </button>

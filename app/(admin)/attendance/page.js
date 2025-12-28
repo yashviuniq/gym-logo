@@ -1,63 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
 import Card from "@/components/shared/Card";
-
-// Mock data
-const mockAttendance = [
-  {
-    id: 1,
-    memberId: 1,
-    name: "John Doe",
-    checkIn: "06:30 AM",
-    checkOut: "08:00 AM",
-    status: "checked-out",
-  },
-  {
-    id: 2,
-    memberId: 2,
-    name: "Jane Smith",
-    checkIn: "07:15 AM",
-    checkOut: null,
-    status: "checked-in",
-  },
-  {
-    id: 3,
-    memberId: 3,
-    name: "Mike Johnson",
-    checkIn: "06:45 AM",
-    checkOut: "08:30 AM",
-    status: "checked-out",
-  },
-  {
-    id: 4,
-    memberId: 4,
-    name: "Sarah Wilson",
-    checkIn: "08:00 AM",
-    checkOut: null,
-    status: "checked-in",
-  },
-  {
-    id: 5,
-    memberId: 5,
-    name: "Tom Brown",
-    checkIn: "05:30 AM",
-    checkOut: "07:00 AM",
-    status: "checked-out",
-  },
-];
-
-const mockMembers = [
-  { id: 1, name: "John Doe", phone: "9876543210", plan: "Premium" },
-  { id: 2, name: "Jane Smith", phone: "9876543211", plan: "Basic" },
-  { id: 3, name: "Mike Johnson", phone: "9876543212", plan: "Premium" },
-  { id: 4, name: "Sarah Wilson", phone: "9876543213", plan: "Basic" },
-  { id: 5, name: "Tom Brown", phone: "9876543214", plan: "Premium" },
-  { id: 6, name: "Emily Davis", phone: "9876543215", plan: "Standard" },
-  { id: 7, name: "Chris Lee", phone: "9876543216", plan: "Premium" },
-];
 
 export default function AttendancePage() {
   const router = useRouter();
@@ -67,7 +14,167 @@ export default function AttendancePage() {
   const [activeTab, setActiveTab] = useState("today");
   const [showMarkModal, setShowMarkModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [attendance, setAttendance] = useState(mockAttendance);
+  const [attendance, setAttendance] = useState([]);
+  const [members, setMembers] = useState([]);
+  const [selectedGym, setSelectedGym] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [historyData, setHistoryData] = useState([]);
+
+  useEffect(() => {
+    // Get selected gym from localStorage
+    const storedGym = localStorage.getItem("selectedGym");
+    if (storedGym) {
+      const gym = JSON.parse(storedGym);
+      setSelectedGym(gym);
+      fetchAttendanceData(gym.id, selectedDate);
+      fetchMembers(gym.id);
+      fetchHistoryData(gym.id);
+    } else {
+      setLoading(false);
+    }
+  }, [selectedDate]);
+
+  const fetchAttendanceData = async (gymId, date) => {
+    setLoading(true);
+    try {
+      const { data: attendanceData, error } = await supabase
+        .from("attendance")
+        .select(`
+          id,
+          member_id,
+          check_in_time,
+          check_out_time,
+          count,
+          members (
+            id,
+            full_name,
+            phone
+          )
+        `)
+        .eq("gym_id", gymId)
+        .eq("check_in_date", date)
+        .order("check_in_time", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching attendance:", error);
+        setAttendance([]);
+      } else {
+        const transformedAttendance = attendanceData?.map((record) => ({
+          id: record.id,
+          memberId: record.member_id,
+          name: record.members?.full_name || "Unknown",
+          checkIn: new Date(`1970-01-01T${record.check_in_time}`).toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          checkOut: record.check_out_time
+            ? new Date(`1970-01-01T${record.check_out_time}`).toLocaleTimeString("en-US", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            : null,
+          status: record.check_out_time ? "checked-out" : "checked-in",
+        })) || [];
+        setAttendance(transformedAttendance);
+      }
+    } catch (err) {
+      console.error("Error:", err);
+      setAttendance([]);
+    }
+    setLoading(false);
+  };
+
+  const fetchMembers = async (gymId) => {
+    try {
+      const { data: membersData, error } = await supabase
+        .from("members")
+        .select(`
+          id,
+          full_name,
+          phone,
+          memberships (
+            id,
+            status,
+            end_date,
+            membership_plans (name)
+          )
+        `)
+        .eq("gym_id", gymId);
+
+      if (error) {
+        console.error("Error fetching members:", error);
+        setMembers([]);
+      } else {
+        const transformedMembers = membersData?.map((member) => {
+          const activeMembership = member.memberships?.find(m => m.status === "active");
+          return {
+            id: member.id,
+            name: member.full_name,
+            phone: member.phone,
+            plan: activeMembership?.membership_plans?.name || "No Plan",
+          };
+        }) || [];
+        setMembers(transformedMembers);
+      }
+    } catch (err) {
+      console.error("Error:", err);
+      setMembers([]);
+    }
+  };
+
+  const fetchHistoryData = async (gymId) => {
+    try {
+      // Fetch last 7 days of attendance data
+      const last7Days = Array.from({ length: 7 }, (_, i) => {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        return date.toISOString().split('T')[0];
+      });
+
+      const historyPromises = last7Days.map(async (date) => {
+        const { data, error } = await supabase
+          .from("attendance")
+          .select("id, check_in_time")
+          .eq("gym_id", gymId)
+          .eq("check_in_date", date);
+
+        if (error) return null;
+
+        // Calculate peak time
+        const hours = data?.map(record => {
+          const hour = new Date(`1970-01-01T${record.check_in_time}`).getHours();
+          return hour;
+        }) || [];
+
+        const hourCounts = {};
+        hours.forEach(hour => {
+          hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+        });
+
+        const peakHour = Object.keys(hourCounts).reduce((a, b) => 
+          hourCounts[a] > hourCounts[b] ? a : b, 0);
+
+        const peakTime = peakHour ? `${peakHour}:00-${parseInt(peakHour) + 2}:00` : "N/A";
+
+        return {
+          date: new Date(date).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric"
+          }),
+          count: data?.length || 0,
+          peakTime: peakTime,
+          rawDate: date,
+        };
+      });
+
+      const historyResults = await Promise.all(historyPromises);
+      setHistoryData(historyResults.filter(Boolean));
+    } catch (err) {
+      console.error("Error fetching history:", err);
+      setHistoryData([]);
+    }
+  };
 
   const todayStats = {
     total: attendance.length,
@@ -75,21 +182,144 @@ export default function AttendancePage() {
     checkedOut: attendance.filter((a) => a.status === "checked-out").length,
   };
 
-  const handleCheckOut = (id) => {
-    setAttendance((prev) =>
-      prev.map((a) =>
-        a.id === id
-          ? {
-            ...a,
-            checkOut: new Date().toLocaleTimeString("en-US", {
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-            status: "checked-out",
-          }
-          : a
-      )
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-page pb-24">
+        <Header title="Attendance" showBack={false} />
+        <main className="px-4 py-4">
+          <div className="flex items-center justify-center py-12">
+            <div className="w-8 h-8 border-4 border-[#F97316] border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        </main>
+      </div>
     );
+  }
+
+  // Show message if no gym selected
+  if (!selectedGym) {
+    return (
+      <div className="min-h-screen bg-page pb-24">
+        <Header title="Attendance" showBack={false} />
+        <main className="px-4 py-4">
+          <div className="text-center py-12">
+            <span className="text-4xl">🏢</span>
+            <p className="text-gray-500 mt-2">Please select a gym first</p>
+            <button
+              onClick={() => router.push("/admin/dashboard")}
+              className="mt-4 px-6 py-2 bg-[#F97316] text-white rounded-lg"
+            >
+              Go to Dashboard
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  const handleCheckOut = async (id, memberId) => {
+    try {
+      const currentTime = new Date().toLocaleTimeString("en-US", {
+        hour12: false,
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+      });
+
+      const { error } = await supabase
+        .from("attendance")
+        .update({ check_out_time: currentTime })
+        .eq("id", id);
+
+      if (error) {
+        console.error("Error checking out:", error);
+        alert("Failed to check out. Please try again.");
+        return;
+      }
+
+      // Update local state
+      setAttendance((prev) =>
+        prev.map((a) =>
+          a.id === id
+            ? {
+                ...a,
+                checkOut: new Date().toLocaleTimeString("en-US", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }),
+                status: "checked-out",
+              }
+            : a
+        )
+      );
+    } catch (err) {
+      console.error("Error:", err);
+      alert("Failed to check out. Please try again.");
+    }
+  };
+
+  const handleMarkAttendance = async (member) => {
+    if (!selectedGym) return;
+
+    try {
+      const currentTime = new Date().toLocaleTimeString("en-US", {
+        hour12: false,
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+      });
+
+      const { data: newRecord, error } = await supabase
+        .from("attendance")
+        .insert({
+          gym_id: selectedGym.id,
+          member_id: member.id,
+          check_in_date: selectedDate,
+          check_in_time: currentTime,
+          count: 1,
+        })
+        .select(`
+          id,
+          member_id,
+          check_in_time,
+          check_out_time,
+          members (
+            id,
+            full_name,
+            phone
+          )
+        `)
+        .single();
+
+      if (error) {
+        console.error("Error marking attendance:", error);
+        if (error.code === "23505") { // Unique constraint violation
+          alert("Member already checked in today!");
+        } else {
+          alert("Failed to mark attendance. Please try again.");
+        }
+        return;
+      }
+
+      // Add to local state
+      const transformedRecord = {
+        id: newRecord.id,
+        memberId: newRecord.member_id,
+        name: newRecord.members?.full_name || member.name,
+        checkIn: new Date(`1970-01-01T${newRecord.check_in_time}`).toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        checkOut: null,
+        status: "checked-in",
+      };
+
+      setAttendance((prev) => [transformedRecord, ...prev]);
+      setShowMarkModal(false);
+    } catch (err) {
+      console.error("Error:", err);
+      alert("Failed to mark attendance. Please try again.");
+    }
   };
 
   return (
@@ -199,7 +429,7 @@ export default function AttendancePage() {
                     <div>
                       {record.status === "checked-in" ? (
                         <button
-                          onClick={() => handleCheckOut(record.id)}
+                          onClick={() => handleCheckOut(record.id, record.memberId)}
                           className="px-3 py-1.5 bg-red-100 text-red-600 rounded-lg text-sm font-medium"
                         >
                           Check Out
@@ -226,32 +456,32 @@ export default function AttendancePage() {
               </h3>
             </div>
             <div className="divide-y divide-gray-100">
-              {[
-                { date: "Jan 15, 2025", count: 45, peakTime: "6-8 AM" },
-                { date: "Jan 14, 2025", count: 52, peakTime: "6-8 AM" },
-                { date: "Jan 13, 2025", count: 38, peakTime: "5-7 PM" },
-                { date: "Jan 12, 2025", count: 41, peakTime: "6-8 AM" },
-                { date: "Jan 11, 2025", count: 35, peakTime: "7-9 AM" },
-              ].map((day, index) => (
-                <div
-                  key={index}
-                  onClick={() =>
-                    router.push(`/attendance/history?date=${day.date}`)
-                  }
-                  className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50"
-                >
-                  <div>
-                    <p className="font-medium text-gray-900">{day.date}</p>
-                    <p className="text-sm text-gray-500">
-                      Peak: {day.peakTime}
-                    </p>
+              {historyData.length > 0 ? (
+                historyData.map((day, index) => (
+                  <div
+                    key={index}
+                    onClick={() =>
+                      router.push(`/attendance/history?date=${day.rawDate}`)
+                    }
+                    className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50"
+                  >
+                    <div>
+                      <p className="font-medium text-gray-900">{day.date}</p>
+                      <p className="text-sm text-gray-500">
+                        Peak: {day.peakTime}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-gray-900">{day.count}</p>
+                      <p className="text-xs text-gray-500">check-ins</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-gray-900">{day.count}</p>
-                    <p className="text-xs text-gray-500">check-ins</p>
-                  </div>
+                ))
+              ) : (
+                <div className="p-8 text-center text-gray-500">
+                  No attendance history available
                 </div>
-              ))}
+              )}
             </div>
           </div>
         )}
@@ -268,24 +498,10 @@ export default function AttendancePage() {
       {/* Mark Attendance Modal */}
       {showMarkModal && (
         <MarkAttendanceModal
-          members={mockMembers}
+          members={members}
           attendance={attendance}
           onClose={() => setShowMarkModal(false)}
-          onMarkAttendance={(member) => {
-            const newRecord = {
-              id: attendance.length + 1,
-              memberId: member.id,
-              name: member.name,
-              checkIn: new Date().toLocaleTimeString("en-US", {
-                hour: "2-digit",
-                minute: "2-digit",
-              }),
-              checkOut: null,
-              status: "checked-in",
-            };
-            setAttendance((prev) => [newRecord, ...prev]);
-            setShowMarkModal(false);
-          }}
+          onMarkAttendance={handleMarkAttendance}
         />
       )}
     </div>

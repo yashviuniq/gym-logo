@@ -1,20 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
-
-const membershipPlans = [
-  { id: 1, name: "Basic", duration: "1 Month", price: 1000 },
-  { id: 2, name: "Standard", duration: "3 Months", price: 2500 },
-  { id: 3, name: "Premium", duration: "6 Months", price: 4500 },
-  { id: 4, name: "Annual", duration: "12 Months", price: 8000 },
-];
 
 export default function AddMemberPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
+  const [selectedGym, setSelectedGym] = useState(null);
+  const [membershipPlans, setMembershipPlans] = useState([]);
+  const [loadingPlans, setLoadingPlans] = useState(true);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -32,18 +29,210 @@ export default function AddMemberPage() {
     customPrice: "",
   });
 
+  useEffect(() => {
+    // Get selected gym from localStorage
+    const storedGym = localStorage.getItem("selectedGym");
+    if (storedGym) {
+      const gym = JSON.parse(storedGym);
+      setSelectedGym(gym);
+      fetchMembershipPlans(gym.id);
+    } else {
+      setLoadingPlans(false);
+    }
+  }, []);
+
+  const fetchMembershipPlans = async (gymId) => {
+    setLoadingPlans(true);
+    try {
+      const { data: plans, error } = await supabase
+        .from("membership_plans")
+        .select("id, name, duration_days, price, is_active")
+        .eq("gym_id", gymId)
+        .eq("is_active", true)
+        .order("price", { ascending: true });
+
+      if (error) {
+        console.error("Error fetching plans:", error);
+        setMembershipPlans([]);
+      } else {
+        // Transform duration_days to readable format
+        const transformedPlans = plans?.map((plan) => ({
+          id: plan.id,
+          name: plan.name,
+          duration: `${plan.duration_days} Days`,
+          price: plan.price,
+        })) || [];
+        setMembershipPlans(transformedPlans);
+      }
+    } catch (err) {
+      console.error("Error:", err);
+      setMembershipPlans([]);
+    }
+    setLoadingPlans(false);
+  };
+
   const updateForm = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const selectedPlan = membershipPlans.find((p) => p.id === formData.planId);
 
+  // Show loading while plans are loading
+  if (loadingPlans) {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-24">
+        <Header title="Add Member" />
+        <div className="flex items-center justify-center py-12">
+          <div className="w-8 h-8 border-4 border-[#F97316] border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show message if no gym selected
+  if (!selectedGym) {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-24">
+        <Header title="Add Member" />
+        <main className="px-4 py-4">
+          <div className="text-center py-12">
+            <span className="text-4xl">🏢</span>
+            <p className="text-gray-500 mt-2">Please select a gym first</p>
+            <button
+              onClick={() => router.push("/admin/dashboard")}
+              className="mt-4 px-6 py-2 bg-[#F97316] text-white rounded-lg"
+            >
+              Go to Dashboard
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Show message if no membership plans available
+  if (membershipPlans.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-24">
+        <Header title="Add Member" />
+        <main className="px-4 py-4">
+          <div className="text-center py-12">
+            <span className="text-4xl">📋</span>
+            <p className="text-gray-500 mt-2">No membership plans available</p>
+            <p className="text-gray-400 text-sm">Please create membership plans first</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   const handleSubmit = async () => {
+    if (!selectedGym) {
+      alert("No gym selected. Please go back to dashboard.");
+      return;
+    }
+
     setLoading(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      const selectedPlan = membershipPlans.find((p) => p.id === formData.planId);
+      const finalPrice = formData.useCustomPrice && formData.customPrice 
+        ? parseFloat(formData.customPrice) 
+        : selectedPlan?.price;
+      const paymentAmount = parseFloat(formData.paymentAmount);
+      const balanceOwed = finalPrice - paymentAmount;
+
+      // Get current user from localStorage for created_by
+      const storedUser = localStorage.getItem("gymUser");
+      const currentUser = storedUser ? JSON.parse(storedUser) : null;
+      const createdBy = currentUser?.id;
+
+      // 1. Create member
+      const { data: member, error: memberError } = await supabase
+        .from("members")
+        .insert({
+          gym_id: selectedGym.id,
+          full_name: formData.name,
+          phone: formData.phone,
+          email: formData.email || null,
+          balance: Math.max(0, balanceOwed), // Only positive balances (amount owed)
+          created_by: createdBy,
+        })
+        .select()
+        .single();
+
+      if (memberError) {
+        throw memberError;
+      }
+
+      // 2. Calculate membership end date
+      const startDate = new Date(formData.startDate);
+      const durationDays = membershipPlans.find(p => p.id === formData.planId)?.name === "Basic" ? 30 :
+                          membershipPlans.find(p => p.id === formData.planId)?.name === "Standard" ? 90 :
+                          membershipPlans.find(p => p.id === formData.planId)?.name === "Premium" ? 180 : 365;
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + durationDays);
+
+      // 3. Create membership
+      const { error: membershipError } = await supabase
+        .from("memberships")
+        .insert({
+          member_id: member.id,
+          gym_id: selectedGym.id,
+          plan_id: formData.planId,
+          start_date: formData.startDate,
+          end_date: endDate.toISOString().split('T')[0],
+          status: "active",
+          updated_by: createdBy,
+        });
+
+      if (membershipError) {
+        throw membershipError;
+      }
+
+      // 4. Create payment record if payment was made
+      if (paymentAmount > 0) {
+        const { error: paymentError } = await supabase
+          .from("payments")
+          .insert({
+            gym_id: selectedGym.id,
+            member_id: member.id,
+            amount: paymentAmount,
+            mode: formData.paymentMode,
+            status: "paid",
+            notes: formData.notes || null,
+            updated_by: createdBy,
+          });
+
+        if (paymentError) {
+          console.error("Payment error:", paymentError);
+          // Don't throw here as member is already created
+        }
+      }
+
+      // 5. Create member credentials for app login (optional)
+      const defaultPassword = formData.phone.slice(-4) + "123"; // Last 4 digits + 123
+      try {
+        await supabase
+          .from("member_credentials")
+          .insert({
+            member_id: member.id,
+            login_type: "email",
+            login_value: formData.email || formData.phone,
+            password: defaultPassword, // In production, hash this
+            created_by: createdBy,
+          });
+      } catch (credError) {
+        console.log("Credentials creation skipped:", credError);
+      }
+
+      alert(`Member added successfully! ${formData.email ? `Login: ${formData.email} | Password: ${defaultPassword}` : ''}`);
+      router.push("/members");
+
+    } catch (error) {
+      console.error("Error adding member:", error);
+      alert("Failed to add member. Please try again.");
+    }
     setLoading(false);
-    router.push("/members");
   };
 
   return (

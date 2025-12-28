@@ -1,19 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
-
-const mockData = {
-  name: "Rahul",
-  membership: {
-    plan: "Premium",
-    daysLeft: 166,
-    status: "active",
-  },
-  todayWorkout: "Chest & Triceps",
-  streak: 5,
-  thisMonthAttendance: 12,
-};
 
 const quickLinks = [
   { label: "Workout", icon: "💪", href: "/workout", color: "bg-blue-100" },
@@ -29,6 +19,181 @@ const quickLinks = [
 
 export default function CustomerDashboard() {
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [memberData, setMemberData] = useState(null);
+  const [dashboardData, setDashboardData] = useState({
+    name: "",
+    membership: {
+      plan: "Basic",
+      daysLeft: 0,
+      status: "expired",
+    },
+    todayWorkout: "No workout assigned",
+    streak: 0,
+    thisMonthAttendance: 0,
+  });
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    try {
+      // Get logged-in member from localStorage
+      const storedMember = localStorage.getItem("member");
+      if (!storedMember) {
+        router.push("/auth/login");
+        return;
+      }
+
+      const member = JSON.parse(storedMember);
+      
+      // Fetch member details with membership info
+      const { data: memberDetails, error: memberError } = await supabase
+        .from("members")
+        .select(`
+          id,
+          full_name,
+          gym_id,
+          balance,
+          memberships (
+            id,
+            plan_id,
+            start_date,
+            end_date,
+            status,
+            membership_plans (
+              name,
+              duration_days
+            )
+          )
+        `)
+        .eq("id", member.id)
+        .single();
+
+      if (memberError) {
+        console.error("Error fetching member details:", memberError);
+        return;
+      }
+
+      setMemberData(memberDetails);
+
+      // Calculate membership days left
+      const activeMembership = memberDetails.memberships?.find(m => m.status === 'active');
+      let daysLeft = 0;
+      let membershipPlan = "No Plan";
+      
+      if (activeMembership) {
+        const endDate = new Date(activeMembership.end_date);
+        const today = new Date();
+        daysLeft = Math.max(0, Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)));
+        membershipPlan = activeMembership.membership_plans?.name || "Unknown Plan";
+      }
+
+      // Fetch attendance data for streak and monthly count
+      const { data: attendanceData, error: attendanceError } = await supabase
+        .from("attendance")
+        .select("check_in_date")
+        .eq("member_id", member.id)
+        .order("check_in_date", { ascending: false })
+        .limit(100);
+
+      let streak = 0;
+      let thisMonthAttendance = 0;
+
+      if (!attendanceError && attendanceData) {
+        // Calculate streak
+        const today = new Date();
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        const sortedDates = attendanceData
+          .map(a => new Date(a.check_in_date))
+          .sort((a, b) => b - a);
+
+        // Check if attended today or yesterday to start streak
+        const latestAttendance = sortedDates[0];
+        if (latestAttendance && 
+            (latestAttendance.toDateString() === today.toDateString() || 
+             latestAttendance.toDateString() === yesterday.toDateString())) {
+          
+          let currentDate = latestAttendance;
+          let i = 0;
+          
+          while (i < sortedDates.length) {
+            const attendanceDate = sortedDates[i];
+            if (attendanceDate.toDateString() === currentDate.toDateString()) {
+              streak++;
+              currentDate = new Date(currentDate);
+              currentDate.setDate(currentDate.getDate() - 1);
+              i++;
+            } else if (attendanceDate < currentDate) {
+              break; // Gap in streak
+            } else {
+              i++;
+            }
+          }
+        }
+
+        // Calculate this month's attendance
+        const currentMonth = today.getMonth();
+        const currentYear = today.getFullYear();
+        
+        thisMonthAttendance = attendanceData.filter(a => {
+          const attendanceDate = new Date(a.check_in_date);
+          return attendanceDate.getMonth() === currentMonth && 
+                 attendanceDate.getFullYear() === currentYear;
+        }).length;
+      }
+
+      // Fetch today's workout if assigned
+      const today = new Date().toISOString().split('T')[0];
+      const { data: todayWorkoutData, error: workoutError } = await supabase
+        .from("member_workouts")
+        .select(`
+          workout_plans (
+            title
+          )
+        `)
+        .eq("member_id", member.id)
+        .eq("assigned_date", today)
+        .single();
+
+      let todayWorkout = "No workout assigned";
+      if (!workoutError && todayWorkoutData) {
+        todayWorkout = todayWorkoutData.workout_plans?.title || "Workout Plan";
+      }
+
+      // Update dashboard data
+      setDashboardData({
+        name: memberDetails.full_name.split(' ')[0], // First name only
+        membership: {
+          plan: membershipPlan,
+          daysLeft: daysLeft,
+          status: activeMembership ? activeMembership.status : "expired",
+        },
+        todayWorkout: todayWorkout,
+        streak: streak,
+        thisMonthAttendance: thisMonthAttendance,
+      });
+
+    } catch (err) {
+      console.error("Error fetching dashboard data:", err);
+    }
+    setLoading(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-24">
+        <Header title="Home" showBack={false} />
+        <div className="flex items-center justify-center mt-20">
+          <div className="text-gray-500">Loading dashboard...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
@@ -38,7 +203,7 @@ export default function CustomerDashboard() {
         {/* Welcome */}
         <div>
           <h2 className="text-xl font-bold text-gray-900">
-            Hey, {mockData.name}! 👋
+            Hey, {dashboardData.name}! 👋
           </h2>
           <p className="text-gray-500 text-sm">Let's crush your goals today</p>
         </div>
@@ -48,14 +213,21 @@ export default function CustomerDashboard() {
           <div className="flex items-center justify-between mb-3">
             <div>
               <p className="text-gray-300 text-sm">
-                {mockData.membership.plan} Plan
+                {dashboardData.membership.plan} Plan
               </p>
               <p className="text-2xl font-bold">
-                {mockData.membership.daysLeft} days left
+                {dashboardData.membership.daysLeft} days left
               </p>
             </div>
-            <span className="px-3 py-1 bg-green-500 rounded-full text-sm">
-              Active
+            <span className={`px-3 py-1 rounded-full text-sm ${
+              dashboardData.membership.status === 'active' 
+                ? 'bg-green-500' 
+                : dashboardData.membership.status === 'expired' 
+                ? 'bg-red-500' 
+                : 'bg-yellow-500'
+            }`}>
+              {dashboardData.membership.status === 'active' ? 'Active' :
+               dashboardData.membership.status === 'expired' ? 'Expired' : 'Inactive'}
             </span>
           </div>
           <button
@@ -74,7 +246,7 @@ export default function CustomerDashboard() {
               <span className="text-sm text-gray-500">Streak</span>
             </div>
             <p className="text-2xl font-bold text-gray-900">
-              {mockData.streak} days
+              {dashboardData.streak} days
             </p>
           </div>
           <div className="bg-white rounded-xl p-4 shadow-sm">
@@ -83,7 +255,7 @@ export default function CustomerDashboard() {
               <span className="text-sm text-gray-500">This Month</span>
             </div>
             <p className="text-2xl font-bold text-gray-900">
-              {mockData.thisMonthAttendance} days
+              {dashboardData.thisMonthAttendance} days
             </p>
           </div>
         </div>
@@ -97,7 +269,7 @@ export default function CustomerDashboard() {
             <div>
               <p className="text-blue-600 text-sm">Today's Workout</p>
               <p className="text-lg font-bold text-blue-900">
-                {mockData.todayWorkout}
+                {dashboardData.todayWorkout}
               </p>
             </div>
             <span className="text-3xl">💪</span>

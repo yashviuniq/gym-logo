@@ -46,14 +46,7 @@ export default function BottomNav({ role = "admin" }) {
           );
         })}
         {/* Test link for NotFound page */}
-        <Link
-          href="/not-found"
-          className="flex flex-col items-center py-2 px-3 rounded-lg transition-all text-gray-400 hover:text-gray-600"
-          title="Test 404 Page"
-        >
-          <span className="text-xl mb-1">🔍</span>
-          <span className="text-xs">404</span>
-        </Link>
+    
       </div>
     </nav>
   );

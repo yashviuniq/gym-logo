@@ -18,24 +18,51 @@ export default function LoginPage() {
 		setLoading(true);
 		setError(null);
 
-		const { data, error } = await supabase.auth.signInWithPassword({
-			email,
-			password,
-		});
+		try {
+			const { data, error } = await supabase.auth.signInWithPassword({
+				email,
+				password,
+			});
 
-		if (error) {
-			setError(error.message);
-			setLoading(false);
-			return;
-		}
+			if (error) {
+				setError(error.message);
+				setLoading(false);
+				return;
+			}
 
-		// Redirect based on role/userType
-		const user = data.user;
-		if (user?.role === "owner" || user?.role === "admin" || user?.role === "trainer") {
-			router.push("/admin/dashboard");
-		} else {
-			router.push("/user/dashboard");
+			// Check user type and redirect appropriately
+			const user = data.user;
+			
+			if (user.userType === "admin") {
+				// Store admin info for dashboard
+				localStorage.setItem("admin", JSON.stringify({
+					id: user.id,
+					name: user.name,
+					email: user.email,
+					phone: user.phone,
+					role: user.role
+				}));
+				router.push("/admin/dashboard");
+			} else if (user.userType === "member") {
+				// Store member info for customer dashboard  
+				localStorage.setItem("member", JSON.stringify({
+					id: user.id,
+					name: user.name,
+					email: user.email,
+					phone: user.phone,
+					gymId: user.gymId,
+					profileImage: user.profileImage
+				}));
+				router.push("/user/dashboard");
+			} else {
+				setError("Unknown user type");
+			}
+		} catch (err) {
+			console.error("Login error:", err);
+			setError("An error occurred during login");
 		}
+		
+		setLoading(false);
 	};
 
 	return (

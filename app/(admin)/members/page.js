@@ -1,68 +1,110 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
 import Card from "@/components/shared/Card";
-
-// Mock data - will replace with Supabase later
-const mockMembers = [
-  {
-    id: 1,
-    name: "John Doe",
-    phone: "9876543210",
-    plan: "Premium",
-    status: "active",
-    validTill: "2025-12-31",
-    dueAmount: 0,
-  },
-  {
-    id: 2,
-    name: "Jane Smith",
-    phone: "9876543211",
-    plan: "Basic",
-    status: "active",
-    validTill: "2025-06-15",
-    dueAmount: 500,
-  },
-  {
-    id: 3,
-    name: "Mike Johnson",
-    phone: "9876543212",
-    plan: "Premium",
-    status: "expired",
-    validTill: "2025-01-10",
-    dueAmount: 2000,
-  },
-  {
-    id: 4,
-    name: "Sarah Wilson",
-    phone: "9876543213",
-    plan: "Basic",
-    status: "active",
-    validTill: "2025-08-20",
-    dueAmount: 0,
-  },
-  {
-    id: 5,
-    name: "Tom Brown",
-    phone: "9876543214",
-    plan: "Premium",
-    status: "inactive",
-    validTill: "2024-12-01",
-    dueAmount: 3000,
-  },
-];
 
 export default function MembersPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [members, setMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedGym, setSelectedGym] = useState(null);
 
-  const filteredMembers = mockMembers.filter((member) => {
+  useEffect(() => {
+    // Get selected gym from localStorage
+    const storedGym = localStorage.getItem("selectedGym");
+    if (storedGym) {
+      const gym = JSON.parse(storedGym);
+      setSelectedGym(gym);
+      fetchMembers(gym.id);
+    } else {
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchMembers = async (gymId) => {
+    setLoading(true);
+    try {
+      // Fetch members with their active membership status and due amounts
+      const { data: membersData, error } = await supabase
+        .from("members")
+        .select(`
+          id,
+          full_name,
+          phone,
+          email,
+          balance,
+          created_at,
+          memberships (
+            id,
+            plan_id,
+            start_date,
+            end_date,
+            status,
+            membership_plans (
+              name,
+              price,
+              duration_days
+            )
+          )
+        `)
+        .eq("gym_id", gymId)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching members:", error);
+        setMembers([]);
+      } else {
+        // Transform the data to match our component structure
+        const transformedMembers = membersData?.map((member) => {
+          const activeMembership = member.memberships?.find(
+            (m) => m.status === "active"
+          ) || member.memberships?.[0];
+
+          // Calculate membership status based on end_date
+          let memberStatus = "inactive";
+          if (activeMembership) {
+            const endDate = new Date(activeMembership.end_date);
+            const today = new Date();
+            if (endDate > today && activeMembership.status === "active") {
+              memberStatus = "active";
+            } else if (endDate <= today) {
+              memberStatus = "expired";
+            }
+          }
+
+          return {
+            id: member.id,
+            name: member.full_name,
+            phone: member.phone,
+            email: member.email,
+            plan: activeMembership?.membership_plans?.name || "No Plan",
+            status: memberStatus,
+            validTill: activeMembership?.end_date
+              ? new Date(activeMembership.end_date).toLocaleDateString("en-IN")
+              : "N/A",
+            dueAmount: Math.max(0, member.balance || 0), // Positive balance means member owes money
+          };
+        }) || [];
+
+        setMembers(transformedMembers);
+      }
+    } catch (err) {
+      console.error("Error:", err);
+      setMembers([]);
+    }
+    setLoading(false);
+  };
+
+  const filteredMembers = members.filter((member) => {
     const matchesSearch =
       member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      member.phone.includes(searchQuery);
+      member.phone.includes(searchQuery) ||
+      (member.email && member.email.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesFilter =
       filterStatus === "all" || member.status === filterStatus;
     return matchesSearch && matchesFilter;
@@ -81,6 +123,41 @@ export default function MembersPage() {
     }
   };
 
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-page pb-24">
+        <Header title="Members" showBack={false} />
+        <main className="px-4 py-4">
+          <div className="flex items-center justify-center py-12">
+            <div className="w-8 h-8 border-4 border-[#F97316] border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Show message if no gym selected
+  if (!selectedGym) {
+    return (
+      <div className="min-h-screen bg-page pb-24">
+        <Header title="Members" showBack={false} />
+        <main className="px-4 py-4">
+          <div className="text-center py-12">
+            <span className="text-4xl">🏢</span>
+            <p className="text-gray-500 mt-2">Please select a gym first</p>
+            <button
+              onClick={() => router.push("/admin/dashboard")}
+              className="mt-4 px-6 py-2 bg-[#F97316] text-white rounded-lg"
+            >
+              Go to Dashboard
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-page pb-24">
       <Header title="Members" showBack={false} />
@@ -90,20 +167,18 @@ export default function MembersPage() {
         <div className="grid grid-cols-3 gap-3 mb-4">
           <Card padding="sm" className="text-center">
             <p className="text-2xl font-bold text-gray-900">
-              {mockMembers.length}
+              {members.length}
             </p>
             <p className="text-xs text-gray-600 font-medium">Total</p>
           </Card>
           <Card padding="sm" className="text-center">
             <p className="text-2xl font-bold text-green-600">
-              {mockMembers.filter((m) => m.status === "active").length}
-            </p>
+              {members.filter((m) => m.status === "active").length}</p>
             <p className="text-xs text-gray-600 font-medium">Active</p>
           </Card>
           <Card padding="sm" className="text-center">
             <p className="text-2xl font-bold text-red-600">
-              {mockMembers.filter((m) => m.dueAmount > 0).length}
-            </p>
+              {members.filter((m) => m.dueAmount > 0).length}</p>
             <p className="text-xs text-gray-600 font-medium">Dues</p>
           </Card>
         </div>

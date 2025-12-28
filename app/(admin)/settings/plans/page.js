@@ -1,71 +1,135 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
-
-const mockPlans = [
-  {
-    id: 1,
-    name: "Monthly",
-    duration: 30,
-    price: 1500,
-    active: true,
-    members: 120,
-    freezeAllowed: false,
-  },
-  {
-    id: 2,
-    name: "Quarterly",
-    duration: 90,
-    price: 4000,
-    active: true,
-    members: 85,
-    freezeAllowed: true,
-    freezeDays: 7,
-  },
-  {
-    id: 3,
-    name: "Half-Yearly",
-    duration: 180,
-    price: 7500,
-    active: true,
-    members: 35,
-    freezeAllowed: true,
-    freezeDays: 14,
-  },
-  {
-    id: 4,
-    name: "Annual",
-    duration: 365,
-    price: 12000,
-    active: true,
-    members: 16,
-    freezeAllowed: true,
-    freezeDays: 30,
-  },
-  {
-    id: 5,
-    name: "Trial",
-    duration: 7,
-    price: 500,
-    active: false,
-    members: 0,
-    freezeAllowed: false,
-  },
-];
+import supabase from "@/lib/supabaseClient";
 
 export default function PlansSettingsPage() {
   const router = useRouter();
-  const [plans, setPlans] = useState(mockPlans);
+  const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingPlan, setEditingPlan] = useState(null);
+  const [gymId, setGymId] = useState(null);
 
-  const togglePlanStatus = (id) => {
-    setPlans((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, active: !p.active } : p))
-    );
+  useEffect(() => {
+    fetchPlans();
+  }, []);
+
+  const fetchPlans = async () => {
+    try {
+      setLoading(true);
+      
+      // Get current gym (you can replace this with your auth logic)
+      const storedGymId = localStorage.getItem("gymId");
+      if (!storedGymId) {
+        console.error("No gym ID found");
+        return;
+      }
+      setGymId(storedGymId);
+
+      // Fetch membership plans
+      const { data: plansData, error: plansError } = await supabase
+        .from("membership_plans")
+        .select("*")
+        .eq("gym_id", storedGymId)
+        .order("duration_days", { ascending: true });
+
+      if (plansError) throw plansError;
+
+      // Fetch member count for each plan
+      const { data: membershipsData, error: membershipsError } = await supabase
+        .from("memberships")
+        .select("plan_id")
+        .eq("gym_id", storedGymId)
+        .eq("status", "active");
+
+      if (membershipsError) throw membershipsError;
+
+      // Count members per plan
+      const memberCounts = membershipsData.reduce((acc, m) => {
+        acc[m.plan_id] = (acc[m.plan_id] || 0) + 1;
+        return acc;
+      }, {});
+
+      // Combine plans with member counts
+      const plansWithCounts = plansData.map((plan) => ({
+        id: plan.id,
+        name: plan.name,
+        duration: plan.duration_days,
+        price: parseFloat(plan.price),
+        active: plan.is_active,
+        members: memberCounts[plan.id] || 0,
+        created_at: plan.created_at,
+      }));
+
+      setPlans(plansWithCounts);
+    } catch (error) {
+      console.error("Error fetching plans:", error);
+      alert("Failed to load plans");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const togglePlanStatus = async (id) => {
+    try {
+      const plan = plans.find((p) => p.id === id);
+      const newStatus = !plan.active;
+
+      const { error } = await supabase
+        .from("membership_plans")
+        .update({ is_active: newStatus })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setPlans((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, active: newStatus } : p))
+      );
+    } catch (error) {
+      console.error("Error toggling plan status:", error);
+      alert("Failed to update plan status");
+    }
+  };
+
+  const handleDeletePlan = async (id) => {
+    const plan = plans.find((p) => p.id === id);
+    if (plan.members > 0) {
+      alert("Cannot delete a plan with active members");
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete "${plan.name}"?`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("membership_plans")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setPlans((prev) => prev.filter((p) => p.id !== id));
+    } catch (error) {
+      console.error("Error deleting plan:", error);
+      alert("Failed to delete plan");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-24">
+        <Header title="Membership Plans" />
+        <div className="flex items-center justify-center h-96">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
@@ -137,20 +201,23 @@ export default function PlansSettingsPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="text-xs text-gray-500">
-                    {plan.freezeAllowed ? (
-                      <span className="text-blue-600">
-                        ❄️ Freeze: {plan.freezeDays} days allowed
-                      </span>
-                    ) : (
-                      <span>No freeze option</span>
-                    )}
+                    Created {new Date(plan.created_at).toLocaleDateString()}
                   </div>
-                  <button
-                    onClick={() => setEditingPlan(plan)}
-                    className="text-sm text-blue-600"
-                  >
-                    Edit
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setEditingPlan(plan)}
+                      className="text-sm text-blue-600"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeletePlan(plan.id)}
+                      className="text-sm text-red-600"
+                      disabled={plan.members > 0}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -162,21 +229,13 @@ export default function PlansSettingsPage() {
       {(showAddModal || editingPlan) && (
         <PlanModal
           plan={editingPlan}
+          gymId={gymId}
           onClose={() => {
             setShowAddModal(false);
             setEditingPlan(null);
           }}
-          onSave={(plan) => {
-            if (editingPlan) {
-              setPlans((prev) =>
-                prev.map((p) => (p.id === plan.id ? plan : p))
-              );
-            } else {
-              setPlans((prev) => [
-                ...prev,
-                { ...plan, id: Date.now(), members: 0 },
-              ]);
-            }
+          onSave={() => {
+            fetchPlans();
             setShowAddModal(false);
             setEditingPlan(null);
           }}
@@ -187,23 +246,66 @@ export default function PlansSettingsPage() {
 }
 
 // Plan Modal Component
-function PlanModal({ plan, onClose, onSave }) {
+function PlanModal({ plan, gymId, onClose, onSave }) {
   const [formData, setFormData] = useState({
     name: plan?.name || "",
     duration: plan?.duration || "",
     price: plan?.price || "",
     active: plan?.active ?? true,
-    freezeAllowed: plan?.freezeAllowed || false,
-    freezeDays: plan?.freezeDays || 0,
   });
+  const [saving, setSaving] = useState(false);
 
   const updateForm = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSave({ ...plan, ...formData });
+    
+    if (!formData.name || !formData.duration || !formData.price) {
+      alert("Please fill all required fields");
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      if (plan) {
+        // Update existing plan
+        const { error } = await supabase
+          .from("membership_plans")
+          .update({
+            name: formData.name,
+            duration_days: parseInt(formData.duration),
+            price: parseFloat(formData.price),
+            is_active: formData.active,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", plan.id);
+
+        if (error) throw error;
+      } else {
+        // Create new plan
+        const { error } = await supabase
+          .from("membership_plans")
+          .insert({
+            gym_id: gymId,
+            name: formData.name,
+            duration_days: parseInt(formData.duration),
+            price: parseFloat(formData.price),
+            is_active: formData.active,
+          });
+
+        if (error) throw error;
+      }
+
+      onSave();
+    } catch (error) {
+      console.error("Error saving plan:", error);
+      alert("Failed to save plan: " + error.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -264,47 +366,8 @@ function PlanModal({ plan, onClose, onSave }) {
             </div>
           </div>
 
-          {/* Freeze Options */}
-          <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="font-medium text-gray-900">Allow Freeze</span>
-              <button
-                type="button"
-                onClick={() =>
-                  updateForm("freezeAllowed", !formData.freezeAllowed)
-                }
-                className={`w-12 h-6 rounded-full transition ${
-                  formData.freezeAllowed ? "bg-blue-500" : "bg-gray-300"
-                }`}
-              >
-                <div
-                  className={`w-5 h-5 bg-white rounded-full shadow transition transform ${
-                    formData.freezeAllowed ? "translate-x-6" : "translate-x-1"
-                  }`}
-                ></div>
-              </button>
-            </div>
-
-            {formData.freezeAllowed && (
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">
-                  Max Freeze Days
-                </label>
-                <input
-                  type="number"
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg outline-none"
-                  placeholder="7"
-                  value={formData.freezeDays}
-                  onChange={(e) =>
-                    updateForm("freezeDays", parseInt(e.target.value))
-                  }
-                />
-              </div>
-            )}
-          </div>
-
           {/* Status */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between bg-gray-50 rounded-xl p-4">
             <span className="font-medium text-gray-900">Active Status</span>
             <button
               type="button"
@@ -326,14 +389,16 @@ function PlanModal({ plan, onClose, onSave }) {
               type="button"
               onClick={onClose}
               className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium"
+              disabled={saving}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 py-3 bg-black text-white rounded-xl font-medium"
+              className="flex-1 py-3 bg-black text-white rounded-xl font-medium disabled:bg-gray-400"
+              disabled={saving}
             >
-              {plan ? "Save Changes" : "Create Plan"}
+              {saving ? "Saving..." : plan ? "Save Changes" : "Create Plan"}
             </button>
           </div>
         </form>

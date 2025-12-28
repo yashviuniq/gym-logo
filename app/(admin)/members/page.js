@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
 import Card from "@/components/shared/Card";
+import RenewMembershipModal from "@/components/shared/RenewMembershipModal";
 
 export default function MembersPage() {
   const router = useRouter();
@@ -13,6 +14,8 @@ export default function MembersPage() {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedGym, setSelectedGym] = useState(null);
+  const [showRenewModal, setShowRenewModal] = useState(false);
+  const [selectedMember, setSelectedMember] = useState(null);
 
   useEffect(() => {
     // Get selected gym from localStorage
@@ -38,6 +41,7 @@ export default function MembersPage() {
           phone,
           email,
           balance,
+          gym_id,
           created_at,
           memberships (
             id,
@@ -59,6 +63,15 @@ export default function MembersPage() {
         console.error("Error fetching members:", error);
         setMembers([]);
       } else {
+        // Fetch credentials for all members
+        const memberIds = membersData?.map(m => m.id) || [];
+        const { data: credentialsData } = await supabase
+          .from("member_credentials")
+          .select("member_id")
+          .in("member_id", memberIds);
+
+        const membersWithCredentials = new Set(credentialsData?.map(c => c.member_id) || []);
+
         // Transform the data to match our component structure
         const transformedMembers = membersData?.map((member) => {
           const activeMembership = member.memberships?.find(
@@ -79,6 +92,7 @@ export default function MembersPage() {
 
           return {
             id: member.id,
+            gymId: member.gym_id,
             name: member.full_name,
             phone: member.phone,
             email: member.email,
@@ -88,6 +102,8 @@ export default function MembersPage() {
               ? new Date(activeMembership.end_date).toLocaleDateString("en-IN")
               : "N/A",
             dueAmount: Math.max(0, member.balance || 0), // Positive balance means member owes money
+            balance: member.balance || 0,
+            hasCredentials: membersWithCredentials.has(member.id),
           };
         }) || [];
 
@@ -121,6 +137,22 @@ export default function MembersPage() {
       default:
         return "bg-gray-100 text-gray-700";
     }
+  };
+
+  const handleRenewClick = (e, member) => {
+    e.stopPropagation(); // Prevent navigating to member detail
+    setSelectedMember(member);
+    setShowRenewModal(true);
+  };
+
+  const handleRenewal = (renewalData) => {
+    setShowRenewModal(false);
+    setSelectedMember(null);
+    // Refresh members list
+    if (selectedGym) {
+      fetchMembers(selectedGym.id);
+    }
+    alert("Membership renewed successfully!");
   };
 
   // Show loading state
@@ -233,13 +265,18 @@ export default function MembersPage() {
                     <h3 className="font-semibold text-gray-900 truncate">
                       {member.name}
                     </h3>
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                        member.status
-                      )}`}
-                    >
-                      {member.status}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {member.hasCredentials && (
+                        <span className="text-green-600 text-sm">🔐</span>
+                      )}
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                          member.status
+                        )}`}
+                      >
+                        {member.status}
+                      </span>
+                    </div>
                   </div>
                   <p className="text-sm text-gray-500">{member.phone}</p>
                   <div className="flex items-center justify-between mt-1">
@@ -253,6 +290,26 @@ export default function MembersPage() {
                     )}
                   </div>
                 </div>
+              </div>
+              {/* Action Buttons */}
+              <div className="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    router.push(`/members/${member.id}/credentials`);
+                  }}
+                  className="px-3 py-2 bg-blue-100 text-blue-700 text-xs font-medium rounded-lg hover:bg-blue-200 transition flex items-center gap-1"
+                >
+                  🔐 {member.hasCredentials ? "View" : "Create"}
+                </button>
+                {member.status === "expired" && (
+                  <button
+                    onClick={(e) => handleRenewClick(e, member)}
+                    className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-sm font-medium rounded-lg hover:shadow-md transition flex items-center gap-1"
+                  >
+                    <span>🔄</span> Renew
+                  </button>
+                )}
               </div>
             </Card>
           ))}
@@ -273,6 +330,19 @@ export default function MembersPage() {
       >
         +
       </button>
+
+      {/* Renew Membership Modal */}
+      {showRenewModal && selectedMember && (
+        <RenewMembershipModal
+          member={selectedMember}
+          gymId={selectedGym?.id}
+          onClose={() => {
+            setShowRenewModal(false);
+            setSelectedMember(null);
+          }}
+          onRenew={handleRenewal}
+        />
+      )}
     </div>
   );
 }

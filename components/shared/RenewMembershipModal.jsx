@@ -1,15 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabaseClient";
 
-const membershipPlans = [
-    { id: 1, name: "Basic", duration: 30, price: 1000 },
-    { id: 2, name: "Standard", duration: 90, price: 2500 },
-    { id: 3, name: "Premium", duration: 180, price: 4500 },
-    { id: 4, name: "Annual", duration: 365, price: 8000 },
-];
-
-export default function RenewMembershipModal({ member, onClose, onRenew }) {
+export default function RenewMembershipModal({ member, gymId, onClose, onRenew }) {
+    const [membershipPlans, setMembershipPlans] = useState([]);
     const [selectedPlan, setSelectedPlan] = useState(null);
     const [customPrice, setCustomPrice] = useState("");
     const [useCustomPrice, setUseCustomPrice] = useState(false);
@@ -17,59 +12,188 @@ export default function RenewMembershipModal({ member, onClose, onRenew }) {
     const [paymentAmount, setPaymentAmount] = useState("");
     const [notes, setNotes] = useState("");
     const [loading, setLoading] = useState(false);
+    const [loadingPlans, setLoadingPlans] = useState(true);
+    const [useCustomStartDate, setUseCustomStartDate] = useState(false);
+    const [customStartDate, setCustomStartDate] = useState(new Date().toISOString().split("T")[0]);
+
+    // Fetch membership plans from database
+    useEffect(() => {
+        const fetchPlans = async () => {
+            try {
+                const targetGymId = gymId || member.gymId;
+                if (!targetGymId) {
+                    console.error("No gym ID available");
+                    setLoadingPlans(false);
+                    return;
+                }
+
+                const { data, error } = await supabase
+                    .from("membership_plans")
+                    .select("id, name, duration_days, price")
+                    .eq("gym_id", targetGymId)
+                    .eq("is_active", true)
+                    .order("price", { ascending: true });
+
+                if (error) {
+                    console.error("Error fetching plans:", error);
+                } else {
+                    setMembershipPlans(data || []);
+                }
+            } catch (err) {
+                console.error("Error:", err);
+            }
+            setLoadingPlans(false);
+        };
+
+        fetchPlans();
+    }, [gymId, member.gymId]);
 
     const plan = membershipPlans.find((p) => p.id === selectedPlan);
     const finalPrice = useCustomPrice && customPrice ? parseFloat(customPrice) : plan?.price || 0;
 
     const calculateNewEndDate = () => {
         if (!plan) return null;
-        const currentEndDate = new Date(member.validTill);
-        const newEndDate = new Date(currentEndDate);
-        newEndDate.setDate(newEndDate.getDate() + plan.duration);
+        
+        let startDate;
+        if (useCustomStartDate && customStartDate) {
+            // Use custom start date
+            startDate = new Date(customStartDate);
+        } else {
+            // Use current end date or today's date if expired
+            const baseDate = member.validTill && member.validTill !== "N/A" 
+                ? new Date(member.validTill.split('/').reverse().join('-')) 
+                : new Date();
+            const today = new Date();
+            // If membership expired, start from today
+            startDate = baseDate < today ? today : baseDate;
+        }
+        
+        const newEndDate = new Date(startDate);
+        newEndDate.setDate(newEndDate.getDate() + plan.duration_days);
         return newEndDate.toISOString().split("T")[0];
+    };
+
+    const getStartDate = () => {
+        if (useCustomStartDate && customStartDate) {
+            return customStartDate;
+        }
+        
+        const baseDate = member.validTill && member.validTill !== "N/A" 
+            ? new Date(member.validTill.split('/').reverse().join('-')) 
+            : new Date();
+        const today = new Date();
+        const startDate = baseDate < today ? today : baseDate;
+        return startDate.toISOString().split("T")[0];
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
 
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        try {
+            const targetGymId = gymId || member.gymId;
+            const newEndDate = calculateNewEndDate();
+            const startDate = getStartDate();
 
-        const renewalData = {
-            planId: selectedPlan,
-            planName: plan.name,
-            duration: plan.duration,
-            price: finalPrice,
-            paymentAmount: parseFloat(paymentAmount),
-            paymentMode,
-            notes,
-            newEndDate: calculateNewEndDate(),
-            renewedAt: new Date().toISOString(),
-        };
+            // 1. Create new membership record
+            const { data: membership, error: membershipError } = await supabase
+                .from("memberships")
+                .insert({
+                    member_id: member.id,
+                    gym_id: targetGymId,
+                    plan_id: selectedPlan,
+                    start_date: startDate,
+                    end_date: newEndDate,
+                    status: "active"
+                })
+                .select()
+                .single();
 
-        onRenew(renewalData);
+            if (membershipError) {
+                console.error("Error creating membership:", membershipError);
+                alert("Failed to renew membership. Please try again.");
+                setLoading(false);
+                return;
+            }
+
+            // 2. Update any previous active memberships to expired
+            await supabase
+                .from("memberships")
+                .update({ status: "expired" })
+                .eq("member_id", member.id)
+                .neq("id", membership.id)
+                .eq("status", "active");
+
+            // 3. Create payment record
+            const paymentAmountNum = parseFloat(paymentAmount) || 0;
+            if (paymentAmountNum > 0) {
+                const { error: paymentError } = await supabase
+                    .from("payments")
+                    .insert({
+                        gym_id: targetGymId,
+                        member_id: member.id,
+                        membership_id: membership.id,
+                        amount: paymentAmountNum,
+                        payment_mode: paymentMode,
+                        status: "paid",
+                        paid_at: new Date().toISOString()
+                    });
+
+                if (paymentError) {
+                    console.error("Error creating payment:", paymentError);
+                }
+            }
+
+            // 4. Update member balance (add due amount if partial payment)
+            const dueAmount = finalPrice - paymentAmountNum;
+            const currentBalance = member.balance || member.dueAmount || 0;
+            const newBalance = currentBalance + dueAmount;
+
+            await supabase
+                .from("members")
+                .update({ balance: newBalance })
+                .eq("id", member.id);
+
+            const renewalData = {
+                planId: selectedPlan,
+                planName: plan.name,
+                duration: plan.duration_days,
+                price: finalPrice,
+                paymentAmount: paymentAmountNum,
+                paymentMode,
+                notes,
+                newEndDate,
+                renewedAt: new Date().toISOString(),
+            };
+
+            onRenew(renewalData);
+        } catch (err) {
+            console.error("Error during renewal:", err);
+            alert("An error occurred. Please try again.");
+        }
+        
         setLoading(false);
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end">
-            <div className="bg-white w-full rounded-t-3xl max-h-[90vh] overflow-y-auto">
-                <div className="sticky top-0 bg-white border-b border-gray-100 p-4 z-10">
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-semibold text-gray-900">
-                            Renew Membership
-                        </h3>
-                        <button
-                            onClick={onClose}
-                            className="p-2 hover:bg-gray-100 rounded-full transition"
-                        >
-                            ✕
-                        </button>
-                    </div>
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4" style={{ paddingBottom: '80px' }}>
+            <div className="bg-white w-full max-w-md rounded-2xl shadow-xl flex flex-col" style={{ maxHeight: 'calc(100vh - 120px)' }}>
+                {/* Header */}
+                <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                        Renew Membership
+                    </h3>
+                    <button
+                        onClick={onClose}
+                        type="button"
+                        className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full transition text-gray-500"
+                    >
+                        ✕
+                    </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-4 space-y-4">
+                {/* Scrollable Content */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ minHeight: 0 }}>
                     {/* Member Info */}
                     <div className="bg-gradient-to-r from-orange-50 to-orange-100 rounded-xl p-4">
                         <div className="flex items-center gap-3 mb-3">
@@ -98,78 +222,100 @@ export default function RenewMembershipModal({ member, onClose, onRenew }) {
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             Select Renewal Plan *
                         </label>
-                        <div className="space-y-2">
-                            {membershipPlans.map((p) => (
-                                <div
-                                    key={p.id}
-                                    onClick={() => {
-                                        setSelectedPlan(p.id);
-                                        setCustomPrice(p.price.toString());
-                                    }}
-                                    className={`p-4 rounded-xl border-2 cursor-pointer transition ${selectedPlan === p.id
-                                            ? "border-[#F97316] bg-orange-50"
-                                            : "border-gray-200 hover:border-gray-300"
-                                        }`}
-                                >
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="font-semibold text-gray-900">{p.name}</p>
-                                            <p className="text-sm text-gray-500">{p.duration} days</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-xl font-bold text-gray-900">₹{p.price}</p>
+                        {loadingPlans ? (
+                            <div className="flex items-center justify-center py-8">
+                                <div className="w-6 h-6 border-3 border-[#F97316] border-t-transparent rounded-full animate-spin"></div>
+                            </div>
+                        ) : membershipPlans.length === 0 ? (
+                            <div className="text-center py-6 text-gray-500">
+                                <p>No membership plans available.</p>
+                                <p className="text-sm">Please add plans in Settings.</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                {membershipPlans.map((p) => (
+                                    <div
+                                        key={p.id}
+                                        onClick={() => {
+                                            setSelectedPlan(p.id);
+                                            setCustomPrice(p.price.toString());
+                                        }}
+                                        className={`p-3 rounded-xl border-2 cursor-pointer transition ${selectedPlan === p.id
+                                                ? "border-[#F97316] bg-orange-50"
+                                                : "border-gray-200 hover:border-gray-300"
+                                            }`}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="font-semibold text-gray-900">{p.name}</p>
+                                                <p className="text-sm text-gray-500">{p.duration_days} days</p>
+                                            </div>
+                                            <p className="text-lg font-bold text-gray-900">₹{p.price}</p>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     {/* New End Date Preview */}
                     {selectedPlan && (
-                        <div className="bg-blue-50 rounded-xl p-4">
+                        <div className="bg-blue-50 rounded-xl p-3">
                             <p className="text-sm text-blue-600 mb-1">New Validity Period</p>
                             <p className="font-semibold text-blue-900">
-                                {member.validTill} → {calculateNewEndDate()}
+                                {useCustomStartDate ? new Date(customStartDate).toLocaleDateString("en-IN") : member.validTill} → {calculateNewEndDate() ? new Date(calculateNewEndDate()).toLocaleDateString("en-IN") : ""}
                             </p>
                             <p className="text-xs text-blue-600 mt-1">
-                                +{plan.duration} days extension
+                                +{plan.duration_days} days extension
                             </p>
+                        </div>
+                    )}
+
+                    {/* Manual Date Selection */}
+                    {selectedPlan && (
+                        <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+                            <div className="flex items-center justify-between">
+                                <span className="font-medium text-gray-900 text-sm">Custom Start Date</span>
+                                <button
+                                    type="button"
+                                    onClick={() => setUseCustomStartDate(!useCustomStartDate)}
+                                    className={`w-10 h-5 rounded-full transition ${useCustomStartDate ? "bg-[#F97316]" : "bg-gray-300"}`}
+                                >
+                                    <div className={`w-4 h-4 bg-white rounded-full shadow transition transform ${useCustomStartDate ? "translate-x-5" : "translate-x-0.5"}`}></div>
+                                </button>
+                            </div>
+                            {useCustomStartDate && (
+                                <input
+                                    type="date"
+                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] outline-none text-sm"
+                                    value={customStartDate}
+                                    onChange={(e) => setCustomStartDate(e.target.value)}
+                                />
+                            )}
                         </div>
                     )}
 
                     {/* Custom Price Option */}
                     {selectedPlan && (
-                        <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                        <div className="bg-gray-50 rounded-xl p-3 space-y-2">
                             <div className="flex items-center justify-between">
-                                <span className="font-medium text-gray-900">Custom Price</span>
+                                <span className="font-medium text-gray-900 text-sm">Custom Price</span>
                                 <button
                                     type="button"
                                     onClick={() => setUseCustomPrice(!useCustomPrice)}
-                                    className={`w-12 h-6 rounded-full transition ${useCustomPrice ? "bg-[#F97316]" : "bg-gray-300"
-                                        }`}
+                                    className={`w-10 h-5 rounded-full transition ${useCustomPrice ? "bg-[#F97316]" : "bg-gray-300"}`}
                                 >
-                                    <div
-                                        className={`w-5 h-5 bg-white rounded-full shadow transition transform ${useCustomPrice ? "translate-x-6" : "translate-x-1"
-                                            }`}
-                                    ></div>
+                                    <div className={`w-4 h-4 bg-white rounded-full shadow transition transform ${useCustomPrice ? "translate-x-5" : "translate-x-0.5"}`}></div>
                                 </button>
                             </div>
-
                             {useCustomPrice && (
-                                <div>
-                                    <label className="block text-sm text-gray-600 mb-1">
-                                        Enter Custom Price (₹)
-                                    </label>
-                                    <input
-                                        type="number"
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#F97316] outline-none"
-                                        placeholder="Enter custom price"
-                                        value={customPrice}
-                                        onChange={(e) => setCustomPrice(e.target.value)}
-                                        required={useCustomPrice}
-                                    />
-                                </div>
+                                <input
+                                    type="number"
+                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] outline-none text-sm"
+                                    placeholder="Enter custom price"
+                                    value={customPrice}
+                                    onChange={(e) => setCustomPrice(e.target.value)}
+                                />
                             )}
                         </div>
                     )}
@@ -183,7 +329,7 @@ export default function RenewMembershipModal({ member, onClose, onRenew }) {
                                 </label>
                                 <input
                                     type="number"
-                                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#F97316] outline-none text-lg font-semibold"
+                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] outline-none text-lg font-semibold"
                                     placeholder="₹ 0"
                                     value={paymentAmount}
                                     onChange={(e) => setPaymentAmount(e.target.value)}
@@ -206,7 +352,7 @@ export default function RenewMembershipModal({ member, onClose, onRenew }) {
                                             key={mode}
                                             type="button"
                                             onClick={() => setPaymentMode(mode)}
-                                            className={`py-2 rounded-lg text-sm font-medium capitalize transition ${paymentMode === mode
+                                            className={`py-2 rounded-lg text-xs font-medium capitalize transition ${paymentMode === mode
                                                     ? "btn-gradient-orange text-white"
                                                     : "bg-gray-100 text-gray-600"
                                                 }`}
@@ -222,7 +368,7 @@ export default function RenewMembershipModal({ member, onClose, onRenew }) {
                                     Notes (Optional)
                                 </label>
                                 <textarea
-                                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#F97316] outline-none resize-none"
+                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] outline-none resize-none text-sm"
                                     rows={2}
                                     placeholder="Renewal notes..."
                                     value={notes}
@@ -234,7 +380,7 @@ export default function RenewMembershipModal({ member, onClose, onRenew }) {
 
                     {/* Summary */}
                     {selectedPlan && paymentAmount && (
-                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4">
+                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-3">
                             <p className="text-sm text-green-600 mb-2">Renewal Summary</p>
                             <div className="space-y-1 text-sm">
                                 <div className="flex justify-between">
@@ -245,37 +391,50 @@ export default function RenewMembershipModal({ member, onClose, onRenew }) {
                                     <span className="text-gray-600">Amount Paid:</span>
                                     <span className="font-medium">₹{paymentAmount}</span>
                                 </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">Current Due:</span>
+                                    <span className="font-medium text-orange-600">₹{finalPrice - parseFloat(paymentAmount)}</span>
+                                </div>
+                                {(member.dueAmount > 0 || member.balance > 0) && (
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-600">Previous Balance:</span>
+                                        <span className="font-medium text-orange-600">₹{member.dueAmount || member.balance || 0}</span>
+                                    </div>
+                                )}
                                 <div className="flex justify-between pt-2 border-t border-green-200">
-                                    <span className="font-semibold text-gray-900">Balance:</span>
-                                    <span className={`font-bold ${finalPrice - parseFloat(paymentAmount) > 0
+                                    <span className="font-semibold text-gray-900">Total Balance:</span>
+                                    <span className={`font-bold ${(finalPrice - parseFloat(paymentAmount) + (member.dueAmount || member.balance || 0)) > 0
                                             ? "text-red-600"
                                             : "text-green-600"
                                         }`}>
-                                        ₹{finalPrice - parseFloat(paymentAmount)}
+                                        ₹{finalPrice - parseFloat(paymentAmount) + (member.dueAmount || member.balance || 0)}
                                     </span>
                                 </div>
                             </div>
                         </div>
                     )}
+                </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex gap-3 pt-4">
+                {/* Footer with Action Buttons - Always Visible */}
+                <div className="border-t-2 border-gray-200 p-4 bg-white rounded-b-2xl flex-shrink-0">
+                    <div className="flex gap-3">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition"
+                            className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-300 transition"
                         >
                             Cancel
                         </button>
                         <button
-                            type="submit"
+                            type="button"
+                            onClick={handleSubmit}
                             disabled={!selectedPlan || !paymentAmount || loading}
-                            className="flex-1 py-3 btn-gradient-orange text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 py-3 bg-[#F97316] text-white rounded-xl font-semibold hover:bg-[#ea6c10] transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                         >
-                            {loading ? "Processing..." : "Renew Membership"}
+                            {loading ? "Processing..." : "✓ Renew"}
                         </button>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
     );

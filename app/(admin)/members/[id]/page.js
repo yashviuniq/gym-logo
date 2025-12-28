@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Header from "@/components/layout/Header";
+import RenewMembershipModal from "@/components/shared/RenewMembershipModal";
+import RenewalHistoryModal from "@/components/shared/RenewalHistoryModal";
 
 // Mock data
 const mockMember = {
@@ -42,12 +44,37 @@ const mockMember = {
       status: "paid",
     },
   ],
+  renewalHistory: [
+    {
+      planName: "Premium",
+      duration: 180,
+      price: 2500,
+      paymentAmount: 2500,
+      paymentMode: "upi",
+      notes: "Renewed for 6 months",
+      newEndDate: "2025-12-31",
+      renewedAt: "2025-07-01T10:00:00Z",
+    },
+    {
+      planName: "Premium",
+      duration: 180,
+      price: 2500,
+      paymentAmount: 2000,
+      paymentMode: "cash",
+      notes: "Partial payment",
+      newEndDate: "2025-06-30",
+      renewedAt: "2025-01-01T10:00:00Z",
+    },
+  ],
 };
 
 export default function MemberDetailPage() {
   const router = useRouter();
   const params = useParams();
   const [activeTab, setActiveTab] = useState("overview");
+  const [showRenewModal, setShowRenewModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [renewalHistory, setRenewalHistory] = useState(mockMember.renewalHistory);
 
   const member = mockMember; // Replace with actual fetch
 
@@ -60,6 +87,14 @@ export default function MemberDetailPage() {
       default:
         return "bg-gray-100 text-gray-700";
     }
+  };
+
+  const handleRenewal = (renewalData) => {
+    // Add new renewal to history
+    setRenewalHistory((prev) => [renewalData, ...prev]);
+    setShowRenewModal(false);
+    // In real app, this would update the backend
+    alert("Membership renewed successfully!");
   };
 
   return (
@@ -105,9 +140,8 @@ export default function MemberDetailPage() {
             </div>
             <div className="text-center">
               <p
-                className={`text-lg font-bold ${
-                  member.dueAmount > 0 ? "text-red-500" : "text-green-500"
-                }`}
+                className={`text-lg font-bold ${member.dueAmount > 0 ? "text-red-500" : "text-green-500"
+                  }`}
               >
                 ₹{member.dueAmount}
               </p>
@@ -117,7 +151,7 @@ export default function MemberDetailPage() {
         </div>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-4 gap-3 mb-4">
+        <div className="grid grid-cols-3 gap-3 mb-4">
           {[
             {
               label: "Call",
@@ -134,11 +168,6 @@ export default function MemberDetailPage() {
               icon: "💳",
               action: () => router.push(`/members/${member.id}/payment`),
             },
-            {
-              label: "Edit",
-              icon: "✏️",
-              action: () => router.push(`/members/${member.id}/edit`),
-            },
           ].map((btn, index) => (
             <button
               key={index}
@@ -151,17 +180,41 @@ export default function MemberDetailPage() {
           ))}
         </div>
 
+        {/* Membership Actions */}
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <button
+            onClick={() => setShowRenewModal(true)}
+            className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl p-3 shadow-sm flex flex-col items-center gap-1 hover:shadow-md transition"
+          >
+            <span className="text-xl">🔄</span>
+            <span className="text-xs font-medium">Renew</span>
+          </button>
+          <button
+            onClick={() => setShowHistoryModal(true)}
+            className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl p-3 shadow-sm flex flex-col items-center gap-1 hover:shadow-md transition"
+          >
+            <span className="text-xl">📜</span>
+            <span className="text-xs font-medium">History</span>
+          </button>
+          <button
+            onClick={() => router.push(`/members/${member.id}/edit`)}
+            className="bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl p-3 shadow-sm flex flex-col items-center gap-1 hover:shadow-md transition"
+          >
+            <span className="text-xl">✏️</span>
+            <span className="text-xs font-medium">Edit</span>
+          </button>
+        </div>
+
         {/* Tabs */}
         <div className="flex gap-2 mb-4 overflow-x-auto">
           {["overview", "attendance", "payments"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition ${
-                activeTab === tab
-                  ? "bg-black text-white"
-                  : "bg-white text-gray-600"
-              }`}
+              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition ${activeTab === tab
+                ? "bg-black text-white"
+                : "bg-white text-gray-600"
+                }`}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
             </button>
@@ -275,6 +328,24 @@ export default function MemberDetailPage() {
           </button>
         </div>
       </main>
+
+      {/* Renew Membership Modal */}
+      {showRenewModal && (
+        <RenewMembershipModal
+          member={member}
+          onClose={() => setShowRenewModal(false)}
+          onRenew={handleRenewal}
+        />
+      )}
+
+      {/* Renewal History Modal */}
+      {showHistoryModal && (
+        <RenewalHistoryModal
+          member={member}
+          renewalHistory={renewalHistory}
+          onClose={() => setShowHistoryModal(false)}
+        />
+      )}
     </div>
   );
 }

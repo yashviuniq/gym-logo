@@ -151,7 +151,7 @@ export default function MemberDetailPage() {
         </div>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="grid grid-cols-4 gap-3 mb-4">
           {[
             {
               label: "Call",
@@ -167,6 +167,11 @@ export default function MemberDetailPage() {
               label: "Payment",
               icon: "💳",
               action: () => router.push(`/members/${member.id}/payment`),
+            },
+            {
+              label: "Credentials",
+              icon: "🔐",
+              action: () => router.push(`/members/${member.id}/credentials`),
             },
           ].map((btn, index) => (
             <button

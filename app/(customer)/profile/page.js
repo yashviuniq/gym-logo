@@ -135,6 +135,15 @@ export default function CustomerProfilePage() {
               Expires: {mockMembership.endDate}
             </span>
           </div>
+
+          {/* Renew Button */}
+          <button
+            onClick={() => router.push("/profile/renew")}
+            className="w-full mt-4 py-3 bg-white text-gray-900 rounded-xl font-semibold hover:bg-gray-100 transition flex items-center justify-center gap-2"
+          >
+            <span>🔄</span>
+            <span>Renew Membership</span>
+          </button>
         </div>
 
         {/* Tabs */}
@@ -143,11 +152,10 @@ export default function CustomerProfilePage() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-2 rounded-xl text-sm font-medium capitalize ${
-                activeTab === tab
+              className={`flex-1 py-2 rounded-xl text-sm font-medium capitalize ${activeTab === tab
                   ? "bg-black text-white"
                   : "bg-white text-gray-600 border border-gray-200"
-              }`}
+                }`}
             >
               {tab === "gym" ? "Gym Info" : tab}
             </button>

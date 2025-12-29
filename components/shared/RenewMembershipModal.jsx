@@ -324,17 +324,27 @@ export default function RenewMembershipModal({ member, gymId, onClose, onRenew }
                     {selectedPlan && (
                         <>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Amount Received *
-                                </label>
-                                <input
-                                    type="number"
-                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] outline-none text-lg font-semibold"
-                                    placeholder="₹ 0"
-                                    value={paymentAmount}
-                                    onChange={(e) => setPaymentAmount(e.target.value)}
-                                    required
-                                />
+                                
+                               <label className="block text-sm font-medium text-gray-700 mb-1">
+    Amount Received *
+</label>
+
+<input
+    type="number"
+    min="0"
+    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] outline-none text-lg font-semibold"
+    placeholder="₹ 0"
+    value={paymentAmount}
+    onChange={(e) => {
+        const value = e.target.value;
+        if (value >= 0) {
+            setPaymentAmount(value);
+        }
+    }}
+    required
+/>
+
+                               
                                 {paymentAmount && parseFloat(paymentAmount) < finalPrice && (
                                     <p className="text-sm text-orange-500 mt-1">
                                         Due amount: ₹{finalPrice - parseFloat(paymentAmount)}

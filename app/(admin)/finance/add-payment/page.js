@@ -1,15 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
-
-const mockMembers = [
-  { id: 1, name: "John Doe", phone: "9876543210", dueAmount: 0 },
-  { id: 2, name: "Jane Smith", phone: "9876543211", dueAmount: 500 },
-  { id: 3, name: "Tom Brown", phone: "9876543214", dueAmount: 3000 },
-  { id: 4, name: "Emily Davis", phone: "9876543215", dueAmount: 2500 },
-];
 
 export default function AddPaymentPage() {
   const router = useRouter();
@@ -17,6 +11,8 @@ export default function AddPaymentPage() {
   const [selectedMember, setSelectedMember] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
+  const [members, setMembers] = useState([]);
+  const [selectedGym, setSelectedGym] = useState(null);
   const [formData, setFormData] = useState({
     amount: "",
     type: "membership",
@@ -24,7 +20,41 @@ export default function AddPaymentPage() {
     notes: "",
   });
 
-  const filteredMembers = mockMembers.filter(
+  useEffect(() => {
+    const storedGym = localStorage.getItem("selectedGym");
+    if (storedGym) {
+      const gym = JSON.parse(storedGym);
+      setSelectedGym(gym);
+      fetchMembers(gym.id);
+    }
+  }, []);
+
+  const fetchMembers = async (gymId) => {
+    try {
+      const { data, error } = await supabase
+        .from("members")
+        .select("id, full_name, phone, balance")
+        .eq("gym_id", gymId)
+        .order("full_name");
+
+      if (error) throw error;
+
+      const formattedMembers = data.map(m => ({
+        id: m.id,
+        name: m.full_name,
+        phone: m.phone,
+        dueAmount: Math.max(0, m.balance || 0),
+        balance: m.balance || 0
+      }));
+
+      setMembers(formattedMembers);
+    } catch (error) {
+      console.error("Error fetching members:", error);
+      alert("Failed to load members");
+    }
+  };
+
+  const filteredMembers = members.filter(
     (m) =>
       m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       m.phone.includes(searchQuery)
@@ -36,9 +66,48 @@ export default function AddPaymentPage() {
 
   const handleSubmit = async () => {
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setLoading(false);
-    router.push("/finance");
+
+    try {
+      const amount = parseFloat(formData.amount);
+      
+      if (amount <= 0) {
+        alert("Please enter a valid amount");
+        setLoading(false);
+        return;
+      }
+
+      // Record payment in database
+      const { error: paymentError } = await supabase
+        .from("payments")
+        .insert({
+          gym_id: selectedGym.id,
+          member_id: selectedMember.id,
+          amount: amount,
+          payment_mode: formData.mode,
+          status: "paid",
+          paid_at: new Date().toISOString(),
+          created_at: new Date().toISOString()
+        });
+
+      if (paymentError) throw paymentError;
+
+      // Update member balance (reduce the due amount)
+      const newBalance = Math.max(0, selectedMember.balance - amount);
+      const { error: balanceError } = await supabase
+        .from("members")
+        .update({ balance: newBalance })
+        .eq("id", selectedMember.id);
+
+      if (balanceError) throw balanceError;
+
+      alert("Payment recorded successfully!");
+      router.push("/finance");
+    } catch (error) {
+      console.error("Error recording payment:", error);
+      alert("Failed to record payment. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -58,37 +127,51 @@ export default function AddPaymentPage() {
               autoFocus
             />
 
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-              <div className="divide-y divide-gray-100">
-                {filteredMembers.map((member) => (
-                  <button
-                    key={member.id}
-                    onClick={() => {
-                      setSelectedMember(member);
-                      setStep(2);
-                    }}
-                    className="w-full p-4 flex items-center justify-between hover:bg-gray-50"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center font-bold">
-                        {member.name.charAt(0)}
-                      </div>
-                      <div className="text-left">
-                        <p className="font-medium text-gray-900">
-                          {member.name}
-                        </p>
-                        <p className="text-sm text-gray-500">{member.phone}</p>
-                      </div>
-                    </div>
-                    {member.dueAmount > 0 && (
-                      <span className="text-sm text-red-500">
-                        ₹{member.dueAmount} due
-                      </span>
-                    )}
-                  </button>
-                ))}
+            {loading && !members.length ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="w-8 h-8 border-4 border-[#F97316] border-t-transparent rounded-full animate-spin"></div>
               </div>
-            </div>
+            ) : filteredMembers.length === 0 ? (
+              <div className="bg-white rounded-xl shadow-sm p-8 text-center">
+                <p className="text-gray-500">No members found</p>
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                <div className="divide-y divide-gray-100">
+                  {filteredMembers.map((member) => (
+                    <button
+                      key={member.id}
+                      onClick={() => {
+                        setSelectedMember(member);
+                        // Auto-fill amount with due amount if exists
+                        if (member.dueAmount > 0) {
+                          setFormData(prev => ({ ...prev, amount: member.dueAmount.toString() }));
+                        }
+                        setStep(2);
+                      }}
+                      className="w-full p-4 flex items-center justify-between hover:bg-gray-50"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center font-bold">
+                          {member.name.charAt(0)}
+                        </div>
+                        <div className="text-left">
+                          <p className="font-medium text-gray-900">
+                            {member.name}
+                          </p>
+                          <p className="text-sm text-gray-500">{member.phone}</p>
+                        </div>
+                      </div>
+                      {member.dueAmount > 0 && (
+                        <span className="text-sm text-red-500">
+                          ₹{member.dueAmount} due
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -129,8 +212,17 @@ export default function AddPaymentPage() {
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl text-xl font-semibold outline-none"
                   placeholder="₹ 0"
                   value={formData.amount}
-                  onChange={(e) => updateForm("amount", e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === '' || (!isNaN(value) && parseFloat(value) >= 0)) {
+                      updateForm("amount", value);
+                    }
+                  }}
+                  min="0.01"
+                  step="0.01"
+                  required
                 />
+                <p className="text-xs text-gray-500 mt-1">Enter amount greater than 0</p>
               </div>
 
               <div>

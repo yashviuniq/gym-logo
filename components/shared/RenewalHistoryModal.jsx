@@ -11,7 +11,7 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose })
                         </h3>
                         <button
                             onClick={onClose}
-                            className="p-2 hover:bg-gray-100 rounded-full transition"
+                            className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full transition text-gray-600 hover:text-gray-900 font-bold text-lg"
                         >
                             ✕
                         </button>
@@ -158,7 +158,7 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose })
 
                     <button
                         onClick={onClose}
-                        className="w-full mt-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition"
+                        className="w-full mt-4 py-3 bg-gray-900 text-white rounded-xl font-semibold hover:bg-gray-800 transition shadow-md"
                     >
                         Close
                     </button>

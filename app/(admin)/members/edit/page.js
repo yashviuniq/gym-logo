@@ -1,25 +1,59 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
 
 export default function EditMemberPage() {
   const router = useRouter();
-  const params = useParams();
+  const searchParams = useSearchParams();
+  const memberId = searchParams.get("id");
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
 
-  // Pre-populated mock data
   const [formData, setFormData] = useState({
-    name: "John Doe",
-    phone: "9876543210",
-    email: "john@example.com",
-    gender: "Male",
-    age: "28",
-    address: "123 Main St, City",
-    emergencyContact: "9876543299",
-    notes: "Interested in personal training",
+    name: "",
+    phone: "",
+    email: "",
   });
+
+  useEffect(() => {
+    if (memberId) {
+      fetchMemberData();
+    } else {
+      setFetching(false);
+    }
+  }, [memberId]);
+
+  const fetchMemberData = async () => {
+    setFetching(true);
+    try {
+      const { data, error } = await supabase
+        .from("members")
+        .select("*")
+        .eq("id", memberId)
+        .single();
+
+      if (error) {
+        console.error("Error fetching member:", error);
+        alert("Failed to load member data");
+        return;
+      }
+
+      if (data) {
+        setFormData({
+          name: data.full_name || "",
+          phone: data.phone || "",
+          email: data.email || "",
+        });
+      }
+    } catch (err) {
+      console.error("Error:", err);
+      alert("Failed to load member data");
+    }
+    setFetching(false);
+  };
 
   const updateForm = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -27,11 +61,64 @@ export default function EditMemberPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!memberId) {
+      alert("No member ID provided");
+      return;
+    }
+
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      const { error } = await supabase
+        .from("members")
+        .update({
+          full_name: formData.name,
+          phone: formData.phone,
+          email: formData.email || null,
+        })
+        .eq("id", memberId);
+
+      if (error) {
+        throw error;
+      }
+
+      alert("Member updated successfully!");
+      router.back();
+    } catch (error) {
+      console.error("Error updating member:", error);
+      alert("Failed to update member. Please try again.");
+    }
     setLoading(false);
-    router.back();
   };
+
+  if (fetching) {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-24">
+        <Header title="Edit Member" />
+        <div className="flex items-center justify-center py-12">
+          <div className="w-8 h-8 border-4 border-[#F97316] border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!memberId) {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-24">
+        <Header title="Edit Member" />
+        <div className="text-center py-12 px-4">
+          <span className="text-4xl">⚠️</span>
+          <p className="text-gray-500 mt-2">No member ID provided</p>
+          <button
+            onClick={() => router.back()}
+            className="mt-4 px-6 py-2 bg-[#F97316] text-white rounded-lg"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
@@ -40,119 +127,75 @@ export default function EditMemberPage() {
       <form onSubmit={handleSubmit} className="px-4 py-4">
         <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-semibold text-gray-800 mb-2">
               Full Name *
             </label>
             <input
               type="text"
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black outline-none"
+              className="w-full px-4 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all duration-200 text-gray-900 placeholder-gray-400 bg-white"
               value={formData.name}
-              onChange={(e) => updateForm("name", e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (/^[a-zA-Z\s]*$/.test(value) || value === '') {
+                  updateForm("name", value);
+                }
+              }}
+              pattern="[a-zA-Z\s]+"
+              title="Please enter a valid name (letters and spaces only)"
               required
+              minLength="2"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-semibold text-gray-800 mb-2">
               Phone Number *
             </label>
             <input
               type="tel"
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black outline-none"
+              className="w-full px-4 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all duration-200 text-gray-900 placeholder-gray-400 bg-white"
               value={formData.phone}
-              onChange={(e) => updateForm("phone", e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, '');
+                if (value.length <= 10) {
+                  updateForm("phone", value);
+                }
+              }}
+              pattern="[0-9]{10}"
+              maxLength="10"
+              title="Please enter a valid 10-digit phone number"
               required
             />
+            <p className="text-xs text-gray-500 mt-1">Enter 10 digits only</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-semibold text-gray-800 mb-2">
               Email
             </label>
             <input
               type="email"
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black outline-none"
+              className="w-full px-4 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all duration-200 text-gray-900 placeholder-gray-400 bg-white"
               value={formData.email}
-              onChange={(e) => updateForm("email", e.target.value)}
+              onChange={(e) => updateForm("email", e.target.value.toLowerCase().trim())}
+              title="Please enter a valid email address"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Gender
-              </label>
-              <select
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black outline-none"
-                value={formData.gender}
-                onChange={(e) => updateForm("gender", e.target.value)}
-              >
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Age
-              </label>
-              <input
-                type="number"
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black outline-none"
-                value={formData.age}
-                onChange={(e) => updateForm("age", e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Address
-            </label>
-            <textarea
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black outline-none resize-none"
-              rows={2}
-              value={formData.address}
-              onChange={(e) => updateForm("address", e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Emergency Contact
-            </label>
-            <input
-              type="tel"
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black outline-none"
-              value={formData.emergencyContact}
-              onChange={(e) => updateForm("emergencyContact", e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Notes
-            </label>
-            <textarea
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black outline-none resize-none"
-              rows={2}
-              value={formData.notes}
-              onChange={(e) => updateForm("notes", e.target.value)}
-            />
-          </div>
+         
 
           <div className="flex gap-3 pt-4">
             <button
               type="button"
               onClick={() => router.back()}
-              className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium"
+              className="flex-1 py-3.5 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 active:scale-[0.98] transition-all duration-200"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-3 bg-black text-white rounded-xl font-medium disabled:opacity-50"
+              className="flex-1 py-3.5 bg-gradient-to-r from-[#F97316] to-[#FF8C42] text-white rounded-xl font-semibold disabled:opacity-50 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
             >
               {loading ? "Saving..." : "Save Changes"}
             </button>

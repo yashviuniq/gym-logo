@@ -8,6 +8,7 @@ export default function Card({
   className = "",
   header,
   footer,
+  onClick,
 }) {
   const variants = {
     light: "card-base",
@@ -26,6 +27,7 @@ export default function Card({
   return (
     <div
       className={`${variants[variant]} ${paddings[padding]} ${hoverClass} ${className}`}
+      onClick={onClick}
     >
       {header && (
         <div className="mb-4 pb-4 border-b border-gray-200">

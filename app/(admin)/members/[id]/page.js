@@ -1,72 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
 import RenewMembershipModal from "@/components/shared/RenewMembershipModal";
 import RenewalHistoryModal from "@/components/shared/RenewalHistoryModal";
-
-// Mock data
-const mockMember = {
-  id: 1,
-  name: "John Doe",
-  email: "john@example.com",
-  phone: "9876543210",
-  gender: "Male",
-  age: 28,
-  address: "123 Main St, City",
-  joinDate: "2024-01-15",
-  plan: "Premium",
-  planPrice: 2500,
-  status: "active",
-  validTill: "2025-12-31",
-  dueAmount: 0,
-  emergencyContact: "9876543299",
-  notes: "Interested in personal training",
-  attendance: [
-    { date: "2025-01-15", checkIn: "06:30 AM", checkOut: "08:00 AM" },
-    { date: "2025-01-14", checkIn: "07:00 AM", checkOut: "08:30 AM" },
-    { date: "2025-01-13", checkIn: "06:45 AM", checkOut: "08:15 AM" },
-  ],
-  payments: [
-    {
-      id: 1,
-      date: "2025-01-01",
-      amount: 2500,
-      type: "Membership",
-      status: "paid",
-    },
-    {
-      id: 2,
-      date: "2024-12-01",
-      amount: 2500,
-      type: "Membership",
-      status: "paid",
-    },
-  ],
-  renewalHistory: [
-    {
-      planName: "Premium",
-      duration: 180,
-      price: 2500,
-      paymentAmount: 2500,
-      paymentMode: "upi",
-      notes: "Renewed for 6 months",
-      newEndDate: "2025-12-31",
-      renewedAt: "2025-07-01T10:00:00Z",
-    },
-    {
-      planName: "Premium",
-      duration: 180,
-      price: 2500,
-      paymentAmount: 2000,
-      paymentMode: "cash",
-      notes: "Partial payment",
-      newEndDate: "2025-06-30",
-      renewedAt: "2025-01-01T10:00:00Z",
-    },
-  ],
-};
 
 export default function MemberDetailPage() {
   const router = useRouter();
@@ -74,9 +13,150 @@ export default function MemberDetailPage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [showRenewModal, setShowRenewModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
-  const [renewalHistory, setRenewalHistory] = useState(mockMember.renewalHistory);
+  const [member, setMember] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedGym, setSelectedGym] = useState(null);
+  const [renewalHistory, setRenewalHistory] = useState([]);
 
-  const member = mockMember; // Replace with actual fetch
+  useEffect(() => {
+    // Get selected gym from localStorage
+    const storedGym = localStorage.getItem("selectedGym");
+    if (storedGym) {
+      const gym = JSON.parse(storedGym);
+      setSelectedGym(gym);
+      fetchMemberDetails(params.id, gym.id);
+    } else {
+      setLoading(false);
+    }
+  }, [params.id]);
+
+  const fetchMemberDetails = async (memberId, gymId) => {
+    setLoading(true);
+    try {
+      // Fetch member with memberships and payments
+      const { data: memberData, error } = await supabase
+        .from("members")
+        .select(`
+          id,
+          full_name,
+          phone,
+          email,
+          balance,
+          created_at,
+          gym_id,
+          memberships (
+            id,
+            plan_id,
+            start_date,
+            end_date,
+            status,
+            created_at,
+            membership_plans (
+              id,
+              name,
+              price,
+              duration_days
+            )
+          ),
+          payments (
+            id,
+            amount,
+            payment_mode,
+            status,
+            paid_at,
+            created_at
+          )
+        `)
+        .eq("id", memberId)
+        .single();
+
+      if (error) {
+        console.error("Error fetching member:", error);
+        setLoading(false);
+        return;
+      }
+
+      // Get active membership
+      const activeMembership = memberData.memberships?.find(
+        (m) => m.status === "active"
+      ) || memberData.memberships?.[0];
+
+      // Calculate membership status
+      let memberStatus = "inactive";
+      if (activeMembership) {
+        const endDate = new Date(activeMembership.end_date);
+        const today = new Date();
+        if (endDate > today && activeMembership.status === "active") {
+          memberStatus = "active";
+        } else if (endDate <= today) {
+          memberStatus = "expired";
+        }
+      }
+
+      // Transform member data
+      const transformedMember = {
+        id: memberData.id,
+        gymId: memberData.gym_id,
+        name: memberData.full_name,
+        email: memberData.email || "",
+        phone: memberData.phone,
+        joinDate: new Date(memberData.created_at).toLocaleDateString("en-IN"),
+        plan: activeMembership?.membership_plans?.name || "No Plan",
+        planPrice: activeMembership?.membership_plans?.price || 0,
+        status: memberStatus,
+        validTill: activeMembership?.end_date
+          ? new Date(activeMembership.end_date).toLocaleDateString("en-IN")
+          : "N/A",
+        dueAmount: Math.max(0, memberData.balance || 0),
+        balance: memberData.balance || 0,
+        attendance: [], // Will be fetched separately if needed
+        payments: memberData.payments?.map(p => ({
+          id: p.id,
+          date: new Date(p.paid_at || p.created_at).toLocaleDateString("en-IN"),
+          amount: p.amount,
+          type: "Membership",
+          status: p.status
+        })) || []
+      };
+
+      setMember(transformedMember);
+
+      // Build renewal history from memberships
+      const history = memberData.memberships?.map(m => ({
+        planName: m.membership_plans?.name || "Unknown",
+        duration: m.membership_plans?.duration_days || 0,
+        price: m.membership_plans?.price || 0,
+        paymentAmount: memberData.payments?.find(p => p.membership_id === m.id)?.amount || 0,
+        paymentMode: memberData.payments?.find(p => p.membership_id === m.id)?.payment_mode || "cash",
+        notes: "",
+        newEndDate: m.end_date,
+        renewedAt: m.created_at
+      })) || [];
+
+      setRenewalHistory(history);
+
+      // Fetch attendance
+      const { data: attendanceData } = await supabase
+        .from("attendance")
+        .select("*")
+        .eq("member_id", memberId)
+        .order("check_in_date", { ascending: false })
+        .limit(10);
+
+      if (attendanceData) {
+        transformedMember.attendance = attendanceData.map(a => ({
+          date: new Date(a.check_in_date).toLocaleDateString("en-IN"),
+          checkIn: a.check_in_time,
+          checkOut: a.check_out_time || "-"
+        }));
+        setMember({ ...transformedMember });
+      }
+
+    } catch (err) {
+      console.error("Error:", err);
+    }
+    setLoading(false);
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -93,9 +173,47 @@ export default function MemberDetailPage() {
     // Add new renewal to history
     setRenewalHistory((prev) => [renewalData, ...prev]);
     setShowRenewModal(false);
-    // In real app, this would update the backend
+    // Refresh member data
+    if (selectedGym) {
+      fetchMemberDetails(params.id, selectedGym.id);
+    }
     alert("Membership renewed successfully!");
   };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-24">
+        <Header title="Member Details" />
+        <main className="px-4 py-4">
+          <div className="flex items-center justify-center py-12">
+            <div className="w-8 h-8 border-4 border-[#F97316] border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // No member found
+  if (!member) {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-24">
+        <Header title="Member Details" />
+        <main className="px-4 py-4">
+          <div className="text-center py-12">
+            <span className="text-4xl">👤</span>
+            <p className="text-gray-500 mt-2">Member not found</p>
+            <button
+              onClick={() => router.push("/members")}
+              className="mt-4 px-6 py-2 bg-[#F97316] text-white rounded-lg"
+            >
+              Back to Members
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
@@ -338,6 +456,7 @@ export default function MemberDetailPage() {
       {showRenewModal && (
         <RenewMembershipModal
           member={member}
+          gymId={selectedGym?.id}
           onClose={() => setShowRenewModal(false)}
           onRenew={handleRenewal}
         />

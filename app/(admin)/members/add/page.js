@@ -215,7 +215,7 @@ export default function AddMemberPage() {
             gym_id: selectedGym.id,
             member_id: member.id,
             amount: paymentAmount,
-            mode: formData.paymentMode,
+            mode: formData.payment_mode,
             status: "paid",
             notes: formData.notes || null,
             updated_by: createdBy,

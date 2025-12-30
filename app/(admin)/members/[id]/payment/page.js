@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
 
 export default function AddPaymentPage() {
   const router = useRouter();
   const params = useParams();
   const [loading, setLoading] = useState(false);
+  const [member, setMember] = useState(null);
+  const [selectedGym, setSelectedGym] = useState(null);
   const [formData, setFormData] = useState({
     amount: "",
     type: "membership",
@@ -16,6 +19,43 @@ export default function AddPaymentPage() {
     date: new Date().toISOString().split("T")[0],
   });
 
+  useEffect(() => {
+    const storedGym = localStorage.getItem("selectedGym");
+    if (storedGym) {
+      const gym = JSON.parse(storedGym);
+      setSelectedGym(gym);
+      fetchMemberData(params.id);
+    }
+  }, [params.id]);
+
+  const fetchMemberData = async (memberId) => {
+    try {
+      const { data, error } = await supabase
+        .from("members")
+        .select("id, full_name, phone, balance")
+        .eq("id", memberId)
+        .single();
+
+      if (error) throw error;
+      
+      setMember({
+        id: data.id,
+        name: data.full_name,
+        phone: data.phone,
+        dueAmount: Math.max(0, data.balance || 0),
+        balance: data.balance || 0
+      });
+
+      // Auto-fill amount if there's a due amount
+      if (data.balance > 0) {
+        setFormData(prev => ({ ...prev, amount: data.balance.toString() }));
+      }
+    } catch (error) {
+      console.error("Error fetching member:", error);
+      alert("Failed to load member data");
+    }
+  };
+
   const updateForm = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -23,52 +63,100 @@ export default function AddPaymentPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setLoading(false);
-    router.back();
-  };
 
-  const memberInfo = {
-    name: "John Doe",
-    dueAmount: 500,
+    try {
+      const amount = parseFloat(formData.amount);
+      
+      if (amount <= 0) {
+        alert("Please enter a valid amount");
+        setLoading(false);
+        return;
+      }
+
+      // Record payment in database
+      const { error: paymentError } = await supabase
+        .from("payments")
+        .insert({
+          gym_id: selectedGym.id,
+          member_id: member.id,
+          amount: amount,
+          payment_mode: formData.mode,
+          status: "paid",
+          paid_at: new Date(formData.date).toISOString(),
+          created_at: new Date().toISOString()
+        });
+
+      if (paymentError) throw paymentError;
+
+      // Update member balance (reduce the due amount)
+      const newBalance = Math.max(0, member.balance - amount);
+      const { error: balanceError } = await supabase
+        .from("members")
+        .update({ balance: newBalance })
+        .eq("id", member.id);
+
+      if (balanceError) throw balanceError;
+
+      alert("Payment recorded successfully!");
+      router.back();
+    } catch (error) {
+      console.error("Error recording payment:", error);
+      alert("Failed to record payment. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       <Header title="Add Payment" />
 
-      <form onSubmit={handleSubmit} className="px-4 py-4 space-y-4">
-        {/* Member Info */}
-        <div className="bg-white rounded-xl p-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-gray-800 to-gray-600 rounded-full flex items-center justify-center text-white font-bold">
-              {memberInfo.name.charAt(0)}
-            </div>
-            <div>
-              <p className="font-semibold text-gray-900">{memberInfo.name}</p>
-              {memberInfo.dueAmount > 0 && (
-                <p className="text-sm text-red-500">
-                  Due: ₹{memberInfo.dueAmount}
-                </p>
-              )}
+      {!member ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="w-8 h-8 border-4 border-[#F97316] border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="px-4 py-4 space-y-4">
+          {/* Member Info */}
+          <div className="bg-white rounded-xl p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-gray-800 to-gray-600 rounded-full flex items-center justify-center text-white font-bold">
+                {member.name.charAt(0)}
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900">{member.name}</p>
+                <p className="text-sm text-gray-500">{member.phone}</p>
+                {member.dueAmount > 0 && (
+                  <p className="text-sm font-semibold text-red-500">
+                    Due: ₹{member.dueAmount}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
         {/* Payment Form */}
         <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-semibold text-gray-800 mb-2">
               Amount *
             </label>
             <input
               type="number"
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black outline-none text-xl font-semibold"
+              className="w-full px-4 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none text-xl font-semibold transition-all duration-200 text-gray-900 placeholder-gray-400 bg-white"
               placeholder="₹ 0"
               value={formData.amount}
-              onChange={(e) => updateForm("amount", e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === '' || (!isNaN(value) && parseFloat(value) >= 0)) {
+                  updateForm("amount", value);
+                }
+              }}
+              min="0.01"
+              step="0.01"
               required
             />
+            <p className="text-xs text-gray-500 mt-1">Enter amount greater than 0</p>
           </div>
 
           <div>
@@ -118,24 +206,24 @@ export default function AddPaymentPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-semibold text-gray-800 mb-2">
               Date
             </label>
             <input
               type="date"
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black outline-none"
+              className="w-full px-4 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all duration-200 text-gray-900 bg-white"
               value={formData.date}
               onChange={(e) => updateForm("date", e.target.value)}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-semibold text-gray-800 mb-2">
               Notes (Optional)
             </label>
             <textarea
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black outline-none resize-none"
-              rows={2}
+              className="w-full px-4 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none resize-none transition-all duration-200 text-gray-900 placeholder-gray-400 bg-white"
+              rows={3}
               placeholder="Payment notes..."
               value={formData.notes}
               onChange={(e) => updateForm("notes", e.target.value)}
@@ -146,20 +234,21 @@ export default function AddPaymentPage() {
             <button
               type="button"
               onClick={() => router.back()}
-              className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium"
+              className="flex-1 py-3.5 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 active:scale-[0.98] transition-all duration-200"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!formData.amount || loading}
-              className="flex-1 py-3 bg-black text-white rounded-xl font-medium disabled:opacity-50"
+              className="flex-1 py-3.5 bg-gradient-to-r from-[#F97316] to-[#FF8C42] text-white rounded-xl font-semibold disabled:opacity-50 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
             >
               {loading ? "Processing..." : "Record Payment"}
             </button>
           </div>
         </div>
       </form>
+      )}
     </div>
   );
 }

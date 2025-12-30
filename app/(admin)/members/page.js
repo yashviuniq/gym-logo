@@ -155,6 +155,37 @@ export default function MembersPage() {
     alert("Membership renewed successfully!");
   };
 
+  const handleDeleteMember = async (e, member) => {
+    e.stopPropagation(); // Prevent navigating to member detail
+    
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete ${member.name}? This action cannot be undone. All associated data including memberships, payments, and attendance records will be permanently deleted.`
+    );
+    
+    if (!confirmDelete) return;
+
+    try {
+      // Delete member (cascading deletes will handle related records)
+      const { error } = await supabase
+        .from("members")
+        .delete()
+        .eq("id", member.id);
+
+      if (error) {
+        throw error;
+      }
+
+      alert("Member deleted successfully!");
+      // Refresh members list
+      if (selectedGym) {
+        fetchMembers(selectedGym.id);
+      }
+    } catch (error) {
+      console.error("Error deleting member:", error);
+      alert("Failed to delete member. Please try again.");
+    }
+  };
+
   // Show loading state
   if (loading) {
     return (
@@ -293,15 +324,23 @@ export default function MembersPage() {
               </div>
               {/* Action Buttons */}
               <div className="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    router.push(`/members/${member.id}/credentials`);
-                  }}
-                  className="px-3 py-2 bg-blue-100 text-blue-700 text-xs font-medium rounded-lg hover:bg-blue-200 transition flex items-center gap-1"
-                >
-                  🔐 {member.hasCredentials ? "View" : "Create"}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      router.push(`/members/${member.id}/credentials`);
+                    }}
+                    className="px-3 py-2 bg-blue-100 text-blue-700 text-xs font-medium rounded-lg hover:bg-blue-200 transition flex items-center gap-1"
+                  >
+                    🔐 {member.hasCredentials ? "View" : "Create"}
+                  </button>
+                  <button
+                    onClick={(e) => handleDeleteMember(e, member)}
+                    className="px-3 py-2 bg-red-100 text-red-700 text-xs font-medium rounded-lg hover:bg-red-200 transition flex items-center gap-1"
+                  >
+                    🗑️ Delete
+                  </button>
+                </div>
                 {member.status === "expired" && (
                   <button
                     onClick={(e) => handleRenewClick(e, member)}

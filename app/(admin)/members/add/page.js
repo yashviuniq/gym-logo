@@ -126,7 +126,7 @@ export default function AddMemberPage() {
     );
   }
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (addAnother = false) => {
     if (!selectedGym) {
       alert("No gym selected. Please go back to dashboard.");
       return;
@@ -134,6 +134,24 @@ export default function AddMemberPage() {
 
     setLoading(true);
     try {
+      // Check if member with same phone number already exists
+      const { data: existingMember, error: checkError } = await supabase
+        .from("members")
+        .select("id, full_name")
+        .eq("gym_id", selectedGym.id)
+        .eq("phone", formData.phone)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error("Error checking existing member:", checkError);
+      }
+
+      if (existingMember) {
+        alert(`A member with phone number ${formData.phone} already exists: ${existingMember.full_name}. Please use a different phone number or edit the existing member.`);
+        setLoading(false);
+        return;
+      }
+
       const selectedPlan = membershipPlans.find((p) => p.id === formData.planId);
       const finalPrice = formData.useCustomPrice && formData.customPrice 
         ? parseFloat(formData.customPrice) 
@@ -226,7 +244,29 @@ export default function AddMemberPage() {
       }
 
       alert(`Member added successfully! ${formData.email ? `Login: ${formData.email} | Password: ${defaultPassword}` : ''}`);
-      router.push("/members");
+      
+      if (addAnother) {
+        // Reset form and go back to step 1
+        setFormData({
+          name: "",
+          phone: "",
+          email: "",
+          gender: "Male",
+          age: "",
+          address: "",
+          emergencyContact: "",
+          planId: null,
+          startDate: new Date().toISOString().split("T")[0],
+          paymentAmount: "",
+          paymentMode: "cash",
+          notes: "",
+          useCustomPrice: false,
+          customPrice: "",
+        });
+        setStep(1);
+      } else {
+        router.push("/members");
+      }
 
     } catch (error) {
       console.error("Error adding member:", error);
@@ -270,51 +310,73 @@ export default function AddMemberPage() {
             </h3>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-semibold text-gray-800 mb-2">
                 Full Name *
               </label>
               <input
                 type="text"
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none"
+                className="w-full px-4 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all duration-200 text-gray-900 placeholder-gray-400 bg-white"
                 placeholder="Enter full name"
                 value={formData.name}
-                onChange={(e) => updateForm("name", e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Allow only letters and spaces
+                  if (/^[a-zA-Z\s]*$/.test(value) || value === '') {
+                    updateForm("name", value);
+                  }
+                }}
+                pattern="[a-zA-Z\s]+"
+                title="Please enter a valid name (letters and spaces only)"
+                required
+                minLength="2"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-semibold text-gray-800 mb-2">
                 Phone Number *
               </label>
               <input
                 type="tel"
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none"
-                placeholder="Enter phone number"
+                className="w-full px-4 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all duration-200 text-gray-900 placeholder-gray-400 bg-white"
+                placeholder="Enter 10-digit phone number"
                 value={formData.phone}
-                onChange={(e) => updateForm("phone", e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, '');
+                  if (value.length <= 10) {
+                    updateForm("phone", value);
+                  }
+                }}
+                pattern="[0-9]{10}"
+                maxLength="10"
+                title="Please enter a valid 10-digit phone number"
+                required
               />
+              <p className="text-xs text-gray-500 mt-1">Enter 10 digits only</p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-semibold text-gray-800 mb-2">
                 Email
               </label>
               <input
                 type="email"
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none"
-                placeholder="Enter email address"
+                className="w-full px-4 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all duration-200 text-gray-900 placeholder-gray-400 bg-white"
+                placeholder="john@example.com"
                 value={formData.email}
-                onChange={(e) => updateForm("email", e.target.value)}
+                onChange={(e) => updateForm("email", e.target.value.toLowerCase().trim())}
+                title="Please enter a valid email address"
               />
+              <p className="text-xs text-gray-500 mt-1">Optional - for app login</p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-semibold text-gray-800 mb-2">
                   Gender
                 </label>
                 <select
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black outline-none"
+                  className="w-full px-4 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all duration-200 text-gray-900 bg-white"
                   value={formData.gender}
                   onChange={(e) => updateForm("gender", e.target.value)}
                 >
@@ -324,26 +386,33 @@ export default function AddMemberPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-semibold text-gray-800 mb-2">
                   Age
                 </label>
                 <input
                   type="number"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black outline-none"
+                  className="w-full px-4 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all duration-200 text-gray-900 placeholder-gray-400 bg-white"
                   placeholder="Age"
                   value={formData.age}
-                  onChange={(e) => updateForm("age", e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === '' || (!isNaN(value) && parseInt(value) >= 0 && parseInt(value) <= 120)) {
+                      updateForm("age", value);
+                    }
+                  }}
+                  min="1"
+                  max="120"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-semibold text-gray-800 mb-2">
                 Address
               </label>
               <textarea
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black outline-none resize-none"
-                rows={2}
+                className="w-full px-4 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none resize-none transition-all duration-200 text-gray-900 placeholder-gray-400 bg-white"
+                rows={3}
                 placeholder="Enter address"
                 value={formData.address}
                 onChange={(e) => updateForm("address", e.target.value)}
@@ -351,22 +420,45 @@ export default function AddMemberPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-semibold text-gray-800 mb-2">
                 Emergency Contact
               </label>
               <input
                 type="tel"
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black outline-none"
-                placeholder="Emergency contact number"
+                className="w-full px-4 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all duration-200 text-gray-900 placeholder-gray-400 bg-white"
+                placeholder="Emergency contact number (10 digits)"
                 value={formData.emergencyContact}
-                onChange={(e) => updateForm("emergencyContact", e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, '');
+                  if (value.length <= 10) {
+                    updateForm("emergencyContact", value);
+                  }
+                }}
+                pattern="[0-9]{10}"
+                maxLength="10"
               />
+              <p className="text-xs text-gray-500 mt-1">Optional - 10 digits only</p>
             </div>
 
             <button
-              onClick={() => setStep(2)}
+              onClick={() => {
+                // Validate before moving to next step
+                if (!formData.name || formData.name.trim().length < 2) {
+                  alert("Please enter a valid name (at least 2 characters)");
+                  return;
+                }
+                if (!formData.phone || formData.phone.length !== 10) {
+                  alert("Please enter a valid 10-digit phone number");
+                  return;
+                }
+                if (formData.email && !formData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+                  alert("Please enter a valid email address or leave it empty");
+                  return;
+                }
+                setStep(2);
+              }}
               disabled={!formData.name || !formData.phone}
-              className="w-full py-3 bg-black text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+              className="w-full py-3.5 bg-gradient-to-r from-[#F97316] to-[#FF8C42] text-white rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed mt-6 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
             >
               Next: Select Plan
             </button>
@@ -434,15 +526,22 @@ export default function AddMemberPage() {
 
                   {formData.useCustomPrice && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-semibold text-gray-800 mb-2">
                         Custom Price (₹) *
                       </label>
                       <input
                         type="number"
-                        className="w-full px-4 py-3 border border-orange-300 rounded-xl focus:ring-2 focus:ring-[#F97316] outline-none text-lg font-semibold"
+                        className="w-full px-4 py-3.5 border-2 border-orange-300 rounded-xl focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none text-lg font-semibold transition-all duration-200 text-gray-900 placeholder-gray-400 bg-white"
                         placeholder="Enter custom price"
                         value={formData.customPrice}
-                        onChange={(e) => updateForm("customPrice", e.target.value)}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value === '' || (!isNaN(value) && parseFloat(value) >= 0)) {
+                            updateForm("customPrice", value);
+                          }
+                        }}
+                        min="0.01"
+                        step="0.01"
                         required={formData.useCustomPrice}
                       />
                       <p className="text-xs text-gray-600 mt-1">
@@ -454,12 +553,12 @@ export default function AddMemberPage() {
               )}
 
               <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-semibold text-gray-800 mb-2">
                   Start Date
                 </label>
                 <input
                   type="date"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black outline-none"
+                  className="w-full px-4 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all duration-200 text-gray-900 bg-white"
                   value={formData.startDate}
                   onChange={(e) => updateForm("startDate", e.target.value)}
                 />
@@ -469,14 +568,38 @@ export default function AddMemberPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => setStep(1)}
-                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium"
+                className="flex-1 py-3.5 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 active:scale-[0.98] transition-all duration-200"
               >
                 Back
               </button>
               <button
-                onClick={() => setStep(3)}
+                onClick={() => {
+                  // Validate plan selection
+                  if (!formData.planId) {
+                    alert("Please select a membership plan");
+                    return;
+                  }
+                  
+                  // Validate custom price if enabled
+                  if (formData.useCustomPrice) {
+                    const customPrice = parseFloat(formData.customPrice);
+                    if (!formData.customPrice || isNaN(customPrice) || customPrice <= 0) {
+                      alert("Please enter a valid custom price");
+                      return;
+                    }
+                  }
+                  
+                  // Auto-fill payment amount with total price when moving to step 3
+                  const totalPrice = formData.useCustomPrice && formData.customPrice 
+                    ? formData.customPrice 
+                    : selectedPlan?.price;
+                  if (!formData.paymentAmount) {
+                    updateForm("paymentAmount", totalPrice.toString());
+                  }
+                  setStep(3);
+                }}
                 disabled={!formData.planId}
-                className="flex-1 py-3 bg-black text-white rounded-xl font-medium disabled:opacity-50"
+                className="flex-1 py-3.5 bg-gradient-to-r from-[#F97316] to-[#FF8C42] text-white rounded-xl font-semibold disabled:opacity-50 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
               >
                 Next: Payment
               </button>
@@ -528,27 +651,51 @@ export default function AddMemberPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Amount Received *
+                <label className="block text-sm font-semibold text-gray-800 mb-2">
+                  Payment Amount *
                 </label>
                 <input
                   type="number"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black outline-none"
+                  min="0"
+                  step="0.01"
+                  className="w-full px-4 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all duration-200 text-gray-900 placeholder-gray-400 bg-white text-lg font-semibold"
                   placeholder="Enter amount"
                   value={formData.paymentAmount}
-                  onChange={(e) => updateForm("paymentAmount", e.target.value)}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value);
+                    if (value >= 0 || e.target.value === '') {
+                      updateForm("paymentAmount", e.target.value);
+                    }
+                  }}
                 />
+                <p className="text-xs text-gray-600 mt-1">
+                  Full payment: ₹{formData.useCustomPrice && formData.customPrice
+                    ? formData.customPrice
+                    : selectedPlan?.price} {formData.paymentAmount && formData.paymentAmount < (formData.useCustomPrice && formData.customPrice ? parseFloat(formData.customPrice) : selectedPlan?.price) && "(Partial payment accepted)"}
+                </p>
                 {formData.paymentAmount &&
                   formData.paymentAmount < (formData.useCustomPrice && formData.customPrice
                     ? parseFloat(formData.customPrice)
                     : selectedPlan?.price) && (
-                    <p className="text-sm text-orange-500 mt-1">
-                      Due amount: ₹
-                      {(formData.useCustomPrice && formData.customPrice
-                        ? parseFloat(formData.customPrice)
-                        : selectedPlan?.price) - formData.paymentAmount}
-                    </p>
+                    <div className="mt-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                      <p className="text-sm text-orange-700 font-medium">
+                        ⚠️ Partial Payment: ₹{formData.paymentAmount}
+                      </p>
+                      <p className="text-sm text-orange-600 mt-1">
+                        Remaining due: ₹
+                        {(formData.useCustomPrice && formData.customPrice
+                          ? parseFloat(formData.customPrice)
+                          : selectedPlan?.price) - parseFloat(formData.paymentAmount)}
+                      </p>
+                    </div>
                   )}
+                {formData.paymentAmount && parseFloat(formData.paymentAmount) === (formData.useCustomPrice && formData.customPrice ? parseFloat(formData.customPrice) : selectedPlan?.price) && (
+                  <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-sm text-green-700 font-medium">
+                      ✅ Full payment received
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="mt-4">
@@ -572,12 +719,12 @@ export default function AddMemberPage() {
               </div>
 
               <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-semibold text-gray-800 mb-2">
                   Notes (Optional)
                 </label>
                 <textarea
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black outline-none resize-none"
-                  rows={2}
+                  className="w-full px-4 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none resize-none transition-all duration-200 text-gray-900 placeholder-gray-400 bg-white"
+                  rows={3}
                   placeholder="Any additional notes..."
                   value={formData.notes}
                   onChange={(e) => updateForm("notes", e.target.value)}
@@ -585,19 +732,22 @@ export default function AddMemberPage() {
               </div>
             </div>
 
-            <div className="flex gap-3">
+            <div className="space-y-3">
+              <div className="flex gap-3">
+               
+                <button
+                  onClick={() => handleSubmit(true)}
+                  disabled={!formData.paymentAmount || loading}
+                  className="flex-1 py-3.5 bg-gradient-to-r from-[#F97316] to-[#FF8C42] text-white rounded-xl font-semibold disabled:opacity-50 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+                >
+                  {loading ? "Saving..." : "Save & Add Another"}
+                </button>
+              </div>
               <button
                 onClick={() => setStep(2)}
-                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium"
+                className="w-full py-3.5 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 active:scale-[0.98] transition-all duration-200"
               >
                 Back
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={!formData.paymentAmount || loading}
-                className="flex-1 py-3 bg-black text-white rounded-xl font-medium disabled:opacity-50"
-              >
-                {loading ? "Adding..." : "Add Member"}
               </button>
             </div>
           </div>

@@ -601,6 +601,7 @@ export default function AddMemberPage() {
                   type="date"
                   className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all text-sm"
                   value={formData.startDate}
+                  min={new Date().toISOString().split("T")[0]}
                   onChange={(e) => updateForm("startDate", e.target.value)}
                 />
               </div>

@@ -1,71 +1,184 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
-
-// Mock data
-const mockProfile = {
-  id: 1,
-  name: "Rahul Sharma",
-  email: "rahul@example.com",
-  phone: "9876543210",
-  gender: "Male",
-  age: 28,
-  address: "123 Main St, Mumbai",
-  joinDate: "2024-06-15",
-  profileImage: null,
-};
-
-const mockMembership = {
-  plan: "Premium",
-  status: "active",
-  startDate: "2025-01-01",
-  endDate: "2025-06-30",
-  daysLeft: 166,
-  totalDays: 180,
-};
-
-const mockPayments = [
-  {
-    id: 1,
-    date: "2025-01-01",
-    amount: 4500,
-    type: "Membership",
-    status: "paid",
-  },
-  {
-    id: 2,
-    date: "2024-07-01",
-    amount: 4500,
-    type: "Membership",
-    status: "paid",
-  },
-  {
-    id: 3,
-    date: "2024-06-15",
-    amount: 1000,
-    type: "Registration",
-    status: "paid",
-  },
-];
-
-const mockGymInfo = {
-  name: "FitZone Gym",
-  address: "456 Fitness Road, Mumbai - 400001",
-  phone: "9876543200",
-  email: "info@fitzone.com",
-  timings: "5:00 AM - 11:00 PM",
-};
+import { supabase } from "@/lib/supabaseClient";
 
 export default function CustomerProfilePage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("membership");
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState(null);
+  const [membership, setMembership] = useState(null);
+  const [payments, setPayments] = useState([]);
+  const [gymInfo, setGymInfo] = useState(null);
 
-  const membershipProgress =
-    ((mockMembership.totalDays - mockMembership.daysLeft) /
-      mockMembership.totalDays) *
-    100;
+  useEffect(() => {
+    fetchProfileData();
+  }, []);
+
+  const fetchProfileData = async () => {
+    try {
+      setLoading(true);
+      
+      // Get logged-in member from localStorage
+      const storedMember = localStorage.getItem("member");
+      if (!storedMember) {
+        router.push("/auth/login");
+        return;
+      }
+
+      const member = JSON.parse(storedMember);
+
+      // Fetch member details
+      const { data: memberData, error: memberError } = await supabase
+        .from("members")
+        .select(`
+          id,
+          full_name,
+          phone,
+          email,
+          profile_image,
+          gym_id,
+          created_at,
+          memberships (
+            id,
+            plan_id,
+            start_date,
+            end_date,
+            status,
+            membership_plans (
+              name,
+              duration_days,
+              price
+            )
+          )
+        `)
+        .eq("id", member.id)
+        .single();
+
+      if (memberError) throw memberError;
+
+      setProfile({
+        id: memberData.id,
+        name: memberData.full_name,
+        email: memberData.email || "",
+        phone: memberData.phone,
+        profileImage: memberData.profile_image,
+        joinDate: memberData.created_at,
+      });
+
+      // Get active membership
+      const activeMembership = memberData.memberships?.find(m => m.status === 'active') || memberData.memberships?.[0];
+      if (activeMembership) {
+        const endDate = new Date(activeMembership.end_date);
+        const startDate = new Date(activeMembership.start_date);
+        const today = new Date();
+        const daysLeft = Math.max(0, Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)));
+        const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+
+        setMembership({
+          plan: activeMembership.membership_plans?.name || "No Plan",
+          status: activeMembership.status,
+          startDate: activeMembership.start_date,
+          endDate: activeMembership.end_date,
+          daysLeft: daysLeft,
+          totalDays: totalDays,
+        });
+      } else {
+        setMembership({
+          plan: "No Plan",
+          status: "expired",
+          startDate: null,
+          endDate: null,
+          daysLeft: 0,
+          totalDays: 0,
+        });
+      }
+
+      // Fetch payments
+      const { data: paymentsData, error: paymentsError } = await supabase
+        .from("payments")
+        .select("*")
+        .eq("member_id", member.id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (!paymentsError && paymentsData) {
+        setPayments(paymentsData.map(p => ({
+          id: p.id,
+          date: p.created_at.split('T')[0],
+          amount: parseFloat(p.amount),
+          type: p.membership_id ? "Membership" : "Other",
+          status: p.status,
+        })));
+      }
+
+      // Fetch gym info
+      if (memberData.gym_id) {
+        const { data: gymData, error: gymError } = await supabase
+          .from("gyms")
+          .select("id, name, address, phone, email, weekday_open, weekday_close, weekend_open, weekend_close")
+          .eq("id", memberData.gym_id)
+          .single();
+
+        if (!gymError && gymData) {
+          const formatTime = (time) => {
+            if (!time) return "";
+            const [hours, minutes] = time.split(':');
+            const hour = parseInt(hours);
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const displayHour = hour % 12 || 12;
+            return `${displayHour}:${minutes} ${ampm}`;
+          };
+
+          const timings = gymData.weekday_open && gymData.weekday_close
+            ? `${formatTime(gymData.weekday_open)} - ${formatTime(gymData.weekday_close)}`
+            : "Not set";
+
+          setGymInfo({
+            name: gymData.name,
+            address: gymData.address || "",
+            phone: gymData.phone || "",
+            email: gymData.email || "",
+            timings: timings,
+          });
+        }
+      }
+
+    } catch (error) {
+      console.error("Error fetching profile data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-24">
+        <Header title="My Profile" showBack={false} />
+        <div className="flex items-center justify-center h-96">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-24">
+        <Header title="My Profile" showBack={false} />
+        <div className="px-4 py-4 text-center">
+          <p className="text-gray-500">Failed to load profile data</p>
+        </div>
+      </div>
+    );
+  }
+
+  const membershipProgress = membership && membership.totalDays > 0
+    ? ((membership.totalDays - membership.daysLeft) / membership.totalDays) * 100
+    : 0;
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
@@ -75,15 +188,25 @@ export default function CustomerProfilePage() {
         {/* Profile Card */}
         <div className="bg-white rounded-2xl p-6 shadow-sm">
           <div className="flex items-center gap-4">
-            <div className="w-20 h-20 bg-gradient-to-br from-gray-800 to-gray-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-              {mockProfile.name.charAt(0)}
-            </div>
+            {profile.profileImage ? (
+              <img
+                src={profile.profileImage}
+                alt={profile.name}
+                className="w-20 h-20 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-20 h-20 bg-gradient-to-br from-gray-800 to-gray-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                {profile.name.charAt(0)}
+              </div>
+            )}
             <div className="flex-1">
               <h2 className="text-xl font-bold text-gray-900">
-                {mockProfile.name}
+                {profile.name}
               </h2>
-              <p className="text-gray-500">{mockProfile.phone}</p>
-              <p className="text-gray-400 text-sm">{mockProfile.email}</p>
+              <p className="text-gray-500">{profile.phone}</p>
+              {profile.email && (
+                <p className="text-gray-400 text-sm">{profile.email}</p>
+              )}
             </div>
             <button
               onClick={() => router.push("/profile/edit")}
@@ -97,7 +220,7 @@ export default function CustomerProfilePage() {
           <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between text-sm">
             <span className="text-gray-500">Member since</span>
             <span className="font-medium text-gray-900">
-              {new Date(mockProfile.joinDate).toLocaleDateString("en-US", {
+              {new Date(profile.joinDate).toLocaleDateString("en-US", {
                 month: "short",
                 year: "numeric",
               })}
@@ -110,31 +233,43 @@ export default function CustomerProfilePage() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <p className="text-gray-300 text-sm">Current Plan</p>
-              <p className="text-xl font-bold">{mockMembership.plan}</p>
+              <p className="text-xl font-bold">{membership?.plan || "No Plan"}</p>
             </div>
-            <span className="px-3 py-1 bg-green-500 rounded-full text-sm font-medium">
-              {mockMembership.status}
+            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+              membership?.status === 'active' ? 'bg-green-500' : 'bg-red-500'
+            }`}>
+              {membership?.status || "expired"}
             </span>
           </div>
 
-          {/* Progress Bar */}
-          <div className="mb-2">
-            <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-white rounded-full"
-                style={{ width: `${membershipProgress}%` }}
-              ></div>
-            </div>
-          </div>
+          {membership && membership.totalDays > 0 && (
+            <>
+              {/* Progress Bar */}
+              <div className="mb-2">
+                <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-white rounded-full"
+                    style={{ width: `${membershipProgress}%` }}
+                  ></div>
+                </div>
+              </div>
 
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-300">
-              {mockMembership.daysLeft} days left
-            </span>
-            <span className="text-gray-300">
-              Expires: {mockMembership.endDate}
-            </span>
-          </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-300">
+                  {membership.daysLeft} days left
+                </span>
+                {membership.endDate && (
+                  <span className="text-gray-300">
+                    Expires: {new Date(membership.endDate).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric"
+                    })}
+                  </span>
+                )}
+              </div>
+            </>
+          )}
 
           {/* Renew Button */}
           <button
@@ -167,59 +302,50 @@ export default function CustomerProfilePage() {
           <div className="bg-white rounded-xl p-4 shadow-sm space-y-4">
             <h3 className="font-semibold text-gray-900">Membership Details</h3>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs text-gray-500">Plan</p>
-                <p className="font-medium text-gray-900">
-                  {mockMembership.plan}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Status</p>
-                <p className="font-medium text-green-600 capitalize">
-                  {mockMembership.status}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Start Date</p>
-                <p className="font-medium text-gray-900">
-                  {mockMembership.startDate}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">End Date</p>
-                <p className="font-medium text-gray-900">
-                  {mockMembership.endDate}
-                </p>
-              </div>
-            </div>
-
-            {/* Personal Info */}
-            <div className="pt-4 border-t border-gray-100">
-              <h4 className="font-medium text-gray-900 mb-3">
-                Personal Information
-              </h4>
+            {membership ? (
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs text-gray-500">Gender</p>
+                  <p className="text-xs text-gray-500">Plan</p>
                   <p className="font-medium text-gray-900">
-                    {mockProfile.gender}
+                    {membership.plan}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Age</p>
-                  <p className="font-medium text-gray-900">
-                    {mockProfile.age} years
+                  <p className="text-xs text-gray-500">Status</p>
+                  <p className={`font-medium capitalize ${
+                    membership.status === 'active' ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {membership.status}
                   </p>
                 </div>
+                {membership.startDate && (
+                  <div>
+                    <p className="text-xs text-gray-500">Start Date</p>
+                    <p className="font-medium text-gray-900">
+                      {new Date(membership.startDate).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric"
+                      })}
+                    </p>
+                  </div>
+                )}
+                {membership.endDate && (
+                  <div>
+                    <p className="text-xs text-gray-500">End Date</p>
+                    <p className="font-medium text-gray-900">
+                      {new Date(membership.endDate).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric"
+                      })}
+                    </p>
+                  </div>
+                )}
               </div>
-              <div className="mt-3">
-                <p className="text-xs text-gray-500">Address</p>
-                <p className="font-medium text-gray-900">
-                  {mockProfile.address}
-                </p>
-              </div>
-            </div>
+            ) : (
+              <p className="text-gray-500 text-center py-4">No active membership</p>
+            )}
           </div>
         )}
 
@@ -229,87 +355,117 @@ export default function CustomerProfilePage() {
             <div className="p-4 border-b border-gray-100">
               <h3 className="font-semibold text-gray-900">Payment History</h3>
             </div>
-            <div className="divide-y divide-gray-100">
-              {mockPayments.map((payment) => (
-                <div
-                  key={payment.id}
-                  className="p-4 flex items-center justify-between"
-                >
-                  <div>
-                    <p className="font-medium text-gray-900">
-                      ₹{payment.amount}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {payment.type} • {payment.date}
-                    </p>
+            {payments.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">
+                <p>No payment history found</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {payments.map((payment) => (
+                  <div
+                    key={payment.id}
+                    className="p-4 flex items-center justify-between"
+                  >
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        ₹{payment.amount.toLocaleString()}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {payment.type} • {new Date(payment.date).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric"
+                        })}
+                      </p>
+                    </div>
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      payment.status === 'paid' 
+                        ? 'bg-green-100 text-green-700' 
+                        : 'bg-yellow-100 text-yellow-700'
+                    }`}>
+                      {payment.status}
+                    </span>
                   </div>
-                  <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
-                    {payment.status}
-                  </span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
         {/* Gym Info Tab */}
         {activeTab === "gym" && (
           <div className="bg-white rounded-xl p-4 shadow-sm space-y-4">
-            <h3 className="font-semibold text-gray-900">{mockGymInfo.name}</h3>
+            {gymInfo ? (
+              <>
+                <h3 className="font-semibold text-gray-900">{gymInfo.name}</h3>
 
-            <div className="space-y-3">
-              <div className="flex items-start gap-3">
-                <span className="text-lg">📍</span>
-                <div>
-                  <p className="text-xs text-gray-500">Address</p>
-                  <p className="text-sm text-gray-900">{mockGymInfo.address}</p>
+                <div className="space-y-3">
+                  {gymInfo.address && (
+                    <div className="flex items-start gap-3">
+                      <span className="text-lg">📍</span>
+                      <div>
+                        <p className="text-xs text-gray-500">Address</p>
+                        <p className="text-sm text-gray-900">{gymInfo.address}</p>
+                      </div>
+                    </div>
+                  )}
+                  {gymInfo.phone && (
+                    <div className="flex items-start gap-3">
+                      <span className="text-lg">📞</span>
+                      <div>
+                        <p className="text-xs text-gray-500">Phone</p>
+                        <a
+                          href={`tel:${gymInfo.phone}`}
+                          className="text-sm text-blue-600"
+                        >
+                          {gymInfo.phone}
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                  {gymInfo.email && (
+                    <div className="flex items-start gap-3">
+                      <span className="text-lg">✉️</span>
+                      <div>
+                        <p className="text-xs text-gray-500">Email</p>
+                        <p className="text-sm text-gray-900">{gymInfo.email}</p>
+                      </div>
+                    </div>
+                  )}
+                  {gymInfo.timings && (
+                    <div className="flex items-start gap-3">
+                      <span className="text-lg">🕐</span>
+                      <div>
+                        <p className="text-xs text-gray-500">Timings</p>
+                        <p className="text-sm text-gray-900">{gymInfo.timings}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <span className="text-lg">📞</span>
-                <div>
-                  <p className="text-xs text-gray-500">Phone</p>
-                  <a
-                    href={`tel:${mockGymInfo.phone}`}
-                    className="text-sm text-blue-600"
-                  >
-                    {mockGymInfo.phone}
-                  </a>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <span className="text-lg">✉️</span>
-                <div>
-                  <p className="text-xs text-gray-500">Email</p>
-                  <p className="text-sm text-gray-900">{mockGymInfo.email}</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <span className="text-lg">🕐</span>
-                <div>
-                  <p className="text-xs text-gray-500">Timings</p>
-                  <p className="text-sm text-gray-900">{mockGymInfo.timings}</p>
-                </div>
-              </div>
-            </div>
 
-            {/* Quick Actions */}
-            <div className="flex gap-3 pt-4 border-t border-gray-100">
-              <button
-                onClick={() => window.open(`tel:${mockGymInfo.phone}`)}
-                className="flex-1 py-2 bg-gray-100 rounded-lg text-sm font-medium"
-              >
-                📞 Call
-              </button>
-              <button
-                onClick={() =>
-                  window.open(`https://wa.me/91${mockGymInfo.phone}`)
-                }
-                className="flex-1 py-2 bg-green-100 text-green-700 rounded-lg text-sm font-medium"
-              >
-                💬 WhatsApp
-              </button>
-            </div>
+                {/* Quick Actions */}
+                {gymInfo.phone && (
+                  <div className="flex gap-3 pt-4 border-t border-gray-100">
+                    <button
+                      onClick={() => window.open(`tel:${gymInfo.phone}`)}
+                      className="flex-1 py-2 bg-gray-100 rounded-lg text-sm font-medium"
+                    >
+                      📞 Call
+                    </button>
+                    <button
+                      onClick={() =>
+                        window.open(`https://wa.me/91${gymInfo.phone.replace(/\D/g, '')}`)
+                      }
+                      className="flex-1 py-2 bg-green-100 text-green-700 rounded-lg text-sm font-medium"
+                    >
+                      💬 WhatsApp
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="text-gray-500 text-center py-4">Gym information not available</p>
+            )}
           </div>
         )}
 

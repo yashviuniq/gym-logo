@@ -1,18 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
+import { supabase } from "@/lib/supabaseClient";
+import { useToast } from "@/contexts/ToastContext";
 
 export default function GymSettingsPage() {
   const router = useRouter();
+  const { showSuccess, showError } = useToast();
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
+  const [gymId, setGymId] = useState(null);
   const [formData, setFormData] = useState({
-    name: "FitZone Gym",
-    address: "456 Fitness Road, Mumbai - 400001",
-    phone: "9876543200",
-    email: "info@fitzone.com",
-    website: "www.fitzone.com",
+    name: "",
+    address: "",
+    phone: "",
+    email: "",
+    website: "",
     weekdayOpen: "05:00",
     weekdayClose: "23:00",
     weekendOpen: "06:00",
@@ -21,21 +26,143 @@ export default function GymSettingsPage() {
     qrType: "dynamic",
   });
 
+  useEffect(() => {
+    fetchGymData();
+  }, []);
+
+  const fetchGymData = async () => {
+    try {
+      setFetching(true);
+      
+      // Get gym ID from localStorage
+      const storedGym = localStorage.getItem("selectedGym");
+      if (!storedGym) {
+        console.error("No gym selected");
+        router.push("/admin/dashboard");
+        return;
+      }
+
+      const gym = JSON.parse(storedGym);
+      setGymId(gym.id);
+
+      // Fetch gym data from database
+      const { data: gymData, error } = await supabase
+        .from("gyms")
+        .select("*")
+        .eq("id", gym.id)
+        .single();
+
+      if (error) throw error;
+
+      if (gymData) {
+        setFormData({
+          name: gymData.name || "",
+          address: gymData.address || "",
+          phone: gymData.phone || "",
+          email: gymData.email || "",
+          website: gymData.website || "",
+          weekdayOpen: gymData.weekday_open || "05:00",
+          weekdayClose: gymData.weekday_close || "23:00",
+          weekendOpen: gymData.weekend_open || "06:00",
+          weekendClose: gymData.weekend_close || "22:00",
+          qrEnabled: gymData.qr_enabled !== null ? gymData.qr_enabled : true,
+          qrType: gymData.qr_type || "dynamic",
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching gym data:", error);
+      showError("Failed to load gym settings");
+    } finally {
+      setFetching(false);
+    }
+  };
+
   const updateForm = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!gymId) return;
+
+    // Validate phone number if provided
+    if (formData.phone && formData.phone.trim() !== '') {
+      const phoneDigits = formData.phone.replace(/\D/g, '');
+      if (phoneDigits.length !== 10) {
+        showError("Please enter a valid 10-digit phone number");
+        return;
+      }
+    }
+
+    // Validate email format if provided
+    if (formData.email && formData.email.trim() !== '') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        showError("Please enter a valid email address");
+        return;
+      }
+    }
+
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setLoading(false);
-    alert("Settings saved successfully!");
+    try {
+      // Get current user for updated_by
+      const storedUser = localStorage.getItem("gymUser");
+      const user = storedUser ? JSON.parse(storedUser) : null;
+
+      // Clean phone number (remove non-digits)
+      const cleanPhone = formData.phone ? formData.phone.replace(/\D/g, '') : null;
+
+      const { error } = await supabase
+        .from("gyms")
+        .update({
+          name: formData.name,
+          address: formData.address,
+          phone: cleanPhone || null,
+          email: formData.email?.trim() || null,
+          website: formData.website?.trim() || null,
+          weekday_open: formData.weekdayOpen,
+          weekday_close: formData.weekdayClose,
+          weekend_open: formData.weekendOpen,
+          weekend_close: formData.weekendClose,
+          qr_enabled: formData.qrEnabled,
+          qr_type: formData.qrType,
+          updated_by: user?.id || null,
+        })
+        .eq("id", gymId);
+
+      if (error) throw error;
+
+      // Update localStorage with new gym name
+      const storedGym = localStorage.getItem("selectedGym");
+      if (storedGym) {
+        const gym = JSON.parse(storedGym);
+        gym.name = formData.name;
+        localStorage.setItem("selectedGym", JSON.stringify(gym));
+      }
+
+      showSuccess("Settings saved successfully!");
+    } catch (error) {
+      console.error("Error saving gym settings:", error);
+      showError("Failed to save settings. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (fetching) {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-24">
+        <Header title="Gym Settings" showBack={true} />
+        <div className="flex items-center justify-center h-96">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      <Header title="Gym Settings" />
+      <Header title="Gym Settings" showBack={true} />
 
       <form onSubmit={handleSubmit} className="px-4 py-4 space-y-4">
         {/* Basic Info */}
@@ -75,10 +202,20 @@ export default function GymSettingsPage() {
               </label>
               <input
                 type="tel"
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#F97316]/50 focus:border-[#F97316]/50"
+                placeholder="Enter 10-digit phone number"
                 value={formData.phone}
-                onChange={(e) => updateForm("phone", e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, '');
+                  if (value.length <= 10) {
+                    updateForm("phone", value);
+                  }
+                }}
+                pattern="[0-9]{10}"
+                maxLength="10"
+                title="Please enter a valid 10-digit phone number"
               />
+              <p className="text-xs text-gray-500 mt-1">Enter 10 digits only (optional)</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -86,10 +223,12 @@ export default function GymSettingsPage() {
               </label>
               <input
                 type="email"
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#F97316]/50 focus:border-[#F97316]/50"
+                placeholder="example@email.com"
                 value={formData.email}
                 onChange={(e) => updateForm("email", e.target.value)}
               />
+              <p className="text-xs text-gray-500 mt-1">Optional - for contact information</p>
             </div>
           </div>
 

@@ -7,15 +7,16 @@ const adminNavItems = [
   { href: "/admin/dashboard", label: "Home", icon: "🏠" },
   { href: "/members", label: "Members", icon: "👥" },
   { href: "/attendance", label: "Attendance", icon: "📋" },
+  { href: "/announcements", label: "Announcements", icon: "📢" },
   { href: "/finance", label: "Finance", icon: "💰" },
   { href: "/settings", label: "Settings", icon: "⚙️" },
 ];
 
 const customerNavItems = [
-  { href: "/dashboard", label: "Home", icon: "🏠" },
+  { href: "/user/dashboard", label: "Home", icon: "🏠" },
   { href: "/workout", label: "Workout", icon: "💪" },
   { href: "/diet", label: "Diet", icon: "🥗" },
-  { href: "/knowledge", label: "Learn", icon: "📚" },
+  { href: "/user/announcements", label: "Announcements", icon: "📢" },
   { href: "/profile", label: "Profile", icon: "👤" },
 ];
 

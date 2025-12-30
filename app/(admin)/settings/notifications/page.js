@@ -1,9 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
+import { supabase } from "@/lib/supabaseClient";
+import { useToast } from "@/contexts/ToastContext";
 
 export default function NotificationsSettingsPage() {
+  const router = useRouter();
+  const { showSuccess, showError } = useToast();
+  const [fetching, setFetching] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [gymId, setGymId] = useState(null);
   const [settings, setSettings] = useState({
     // Attendance Alerts
     attendanceReminder: true,
@@ -28,14 +36,123 @@ export default function NotificationsSettingsPage() {
     pushEnabled: true,
   });
 
+  useEffect(() => {
+    fetchNotificationSettings();
+  }, []);
+
+  const fetchNotificationSettings = async () => {
+    try {
+      setFetching(true);
+      
+      // Get gym ID from localStorage
+      const storedGym = localStorage.getItem("selectedGym");
+      if (!storedGym) {
+        console.error("No gym selected");
+        router.push("/admin/dashboard");
+        return;
+      }
+
+      const gym = JSON.parse(storedGym);
+      setGymId(gym.id);
+
+      // Fetch notification settings from database
+      const { data: notificationData, error } = await supabase
+        .from("notification_settings")
+        .select("*")
+        .eq("gym_id", gym.id)
+        .single();
+
+      if (error && error.code !== "PGRST116") {
+        // PGRST116 is "not found" error - we'll create default settings
+        throw error;
+      }
+
+      if (notificationData) {
+        // Map database column names (snake_case) to component state (camelCase)
+        setSettings({
+          attendanceReminder: notificationData.attendance_reminder ?? true,
+          attendanceReminderTime: notificationData.attendance_reminder_time || "06:00",
+          noShowAlert: notificationData.no_show_alert ?? true,
+          noShowDays: notificationData.no_show_days ?? 3,
+          paymentReminder: notificationData.payment_reminder ?? true,
+          paymentReminderDays: notificationData.payment_reminder_days ?? 3,
+          overdueAlert: notificationData.overdue_alert ?? true,
+          welcomeMessage: notificationData.welcome_message ?? true,
+          birthdayWishes: notificationData.birthday_wishes ?? true,
+          expiryReminder: notificationData.expiry_reminder ?? true,
+          expiryReminderDays: notificationData.expiry_reminder_days ?? 7,
+          whatsappEnabled: notificationData.whatsapp_enabled ?? true,
+          smsEnabled: notificationData.sms_enabled ?? false,
+          pushEnabled: notificationData.push_enabled ?? true,
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching notification settings:", error);
+      // Continue with default settings if fetch fails
+    } finally {
+      setFetching(false);
+    }
+  };
+
   const updateSetting = (key, value) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleSave = async () => {
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    alert("Settings saved successfully!");
+    if (!gymId) return;
+
+    setSaving(true);
+    try {
+      // Get current user for updated_by
+      const storedUser = localStorage.getItem("gymUser");
+      const user = storedUser ? JSON.parse(storedUser) : null;
+
+      // Map component state (camelCase) to database column names (snake_case)
+      const settingsData = {
+        gym_id: gymId,
+        attendance_reminder: settings.attendanceReminder,
+        attendance_reminder_time: settings.attendanceReminderTime,
+        no_show_alert: settings.noShowAlert,
+        no_show_days: settings.noShowDays,
+        payment_reminder: settings.paymentReminder,
+        payment_reminder_days: settings.paymentReminderDays,
+        overdue_alert: settings.overdueAlert,
+        welcome_message: settings.welcomeMessage,
+        birthday_wishes: settings.birthdayWishes,
+        expiry_reminder: settings.expiryReminder,
+        expiry_reminder_days: settings.expiryReminderDays,
+        whatsapp_enabled: settings.whatsappEnabled,
+        sms_enabled: settings.smsEnabled,
+        push_enabled: settings.pushEnabled,
+        updated_by: user?.id || null,
+      };
+
+      // Use upsert to insert or update
+      const { error } = await supabase
+        .from("notification_settings")
+        .upsert(settingsData, { onConflict: "gym_id" });
+
+      if (error) throw error;
+
+      showSuccess("Settings saved successfully!");
+    } catch (error) {
+      console.error("Error saving notification settings:", error);
+      showError("Failed to save settings. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   };
+
+  if (fetching) {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-24">
+        <Header title="Notifications" />
+        <div className="flex items-center justify-center h-96">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
@@ -232,9 +349,10 @@ export default function NotificationsSettingsPage() {
         {/* Save Button */}
         <button
           onClick={handleSave}
-          className="w-full py-3 bg-black text-white rounded-xl font-medium"
+          disabled={saving}
+          className="w-full py-3 bg-black text-white rounded-xl font-medium disabled:opacity-50"
         >
-          Save Settings
+          {saving ? "Saving..." : "Save Settings"}
         </button>
       </main>
     </div>

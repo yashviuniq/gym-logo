@@ -40,6 +40,10 @@ export default function AddMemberPage() {
     } else {
       setLoadingPlans(false);
     }
+    
+    // Always set start date to today
+    const today = new Date().toISOString().split("T")[0];
+    setFormData(prev => ({ ...prev, startDate: today }));
   }, []);
 
   const fetchMembershipPlans = async (gymId) => {
@@ -599,10 +603,10 @@ export default function AddMemberPage() {
                 </label>
                 <input
                   type="date"
-                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all text-sm"
+                  className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg outline-none transition-all text-sm cursor-not-allowed"
                   value={formData.startDate}
-                  min={new Date().toISOString().split("T")[0]}
-                  onChange={(e) => updateForm("startDate", e.target.value)}
+                  readOnly
+                  disabled
                 />
               </div>
             </div>

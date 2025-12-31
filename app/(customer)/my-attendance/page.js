@@ -1,71 +1,204 @@
 /* eslint-disable react/no-unescaped-entities */
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
-
-// Mock data for customer's attendance
-const mockMyAttendance = [
-  {
-    id: 1,
-    date: "2025-01-15",
-    checkIn: "06:30 AM",
-    checkOut: "08:00 AM",
-    duration: "1h 30m",
-  },
-  {
-    id: 2,
-    date: "2025-01-14",
-    checkIn: "07:00 AM",
-    checkOut: "08:30 AM",
-    duration: "1h 30m",
-  },
-  {
-    id: 3,
-    date: "2025-01-13",
-    checkIn: "06:45 AM",
-    checkOut: "08:15 AM",
-    duration: "1h 30m",
-  },
-  {
-    id: 4,
-    date: "2025-01-11",
-    checkIn: "07:15 AM",
-    checkOut: "08:45 AM",
-    duration: "1h 30m",
-  },
-  {
-    id: 5,
-    date: "2025-01-10",
-    checkIn: "06:30 AM",
-    checkOut: "08:00 AM",
-    duration: "1h 30m",
-  },
-];
-
-const monthlyStats = {
-  totalDays: 15,
-  presentDays: 12,
-  streak: 5,
-  avgDuration: "1h 32m",
-};
+import { supabase } from "@/lib/supabaseClient";
 
 export default function CustomerAttendancePage() {
-  const [selectedMonth, setSelectedMonth] = useState("January 2025");
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [attendance, setAttendance] = useState([]);
+  const [monthlyStats, setMonthlyStats] = useState({
+    totalDays: 0,
+    presentDays: 0,
+    streak: 0,
+    avgDuration: "0h 0m",
+  });
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }));
   const [viewMode, setViewMode] = useState("list"); // list or calendar
+
+  useEffect(() => {
+    fetchAttendanceData();
+  }, []);
+
+  const fetchAttendanceData = async () => {
+    try {
+      setLoading(true);
+      
+      // Get logged-in member from localStorage
+      const storedMember = localStorage.getItem("member");
+      if (!storedMember) {
+        router.push("/auth/login");
+        return;
+      }
+
+      const member = JSON.parse(storedMember);
+
+      // Fetch attendance data
+      const { data: attendanceData, error } = await supabase
+        .from("attendance")
+        .select("*")
+        .eq("member_id", member.id)
+        .order("check_in_date", { ascending: false })
+        .order("check_in_time", { ascending: false });
+
+      if (error) throw error;
+
+      // Format attendance data
+      const formattedAttendance = (attendanceData || []).map(a => {
+        const checkInTime = a.check_in_time ? formatTime(a.check_in_time) : "";
+        const checkOutTime = a.check_out_time ? formatTime(a.check_out_time) : "";
+        
+        let duration = "N/A";
+        if (checkInTime && checkOutTime) {
+          const checkIn = new Date(`2000-01-01 ${a.check_in_time}`);
+          const checkOut = new Date(`2000-01-01 ${a.check_out_time}`);
+          const diffMs = checkOut - checkIn;
+          const hours = Math.floor(diffMs / (1000 * 60 * 60));
+          const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+          duration = `${hours}h ${minutes}m`;
+        }
+
+        return {
+          id: a.id,
+          date: a.check_in_date,
+          checkIn: checkInTime,
+          checkOut: checkOutTime,
+          duration: duration,
+        };
+      });
+
+      setAttendance(formattedAttendance);
+
+      // Calculate monthly stats
+      const today = new Date();
+      const currentMonth = today.getMonth();
+      const currentYear = today.getFullYear();
+      
+      const thisMonthAttendance = formattedAttendance.filter(a => {
+        const attendanceDate = new Date(a.date);
+        return attendanceDate.getMonth() === currentMonth && 
+               attendanceDate.getFullYear() === currentYear;
+      });
+
+      // Calculate streak
+      let streak = 0;
+      if (formattedAttendance.length > 0) {
+        const sortedDates = formattedAttendance
+          .map(a => new Date(a.date))
+          .sort((a, b) => b - a);
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        const latestAttendance = sortedDates[0];
+        if (latestAttendance && 
+            (latestAttendance.toDateString() === today.toDateString() || 
+             latestAttendance.toDateString() === yesterday.toDateString())) {
+          
+          let currentDate = new Date(latestAttendance);
+          currentDate.setHours(0, 0, 0, 0);
+          let i = 0;
+          
+          while (i < sortedDates.length) {
+            const attendanceDate = new Date(sortedDates[i]);
+            attendanceDate.setHours(0, 0, 0, 0);
+            
+            if (attendanceDate.getTime() === currentDate.getTime()) {
+              streak++;
+              currentDate.setDate(currentDate.getDate() - 1);
+              i++;
+            } else if (attendanceDate < currentDate) {
+              break; // Gap in streak
+            } else {
+              i++;
+            }
+          }
+        }
+      }
+
+      // Calculate average duration
+      let totalMinutes = 0;
+      let durationCount = 0;
+      formattedAttendance.forEach(a => {
+        if (a.checkIn && a.checkOut) {
+          const checkIn = new Date(`2000-01-01 ${a.checkIn.replace(' AM', '').replace(' PM', '')}`);
+          const checkOut = new Date(`2000-01-01 ${a.checkOut.replace(' AM', '').replace(' PM', '')}`);
+          const diffMs = checkOut - checkIn;
+          const minutes = Math.floor(diffMs / (1000 * 60));
+          totalMinutes += minutes;
+          durationCount++;
+        }
+      });
+
+      const avgMinutes = durationCount > 0 ? Math.round(totalMinutes / durationCount) : 0;
+      const avgHours = Math.floor(avgMinutes / 60);
+      const avgMins = avgMinutes % 60;
+      const avgDuration = `${avgHours}h ${avgMins}m`;
+
+      // Get total days in current month
+      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+      const daysPassed = today.getDate();
+
+      setMonthlyStats({
+        totalDays: daysPassed,
+        presentDays: thisMonthAttendance.length,
+        streak: streak,
+        avgDuration: avgDuration,
+      });
+
+    } catch (error) {
+      console.error("Error fetching attendance:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatTime = (timeString) => {
+    if (!timeString) return "";
+    const [hours, minutes] = timeString.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 || 12;
+    return `${displayHour}:${minutes} ${ampm}`;
+  };
 
   // Generate calendar data
   const generateCalendarDays = () => {
     const days = [];
-    const presentDates = mockMyAttendance.map((a) =>
-      new Date(a.date).getDate()
-    );
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+    
+    // Get first day of month and number of days
+    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    
+    const presentDates = attendance
+      .filter(a => {
+        const attendanceDate = new Date(a.date);
+        return attendanceDate.getMonth() === currentMonth && 
+               attendanceDate.getFullYear() === currentYear;
+      })
+      .map(a => new Date(a.date).getDate());
 
-    for (let i = 1; i <= 31; i++) {
+    // Add empty cells for days before month starts
+    for (let i = 0; i < firstDay; i++) {
+      days.push({ day: null, isPresent: false, isToday: false });
+    }
+
+    // Add days of the month
+    for (let i = 1; i <= daysInMonth; i++) {
       days.push({
         day: i,
         isPresent: presentDates.includes(i),
-        isToday: i === 15, // Mock today as 15th
+        isToday: i === today.getDate() && 
+                 currentMonth === today.getMonth() && 
+                 currentYear === today.getFullYear(),
       });
     }
     return days;
@@ -81,6 +214,17 @@ export default function CustomerAttendancePage() {
       day: "numeric",
     });
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-24">
+        <Header title="My Attendance" />
+        <div className="flex items-center justify-center h-96">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
@@ -171,8 +315,13 @@ export default function CustomerAttendancePage() {
                 <option>November 2024</option>
               </select>
             </div>
-            <div className="divide-y divide-gray-100">
-              {mockMyAttendance.map((record) => (
+            {attendance.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">
+                <p>No attendance records found</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {attendance.map((record) => (
                 <div key={record.id} className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
@@ -198,8 +347,9 @@ export default function CustomerAttendancePage() {
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -223,16 +373,13 @@ export default function CustomerAttendancePage() {
 
             {/* Calendar Grid */}
             <div className="grid grid-cols-7 gap-1">
-              {/* Empty cells for first day offset (assuming month starts on Wednesday) */}
-              {[...Array(3)].map((_, i) => (
-                <div key={`empty-${i}`} className="aspect-square"></div>
-              ))}
-
-              {calendarDays.map((day) => (
+              {calendarDays.map((day, index) => (
                 <div
-                  key={day.day}
+                  key={day.day !== null ? day.day : `empty-${index}`}
                   className={`aspect-square flex items-center justify-center rounded-lg text-sm font-medium ${
-                    day.isToday
+                    day.day === null
+                      ? ""
+                      : day.isToday
                       ? "bg-black text-white"
                       : day.isPresent
                       ? "bg-green-100 text-green-700"

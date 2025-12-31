@@ -4,9 +4,11 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
+import { useToast } from "@/contexts/ToastContext";
 
 export default function AddMemberPage() {
   const router = useRouter();
+  const { showSuccess, showError } = useToast();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [selectedGym, setSelectedGym] = useState(null);
@@ -30,7 +32,6 @@ export default function AddMemberPage() {
   });
 
   useEffect(() => {
-    // Get selected gym from localStorage
     const storedGym = localStorage.getItem("selectedGym");
     if (storedGym) {
       const gym = JSON.parse(storedGym);
@@ -39,6 +40,10 @@ export default function AddMemberPage() {
     } else {
       setLoadingPlans(false);
     }
+    
+    // Always set start date to today
+    const today = new Date().toISOString().split("T")[0];
+    setFormData(prev => ({ ...prev, startDate: today }));
   }, []);
 
   const fetchMembershipPlans = async (gymId) => {
@@ -55,11 +60,11 @@ export default function AddMemberPage() {
         console.error("Error fetching plans:", error);
         setMembershipPlans([]);
       } else {
-        // Transform duration_days to readable format
         const transformedPlans = plans?.map((plan) => ({
           id: plan.id,
           name: plan.name,
           duration: `${plan.duration_days} Days`,
+          duration_days: plan.duration_days, // Keep duration_days for calculation
           price: plan.price,
         })) || [];
         setMembershipPlans(transformedPlans);
@@ -128,13 +133,12 @@ export default function AddMemberPage() {
 
   const handleSubmit = async (addAnother = false) => {
     if (!selectedGym) {
-      alert("No gym selected. Please go back to dashboard.");
+      showError("No gym selected. Please go back to dashboard.");
       return;
     }
 
     setLoading(true);
     try {
-      // Check if member with same phone number already exists
       const { data: existingMember, error: checkError } = await supabase
         .from("members")
         .select("id, full_name")
@@ -147,7 +151,7 @@ export default function AddMemberPage() {
       }
 
       if (existingMember) {
-        alert(`A member with phone number ${formData.phone} already exists: ${existingMember.full_name}. Please use a different phone number or edit the existing member.`);
+        showError(`A member with phone number ${formData.phone} already exists: ${existingMember.full_name}. Please use a different phone number or edit the existing member.`);
         setLoading(false);
         return;
       }
@@ -159,7 +163,6 @@ export default function AddMemberPage() {
       const paymentAmount = parseFloat(formData.paymentAmount);
       const balanceOwed = finalPrice - paymentAmount;
 
-      // Get current user from localStorage for created_by
       const storedUser = localStorage.getItem("gymUser");
       const currentUser = storedUser ? JSON.parse(storedUser) : null;
       const createdBy = currentUser?.id;
@@ -172,7 +175,7 @@ export default function AddMemberPage() {
           full_name: formData.name,
           phone: formData.phone,
           email: formData.email || null,
-          balance: Math.max(0, balanceOwed), // Only positive balances (amount owed)
+          balance: Math.max(0, balanceOwed),
           created_by: createdBy,
         })
         .select()
@@ -182,11 +185,19 @@ export default function AddMemberPage() {
         throw memberError;
       }
 
-      // 2. Calculate membership end date
+      // 2. Calculate membership end date using duration_days from the plan
       const startDate = new Date(formData.startDate);
-      const durationDays = membershipPlans.find(p => p.id === formData.planId)?.name === "Basic" ? 30 :
-                          membershipPlans.find(p => p.id === formData.planId)?.name === "Standard" ? 90 :
-                          membershipPlans.find(p => p.id === formData.planId)?.name === "Premium" ? 180 : 365;
+      
+      if (!selectedPlan) {
+        throw new Error("Selected plan not found");
+      }
+      
+      // Use duration_days from the plan - must be set in database
+      if (!selectedPlan.duration_days || selectedPlan.duration_days <= 0) {
+        throw new Error(`Invalid duration for plan "${selectedPlan.name}". Please ensure the plan has a valid duration_days value in the database.`);
+      }
+      
+      const durationDays = selectedPlan.duration_days;
       const endDate = new Date(startDate);
       endDate.setDate(endDate.getDate() + durationDays);
 
@@ -223,30 +234,28 @@ export default function AddMemberPage() {
 
         if (paymentError) {
           console.error("Payment error:", paymentError);
-          // Don't throw here as member is already created
         }
       }
 
-      // 5. Create member credentials for app login (optional)
-      const defaultPassword = formData.phone.slice(-4) + "123"; // Last 4 digits + 123
+      // 5. Create member credentials for app login using phone number only
+      const defaultPassword = formData.phone.slice(-4) + "123";
       try {
         await supabase
           .from("member_credentials")
           .insert({
             member_id: member.id,
-            login_type: "email",
-            login_value: formData.email || formData.phone,
-            password: defaultPassword, // In production, hash this
+            login_type: "phone",
+            login_value: formData.phone,
+            password: defaultPassword,
             created_by: createdBy,
           });
       } catch (credError) {
         console.log("Credentials creation skipped:", credError);
       }
 
-      alert(`Member added successfully! ${formData.email ? `Login: ${formData.email} | Password: ${defaultPassword}` : ''}`);
+      showSuccess(`Member added successfully! Login: ${formData.phone} | Password: ${defaultPassword}`);
       
       if (addAnother) {
-        // Reset form and go back to step 1
         setFormData({
           name: "",
           phone: "",
@@ -270,210 +279,252 @@ export default function AddMemberPage() {
 
     } catch (error) {
       console.error("Error adding member:", error);
-      alert("Failed to add member. Please try again.");
+      showError("Failed to add member. Please try again.");
     }
     setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
-      <Header title="Add Member" />
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      <Header title="Add New Member" />
 
-      {/* Progress Steps */}
-      <div className="px-4 py-4">
-        <div className="flex items-center justify-between mb-6">
-          {[1, 2, 3].map((s) => (
-            <div key={s} className="flex items-center">
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${step >= s
-                  ? "bg-black text-white"
-                  : "bg-gray-200 text-gray-500"
-                  }`}
-              >
-                {s}
-              </div>
-              {s < 3 && (
+      <div className="p-4 sm:p-6 max-w-2xl mx-auto">
+        {/* Progress Steps - Made smaller */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            {[1, 2, 3].map((s) => (
+              <div key={s} className="flex items-center">
                 <div
-                  className={`w-16 h-1 mx-2 ${step > s ? "bg-black" : "bg-gray-200"
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                    step >= s
+                      ? step === s
+                        ? "bg-[#F97316] text-white shadow-md"
+                        : "bg-emerald-500 text-white"
+                      : "bg-gray-200 text-gray-500"
+                  }`}
+                >
+                  {step > s ? "✓" : s}
+                </div>
+                {s < 3 && (
+                  <div
+                    className={`w-12 h-1 mx-2 ${
+                      step > s ? "bg-emerald-500" : "bg-gray-200"
                     }`}
-                />
-              )}
-            </div>
-          ))}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+          
+          <div className="flex justify-between px-1 text-xs">
+            <span className={`font-medium ${step >= 1 ? "text-[#F97316]" : "text-gray-500"}`}>
+              Personal
+            </span>
+            <span className={`font-medium ${step >= 2 ? "text-[#F97316]" : "text-gray-500"}`}>
+              Plan
+            </span>
+            <span className={`font-medium ${step >= 3 ? "text-[#F97316]" : "text-gray-500"}`}>
+              Payment
+            </span>
+          </div>
         </div>
 
         {/* Step 1: Personal Info */}
         {step === 1 && (
-          <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
-            <h3 className="font-semibold text-gray-900 mb-4">
-              Personal Information
-            </h3>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-2">
-                Full Name *
-              </label>
-              <input
-                type="text"
-                className="w-full px-4 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all duration-200 text-gray-900 placeholder-gray-400 bg-white"
-                placeholder="Enter full name"
-                value={formData.name}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  // Allow only letters and spaces
-                  if (/^[a-zA-Z\s]*$/.test(value) || value === '') {
-                    updateForm("name", value);
-                  }
-                }}
-                pattern="[a-zA-Z\s]+"
-                title="Please enter a valid name (letters and spaces only)"
-                required
-                minLength="2"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-2">
-                Phone Number *
-              </label>
-              <input
-                type="tel"
-                className="w-full px-4 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all duration-200 text-gray-900 placeholder-gray-400 bg-white"
-                placeholder="Enter 10-digit phone number"
-                value={formData.phone}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/\D/g, '');
-                  if (value.length <= 10) {
-                    updateForm("phone", value);
-                  }
-                }}
-                pattern="[0-9]{10}"
-                maxLength="10"
-                title="Please enter a valid 10-digit phone number"
-                required
-              />
-              <p className="text-xs text-gray-500 mt-1">Enter 10 digits only</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-2">
-                Email
-              </label>
-              <input
-                type="email"
-                className="w-full px-4 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all duration-200 text-gray-900 placeholder-gray-400 bg-white"
-                placeholder="john@example.com"
-                value={formData.email}
-                onChange={(e) => updateForm("email", e.target.value.toLowerCase().trim())}
-                title="Please enter a valid email address"
-              />
-              <p className="text-xs text-gray-500 mt-1">Optional - for app login</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-2">
-                  Gender
-                </label>
-                <select
-                  className="w-full px-4 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all duration-200 text-gray-900 bg-white"
-                  value={formData.gender}
-                  onChange={(e) => updateForm("gender", e.target.value)}
-                >
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
-                </select>
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm mb-16"> {/* Added mb-16 for bottom spacing */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#F97316]/10 to-[#FF8C42]/10 rounded-lg flex items-center justify-center">
+                <span className="text-[#F97316] text-lg">👤</span>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-2">
-                  Age
+                <h3 className="font-semibold text-gray-900">Personal Information</h3>
+                <p className="text-xs text-gray-500">Enter basic details</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Full Name <span className="text-red-500">*</span>
                 </label>
                 <input
-                  type="number"
-                  className="w-full px-4 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all duration-200 text-gray-900 placeholder-gray-400 bg-white"
-                  placeholder="Age"
-                  value={formData.age}
+                  type="text"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all placeholder:text-gray-400"
+                  placeholder="Enter full name"
+                  value={formData.name}
                   onChange={(e) => {
                     const value = e.target.value;
-                    if (value === '' || (!isNaN(value) && parseInt(value) >= 0 && parseInt(value) <= 120)) {
-                      updateForm("age", value);
+                    if (/^[a-zA-Z\s]*$/.test(value) || value === '') {
+                      updateForm("name", value);
                     }
                   }}
-                  min="1"
-                  max="120"
+                  pattern="[a-zA-Z\s]+"
+                  title="Please enter a valid name (letters and spaces only)"
+                  required
+                  minLength="2"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone Number <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">📱</span>
+                  <input
+                    type="tel"
+                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all placeholder:text-gray-400"
+                    placeholder="Enter 10-digit phone"
+                    value={formData.phone}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '');
+                      if (value.length <= 10) {
+                        updateForm("phone", value);
+                      }
+                    }}
+                    pattern="[0-9]{10}"
+                    maxLength="10"
+                    title="Please enter a valid 10-digit phone number"
+                    required
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">10 digits only</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">✉️</span>
+                  <input
+                    type="email"
+                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all placeholder:text-gray-400"
+                    placeholder="john@example.com"
+                    value={formData.email}
+                    onChange={(e) => updateForm("email", e.target.value.toLowerCase().trim())}
+                    title="Please enter a valid email address"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Optional - for app login</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Gender
+                  </label>
+                  <select
+                    className="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all text-sm"
+                    value={formData.gender}
+                    onChange={(e) => updateForm("gender", e.target.value)}
+                  >
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Age
+                  </label>
+                  <input
+                    type="number"
+                    className="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all placeholder:text-gray-400 text-sm"
+                    placeholder="Age"
+                    value={formData.age}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === '' || (!isNaN(value) && parseInt(value) >= 0 && parseInt(value) <= 120)) {
+                        updateForm("age", value);
+                      }
+                    }}
+                    min="1"
+                    max="120"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Address
+                </label>
+                <textarea
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none resize-none transition-all placeholder:text-gray-400 text-sm"
+                  rows={2}
+                  placeholder="Enter address"
+                  value={formData.address}
+                  onChange={(e) => updateForm("address", e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Emergency Contact
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">🚨</span>
+                  <input
+                    type="tel"
+                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all placeholder:text-gray-400"
+                    placeholder="Emergency contact number"
+                    value={formData.emergencyContact}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '');
+                      if (value.length <= 10) {
+                        updateForm("emergencyContact", value);
+                      }
+                    }}
+                    pattern="[0-9]{10}"
+                    maxLength="10"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Optional - 10 digits only</p>
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-2">
-                Address
-              </label>
-              <textarea
-                className="w-full px-4 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none resize-none transition-all duration-200 text-gray-900 placeholder-gray-400 bg-white"
-                rows={3}
-                placeholder="Enter address"
-                value={formData.address}
-                onChange={(e) => updateForm("address", e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-2">
-                Emergency Contact
-              </label>
-              <input
-                type="tel"
-                className="w-full px-4 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all duration-200 text-gray-900 placeholder-gray-400 bg-white"
-                placeholder="Emergency contact number (10 digits)"
-                value={formData.emergencyContact}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/\D/g, '');
-                  if (value.length <= 10) {
-                    updateForm("emergencyContact", value);
+            {/* Next Button - Fixed position above bottom nav */}
+            <div className="mt-6 mb-2"> {/* Reduced margin-top */}
+              <button
+                onClick={() => {
+                  if (!formData.name || formData.name.trim().length < 2) {
+                    alert("Please enter a valid name (at least 2 characters)");
+                    return;
                   }
+                  if (!formData.phone || formData.phone.length !== 10) {
+                    alert("Please enter a valid 10-digit phone number");
+                    return;
+                  }
+                  if (formData.email && !formData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+                    alert("Please enter a valid email address or leave it empty");
+                    return;
+                  }
+                  setStep(2);
                 }}
-                pattern="[0-9]{10}"
-                maxLength="10"
-              />
-              <p className="text-xs text-gray-500 mt-1">Optional - 10 digits only</p>
+                disabled={!formData.name || !formData.phone}
+                className="w-full py-3.5 bg-gradient-to-r from-[#F97316] to-[#FF8C42] text-white font-medium rounded-lg hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              >
+                Next: Select Plan
+              </button>
             </div>
-
-            <button
-              onClick={() => {
-                // Validate before moving to next step
-                if (!formData.name || formData.name.trim().length < 2) {
-                  alert("Please enter a valid name (at least 2 characters)");
-                  return;
-                }
-                if (!formData.phone || formData.phone.length !== 10) {
-                  alert("Please enter a valid 10-digit phone number");
-                  return;
-                }
-                if (formData.email && !formData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-                  alert("Please enter a valid email address or leave it empty");
-                  return;
-                }
-                setStep(2);
-              }}
-              disabled={!formData.name || !formData.phone}
-              className="w-full py-3.5 bg-gradient-to-r from-[#F97316] to-[#FF8C42] text-white rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed mt-6 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
-            >
-              Next: Select Plan
-            </button>
           </div>
         )}
 
         {/* Step 2: Select Plan */}
         {step === 2 && (
-          <div className="space-y-4">
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <h3 className="font-semibold text-gray-900 mb-4">
-                Select Membership Plan
-              </h3>
+          <div className="space-y-4 mb-16"> {/* Added mb-16 */}
+            <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg flex items-center justify-center">
+                  <span className="text-blue-600 text-lg">📋</span>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Select Membership Plan</h3>
+                  <p className="text-xs text-gray-500">Choose a plan for the member</p>
+                </div>
+              </div>
 
-              <div className="space-y-3">
+              <div className="space-y-2 mb-4">
                 {membershipPlans.map((plan) => (
                   <div
                     key={plan.id}
@@ -481,57 +532,52 @@ export default function AddMemberPage() {
                       updateForm("planId", plan.id);
                       updateForm("customPrice", plan.price.toString());
                     }}
-                    className={`p-4 rounded-xl border-2 cursor-pointer transition ${formData.planId === plan.id
-                      ? "border-black bg-gray-50"
+                    className={`p-3 rounded-lg border cursor-pointer transition-all ${formData.planId === plan.id
+                      ? "border-[#F97316] bg-gradient-to-r from-[#F97316]/5 to-[#FF8C42]/5"
                       : "border-gray-200 hover:border-gray-300"
                       }`}
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-semibold text-gray-900">
-                          {plan.name}
-                        </p>
-                        <p className="text-sm text-gray-500">{plan.duration}</p>
+                        <p className="font-medium text-gray-900">{plan.name}</p>
+                        <p className="text-xs text-gray-500">{plan.duration}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xl font-bold text-gray-900">
-                          ₹{plan.price}
-                        </p>
+                        <p className="font-bold text-gray-900">₹{plan.price}</p>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* Custom Price Option */}
               {formData.planId && (
-                <div className="mt-4 bg-orange-50 rounded-xl p-4 space-y-3 border border-orange-200">
-                  <div className="flex items-center justify-between">
+                <div className="mb-4 p-3 bg-gradient-to-r from-[#F97316]/5 to-[#FF8C42]/5 rounded-lg border border-[#F97316]/20">
+                  <div className="flex items-center justify-between mb-2">
                     <div>
-                      <span className="font-medium text-gray-900">Manual Price Override</span>
-                      <p className="text-xs text-gray-600 mt-0.5">Set custom price for this membership</p>
+                      <span className="text-sm font-medium text-gray-900">Custom Price</span>
+                      <p className="text-xs text-gray-600">Set custom price for this membership</p>
                     </div>
                     <button
                       type="button"
                       onClick={() => updateForm("useCustomPrice", !formData.useCustomPrice)}
-                      className={`w-12 h-6 rounded-full transition ${formData.useCustomPrice ? "bg-[#F97316]" : "bg-gray-300"
+                      className={`relative inline-flex h-5 w-10 items-center rounded-full ${formData.useCustomPrice ? "bg-[#F97316]" : "bg-gray-300"
                         }`}
                     >
-                      <div
-                        className={`w-5 h-5 bg-white rounded-full shadow transition transform ${formData.useCustomPrice ? "translate-x-6" : "translate-x-1"
+                      <span
+                        className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition ${formData.useCustomPrice ? "translate-x-5" : "translate-x-0.5"
                           }`}
-                      ></div>
+                      />
                     </button>
                   </div>
 
                   {formData.useCustomPrice && (
                     <div>
-                      <label className="block text-sm font-semibold text-gray-800 mb-2">
-                        Custom Price (₹) *
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Custom Price (₹)
                       </label>
                       <input
                         type="number"
-                        className="w-full px-4 py-3.5 border-2 border-orange-300 rounded-xl focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none text-lg font-semibold transition-all duration-200 text-gray-900 placeholder-gray-400 bg-white"
+                        className="w-full px-3 py-2 bg-white border border-[#F97316]/30 rounded-lg focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none text-sm font-medium transition-all"
                         placeholder="Enter custom price"
                         value={formData.customPrice}
                         onChange={(e) => {
@@ -542,9 +588,8 @@ export default function AddMemberPage() {
                         }}
                         min="0.01"
                         step="0.01"
-                        required={formData.useCustomPrice}
                       />
-                      <p className="text-xs text-gray-600 mt-1">
+                      <p className="text-xs text-gray-500 mt-1">
                         Original price: ₹{selectedPlan?.price}
                       </p>
                     </div>
@@ -552,15 +597,16 @@ export default function AddMemberPage() {
                 </div>
               )}
 
-              <div className="mt-4">
-                <label className="block text-sm font-semibold text-gray-800 mb-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Start Date
                 </label>
                 <input
                   type="date"
-                  className="w-full px-4 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all duration-200 text-gray-900 bg-white"
+                  className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg outline-none transition-all text-sm cursor-not-allowed"
                   value={formData.startDate}
-                  onChange={(e) => updateForm("startDate", e.target.value)}
+                  readOnly
+                  disabled
                 />
               </div>
             </div>
@@ -568,19 +614,17 @@ export default function AddMemberPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => setStep(1)}
-                className="flex-1 py-3.5 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 active:scale-[0.98] transition-all duration-200"
+                className="flex-1 py-3 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-all duration-200"
               >
                 Back
               </button>
               <button
                 onClick={() => {
-                  // Validate plan selection
                   if (!formData.planId) {
                     alert("Please select a membership plan");
                     return;
                   }
                   
-                  // Validate custom price if enabled
                   if (formData.useCustomPrice) {
                     const customPrice = parseFloat(formData.customPrice);
                     if (!formData.customPrice || isNaN(customPrice) || customPrice <= 0) {
@@ -589,7 +633,6 @@ export default function AddMemberPage() {
                     }
                   }
                   
-                  // Auto-fill payment amount with total price when moving to step 3
                   const totalPrice = formData.useCustomPrice && formData.customPrice 
                     ? formData.customPrice 
                     : selectedPlan?.price;
@@ -599,7 +642,7 @@ export default function AddMemberPage() {
                   setStep(3);
                 }}
                 disabled={!formData.planId}
-                className="flex-1 py-3.5 bg-gradient-to-r from-[#F97316] to-[#FF8C42] text-white rounded-xl font-semibold disabled:opacity-50 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+                className="flex-1 py-3 bg-gradient-to-r from-[#F97316] to-[#FF8C42] text-white font-medium rounded-lg hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
               >
                 Next: Payment
               </button>
@@ -609,25 +652,30 @@ export default function AddMemberPage() {
 
         {/* Step 3: Payment */}
         {step === 3 && (
-          <div className="space-y-4">
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <h3 className="font-semibold text-gray-900 mb-4">
-                Payment Details
-              </h3>
+          <div className="space-y-4 mb-16"> {/* Added mb-16 */}
+            <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-gradient-to-br from-green-50 to-green-100 rounded-lg flex items-center justify-center">
+                  <span className="text-green-600 text-lg">💰</span>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Payment Details</h3>
+                  <p className="text-xs text-gray-500">Complete the payment</p>
+                </div>
+              </div>
 
-              {/* Summary */}
-              <div className="bg-gray-50 rounded-xl p-4 mb-4">
+              <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-gray-600">Plan</span>
-                  <span className="font-medium">{selectedPlan?.name}</span>
+                  <span className="text-sm text-gray-600">Plan</span>
+                  <span className="font-medium text-gray-900">{selectedPlan?.name}</span>
                 </div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-gray-600">Duration</span>
-                  <span className="font-medium">{selectedPlan?.duration}</span>
+                  <span className="text-sm text-gray-600">Duration</span>
+                  <span className="font-medium text-gray-900">{selectedPlan?.duration}</span>
                 </div>
                 {formData.useCustomPrice && (
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-gray-600">Original Price</span>
+                    <span className="text-sm text-gray-600">Original Price</span>
                     <span className="font-medium line-through text-gray-400">
                       ₹{selectedPlan?.price}
                     </span>
@@ -637,28 +685,23 @@ export default function AddMemberPage() {
                   <span className="font-medium text-gray-900">
                     Total Amount
                   </span>
-                  <span className="text-xl font-bold">
+                  <span className="text-lg font-bold text-gray-900">
                     ₹{formData.useCustomPrice && formData.customPrice
                       ? formData.customPrice
                       : selectedPlan?.price}
                   </span>
                 </div>
-                {formData.useCustomPrice && (
-                  <div className="mt-2 text-xs text-orange-600 bg-orange-100 rounded-lg p-2">
-                    💡 Custom price applied
-                  </div>
-                )}
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-800 mb-2">
-                  Payment Amount *
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Payment Amount (₹) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
                   min="0"
                   step="0.01"
-                  className="w-full px-4 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all duration-200 text-gray-900 placeholder-gray-400 bg-white text-lg font-semibold"
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none font-medium transition-all"
                   placeholder="Enter amount"
                   value={formData.paymentAmount}
                   onChange={(e) => {
@@ -668,38 +711,34 @@ export default function AddMemberPage() {
                     }
                   }}
                 />
-                <p className="text-xs text-gray-600 mt-1">
-                  Full payment: ₹{formData.useCustomPrice && formData.customPrice
-                    ? formData.customPrice
-                    : selectedPlan?.price} {formData.paymentAmount && formData.paymentAmount < (formData.useCustomPrice && formData.customPrice ? parseFloat(formData.customPrice) : selectedPlan?.price) && "(Partial payment accepted)"}
-                </p>
-                {formData.paymentAmount &&
-                  formData.paymentAmount < (formData.useCustomPrice && formData.customPrice
-                    ? parseFloat(formData.customPrice)
-                    : selectedPlan?.price) && (
-                    <div className="mt-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                      <p className="text-sm text-orange-700 font-medium">
-                        ⚠️ Partial Payment: ₹{formData.paymentAmount}
-                      </p>
-                      <p className="text-sm text-orange-600 mt-1">
-                        Remaining due: ₹
-                        {(formData.useCustomPrice && formData.customPrice
-                          ? parseFloat(formData.customPrice)
-                          : selectedPlan?.price) - parseFloat(formData.paymentAmount)}
-                      </p>
-                    </div>
-                  )}
-                {formData.paymentAmount && parseFloat(formData.paymentAmount) === (formData.useCustomPrice && formData.customPrice ? parseFloat(formData.customPrice) : selectedPlan?.price) && (
-                  <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <p className="text-sm text-green-700 font-medium">
-                      ✅ Full payment received
+              </div>
+
+              {formData.paymentAmount &&
+                formData.paymentAmount < (formData.useCustomPrice && formData.customPrice
+                  ? parseFloat(formData.customPrice)
+                  : selectedPlan?.price) && (
+                  <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-sm font-medium text-amber-700">
+                      ⚠️ Partial Payment: ₹{formData.paymentAmount}
+                    </p>
+                    <p className="text-xs text-amber-600 mt-1">
+                      Remaining due: ₹
+                      {(formData.useCustomPrice && formData.customPrice
+                        ? parseFloat(formData.customPrice)
+                        : selectedPlan?.price) - parseFloat(formData.paymentAmount)}
                     </p>
                   </div>
                 )}
-              </div>
+              {formData.paymentAmount && parseFloat(formData.paymentAmount) === (formData.useCustomPrice && formData.customPrice ? parseFloat(formData.customPrice) : selectedPlan?.price) && (
+                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-sm font-medium text-green-700">
+                    ✅ Full payment received
+                  </p>
+                </div>
+              )}
 
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Payment Mode
                 </label>
                 <div className="flex gap-2">
@@ -707,8 +746,8 @@ export default function AddMemberPage() {
                     <button
                       key={mode}
                       onClick={() => updateForm("paymentMode", mode)}
-                      className={`flex-1 py-2 rounded-lg text-sm font-medium capitalize transition ${formData.paymentMode === mode
-                        ? "bg-black text-white"
+                      className={`flex-1 py-2 text-sm font-medium capitalize rounded-lg transition ${formData.paymentMode === mode
+                        ? "bg-gray-800 text-white"
                         : "bg-gray-100 text-gray-600"
                         }`}
                     >
@@ -718,13 +757,13 @@ export default function AddMemberPage() {
                 </div>
               </div>
 
-              <div className="mt-4">
-                <label className="block text-sm font-semibold text-gray-800 mb-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Notes (Optional)
                 </label>
                 <textarea
-                  className="w-full px-4 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none resize-none transition-all duration-200 text-gray-900 placeholder-gray-400 bg-white"
-                  rows={3}
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none resize-none transition-all placeholder:text-gray-400 text-sm"
+                  rows={2}
                   placeholder="Any additional notes..."
                   value={formData.notes}
                   onChange={(e) => updateForm("notes", e.target.value)}
@@ -734,18 +773,24 @@ export default function AddMemberPage() {
 
             <div className="space-y-3">
               <div className="flex gap-3">
-               
+                <button
+                  onClick={() => handleSubmit(false)}
+                  disabled={!formData.paymentAmount || loading}
+                  className="flex-1 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium rounded-lg hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                >
+                  {loading ? "Saving..." : "Save Member"}
+                </button>
                 <button
                   onClick={() => handleSubmit(true)}
                   disabled={!formData.paymentAmount || loading}
-                  className="flex-1 py-3.5 bg-gradient-to-r from-[#F97316] to-[#FF8C42] text-white rounded-xl font-semibold disabled:opacity-50 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+                  className="flex-1 py-3 bg-gradient-to-r from-[#F97316] to-[#FF8C42] text-white font-medium rounded-lg hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                 >
                   {loading ? "Saving..." : "Save & Add Another"}
                 </button>
               </div>
               <button
                 onClick={() => setStep(2)}
-                className="w-full py-3.5 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 active:scale-[0.98] transition-all duration-200"
+                className="w-full py-3 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-all duration-200"
               >
                 Back
               </button>

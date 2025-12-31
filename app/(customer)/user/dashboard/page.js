@@ -32,6 +32,7 @@ export default function CustomerDashboard() {
     streak: 0,
     thisMonthAttendance: 0,
   });
+  const [announcements, setAnnouncements] = useState([]);
 
   useEffect(() => {
     fetchDashboardData();
@@ -178,6 +179,41 @@ export default function CustomerDashboard() {
         thisMonthAttendance: thisMonthAttendance,
       });
 
+      // Fetch active announcements for the member's gym
+      try {
+        const { data: announcementsData, error: announcementsError } = await supabase
+          .from("announcements")
+          .select("*")
+          .eq("gym_id", memberDetails.gym_id)
+          .eq("status", "active")
+          .order("announced_at", { ascending: false })
+          .limit(5); // Show latest 5 announcements
+
+        if (announcementsError) {
+          console.error("Error fetching announcements:", announcementsError);
+          setAnnouncements([]);
+        } else if (announcementsData) {
+          console.log("Dashboard: Raw announcements data:", announcementsData);
+          // Filter out expired announcements on client side
+          const now = new Date();
+          const activeAnnouncements = announcementsData.filter(announcement => {
+            if (!announcement.expires_at) {
+              return true;
+            }
+            const expiryDate = new Date(announcement.expires_at);
+            return expiryDate.getTime() > now.getTime();
+          });
+          console.log("Dashboard: Active announcements after filter:", activeAnnouncements);
+          setAnnouncements(activeAnnouncements || []);
+        } else {
+          console.log("No announcements data returned for gym_id:", memberDetails.gym_id);
+          setAnnouncements([]);
+        }
+      } catch (announcementErr) {
+        console.error("Error in announcements fetch:", announcementErr);
+        setAnnouncements([]);
+      }
+
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
     }
@@ -294,6 +330,53 @@ export default function CustomerDashboard() {
             ))}
           </div>
         </div>
+
+        {/* Announcements Section */}
+        {announcements.length > 0 ? (
+          <div className="bg-white rounded-xl p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                <span className="text-xl">📢</span>
+                Announcements
+              </h3>
+              {announcements.length > 1 && (
+                <span className="text-xs text-gray-500">
+                  {announcements.length} new
+                </span>
+              )}
+            </div>
+            <div className="space-y-3">
+              {announcements.map((announcement) => (
+                <div
+                  key={announcement.id}
+                  className="bg-gradient-to-r from-orange-50 to-orange-100 border border-orange-200 rounded-lg p-3 cursor-pointer hover:shadow-md transition-all"
+                  onClick={() => router.push(`/user/announcements/${announcement.id}`)}
+                >
+                  <div className="flex items-start gap-2">
+                    <span className="text-lg">📌</span>
+                    <div className="flex-1">
+                      <p className="font-semibold text-gray-900 text-sm mb-1">
+                        {announcement.title}
+                      </p>
+                      <p className="text-xs text-gray-600 line-clamp-2">
+                        {announcement.message}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {new Date(announcement.announced_at).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric"
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          // Show a placeholder or nothing when no announcements
+          null
+        )}
 
         {/* Knowledge Tip */}
         <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl p-4 text-white">

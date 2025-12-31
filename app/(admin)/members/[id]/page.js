@@ -396,7 +396,11 @@ export default function MemberDetailPage() {
 
         {/* Action Buttons */}
         <div className="grid grid-cols-4 gap-3 mb-4">
-          {[
+          {[{
+              label: "Credentials",
+              icon: "🔐",
+              action: () => router.push(`/members/${member.id}/credentials`),
+            },
             {
               label: "Call",
               icon: "📞",
@@ -412,11 +416,7 @@ export default function MemberDetailPage() {
               icon: "💳",
               action: () => router.push(`/members/${member.id}/payment`),
             },
-            {
-              label: "Credentials",
-              icon: "🔐",
-              action: () => router.push(`/members/${member.id}/credentials`),
-            },
+            
           ].map((btn, index) => (
             <button
               key={index}
@@ -448,7 +448,7 @@ export default function MemberDetailPage() {
         </div>
 
         {/* Membership Actions */}
-        <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="grid grid-cols-2 gap-3 mb-4">
           <button
             onClick={() => setShowRenewModal(true)}
             className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl p-3 shadow-sm flex flex-col items-center gap-1 hover:shadow-md transition"
@@ -463,13 +463,7 @@ export default function MemberDetailPage() {
             <span className="text-xl">📜</span>
             <span className="text-xs font-medium">History</span>
           </button>
-          <button
-            onClick={() => router.push(`/members/${member.id}/edit`)}
-            className="bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl p-3 shadow-sm flex flex-col items-center gap-1 hover:shadow-md transition"
-          >
-            <span className="text-xl">✏️</span>
-            <span className="text-xs font-medium">Edit</span>
-          </button>
+        
         </div>
 
         {/* Tabs */}

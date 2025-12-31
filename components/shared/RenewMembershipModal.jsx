@@ -52,22 +52,46 @@ export default function RenewMembershipModal({ member, gymId, onClose, onRenew }
     const finalPrice = useCustomPrice && customPrice ? parseFloat(customPrice) : plan?.price || 0;
 
     const calculateNewEndDate = () => {
-        if (!plan) return null;
+        if (!plan || !plan.duration_days) return null;
         
         let startDate;
         if (useCustomStartDate && customStartDate) {
             // Use custom start date
-            startDate = new Date(customStartDate);
+            startDate = new Date(customStartDate + 'T00:00:00');
         } else {
-            // Use current end date or today's date if expired
-            const baseDate = member.validTill && member.validTill !== "N/A" 
-                ? new Date(member.validTill.split('/').reverse().join('-')) 
-                : new Date();
+            // For renewal, start date should be the day AFTER current end date (or today if expired)
+            let currentEndDate;
+            if (member.validTill && member.validTill !== "N/A") {
+                // Parse DD/MM/YYYY format
+                const parts = member.validTill.split('/');
+                if (parts.length === 3) {
+                    const day = parseInt(parts[0], 10);
+                    const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
+                    const year = parseInt(parts[2], 10);
+                    currentEndDate = new Date(year, month, day);
+                } else {
+                    currentEndDate = new Date();
+                }
+            } else {
+                currentEndDate = new Date();
+            }
+            
             const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            currentEndDate.setHours(0, 0, 0, 0);
+            
             // If membership expired, start from today
-            startDate = baseDate < today ? today : baseDate;
+            // Otherwise, start from the day after current end date
+            if (currentEndDate < today) {
+                startDate = today;
+            } else {
+                // Start from the day after current end date
+                startDate = new Date(currentEndDate);
+                startDate.setDate(startDate.getDate() + 1);
+            }
         }
         
+        // Calculate end date by adding duration_days
         const newEndDate = new Date(startDate);
         newEndDate.setDate(newEndDate.getDate() + plan.duration_days);
         return newEndDate.toISOString().split("T")[0];
@@ -78,11 +102,38 @@ export default function RenewMembershipModal({ member, gymId, onClose, onRenew }
             return customStartDate;
         }
         
-        const baseDate = member.validTill && member.validTill !== "N/A" 
-            ? new Date(member.validTill.split('/').reverse().join('-')) 
-            : new Date();
+        // For renewal, start date should be the day AFTER current end date (or today if expired)
+        let currentEndDate;
+        if (member.validTill && member.validTill !== "N/A") {
+            // Parse DD/MM/YYYY format
+            const parts = member.validTill.split('/');
+            if (parts.length === 3) {
+                const day = parseInt(parts[0], 10);
+                const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
+                const year = parseInt(parts[2], 10);
+                currentEndDate = new Date(year, month, day);
+            } else {
+                currentEndDate = new Date();
+            }
+        } else {
+            currentEndDate = new Date();
+        }
+        
         const today = new Date();
-        const startDate = baseDate < today ? today : baseDate;
+        today.setHours(0, 0, 0, 0);
+        currentEndDate.setHours(0, 0, 0, 0);
+        
+        let startDate;
+        // If membership expired, start from today
+        // Otherwise, start from the day after current end date
+        if (currentEndDate < today) {
+            startDate = today;
+        } else {
+            // Start from the day after current end date
+            startDate = new Date(currentEndDate);
+            startDate.setDate(startDate.getDate() + 1);
+        }
+        
         return startDate.toISOString().split("T")[0];
     };
 
@@ -259,17 +310,23 @@ export default function RenewMembershipModal({ member, gymId, onClose, onRenew }
                     </div>
 
                     {/* New End Date Preview */}
-                    {selectedPlan && (
-                        <div className="bg-blue-50 rounded-xl p-3">
-                            <p className="text-sm text-blue-600 mb-1">New Validity Period</p>
-                            <p className="font-semibold text-blue-900">
-                                {useCustomStartDate ? new Date(customStartDate).toLocaleDateString("en-IN") : member.validTill} → {calculateNewEndDate() ? new Date(calculateNewEndDate()).toLocaleDateString("en-IN") : ""}
-                            </p>
-                            <p className="text-xs text-blue-600 mt-1">
-                                +{plan.duration_days} days extension
-                            </p>
-                        </div>
-                    )}
+                    {selectedPlan && (() => {
+                        const startDateStr = getStartDate();
+                        const endDateStr = calculateNewEndDate();
+                        const startDate = startDateStr ? new Date(startDateStr + 'T00:00:00') : null;
+                        const endDate = endDateStr ? new Date(endDateStr + 'T00:00:00') : null;
+                        return (
+                            <div className="bg-blue-50 rounded-xl p-3">
+                                <p className="text-sm text-blue-600 mb-1">New Validity Period</p>
+                                <p className="font-semibold text-blue-900">
+                                    {startDate ? startDate.toLocaleDateString("en-IN") : ""} → {endDate ? endDate.toLocaleDateString("en-IN") : ""}
+                                </p>
+                                <p className="text-xs text-blue-600 mt-1">
+                                    +{plan.duration_days} days extension
+                                </p>
+                            </div>
+                        );
+                    })()}
 
                     {/* Manual Date Selection */}
                     {selectedPlan && (

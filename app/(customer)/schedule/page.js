@@ -1,94 +1,179 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
-
-const mockSchedule = [
-  {
-    date: "2025-01-13",
-    day: "Mon",
-    workout: "Chest & Triceps",
-    time: "6:00 AM",
-    completed: true,
-  },
-  {
-    date: "2025-01-14",
-    day: "Tue",
-    workout: "Back & Biceps",
-    time: "6:00 AM",
-    completed: true,
-  },
-  {
-    date: "2025-01-15",
-    day: "Wed",
-    workout: "Legs & Abs",
-    time: "6:00 AM",
-    completed: false,
-    isToday: true,
-  },
-  {
-    date: "2025-01-16",
-    day: "Thu",
-    workout: "Shoulders",
-    time: "6:00 AM",
-    completed: false,
-  },
-  {
-    date: "2025-01-17",
-    day: "Fri",
-    workout: "Arms",
-    time: "6:00 AM",
-    completed: false,
-  },
-  {
-    date: "2025-01-18",
-    day: "Sat",
-    workout: "Full Body",
-    time: "7:00 AM",
-    completed: false,
-  },
-  {
-    date: "2025-01-19",
-    day: "Sun",
-    workout: "Rest Day",
-    time: "-",
-    completed: false,
-    isRest: true,
-  },
-];
-
-const mockGymTimings = {
-  weekday: "5:00 AM - 11:00 PM",
-  weekend: "6:00 AM - 10:00 PM",
-  mySlot: "6:00 AM - 7:30 AM",
-};
-
-const mockUpcoming = [
-  {
-    id: 1,
-    title: "PT Session",
-    date: "Jan 18",
-    time: "7:00 AM",
-    type: "training",
-  },
-  {
-    id: 2,
-    title: "Body Measurement",
-    date: "Jan 20",
-    time: "8:00 AM",
-    type: "checkup",
-  },
-  { id: 3, title: "Plan Renewal", date: "Jun 30", time: "-", type: "payment" },
-];
+import { supabase } from "@/lib/supabaseClient";
 
 export default function SchedulePage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
   const [selectedWeek, setSelectedWeek] = useState(0);
+  const [gymTimings, setGymTimings] = useState(null);
+  const [upcoming, setUpcoming] = useState([]);
+  const [workoutPlans, setWorkoutPlans] = useState([]);
+  const [attendanceDates, setAttendanceDates] = useState([]);
 
-  const getCurrentDate = (offset = 0) => {
-    const date = new Date();
-    date.setDate(date.getDate() + offset);
-    return date.getDate();
+  useEffect(() => {
+    fetchScheduleData();
+  }, []);
+
+  const fetchScheduleData = async () => {
+    try {
+      setLoading(true);
+      
+      // Get logged-in member from localStorage
+      const storedMember = localStorage.getItem("member");
+      if (!storedMember) {
+        router.push("/auth/login");
+        return;
+      }
+
+      const member = JSON.parse(storedMember);
+
+      // Fetch member details to get gym_id
+      const { data: memberDetails, error: memberError } = await supabase
+        .from("members")
+        .select("gym_id")
+        .eq("id", member.id)
+        .single();
+
+      // Fetch gym timings
+      if (!memberError && memberDetails?.gym_id) {
+        const { data: gymData, error: gymError } = await supabase
+          .from("gyms")
+          .select("weekday_open, weekday_close, weekend_open, weekend_close")
+          .eq("id", memberDetails.gym_id)
+          .single();
+
+        if (!gymError && gymData) {
+          const formatTime = (time) => {
+            if (!time) return "";
+            const [hours, minutes] = time.split(':');
+            const hour = parseInt(hours);
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const displayHour = hour % 12 || 12;
+            return `${displayHour}:${minutes} ${ampm}`;
+          };
+
+          setGymTimings({
+            weekday: gymData.weekday_open && gymData.weekday_close
+              ? `${formatTime(gymData.weekday_open)} - ${formatTime(gymData.weekday_close)}`
+              : "Not set",
+            weekend: gymData.weekend_open && gymData.weekend_close
+              ? `${formatTime(gymData.weekend_open)} - ${formatTime(gymData.weekend_close)}`
+              : "Not set",
+          });
+        }
+      }
+
+      // Fetch assigned workout plans
+      const { data: memberWorkouts, error: workoutsError } = await supabase
+        .from("member_workouts")
+        .select(`
+          workout_plans (
+            title
+          )
+        `)
+        .eq("member_id", member.id);
+
+      if (!workoutsError && memberWorkouts) {
+        setWorkoutPlans(memberWorkouts.map(mw => mw.workout_plans?.title).filter(Boolean));
+      }
+
+      // Fetch attendance dates for this week
+      const today = new Date();
+      const weekStart = new Date(today);
+      weekStart.setDate(today.getDate() - today.getDay()); // Start of week (Sunday)
+      weekStart.setHours(0, 0, 0, 0);
+      
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      weekEnd.setHours(23, 59, 59, 999);
+
+      const { data: attendanceData, error: attendanceError } = await supabase
+        .from("attendance")
+        .select("check_in_date")
+        .eq("member_id", member.id)
+        .gte("check_in_date", weekStart.toISOString().split('T')[0])
+        .lte("check_in_date", weekEnd.toISOString().split('T')[0]);
+
+      if (!attendanceError && attendanceData) {
+        setAttendanceDates(attendanceData.map(a => a.check_in_date));
+      }
+
+      // Fetch upcoming events (membership expiry)
+      const { data: membershipData, error: membershipError } = await supabase
+        .from("memberships")
+        .select("end_date, status")
+        .eq("member_id", member.id)
+        .eq("status", "active")
+        .order("end_date", { ascending: true })
+        .limit(1);
+
+      if (!membershipError && membershipData && membershipData.length > 0) {
+        const endDate = new Date(membershipData[0].end_date);
+        const today = new Date();
+        if (endDate > today) {
+          setUpcoming([{
+            id: 1,
+            title: "Plan Renewal",
+            date: endDate.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+            time: "-",
+            type: "payment",
+          }]);
+        }
+      }
+
+    } catch (error) {
+      console.error("Error fetching schedule data:", error);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const getWeekDays = () => {
+    const today = new Date();
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - today.getDay() + (selectedWeek * 7)); // Start of week (Sunday)
+    
+    const days = [];
+    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(weekStart);
+      date.setDate(weekStart.getDate() + i);
+      
+      const dateStr = date.toISOString().split('T')[0];
+      const isToday = date.toDateString() === new Date().toDateString();
+      const hasAttendance = attendanceDates.includes(dateStr);
+      
+      days.push({
+        date: dateStr,
+        day: dayNames[i],
+        dayNumber: date.getDate(),
+        isToday: isToday,
+        completed: hasAttendance,
+        workout: workoutPlans.length > 0 ? workoutPlans[0] : "Workout",
+      });
+    }
+    
+    return days;
+  };
+
+  const weekDays = getWeekDays();
+  const todaySchedule = weekDays.find(d => d.isToday) || weekDays[0];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-24">
+        <Header title="Schedule" showBack={false} />
+        <div className="flex items-center justify-center h-96">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
@@ -121,7 +206,7 @@ export default function SchedulePage() {
 
           {/* Week Days */}
           <div className="grid grid-cols-7 gap-1">
-            {mockSchedule.map((day) => (
+            {weekDays.map((day) => (
               <div
                 key={day.date}
                 className={`text-center p-2 rounded-lg ${
@@ -129,8 +214,6 @@ export default function SchedulePage() {
                     ? "bg-black text-white"
                     : day.completed
                     ? "bg-green-100"
-                    : day.isRest
-                    ? "bg-gray-50"
                     : ""
                 }`}
               >
@@ -140,133 +223,150 @@ export default function SchedulePage() {
                     day.isToday ? "" : "text-gray-900"
                   }`}
                 >
-                  {getCurrentDate(mockSchedule.indexOf(day) - 2)}
+                  {day.dayNumber}
                 </p>
                 {day.completed && !day.isToday && (
                   <span className="text-green-600 text-xs">✓</span>
                 )}
-                {day.isRest && <span className="text-xs">😴</span>}
               </div>
             ))}
           </div>
         </div>
 
         {/* Today's Schedule */}
-        <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl p-5 text-white">
-          <p className="text-purple-100 text-sm">Today - Wednesday</p>
-          <h2 className="text-xl font-bold mb-3">Legs & Abs</h2>
-          <div className="flex items-center gap-4 text-sm">
-            <span className="flex items-center gap-1">
-              <span>🕐</span> 6:00 AM
-            </span>
-            <span className="flex items-center gap-1">
-              <span>⏱️</span> 45-60 min
-            </span>
+        {todaySchedule && (
+          <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl p-5 text-white">
+            <p className="text-purple-100 text-sm">
+              Today - {todaySchedule.day}
+            </p>
+            <h2 className="text-xl font-bold mb-3">
+              {todaySchedule.workout || "No workout assigned"}
+            </h2>
+            <div className="flex items-center gap-4 text-sm">
+              <span className="flex items-center gap-1">
+                <span>🕐</span> {gymTimings?.weekday ? gymTimings.weekday.split(' - ')[0] : "Check gym timings"}
+              </span>
+              <span className="flex items-center gap-1">
+                <span>⏱️</span> 45-60 min
+              </span>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Weekly Schedule List */}
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           <div className="p-4 border-b border-gray-100">
             <h3 className="font-semibold text-gray-900">Weekly Plan</h3>
           </div>
-          <div className="divide-y divide-gray-100">
-            {mockSchedule.map((day) => (
-              <div
-                key={day.date}
-                className={`p-4 flex items-center justify-between ${
-                  day.isToday ? "bg-purple-50" : ""
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center font-medium ${
-                      day.isToday
-                        ? "bg-purple-600 text-white"
-                        : day.completed
-                        ? "bg-green-100 text-green-600"
-                        : day.isRest
-                        ? "bg-gray-100 text-gray-400"
-                        : "bg-gray-100 text-gray-600"
-                    }`}
-                  >
-                    {day.completed ? "✓" : day.isRest ? "😴" : day.day}
-                  </div>
-                  <div>
-                    <p
-                      className={`font-medium ${
-                        day.isToday ? "text-purple-900" : "text-gray-900"
+          {weekDays.length > 0 ? (
+            <div className="divide-y divide-gray-100">
+              {weekDays.map((day) => (
+                <div
+                  key={day.date}
+                  className={`p-4 flex items-center justify-between ${
+                    day.isToday ? "bg-purple-50" : ""
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center font-medium ${
+                        day.isToday
+                          ? "bg-purple-600 text-white"
+                          : day.completed
+                          ? "bg-green-100 text-green-600"
+                          : "bg-gray-100 text-gray-600"
                       }`}
                     >
-                      {day.workout}
-                    </p>
-                    <p className="text-sm text-gray-500">{day.time}</p>
+                      {day.completed ? "✓" : day.day.charAt(0)}
+                    </div>
+                    <div>
+                      <p
+                        className={`font-medium ${
+                          day.isToday ? "text-purple-900" : "text-gray-900"
+                        }`}
+                      >
+                        {day.workout}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {new Date(day.date).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric"
+                        })}
+                      </p>
+                    </div>
                   </div>
+                  {day.isToday && (
+                    <span className="px-2 py-1 bg-purple-600 text-white text-xs rounded-full">
+                      Today
+                    </span>
+                  )}
+                  {day.completed && !day.isToday && (
+                    <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                      Attended
+                    </span>
+                  )}
                 </div>
-                {day.isToday && (
-                  <span className="px-2 py-1 bg-purple-600 text-white text-xs rounded-full">
-                    Today
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-8 text-center text-gray-500">
+              <p>No schedule data available</p>
+            </div>
+          )}
         </div>
 
         {/* Gym Timings */}
-        <div className="bg-white rounded-xl p-4 shadow-sm">
-          <h3 className="font-semibold text-gray-900 mb-3">🏋️ Gym Timings</h3>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-500">Weekdays (Mon-Fri)</span>
-              <span className="font-medium">{mockGymTimings.weekday}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Weekends (Sat-Sun)</span>
-              <span className="font-medium">{mockGymTimings.weekend}</span>
-            </div>
-            <div className="flex justify-between pt-2 border-t border-gray-100">
-              <span className="text-gray-500">My Preferred Slot</span>
-              <span className="font-medium text-purple-600">
-                {mockGymTimings.mySlot}
-              </span>
+        {gymTimings && (
+          <div className="bg-white rounded-xl p-4 shadow-sm">
+            <h3 className="font-semibold text-gray-900 mb-3">🏋️ Gym Timings</h3>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-500">Weekdays (Mon-Fri)</span>
+                <span className="font-medium">{gymTimings.weekday}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Weekends (Sat-Sun)</span>
+                <span className="font-medium">{gymTimings.weekend}</span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Upcoming Events */}
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-gray-100">
-            <h3 className="font-semibold text-gray-900">📅 Upcoming</h3>
-          </div>
-          <div className="divide-y divide-gray-100">
-            {mockUpcoming.map((event) => (
-              <div key={event.id} className="p-4 flex items-center gap-3">
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    event.type === "training"
-                      ? "bg-blue-100"
+        {upcoming.length > 0 && (
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-gray-100">
+              <h3 className="font-semibold text-gray-900">📅 Upcoming</h3>
+            </div>
+            <div className="divide-y divide-gray-100">
+              {upcoming.map((event) => (
+                <div key={event.id} className="p-4 flex items-center gap-3">
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      event.type === "training"
+                        ? "bg-blue-100"
+                        : event.type === "checkup"
+                        ? "bg-green-100"
+                        : "bg-orange-100"
+                    }`}
+                  >
+                    {event.type === "training"
+                      ? "💪"
                       : event.type === "checkup"
-                      ? "bg-green-100"
-                      : "bg-orange-100"
-                  }`}
-                >
-                  {event.type === "training"
-                    ? "💪"
-                    : event.type === "checkup"
-                    ? "📏"
-                    : "💳"}
+                      ? "📏"
+                      : "💳"}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">{event.title}</p>
+                    <p className="text-sm text-gray-500">
+                      {event.date} • {event.time}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <p className="font-medium text-gray-900">{event.title}</p>
-                  <p className="text-sm text-gray-500">
-                    {event.date} • {event.time}
-                  </p>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </main>
     </div>
   );

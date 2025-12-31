@@ -12,7 +12,8 @@ export default function Header({ title, showBack = true }) {
           {showBack && (
             <button
               onClick={() => router.back()}
-              className="p-2 -ml-2 hover:bg-gray-100 rounded-lg transition"
+              className="p-2 -ml-2 hover:bg-gray-100 rounded-lg transition text-gray-700 text-2xl font-bold min-w-[40px] flex items-center justify-center"
+              aria-label="Go back"
             >
               ←
             </button>

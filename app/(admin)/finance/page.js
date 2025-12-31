@@ -87,6 +87,17 @@ export default function FinancePage() {
         .eq("gym_id", gymId)
         .gt("balance", 0);
 
+      // Fetch expenses for the period
+      const { data: expensesData, error: expensesError } = await supabase
+        .from("expenses")
+        .select("amount")
+        .eq("gym_id", gymId)
+        .gte("expense_date", startDate);
+
+      if (expensesError) {
+        console.error("Expenses query error:", expensesError);
+      }
+
       if (paymentsError) {
         console.error("Payments query error:", paymentsError);
       }
@@ -109,11 +120,14 @@ export default function FinancePage() {
         console.log("Today payments:", todayPayments.length, "Total:", todayCollection); // Debug log
         console.log("All payments:", payments.length, "Total:", totalRevenue); // Debug log
 
+        const monthlyExpenses = expensesData?.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0) || 0;
+
         setFinancialData(prev => ({
           ...prev,
           todayCollection,
           monthlyRevenue: dateFilter === "month" ? totalRevenue : prev.monthlyRevenue,
           pendingDues: membersData?.reduce((sum, m) => sum + (m.balance || 0), 0) || 0,
+          monthlyExpenses: monthlyExpenses,
         }));
 
         // Set recent transactions (last 10)
@@ -460,12 +474,7 @@ export default function FinancePage() {
                         >
                           Remind
                         </button>
-                        <button
-                          onClick={() => handleCollectPayment(member.id, member.amount)}
-                          className="px-3 py-1 text-sm btn-gradient-orange text-white rounded-lg"
-                        >
-                          Collect
-                        </button>
+                        
                       </div>
                     </div>
                   </div>
@@ -476,7 +485,13 @@ export default function FinancePage() {
         )}
 
         {/* Expenses Tab */}
-        {activeTab === "expenses" && <ExpensesSection router={router} />}
+        {activeTab === "expenses" && (
+          <ExpensesSection 
+            router={router} 
+            selectedGym={selectedGym}
+            dateFilter={dateFilter}
+          />
+        )}
       </main>
 
       {/* Add Payment FAB */}
@@ -491,34 +506,99 @@ export default function FinancePage() {
 }
 
 // Expenses Section Component
-function ExpensesSection({ router }) {
-  const mockExpenses = [
-    { id: 1, category: "Rent", amount: 25000, date: "Jan 01", icon: "🏠" },
-    {
-      id: 2,
-      category: "Electricity",
-      amount: 8000,
-      date: "Jan 05",
-      icon: "⚡",
-    },
-    {
-      id: 3,
-      category: "Trainer Salary",
-      amount: 15000,
-      date: "Jan 01",
-      icon: "👨‍🏫",
-    },
-    { id: 4, category: "Equipment", amount: 5000, date: "Jan 10", icon: "🏋️" },
-    {
-      id: 5,
-      category: "Maintenance",
-      amount: 2000,
-      date: "Jan 12",
-      icon: "🔧",
-    },
-  ];
+function ExpensesSection({ router, selectedGym, dateFilter }) {
+  const [expenses, setExpenses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [totalExpenses, setTotalExpenses] = useState(0);
 
-  const totalExpenses = mockExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const expenseCategories = {
+    rent: { name: "Rent", icon: "🏠" },
+    electricity: { name: "Electricity", icon: "⚡" },
+    salary: { name: "Trainer Salary", icon: "👨‍🏫" },
+    equipment: { name: "Equipment", icon: "🏋️" },
+    maintenance: { name: "Maintenance", icon: "🔧" },
+    supplements: { name: "Supplements", icon: "💊" },
+    marketing: { name: "Marketing", icon: "📢" },
+    other: { name: "Other", icon: "📦" },
+  };
+
+  useEffect(() => {
+    if (selectedGym) {
+      fetchExpenses(selectedGym.id);
+    }
+  }, [selectedGym, dateFilter]);
+
+  const fetchExpenses = async (gymId) => {
+    try {
+      setLoading(true);
+      
+      // Calculate date range based on filter
+      const today = new Date();
+      let startDate = today.toISOString().split('T')[0];
+      
+      if (dateFilter === "week") {
+        const weekStart = new Date();
+        weekStart.setDate(weekStart.getDate() - 7);
+        startDate = weekStart.toISOString().split('T')[0];
+      } else if (dateFilter === "month") {
+        const firstDayOfMonth = new Date();
+        firstDayOfMonth.setDate(1);
+        startDate = firstDayOfMonth.toISOString().split('T')[0];
+      }
+
+      const { data, error } = await supabase
+        .from("expenses")
+        .select("*")
+        .eq("gym_id", gymId)
+        .gte("expense_date", startDate)
+        .order("expense_date", { ascending: false })
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      const formattedExpenses = (data || []).map(expense => ({
+        id: expense.id,
+        category: expenseCategories[expense.category]?.name || expense.category,
+        amount: parseFloat(expense.amount),
+        date: new Date(expense.expense_date).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric"
+        }),
+        icon: expenseCategories[expense.category]?.icon || "📦",
+        notes: expense.notes,
+      }));
+
+      setExpenses(formattedExpenses);
+      
+      const total = formattedExpenses.reduce((sum, e) => sum + e.amount, 0);
+      setTotalExpenses(total);
+    } catch (error) {
+      console.error("Error fetching expenses:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0
+    }).format(amount);
+  };
+
+  const getMonthName = () => {
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return monthNames[new Date().getMonth()];
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl p-8 text-center">
+        <p className="text-gray-500">Loading expenses...</p>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -526,9 +606,11 @@ function ExpensesSection({ router }) {
       <div className="bg-orange-50 rounded-xl p-4">
         <div className="flex justify-between items-center">
           <div>
-            <p className="text-orange-600 text-sm">Total Expenses (Jan)</p>
+            <p className="text-orange-600 text-sm">
+              Total Expenses ({dateFilter === "today" ? "Today" : dateFilter === "week" ? "This Week" : getMonthName()})
+            </p>
             <p className="text-2xl font-bold text-orange-700">
-              ₹{totalExpenses.toLocaleString()}
+              {formatCurrency(totalExpenses)}
             </p>
           </div>
           <button
@@ -545,29 +627,44 @@ function ExpensesSection({ router }) {
         <div className="p-4 border-b border-gray-100">
           <h3 className="font-semibold text-gray-900">Recent Expenses</h3>
         </div>
-        <div className="divide-y divide-gray-100">
-          {mockExpenses.map((expense) => (
-            <div
-              key={expense.id}
-              className="p-4 flex items-center justify-between"
+        {expenses.length === 0 ? (
+          <div className="p-8 text-center text-gray-500">
+            <p>No expenses recorded yet</p>
+            <button
+              onClick={() => router.push("/finance/expenses/add")}
+              className="mt-4 px-4 py-2 btn-gradient-orange text-white rounded-lg text-sm font-medium"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                  <span>{expense.icon}</span>
+              Add First Expense
+            </button>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-100">
+            {expenses.map((expense) => (
+              <div
+                key={expense.id}
+                className="p-4 flex items-center justify-between"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                    <span>{expense.icon}</span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">
+                      {expense.category}
+                    </p>
+                    <p className="text-xs text-gray-500">{expense.date}</p>
+                    {expense.notes && (
+                      <p className="text-xs text-gray-400 mt-1">{expense.notes}</p>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium text-gray-900">
-                    {expense.category}
-                  </p>
-                  <p className="text-xs text-gray-500">{expense.date}</p>
-                </div>
+                <p className="font-semibold text-red-500">
+                  -{formatCurrency(expense.amount)}
+                </p>
               </div>
-              <p className="font-semibold text-red-500">
-                -₹{expense.amount.toLocaleString()}
-              </p>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </>
   );

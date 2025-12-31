@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
+import { useToast } from "@/contexts/ToastContext";
 
 const expenseCategories = [
   { id: "rent", name: "Rent", icon: "🏠" },
@@ -18,6 +19,7 @@ const expenseCategories = [
 
 export default function AddExpensePage() {
   const router = useRouter();
+  const { showSuccess, showError } = useToast();
   const [loading, setLoading] = useState(false);
   const [selectedGym, setSelectedGym] = useState(null);
   const [formData, setFormData] = useState({
@@ -43,7 +45,7 @@ export default function AddExpensePage() {
     e.preventDefault();
     
     if (!selectedGym) {
-      alert("Please select a gym first");
+      showError("Please select a gym first");
       return;
     }
 
@@ -53,37 +55,42 @@ export default function AddExpensePage() {
       const amount = parseFloat(formData.amount);
       
       if (amount <= 0) {
-        alert("Please enter a valid amount");
+        showError("Please enter a valid amount");
         setLoading(false);
         return;
       }
 
       if (!formData.category) {
-        alert("Please select a category");
+        showError("Please select a category");
         setLoading(false);
         return;
       }
 
-      // Create a simple expenses record using the payments table or a notes field
-      // Since there's no expenses table, we'll use a workaround by storing in a JSON format
-      // or you can create an expenses table in your database
-      
-      // For now, let's just navigate back and show success
-      // You'll need to create an expenses table in your database schema
-      alert("Expense feature requires database table setup. Please add an 'expenses' table to your Supabase database.");
-      console.log("Expense data:", {
-        gym_id: selectedGym.id,
-        category: formData.category,
-        amount: amount,
-        expense_date: formData.date,
-        notes: formData.notes,
-        created_at: new Date().toISOString()
-      });
-      
-      router.back();
+      // Get logged-in user
+      const storedUser = localStorage.getItem("gymUser");
+      const user = storedUser ? JSON.parse(storedUser) : null;
+
+      // Insert expense into database
+      const { error: insertError } = await supabase
+        .from("expenses")
+        .insert({
+          gym_id: selectedGym.id,
+          category: formData.category,
+          amount: amount,
+          expense_date: formData.date,
+          notes: formData.notes || null,
+          created_by: user?.id || null,
+        });
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      showSuccess("Expense added successfully!");
+      setTimeout(() => router.back(), 1000);
     } catch (error) {
       console.error("Error recording expense:", error);
-      alert("Failed to record expense. Please try again.");
+      showError("Failed to record expense. Please try again.");
     } finally {
       setLoading(false);
     }

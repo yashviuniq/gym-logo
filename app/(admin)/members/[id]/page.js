@@ -448,14 +448,16 @@ export default function MemberDetailPage() {
         </div>
 
         {/* Membership Actions */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <button
-            onClick={() => setShowRenewModal(true)}
-            className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl p-3 shadow-sm flex flex-col items-center gap-1 hover:shadow-md transition"
-          >
-            <span className="text-xl">🔄</span>
-            <span className="text-xs font-medium">Renew</span>
-          </button>
+        <div className={`grid gap-3 mb-4 ${member.status === "active" ? "grid-cols-1" : "grid-cols-2"}`}>
+          {member.status !== "active" && (
+            <button
+              onClick={() => setShowRenewModal(true)}
+              className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl p-3 shadow-sm flex flex-col items-center gap-1 hover:shadow-md transition"
+            >
+              <span className="text-xl">🔄</span>
+              <span className="text-xs font-medium">Renew</span>
+            </button>
+          )}
           <button
             onClick={() => setShowHistoryModal(true)}
             className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl p-3 shadow-sm flex flex-col items-center gap-1 hover:shadow-md transition"

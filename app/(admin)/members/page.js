@@ -376,10 +376,11 @@ export default function MembersPage() {
         </div>
 
         {/* Members List */}
-        <div className="space-y-3">
+        <div className="space-y-3 pb-20">
           {filteredMembers.map((member) => {
             const statusConfig = getStatusConfig(member.status);
             
+             
             return (
               <div
                 key={member.id}

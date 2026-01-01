@@ -1,32 +1,121 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
+import ProfileImageUpload from "@/components/shared/ProfileImageUpload";
+import { supabase } from "@/lib/supabaseClient";
+import { useToast } from "@/contexts/ToastContext";
 
 export default function EditProfilePage() {
   const router = useRouter();
+  const { showSuccess, showError } = useToast();
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
+  const [memberId, setMemberId] = useState(null);
   const [formData, setFormData] = useState({
-    name: "Rahul Sharma",
-    email: "rahul@example.com",
-    phone: "9876543210",
-    gender: "Male",
-    age: "28",
-    address: "123 Main St, Mumbai",
+    name: "",
+    email: "",
+    phone: "",
+    profileImage: null,
   });
+
+  useEffect(() => {
+    fetchProfileData();
+  }, []);
+
+  const fetchProfileData = async () => {
+    try {
+      const storedMember = localStorage.getItem("member");
+      if (!storedMember) {
+        router.push("/auth/login");
+        return;
+      }
+
+      const member = JSON.parse(storedMember);
+      setMemberId(member.id);
+
+      const { data: memberData, error } = await supabase
+        .from("members")
+        .select("id, full_name, phone, email, profile_image")
+        .eq("id", member.id)
+        .single();
+
+      if (error) throw error;
+
+      setFormData({
+        name: memberData.full_name || "",
+        email: memberData.email || "",
+        phone: memberData.phone || "",
+        profileImage: memberData.profile_image || null,
+      });
+    } catch (err) {
+      console.error("Error fetching profile:", err);
+      showError("Failed to load profile");
+    } finally {
+      setFetching(false);
+    }
+  };
 
   const updateForm = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleImageChange = (newImageUrl) => {
+    setFormData((prev) => ({ ...prev, profileImage: newImageUrl }));
+    // Update localStorage as well
+    const storedMember = localStorage.getItem("member");
+    if (storedMember) {
+      const member = JSON.parse(storedMember);
+      member.profile_image = newImageUrl;
+      localStorage.setItem("member", JSON.stringify(member));
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setLoading(false);
-    router.back();
+
+    try {
+      const { error } = await supabase
+        .from("members")
+        .update({
+          full_name: formData.name,
+          email: formData.email || null,
+        })
+        .eq("id", memberId);
+
+      if (error) throw error;
+
+      // Update localStorage
+      const storedMember = localStorage.getItem("member");
+      if (storedMember) {
+        const member = JSON.parse(storedMember);
+        member.full_name = formData.name;
+        member.email = formData.email;
+        localStorage.setItem("member", JSON.stringify(member));
+      }
+
+      showSuccess("Profile updated successfully!");
+      router.back();
+    } catch (err) {
+      console.error("Error updating profile:", err);
+      showError("Failed to update profile");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (fetching) {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-24">
+        <Header title="Edit Profile" />
+        <div className="flex items-center justify-center py-12">
+          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
@@ -35,12 +124,13 @@ export default function EditProfilePage() {
       <form onSubmit={handleSubmit} className="px-4 py-4 space-y-4">
         {/* Profile Photo */}
         <div className="bg-white rounded-xl p-6 shadow-sm flex flex-col items-center">
-          <div className="w-24 h-24 bg-gradient-to-br from-gray-800 to-gray-600 rounded-full flex items-center justify-center text-white text-3xl font-bold mb-3">
-            {formData.name.charAt(0)}
-          </div>
-          <button type="button" className="text-sm text-blue-600 font-medium">
-            Change Photo
-          </button>
+          <ProfileImageUpload
+            currentImage={formData.profileImage}
+            onImageChange={handleImageChange}
+            memberId={memberId}
+            size="lg"
+            editable={true}
+          />
         </div>
 
         {/* Form Fields */}
@@ -51,9 +141,10 @@ export default function EditProfilePage() {
             </label>
             <input
               type="text"
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none"
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               value={formData.name}
               onChange={(e) => updateForm("name", e.target.value)}
+              required
             />
           </div>
 
@@ -78,49 +169,10 @@ export default function EditProfilePage() {
             </label>
             <input
               type="email"
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none"
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               value={formData.email}
               onChange={(e) => updateForm("email", e.target.value)}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Gender
-              </label>
-              <select
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none"
-                value={formData.gender}
-                onChange={(e) => updateForm("gender", e.target.value)}
-              >
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Age
-              </label>
-              <input
-                type="number"
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none"
-                value={formData.age}
-                onChange={(e) => updateForm("age", e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Address
-            </label>
-            <textarea
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none resize-none"
-              rows={2}
-              value={formData.address}
-              onChange={(e) => updateForm("address", e.target.value)}
+              placeholder="Enter your email"
             />
           </div>
         </div>
@@ -130,14 +182,14 @@ export default function EditProfilePage() {
           <button
             type="button"
             onClick={() => router.back()}
-            className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium"
+            className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium active:scale-95 transition-transform"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 py-3 bg-black text-white rounded-xl font-medium disabled:opacity-50"
+            className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium disabled:opacity-50 active:scale-95 transition-transform"
           >
             {loading ? "Saving..." : "Save Changes"}
           </button>

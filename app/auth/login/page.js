@@ -86,7 +86,7 @@ export default function LoginPage() {
           `)
           .eq("login_type", loginType)
           .eq("login_value", emailOrPhone)
-          .single();
+          .maybeSingle();
 
         if (credError || !credentials) {
           setError("Invalid email/phone or password");

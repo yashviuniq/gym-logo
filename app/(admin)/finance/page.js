@@ -468,8 +468,8 @@ export default function FinancePage() {
                   recentTransactions.map((txn) => (
                     <div
                       key={txn.id}
-                      className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-all active:scale-95 cursor-pointer"
-                      onClick={() => router.push(`/finance/transactions/${txn.id}`)}
+                      className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-all active:scale-95 "
+      
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center">

@@ -103,6 +103,7 @@ export default function AddAnnouncementPage() {
       }
 
       router.push("/announcements");
+      router.refresh();
     } catch (error) {
       console.error("Error creating announcement:", error);
       alert("Failed to create announcement. Please try again.");

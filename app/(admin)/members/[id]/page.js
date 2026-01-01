@@ -78,6 +78,7 @@ export default function MemberDetailPage() {
           phone,
           email,
           balance,
+          profile_image,
           created_at,
           gym_id,
           memberships (
@@ -133,6 +134,7 @@ export default function MemberDetailPage() {
         name: memberData.full_name,
         email: memberData.email || "",
         phone: memberData.phone,
+        profileImage: memberData.profile_image || null,
         joinDate: new Date(memberData.created_at).toLocaleDateString("en-IN"),
         plan: activeMembership?.membership_plans?.name || "No Plan",
         planPrice: activeMembership?.membership_plans?.price || 0,
@@ -333,8 +335,16 @@ export default function MemberDetailPage() {
         {/* Profile Header */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
           <div className="flex items-start gap-4 mb-4">
-            <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-xl shadow-sm">
-              {member.name.charAt(0).toUpperCase()}
+            <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-xl shadow-sm overflow-hidden">
+              {member.profileImage ? (
+                <img
+                  src={member.profileImage}
+                  alt={member.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                member.name.charAt(0).toUpperCase()
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between mb-1">
@@ -467,25 +477,27 @@ export default function MemberDetailPage() {
             <span className="text-xs font-medium text-gray-600">Credentials</span>
           </button>
           
-          <button
-            onClick={() => window.open(`tel:${member.phone}`)}
+          <a
+            href={`tel:${member.phone}`}
             className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm flex flex-col items-center gap-1 hover:shadow-md transition-all duration-200 active:scale-95"
           >
             <div className="w-10 h-10 bg-gradient-to-br from-green-50 to-green-100 rounded-lg flex items-center justify-center">
               <PhoneCall className="w-5 h-5 text-green-600" />
             </div>
             <span className="text-xs font-medium text-gray-600">Call</span>
-          </button>
+          </a>
           
-          <button
-            onClick={() => window.open(`https://wa.me/91${member.phone}`)}
+          <a
+            href={`https://wa.me/91${member.phone}`}
+            target="_blank"
+            rel="noopener noreferrer"
             className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm flex flex-col items-center gap-1 hover:shadow-md transition-all duration-200 active:scale-95"
           >
             <div className="w-10 h-10 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-lg flex items-center justify-center">
               <MessageCircle className="w-5 h-5 text-emerald-600" />
             </div>
             <span className="text-xs font-medium text-gray-600">WhatsApp</span>
-          </button>
+          </a>
           
           <button
             onClick={() => router.push(`/members/${member.id}/payment`)}

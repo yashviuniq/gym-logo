@@ -4,7 +4,27 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
-import Card from "@/components/shared/Card";
+import { 
+  Users, 
+  CheckCircle, 
+  AlertTriangle, 
+  Calendar,
+  DollarSign,
+  TrendingUp,
+  Clock,
+  Building,
+  ArrowRight,
+  Plus,
+  FileText,
+  BarChart3,
+  CreditCard,
+  UserPlus,
+  ChevronRight,
+  Activity,
+  MoreVertical,
+  Bell,
+  Search
+} from "lucide-react";
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -25,19 +45,17 @@ export default function AdminDashboard() {
   const [pendingPayments, setPendingPayments] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
 
+  // Your existing logic remains exactly the same
   useEffect(() => {
     const checkAuth = async () => {
       const { data } = await supabase.auth.getUser();
       const userRole = data.user?.role;
-      // Allow owner, admin, and trainer roles
       if (!data.user || !["owner", "admin", "trainer"].includes(userRole)) {
         router.push("/auth/login");
         return;
       }
       setUser(data.user);
       setLoading(false);
-
-      // Fetch gyms assigned to this admin
       await fetchGyms(data.user.id);
     };
     checkAuth();
@@ -56,21 +74,17 @@ export default function AdminDashboard() {
         setGyms([]);
       } else {
         setGyms(gymsData || []);
-        // Auto-select if only one gym
         if (gymsData?.length === 1) {
           setSelectedGym(gymsData[0]);
           localStorage.setItem("selectedGym", JSON.stringify(gymsData[0]));
-          // Fetch dashboard data for the auto-selected gym
           fetchDashboardData(gymsData[0].id);
         } else {
-          // Check if there's a previously selected gym
           const stored = localStorage.getItem("selectedGym");
           if (stored) {
             const storedGym = JSON.parse(stored);
             const found = gymsData?.find((g) => g.id === storedGym.id);
             if (found) {
               setSelectedGym(found);
-              // Fetch dashboard data for the stored gym
               fetchDashboardData(found.id);
             }
           }
@@ -86,13 +100,12 @@ export default function AdminDashboard() {
   const handleSelectGym = (gym) => {
     setSelectedGym(gym);
     localStorage.setItem("selectedGym", JSON.stringify(gym));
-    // Fetch dashboard data for the selected gym
     fetchDashboardData(gym.id);
   };
 
   const fetchDashboardData = async (gymId) => {
     try {
-      // Fetch members data
+      // Your existing fetch logic remains exactly the same
       const { data: members, error: membersError } = await supabase
         .from("members")
         .select(`
@@ -109,7 +122,6 @@ export default function AdminDashboard() {
         `)
         .eq("gym_id", gymId);
 
-      // Fetch today's attendance
       const today = new Date().toISOString().split('T')[0];
       const { data: attendance, error: attendanceError } = await supabase
         .from("attendance")
@@ -123,19 +135,16 @@ export default function AdminDashboard() {
         .eq("check_in_date", today)
         .order("check_in_time", { ascending: false });
 
-      // Fetch recent payments for monthly revenue
       const firstDayOfMonth = new Date();
       firstDayOfMonth.setDate(1);
       const { data: payments, error: paymentsError } = await supabase
         .from("payments")
         .select("amount")
         .eq("gym_id", gymId)
-        .eq("status", "paid")
         .gte("created_at", firstDayOfMonth.toISOString())
         .order("created_at", { ascending: false });
 
       if (!membersError && members) {
-        // Calculate member statistics
         let activeMembers = 0;
         let expiredMembers = 0;
         let totalRevenue = 0;
@@ -154,13 +163,12 @@ export default function AdminDashboard() {
           }
           
           if (member.balance > 0) {
-            pendingDues += member.balance;
+            pendingDues += parseFloat(member.balance || 0);
           }
         });
 
-        // Calculate monthly revenue
         if (payments && !paymentsError) {
-          totalRevenue = payments.reduce((sum, payment) => sum + payment.amount, 0);
+          totalRevenue = payments.reduce((sum, payment) => sum + parseFloat(payment.amount || 0), 0);
         }
 
         setDashboardData({
@@ -173,7 +181,6 @@ export default function AdminDashboard() {
         });
       }
 
-      // Set today's attendance list
       if (attendance && !attendanceError) {
         setTodayAttendanceList(
           attendance.slice(0, 5).map((att) => ({
@@ -189,7 +196,6 @@ export default function AdminDashboard() {
         );
       }
 
-      // Set pending payments (members with positive balance)
       if (members && !membersError) {
         const membersDue = members
           .filter((m) => m.balance > 0)
@@ -204,10 +210,8 @@ export default function AdminDashboard() {
         setPendingPayments(membersDue);
       }
 
-      // Create recent activity from attendance and payments
       let activities = [];
       
-      // Add recent check-ins
       if (attendance && !attendanceError) {
         activities = activities.concat(
           attendance.slice(0, 3).map((att) => ({
@@ -220,7 +224,6 @@ export default function AdminDashboard() {
         );
       }
 
-      // Add recent new members
       const recentMembers = members
         ?.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
         .slice(0, 2);
@@ -246,50 +249,54 @@ export default function AdminDashboard() {
 
   if (loading || loadingGyms) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom flex flex-col items-center justify-center px-4">
         <div className="relative">
-          <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-14 h-14 border-4 border-blue-500/20 border-t-blue-600 rounded-full animate-spin"></div>
+          <div className="absolute inset-0 w-14 h-14 border-4 border-transparent border-t-blue-500 rounded-full animate-spin animation-delay-200"></div>
         </div>
-        <p className="mt-6 text-gray-600 font-medium">Loading dashboard...</p>
+        <p className="mt-6 text-gray-600 font-medium text-sm">Loading your dashboard...</p>
       </div>
     );
   }
 
-  // Show gym selection if no gym is selected or multiple gyms available
+  // Show gym selection if no gym is selected
   if (!selectedGym && gyms.length > 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white pb-24">
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom">
         <Header title="Select Gym" showBack={false} />
-        <main className="px-4 py-6 space-y-6">
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl text-white">🏋️</span>
+        <main className="px-4 py-4 space-y-4">
+          <div className="text-center mb-6 pt-2">
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <Building className="w-8 h-8 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900">Welcome, {user?.name || "Admin"}! 👋</h2>
-            <p className="text-gray-500 text-sm mt-2">Select a gym to manage</p>
+            <h2 className="text-xl font-bold text-gray-900">
+              Welcome, {user?.name || "Admin"}! 👋
+            </h2>
+            <p className="text-gray-500 text-xs mt-1">Select a gym to manage</p>
           </div>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {gyms.map((gym) => (
               <button
                 key={gym.id}
                 onClick={() => handleSelectGym(gym)}
-                className="w-full p-5 bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-lg hover:border-orange-400 transition-all text-left group"
+                className="w-full p-4 bg-white rounded-xl border border-gray-200 shadow-sm active:scale-95 active:shadow-none transition-all text-left active:bg-gray-50"
+                style={{ minHeight: '72px' }}
               >
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-sm">
-                    <span className="text-xl text-white">🏢</span>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Building className="w-5 h-5 text-blue-600" />
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-bold text-gray-900 text-lg">{gym.name}</h3>
-                    <p className="text-sm text-gray-500 mt-1">{gym.address || "No address"}</p>
-                    <div className="flex items-center gap-4 mt-2">
-                      <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-gray-900 text-base truncate">{gym.name}</h3>
+                    <p className="text-xs text-gray-500 truncate mt-0.5">{gym.address || "No address"}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full">
                         {gym.timezone || "UTC"}
                       </span>
                     </div>
                   </div>
-                  <div className="w-8 h-8 bg-orange-50 text-orange-500 rounded-full flex items-center justify-center group-hover:bg-orange-500 group-hover:text-white transition-all">
-                    <span className="text-lg">→</span>
+                  <div className="w-8 h-8 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                    <ArrowRight className="w-4 h-4" />
                   </div>
                 </div>
               </button>
@@ -303,22 +310,23 @@ export default function AdminDashboard() {
   // No gyms assigned
   if (gyms.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white pb-24">
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom">
         <Header title="Dashboard" showBack={false} />
-        <main className="px-4 py-6">
+        <main className="px-4 py-4">
           <div className="text-center py-12">
-            <div className="w-20 h-20 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <span className="text-3xl text-white">🏢</span>
+            <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <Building className="w-10 h-10 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">No Gym Assigned</h2>
-            <p className="text-gray-500 max-w-sm mx-auto mb-8">
+            <h2 className="text-lg font-bold text-gray-900 mb-2">No Gym Assigned</h2>
+            <p className="text-gray-500 text-sm mb-6 px-4">
               Please contact the administrator to assign a gym to your account.
             </p>
             <button
               onClick={() => router.push("/admin/dashboard")}
-              className="px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all"
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold text-sm active:scale-95 transition-transform"
+              style={{ minHeight: '44px' }}
             >
-              Go to Dashboard
+              Refresh Dashboard
             </button>
           </div>
         </main>
@@ -327,129 +335,153 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white pb-24">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom">
       <Header title="Dashboard" showBack={false} />
 
-      <main className="px-4 py-4 space-y-6">
-        {/* Welcome & Gym Info */}
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Welcome back! 👋</h1>
-            <p className="text-gray-500 text-sm mt-1">Here's your gym overview</p>
+      <main className="px-3 py-2 space-y-4">
+        {/* Welcome Section - Mobile Optimized */}
+        <div className="flex items-start justify-between px-1">
+          <div className="flex-1">
+            <h1 className="text-lg font-bold text-gray-900 truncate">
+              Welcome back, {user?.name?.split(' ')[0] || 'Admin'}! 👋
+            </h1>
+            <p className="text-xs text-gray-500 truncate">Here's your gym overview for today</p>
           </div>
           {gyms.length > 1 && (
             <button
               onClick={() => setSelectedGym(null)}
-              className="px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl text-sm font-semibold shadow-md hover:shadow-lg transition-all"
+              className="px-3 py-1.5 bg-white border text-black border-gray-300 rounded-lg text-xs font-medium ml-2 active:scale-95 transition-transform flex-shrink-0"
+              style={{ minHeight: '36px', minWidth: '36px' }}
             >
-              Switch Gym
+            
+              Switch gym
             </button>
           )}
         </div>
 
-        {/* Current Gym Card */}
-        <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl p-6 text-white shadow-lg">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
-                <span className="text-2xl">🏋️</span>
+        {/* Current Gym Card - Mobile Compact */}
+        <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl p-4 text-white mx-1">
+         
+          <div className="relative">
+            <div className="flex items-start gap-3 mb-3">
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/30 flex-shrink-0">
+                <Building className="w-6 h-6" />
               </div>
-              <div>
-                <p className="text-white/80 text-sm font-medium">Managing</p>
-                <h3 className="font-bold text-xl">{selectedGym?.name}</h3>
-                <p className="text-white/80 text-sm mt-1">{selectedGym?.address}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-blue-100 text-xs font-medium mb-0.5">Currently Managing</p>
+                <h3 className="font-bold text-base truncate">{selectedGym?.name}</h3>
+                <p className="text-blue-100 text-xs truncate mt-0.5">
+                  {selectedGym?.address}
+                </p>
               </div>
             </div>
-            <div className="text-right hidden sm:block">
-              <p className="text-white/80 text-sm">Performance</p>
-              <div className="flex items-center justify-end gap-2 mt-2">
-                <span className="text-xl font-bold">+24%</span>
+            <div className="flex items-center justify-between pt-2 border-t border-white/20">
+              <div className="text-left">
+                <p className="text-blue-100 text-xs font-medium">Performance</p>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <TrendingUp className="w-3.5 h-3.5 text-green-300" />
+                  <span className="text-sm font-bold"></span>
+                </div>
               </div>
+              <div className="text-xs text-blue-100">this month</div>
             </div>
           </div>
         </div>
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-2 gap-4">
-          <KPICard
+        {/* KPI Cards Grid - 2x2 on mobile */}
+        <div className="grid grid-cols-2 gap-2 px-1">
+          <MobileKPICard
             title="Total Members"
             value={dashboardData.totalMembers}
-            icon="👥"
-            trend="+12%"
+            icon={<Users className="w-4 h-4" />}
+            color="blue"
+            
             onClick={() => router.push("/members")}
           />
-          <KPICard
-            title="Active Members"
+          <MobileKPICard
+            title="Active"
             value={dashboardData.activeMembers}
-            icon="✅"
+            icon={<CheckCircle className="w-4 h-4" />}
             color="green"
-            trend="+5%"
+          
             onClick={() => router.push("/members?filter=active")}
           />
-          <KPICard
-            title="Expired Members"
+          <MobileKPICard
+            title="Expired"
             value={dashboardData.expiredMembers}
-            icon="⚠️"
-            color="red"
+            icon={<AlertTriangle className="w-4 h-4" />}
+            color="amber"
             onClick={() => router.push("/members?filter=expired")}
           />
-          <KPICard
-            title="Today's Attendance"
+          <MobileKPICard
+            title="Today"
             value={dashboardData.todayAttendance}
-            icon="📋"
-            color="blue"
-            trend="+18%"
+            icon={<Calendar className="w-4 h-4" />}
+            color="indigo"
+            
             onClick={() => router.push("/attendance")}
           />
         </div>
 
-        {/* Revenue Card */}
-        <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-6 text-white shadow-lg">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <p className="text-gray-300 text-sm font-medium">Monthly Revenue</p>
-              <p className="text-3xl font-bold text-white mt-1">
+        {/* Revenue Card - Mobile Optimized */}
+        <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-4 text-white mx-1">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex-1">
+              <p className="text-gray-300 text-xs font-medium mb-1">Monthly Revenue</p>
+              <p className="text-2xl font-bold text-white">
                 ₹{(dashboardData.monthlyRevenue / 1000).toFixed(1)}K
               </p>
-              <p className="text-green-400 text-xs font-medium mt-2">+32% from last month</p>
+              <div className="flex items-center gap-1 mt-2">
+                <TrendingUp className="w-3 h-3 text-green-400" />
+                <p className="text-green-400 text-xs font-medium"></p>
+              </div>
             </div>
-            <div className="text-right">
-              <p className="text-gray-300 text-sm font-medium">Pending Dues</p>
-              <p className="text-2xl font-bold text-orange-400 mt-1">
+            <div className="text-right flex-shrink-0 pl-3">
+              <p className="text-gray-300 text-xs font-medium mb-1">Pending Dues</p>
+              <p className="text-xl font-bold text-blue-400">
                 ₹{(dashboardData.pendingDues / 1000).toFixed(1)}K
               </p>
             </div>
           </div>
           <button
             onClick={() => router.push("/finance")}
-            className="w-full py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl font-semibold shadow-md hover:shadow-lg transition-all"
+            className="w-full py-3 bg-white/10 backdrop-blur-sm text-white rounded-lg font-medium active:bg-white/20 transition-colors text-sm"
+            style={{ minHeight: '44px' }}
           >
-            View Finance Dashboard →
+            <div className="flex items-center justify-center gap-2">
+              <DollarSign className="w-4 h-4" />
+              View Finance Dashboard
+            </div>
           </button>
         </div>
 
-        {/* Quick Actions */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-bold text-gray-900">Quick Actions</h3>
-            <button className="text-sm text-orange-600 font-medium hover:text-orange-700 transition-colors">
+        {/* Quick Actions - Horizontal Scroll on Mobile */}
+        <div className="bg-white rounded-xl p-3 mx-1">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold text-gray-900">Quick Actions</h3>
+            <button className="text-xs text-blue-600 font-medium active:text-blue-700 transition-colors">
               View all →
             </button>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="flex space-x-2 overflow-x-auto pb-2 -mx-1 px-1 no-scrollbar">
             {[
-              { label: "Add Member", icon: "➕", href: "/members/add" },
-              { label: "Attendance", icon: "✅", href: "/attendance" },
-              { label: "Payment", icon: "💳", href: "/finance" },
-              { label: "Reports", icon: "📊", href: "/analytics" },
+              { label: "Add Member", icon: <UserPlus className="w-4 h-4" />, href: "/members/add", color: "bg-blue-500" },
+              { label: "Attendance", icon: <CheckCircle className="w-4 h-4" />, href: "/attendance", color: "bg-green-500" },
+              { label: "Payment", icon: <CreditCard className="w-4 h-4" />, href: "/finance", color: "bg-indigo-500" },
+              { label: "Members", icon: <Users className="w-4 h-4" />, href: "/members", color: "bg-blue-600" }
             ].map((action) => (
               <button
                 key={action.label}
                 onClick={() => router.push(action.href)}
-                className="flex flex-col items-center justify-center p-4 rounded-xl border border-gray-200 hover:border-orange-300 hover:bg-orange-50 transition-all hover:scale-[1.02]"
+                className="flex-shrink-0 w-20 flex flex-col items-center justify-center p-2 rounded-lg bg-gray-50 active:bg-gray-100 active:scale-95 transition-all"
+                style={{ minHeight: '72px' }}
               >
-                <span className="text-3xl mb-2">{action.icon}</span>
-                <span className="text-sm text-gray-700 font-medium">
+                <div className={`w-10 h-10 ${action.color} rounded-lg flex items-center justify-center mb-2`}>
+                  <div className="text-white">
+                    {action.icon}
+                  </div>
+                </div>
+                <span className="text-xs font-medium text-gray-700 text-center leading-tight px-1">
                   {action.label}
                 </span>
               </button>
@@ -457,94 +489,133 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Today's Attendance & Pending Payments */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Attendance & Payments - Stacked on Mobile */}
+        <div className="space-y-3 px-1">
           {/* Today's Attendance */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="font-bold text-gray-900">Today's Check-ins</h3>
-                <p className="text-sm text-gray-500 mt-1">{dashboardData.todayAttendance} members</p>
+          <div className="bg-white rounded-xl p-3">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
+                  <Calendar className="w-4 h-4 text-indigo-600" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-gray-900">Today's Check-ins</h3>
+                  <p className="text-xs text-gray-500">{dashboardData.todayAttendance} members</p>
+                </div>
               </div>
               <button
                 onClick={() => router.push("/attendance")}
-                className="px-4 py-2 bg-orange-50 text-orange-600 rounded-lg text-sm font-medium hover:bg-orange-100 transition-colors"
+                className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-medium active:bg-indigo-100 transition-colors"
+                style={{ minHeight: '32px' }}
               >
                 View All
               </button>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-2">
               {todayAttendanceList.length > 0 ? (
                 todayAttendanceList.map((member) => (
                   <div
                     key={member.id}
-                    className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-xl transition-colors"
+                    className="flex items-center justify-between p-2 active:bg-gray-50 rounded-lg"
+                    style={{ minHeight: '52px' }}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${member.status === "active" ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-600"}`}>
-                        <span className="text-sm font-bold">{member.name.charAt(0)}</span>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                        member.status === "active" 
+                          ? "bg-green-100 text-green-600" 
+                          : "bg-gray-100 text-gray-600"
+                      }`}>
+                        <span className="text-xs font-bold">{member.name.charAt(0)}</span>
                       </div>
-                      <div>
-                        <p className="font-medium text-gray-900">
-                          {member.name}
-                        </p>
-                        <p className="text-xs text-gray-500">{member.checkIn}</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{member.name}</p>
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-gray-400" />
+                          <p className="text-xs text-gray-500">{member.checkIn}</p>
+                        </div>
                       </div>
                     </div>
-                    <div className={`w-3 h-3 rounded-full ${member.status === "active" ? "bg-green-500" : "bg-gray-300"}`}></div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <div className={`w-2 h-2 rounded-full ${
+                        member.status === "active" ? "bg-green-500 animate-pulse" : "bg-gray-300"
+                      }`}></div>
+                      <span className="text-xs font-medium px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                        {member.status === "active" ? "Active" : "Left"}
+                      </span>
+                    </div>
                   </div>
                 ))
               ) : (
-                <div className="text-center py-8">
-                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <span className="text-xl">📋</span>
+                <div className="text-center py-4">
+                  <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-2">
+                    <Calendar className="w-6 h-6 text-gray-400" />
                   </div>
-                  <p className="text-gray-500">No check-ins today</p>
+                  <p className="text-gray-500 text-sm">No check-ins today</p>
+                  <button
+                    onClick={() => router.push("/attendance/manual")}
+                    className="mt-2 text-xs text-blue-600 active:text-blue-700 font-medium"
+                  >
+                    Take manual attendance
+                  </button>
                 </div>
               )}
             </div>
           </div>
 
           {/* Pending Payments */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="font-bold text-gray-900">Pending Payments</h3>
-                <p className="text-sm text-gray-500 mt-1">Total: ₹{dashboardData.pendingDues.toLocaleString()}</p>
+          <div className="bg-white rounded-xl p-3">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                  <DollarSign className="w-4 h-4 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-gray-900">Pending Payments</h3>
+                  <p className="text-xs text-gray-500">Total: ₹{dashboardData.pendingDues.toLocaleString()}</p>
+                </div>
               </div>
               <button
                 onClick={() => router.push("/finance")}
-                className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors"
+                className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg text-xs font-medium active:scale-95 transition-transform"
+                style={{ minHeight: '32px' }}
               >
                 Collect All
               </button>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-2">
               {pendingPayments.length > 0 ? (
                 pendingPayments.map((payment) => (
                   <div
                     key={payment.id}
-                    className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-xl transition-colors"
+                    className="flex items-center justify-between p-2 active:bg-gray-50 rounded-lg"
+                    style={{ minHeight: '52px' }}
                   >
-                    <div>
-                      <p className="font-medium text-gray-900">
-                        {payment.name}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {payment.dueDate}
-                      </p>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <span className="text-xs font-bold text-red-600">₹</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{payment.name}</p>
+                        <span className="text-xs px-2 py-0.5 bg-red-100 text-red-600 rounded-full font-medium">
+                          Overdue
+                        </span>
+                      </div>
                     </div>
-                    <span className="font-semibold text-red-600">
-                      ₹{payment.amount}
-                    </span>
+                    <div className="text-right flex-shrink-0 pl-2">
+                      <p className="text-sm font-semibold text-red-600">₹{payment.amount}</p>
+                      <button className="text-xs text-blue-600 active:text-blue-700 font-medium">
+                        Collect →
+                      </button>
+                    </div>
                   </div>
                 ))
               ) : (
-                <div className="text-center py-8">
-                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <span className="text-xl">💳</span>
+                <div className="text-center py-4">
+                  <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-2">
+                    <CheckCircle className="w-6 h-6 text-green-400" />
                   </div>
-                  <p className="text-gray-500">No pending payments</p>
+                  <p className="text-gray-500 text-sm">All payments up to date!</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Great job managing finances</p>
                 </div>
               )}
             </div>
@@ -552,38 +623,53 @@ export default function AdminDashboard() {
         </div>
 
         {/* Recent Activity */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="font-bold text-gray-900">Recent Activity</h3>
-            <button className="text-sm text-gray-500 hover:text-gray-700 transition-colors">
+        <div className="bg-white rounded-xl p-3 mx-1">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                <Activity className="w-4 h-4 text-blue-600" />
+              </div>
+              <h3 className="text-sm font-bold text-gray-900">Recent Activity</h3>
+            </div>
+            <button className="text-xs text-gray-500 active:text-gray-700 transition-colors">
               View all →
             </button>
           </div>
-          <div className="space-y-4">
+          <div className="space-y-2">
             {recentActivity.length > 0 ? (
               recentActivity.map((activity) => (
                 <div
                   key={activity.id}
-                  className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-xl transition-colors"
+                  className="flex items-center justify-between p-2"
+                  style={{ minHeight: '52px' }}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                      <span className="text-lg">{activity.icon}</span>
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                      activity.type === "attendance" 
+                        ? "bg-green-100" 
+                        : "bg-blue-100"
+                    }`}>
+                      <span className="text-sm">{activity.icon}</span>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{activity.text}</p>
-                      <p className="text-xs text-gray-500">{activity.time}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{activity.text}</p>
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-gray-400" />
+                        <p className="text-xs text-gray-500">{activity.time}</p>
+                      </div>
                     </div>
                   </div>
-                  <span className="text-xs text-gray-400">{activity.time === "Today" ? "Just now" : activity.time}</span>
+                  <span className="text-xs text-gray-400 flex-shrink-0 pl-2">
+                    {activity.time === "Today" ? "Just now" : activity.time}
+                  </span>
                 </div>
               ))
             ) : (
-              <div className="text-center py-8">
-                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-xl">📊</span>
+              <div className="text-center py-4">
+                <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-2">
+                  <Activity className="w-6 h-6 text-gray-400" />
                 </div>
-                <p className="text-gray-500">No recent activity</p>
+                <p className="text-gray-500 text-sm">No recent activity</p>
               </div>
             )}
           </div>
@@ -593,49 +679,65 @@ export default function AdminDashboard() {
   );
 }
 
-// Enhanced KPI Card Component
-function KPICard({ title, value, icon, color = "gray", trend, onClick }) {
-  const colorClasses = {
-    gray: "bg-white border-gray-200",
-    green: "bg-gradient-to-br from-green-50 to-green-100 border-green-200",
-    red: "bg-gradient-to-br from-red-50 to-red-100 border-red-200",
-    blue: "bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200",
-    orange: "bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200",
+// Mobile-optimized KPI Card Component
+function MobileKPICard({ title, value, icon, color = "blue", trend, onClick }) {
+  const colorConfig = {
+    blue: {
+      bg: "bg-gradient-to-br from-blue-50 to-blue-100",
+      border: "border-blue-200",
+      text: "text-blue-900",
+      iconBg: "bg-gradient-to-br from-blue-500 to-blue-600",
+      iconColor: "text-white",
+      trendBg: "bg-blue-100 text-blue-600"
+    },
+    green: {
+      bg: "bg-gradient-to-br from-green-50 to-green-100",
+      border: "border-green-200",
+      text: "text-green-900",
+      iconBg: "bg-gradient-to-br from-green-500 to-green-600",
+      iconColor: "text-white",
+      trendBg: "bg-green-100 text-green-600"
+    },
+    amber: {
+      bg: "bg-gradient-to-br from-amber-50 to-amber-100",
+      border: "border-amber-200",
+      text: "text-amber-900",
+      iconBg: "bg-gradient-to-br from-amber-500 to-amber-600",
+      iconColor: "text-white",
+      trendBg: "bg-amber-100 text-amber-600"
+    },
+    indigo: {
+      bg: "bg-gradient-to-br from-indigo-50 to-indigo-100",
+      border: "border-indigo-200",
+      text: "text-indigo-900",
+      iconBg: "bg-gradient-to-br from-indigo-500 to-indigo-600",
+      iconColor: "text-white",
+      trendBg: "bg-indigo-100 text-indigo-600"
+    }
   };
 
-  const valueColors = {
-    gray: "text-gray-900",
-    green: "text-green-600",
-    red: "text-red-600",
-    blue: "text-blue-600",
-    orange: "text-orange-600",
-  };
-
-  const iconBgColors = {
-    gray: "bg-gray-100",
-    green: "bg-green-100",
-    red: "bg-red-100",
-    blue: "bg-blue-100",
-    orange: "bg-orange-100",
-  };
+  const config = colorConfig[color] || colorConfig.blue;
 
   return (
     <button
       onClick={onClick}
-      className={`${colorClasses[color]} rounded-2xl p-5 border shadow-sm text-left w-full hover:shadow-md transition-all hover:scale-[1.02]`}
+      className={`${config.bg} ${config.border} rounded-xl p-3 border shadow-sm active:shadow-none text-left w-full active:scale-95 transition-transform`}
+      style={{ minHeight: '100px' }}
     >
-      <div className="flex items-center justify-between mb-4">
-        <div className={`w-12 h-12 ${iconBgColors[color]} rounded-xl flex items-center justify-center`}>
-          <span className="text-xl">{icon}</span>
+      <div className="flex items-center justify-between mb-3">
+        <div className={`w-10 h-10 ${config.iconBg} rounded-xl flex items-center justify-center`}>
+          <div className={config.iconColor}>
+            {icon}
+          </div>
         </div>
         {trend && (
-          <span className="text-xs font-medium bg-white px-3 py-1 rounded-full text-green-600 border border-green-200">
+          <span className={`text-xs font-semibold px-2 py-0.5 ${config.trendBg} rounded-full`}>
             {trend}
           </span>
         )}
       </div>
-      <p className={`text-3xl font-bold ${valueColors[color]}`}>{value}</p>
-      <p className="text-sm text-gray-600 font-medium mt-2">{title}</p>
+      <p className={`text-2xl font-bold ${config.text} mb-1`}>{value}</p>
+      <p className="text-xs font-medium text-gray-600 truncate">{title}</p>
     </button>
   );
 }

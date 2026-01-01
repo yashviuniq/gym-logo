@@ -5,6 +5,26 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
 import { useToast } from "@/contexts/ToastContext";
+import { 
+  User, 
+  Phone, 
+  Mail, 
+  Calendar, 
+  CreditCard, 
+  ChevronRight,
+  ChevronLeft,
+  Building,
+  AlertCircle,
+  CheckCircle,
+  DollarSign,
+  Save,
+  Plus,
+  Edit,
+  Shield,
+  Key,
+  AlertTriangle,
+  Info
+} from "lucide-react";
 
 export default function AddMemberPage() {
   const router = useRouter();
@@ -65,7 +85,7 @@ export default function AddMemberPage() {
           id: plan.id,
           name: plan.name,
           duration: `${plan.duration_days} Days`,
-          duration_days: plan.duration_days, // Keep duration_days for calculation
+          duration_days: plan.duration_days,
           price: plan.price,
         })) || [];
         setMembershipPlans(transformedPlans);
@@ -83,30 +103,33 @@ export default function AddMemberPage() {
 
   const selectedPlan = membershipPlans.find((p) => p.id === formData.planId);
 
-  // Show loading while plans are loading
   if (loadingPlans) {
     return (
-      <div className="min-h-screen bg-gray-50 pb-24">
-        <Header title="Add Member" />
-        <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-4 border-[#F97316] border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom flex flex-col items-center justify-center">
+        <div className="relative">
+          <div className="w-14 h-14 border-4 border-blue-500/20 border-t-blue-600 rounded-full animate-spin"></div>
+          <div className="absolute inset-0 w-14 h-14 border-4 border-transparent border-t-blue-500 rounded-full animate-spin animation-delay-200"></div>
         </div>
+        <p className="mt-6 text-gray-600 font-medium text-sm">Loading membership plans...</p>
       </div>
     );
   }
 
-  // Show message if no gym selected
   if (!selectedGym) {
     return (
-      <div className="min-h-screen bg-gray-50 pb-24">
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom">
         <Header title="Add Member" />
         <main className="px-4 py-4">
           <div className="text-center py-12">
-            <span className="text-4xl">🏢</span>
-            <p className="text-gray-500 mt-2">Please select a gym first</p>
+            <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <Building className="w-10 h-10 text-white" />
+            </div>
+            <h2 className="text-lg font-bold text-gray-900 mb-2">No Gym Selected</h2>
+            <p className="text-gray-500 text-sm mb-6">Please select a gym first</p>
             <button
               onClick={() => router.push("/admin/dashboard")}
-              className="mt-4 px-6 py-2 bg-[#F97316] text-white rounded-lg"
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold text-sm active:scale-95 transition-transform"
+              style={{ minHeight: '44px' }}
             >
               Go to Dashboard
             </button>
@@ -116,16 +139,24 @@ export default function AddMemberPage() {
     );
   }
 
-  // Show message if no membership plans available
   if (membershipPlans.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 pb-24">
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom">
         <Header title="Add Member" />
         <main className="px-4 py-4">
           <div className="text-center py-12">
-            <span className="text-4xl">📋</span>
-            <p className="text-gray-500 mt-2">No membership plans available</p>
-            <p className="text-gray-400 text-sm">Please create membership plans first</p>
+            <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="w-10 h-10 text-blue-600" />
+            </div>
+            <h2 className="text-lg font-bold text-gray-900 mb-2">No Plans Available</h2>
+            <p className="text-gray-500 text-sm mb-6">Please create membership plans first</p>
+            <button
+              onClick={() => router.push("/membership-plans")}
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold text-sm active:scale-95 transition-transform"
+              style={{ minHeight: '44px' }}
+            >
+              Create Plans
+            </button>
           </div>
         </main>
       </div>
@@ -194,7 +225,6 @@ export default function AddMemberPage() {
         throw new Error("Selected plan not found");
       }
       
-      // Use duration_days from the plan - must be set in database
       if (!selectedPlan.duration_days || selectedPlan.duration_days <= 0) {
         throw new Error(`Invalid duration for plan "${selectedPlan.name}". Please ensure the plan has a valid duration_days value in the database.`);
       }
@@ -240,7 +270,7 @@ export default function AddMemberPage() {
       }
 
       // 5. Create member credentials for app login using phone number only
-      const defaultPassword = formData.phone.slice(-4) + "123";
+      const defaultPassword = formData.phone.slice(1,2)+formData.phone.slice(3,5)+formData.phone.slice(-2) + "213";
       try {
         await supabase
           .from("member_credentials")
@@ -288,30 +318,30 @@ export default function AddMemberPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom mb-10">
       <Header title="Add New Member" />
 
-      <div className="p-4 sm:p-6 max-w-2xl mx-auto">
-        {/* Progress Steps - Made smaller */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-2">
+      <main className="px-3 py-3 space-y-4">
+        {/* Progress Steps - Mobile Optimized */}
+        <div className="bg-white rounded-xl p-4 mx-1 shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between mb-3">
             {[1, 2, 3].map((s) => (
               <div key={s} className="flex items-center">
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                  className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
                     step >= s
                       ? step === s
-                        ? "bg-[#F97316] text-white shadow-md"
-                        : "bg-emerald-500 text-white"
+                        ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
+                        : "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white"
                       : "bg-gray-200 text-gray-500"
                   }`}
                 >
-                  {step > s ? "✓" : s}
+                  {step > s ? <CheckCircle className="w-4 h-4" /> : s}
                 </div>
                 {s < 3 && (
                   <div
-                    className={`w-12 h-1 mx-2 ${
-                      step > s ? "bg-emerald-500" : "bg-gray-200"
+                    className={`w-8 h-1 mx-2 ${
+                      step > s ? "bg-gradient-to-r from-emerald-500 to-emerald-600" : "bg-gray-200"
                     }`}
                   />
                 )}
@@ -320,13 +350,13 @@ export default function AddMemberPage() {
           </div>
           
           <div className="flex justify-between px-1 text-xs">
-            <span className={`font-medium ${step >= 1 ? "text-[#F97316]" : "text-gray-500"}`}>
+            <span className={`font-medium ${step >= 1 ? "text-blue-600" : "text-gray-500"}`}>
               Personal
             </span>
-            <span className={`font-medium ${step >= 2 ? "text-[#F97316]" : "text-gray-500"}`}>
+            <span className={`font-medium ${step >= 2 ? "text-blue-600" : "text-gray-500"}`}>
               Plan
             </span>
-            <span className={`font-medium ${step >= 3 ? "text-[#F97316]" : "text-gray-500"}`}>
+            <span className={`font-medium ${step >= 3 ? "text-blue-600" : "text-gray-500"}`}>
               Payment
             </span>
           </div>
@@ -334,186 +364,202 @@ export default function AddMemberPage() {
 
         {/* Step 1: Personal Info */}
         {step === 1 && (
-          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm mb-16"> {/* Added mb-16 for bottom spacing */}
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#F97316]/10 to-[#FF8C42]/10 rounded-lg flex items-center justify-center">
-                <span className="text-[#F97316] text-lg">👤</span>
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">Personal Information</h3>
-                <p className="text-xs text-gray-500">Enter basic details</p>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Full Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all placeholder:text-gray-400"
-                  placeholder="Enter full name"
-                  value={formData.name}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (/^[a-zA-Z\s]*$/.test(value) || value === '') {
-                      updateForm("name", value);
-                    }
-                  }}
-                  pattern="[a-zA-Z\s]+"
-                  title="Please enter a valid name (letters and spaces only)"
-                  required
-                  minLength="2"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone Number <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">📱</span>
-                  <input
-                    type="tel"
-                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all placeholder:text-gray-400"
-                    placeholder="Enter 10-digit phone"
-                    value={formData.phone}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, '');
-                      if (value.length <= 10) {
-                        updateForm("phone", value);
-                      }
-                    }}
-                    pattern="[0-9]{10}"
-                    maxLength="10"
-                    title="Please enter a valid 10-digit phone number"
-                    required
-                  />
-                </div>
-                <p className="text-xs text-gray-500 mt-1">10 digits only</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">✉️</span>
-                  <input
-                    type="email"
-                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all placeholder:text-gray-400"
-                    placeholder="john@example.com"
-                    value={formData.email}
-                    onChange={(e) => updateForm("email", e.target.value.toLowerCase().trim())}
-                    title="Please enter a valid email address"
-                  />
-                </div>
-                <p className="text-xs text-gray-500 mt-1">Optional - for app login</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Gender
-                  </label>
-                  <select
-                    className="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all text-sm"
-                    value={formData.gender}
-                    onChange={(e) => updateForm("gender", e.target.value)}
-                  >
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </select>
+          <div className="space-y-4 pb-4">
+            <div className="bg-white rounded-xl border border-gray-200 p-4 mx-1 shadow-sm">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg flex items-center justify-center">
+                  <User className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
+                  <h3 className="font-semibold text-gray-900">Personal Information</h3>
+                  <p className="text-xs text-gray-500">Enter basic member details</p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {/* Full Name */}
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Age
+                    Full Name <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="number"
-                    className="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all placeholder:text-gray-400 text-sm"
-                    placeholder="Age"
-                    value={formData.age}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (value === '' || (!isNaN(value) && parseInt(value) >= 0 && parseInt(value) <= 120)) {
-                        updateForm("age", value);
-                      }
-                    }}
-                    min="1"
-                    max="120"
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="text"
+                      className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm placeholder:text-gray-400"
+                      placeholder="Enter full name"
+                      value={formData.name}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (/^[a-zA-Z\s]*$/.test(value) || value === '') {
+                          updateForm("name", value);
+                        }
+                      }}
+                      pattern="[a-zA-Z\s]+"
+                      title="Please enter a valid name (letters and spaces only)"
+                      required
+                      minLength="2"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Letters and spaces only</p>
+                </div>
+
+                {/* Phone Number */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone Number <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="tel"
+                      className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm placeholder:text-gray-400"
+                      placeholder="Enter 10-digit phone"
+                      value={formData.phone}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '');
+                        if (value.length <= 10) {
+                          updateForm("phone", value);
+                        }
+                      }}
+                      pattern="[0-9]{10}"
+                      maxLength="10"
+                      title="Please enter a valid 10-digit phone number"
+                      required
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">10 digits only - used for login</p>
+                </div>
+
+                {/* Email Address */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="email"
+                      className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm placeholder:text-gray-400"
+                      placeholder="john@example.com"
+                      value={formData.email}
+                      onChange={(e) => updateForm("email", e.target.value.toLowerCase().trim())}
+                      title="Please enter a valid email address"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Optional - for app login</p>
+                </div>
+
+                {/* Gender and Age */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Gender
+                    </label>
+                    <select
+                      className="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
+                      value={formData.gender}
+                      onChange={(e) => updateForm("gender", e.target.value)}
+                    >
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Age
+                    </label>
+                    <input
+                      type="number"
+                      className="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm placeholder:text-gray-400"
+                      placeholder="Age"
+                      value={formData.age}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '' || (!isNaN(value) && parseInt(value) >= 0 && parseInt(value) <= 120)) {
+                          updateForm("age", value);
+                        }
+                      }}
+                      min="1"
+                      max="120"
+                    />
+                  </div>
+                </div>
+
+                {/* Address */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Address
+                  </label>
+                  <textarea
+                    className="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none transition-all placeholder:text-gray-400 text-sm"
+                    rows={2}
+                    placeholder="Enter address"
+                    value={formData.address}
+                    onChange={(e) => updateForm("address", e.target.value)}
                   />
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Address
-                </label>
-                <textarea
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none resize-none transition-all placeholder:text-gray-400 text-sm"
-                  rows={2}
-                  placeholder="Enter address"
-                  value={formData.address}
-                  onChange={(e) => updateForm("address", e.target.value)}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Emergency Contact
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">🚨</span>
-                  <input
-                    type="tel"
-                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all placeholder:text-gray-400"
-                    placeholder="Emergency contact number"
-                    value={formData.emergencyContact}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, '');
-                      if (value.length <= 10) {
-                        updateForm("emergencyContact", value);
-                      }
-                    }}
-                    pattern="[0-9]{10}"
-                    maxLength="10"
-                  />
+                {/* Emergency Contact */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Emergency Contact
+                  </label>
+                  <div className="relative">
+                    <AlertTriangle className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="tel"
+                      className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm placeholder:text-gray-400"
+                      placeholder="Emergency contact number"
+                      value={formData.emergencyContact}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '');
+                        if (value.length <= 10) {
+                          updateForm("emergencyContact", value);
+                        }
+                      }}
+                      pattern="[0-9]{10}"
+                      maxLength="10"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Optional - 10 digits only</p>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Optional - 10 digits only</p>
-              </div>
 
-              {/* Self Plan Edit Access Toggle */}
-              <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4 border border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">✏️</span>
-                    <div>
-                      <p className="font-medium text-gray-900">Self Plan Edit Access</p>
-                      <p className="text-xs text-gray-600">Allow member to edit their workout/diet plans from the app</p>
+                {/* Self Plan Edit Access Toggle */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-3 border border-blue-200">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Shield className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="font-medium text-gray-900">Self Plan Edit Access</p>
+                        <button
+                          type="button"
+                          onClick={() => updateForm("selfPlanEditAccess", !formData.selfPlanEditAccess)}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            formData.selfPlanEditAccess ? "bg-gradient-to-r from-emerald-500 to-emerald-600" : "bg-gray-300"
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              formData.selfPlanEditAccess ? "translate-x-6" : "translate-x-1"
+                            }`}
+                          />
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-600">
+                        Allow member to edit their workout/diet plans from the app
+                      </p>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => updateForm("selfPlanEditAccess", !formData.selfPlanEditAccess)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      formData.selfPlanEditAccess ? "bg-green-500" : "bg-gray-300"
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        formData.selfPlanEditAccess ? "translate-x-6" : "translate-x-1"
-                      }`}
-                    />
-                  </button>
                 </div>
               </div>
             </div>
 
-            {/* Next Button - Fixed position above bottom nav */}
-            <div className="mt-6 mb-2"> {/* Reduced margin-top */}
+            {/* Next Button */}
+            <div className="px-1">
               <button
                 onClick={() => {
                   if (!formData.name || formData.name.trim().length < 2) {
@@ -531,9 +577,11 @@ export default function AddMemberPage() {
                   setStep(2);
                 }}
                 disabled={!formData.name || !formData.phone}
-                className="w-full py-3.5 bg-gradient-to-r from-[#F97316] to-[#FF8C42] text-white font-medium rounded-lg hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                style={{ minHeight: '44px' }}
               >
-                Next: Select Plan
+                Continue to Plan Selection
+                <ChevronRight className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -541,11 +589,11 @@ export default function AddMemberPage() {
 
         {/* Step 2: Select Plan */}
         {step === 2 && (
-          <div className="space-y-4 mb-16"> {/* Added mb-16 */}
-            <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <div className="space-y-4 pb-4">
+            <div className="bg-white rounded-xl border border-gray-200 p-4 mx-1 shadow-sm">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg flex items-center justify-center">
-                  <span className="text-blue-600 text-lg">📋</span>
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg flex items-center justify-center">
+                  <CreditCard className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-900">Select Membership Plan</h3>
@@ -553,7 +601,8 @@ export default function AddMemberPage() {
                 </div>
               </div>
 
-              <div className="space-y-2 mb-4">
+              {/* Plans Grid */}
+              <div className="grid grid-cols-1 gap-2 mb-4">
                 {membershipPlans.map((plan) => (
                   <div
                     key={plan.id}
@@ -561,40 +610,45 @@ export default function AddMemberPage() {
                       updateForm("planId", plan.id);
                       updateForm("customPrice", plan.price.toString());
                     }}
-                    className={`p-3 rounded-lg border cursor-pointer transition-all ${formData.planId === plan.id
-                      ? "border-[#F97316] bg-gradient-to-r from-[#F97316]/5 to-[#FF8C42]/5"
-                      : "border-gray-200 hover:border-gray-300"
-                      }`}
+                    className={`p-3 rounded-lg border cursor-pointer transition-all active:scale-95 ${
+                      formData.planId === plan.id
+                        ? "border-blue-500 bg-gradient-to-r from-blue-50 to-indigo-50"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-gray-900">{plan.name}</p>
+                        <p className="font-medium text-gray-900 text-sm">{plan.name}</p>
                         <p className="text-xs text-gray-500">{plan.duration}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-gray-900">₹{plan.price}</p>
+                        <p className="font-bold text-gray-900 text-sm">₹{plan.price}</p>
+                        <div className={`w-4 h-4 rounded-full border ${formData.planId === plan.id ? 'border-blue-500 bg-blue-500' : 'border-gray-300'} mt-1 ml-auto`}></div>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
 
+              {/* Custom Price Toggle */}
               {formData.planId && (
-                <div className="mb-4 p-3 bg-gradient-to-r from-[#F97316]/5 to-[#FF8C42]/5 rounded-lg border border-[#F97316]/20">
+                <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
                   <div className="flex items-center justify-between mb-2">
-                    <div>
+                    <div className="flex items-center gap-2">
+                      <Edit className="w-4 h-4 text-blue-600" />
                       <span className="text-sm font-medium text-gray-900">Custom Price</span>
-                      <p className="text-xs text-gray-600">Set custom price for this membership</p>
                     </div>
                     <button
                       type="button"
                       onClick={() => updateForm("useCustomPrice", !formData.useCustomPrice)}
-                      className={`relative inline-flex h-5 w-10 items-center rounded-full ${formData.useCustomPrice ? "bg-[#F97316]" : "bg-gray-300"
-                        }`}
+                      className={`relative inline-flex h-5 w-10 items-center rounded-full ${
+                        formData.useCustomPrice ? "bg-gradient-to-r from-blue-500 to-indigo-500" : "bg-gray-300"
+                      }`}
                     >
                       <span
-                        className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition ${formData.useCustomPrice ? "translate-x-5" : "translate-x-0.5"
-                          }`}
+                        className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition ${
+                          formData.useCustomPrice ? "translate-x-5" : "translate-x-0.5"
+                        }`}
                       />
                     </button>
                   </div>
@@ -604,20 +658,23 @@ export default function AddMemberPage() {
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Custom Price (₹)
                       </label>
-                      <input
-                        type="number"
-                        className="w-full px-3 py-2 bg-white border border-[#F97316]/30 rounded-lg focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none text-sm font-medium transition-all"
-                        placeholder="Enter custom price"
-                        value={formData.customPrice}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          if (value === '' || (!isNaN(value) && parseFloat(value) >= 0)) {
-                            updateForm("customPrice", value);
-                          }
-                        }}
-                        min="0.01"
-                        step="0.01"
-                      />
+                      <div className="relative">
+                        <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <input
+                          type="number"
+                          className="w-full pl-10 pr-4 py-2 bg-white border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm font-medium transition-all"
+                          placeholder="Enter custom price"
+                          value={formData.customPrice}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === '' || (!isNaN(value) && parseFloat(value) >= 0)) {
+                              updateForm("customPrice", value);
+                            }
+                          }}
+                          min="0.01"
+                          step="0.01"
+                        />
+                      </div>
                       <p className="text-xs text-gray-500 mt-1">
                         Original price: ₹{selectedPlan?.price}
                       </p>
@@ -626,25 +683,34 @@ export default function AddMemberPage() {
                 </div>
               )}
 
+              {/* Start Date */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Start Date
+                  Membership Start Date
                 </label>
-                <input
-                  type="date"
-                  className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg outline-none transition-all text-sm cursor-not-allowed"
-                  value={formData.startDate}
-                  readOnly
-                  disabled
-                />
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input
+                    type="date"
+                    disabled
+                    readOnly
+                    className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
+                    value={formData.startDate}
+                    onChange={(e) => updateForm("startDate", e.target.value)}
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Membership will start from this date</p>
               </div>
             </div>
 
-            <div className="flex gap-3">
+            {/* Navigation Buttons */}
+            <div className="flex gap-3 px-1">
               <button
                 onClick={() => setStep(1)}
-                className="flex-1 py-3 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-all duration-200"
+                className="flex-1 py-3 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 active:scale-95 transition-all duration-200 flex items-center justify-center gap-2"
+                style={{ minHeight: '44px' }}
               >
+                <ChevronLeft className="w-4 h-4" />
                 Back
               </button>
               <button
@@ -671,9 +737,11 @@ export default function AddMemberPage() {
                   setStep(3);
                 }}
                 disabled={!formData.planId}
-                className="flex-1 py-3 bg-gradient-to-r from-[#F97316] to-[#FF8C42] text-white font-medium rounded-lg hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                style={{ minHeight: '44px' }}
               >
-                Next: Payment
+                Continue to Payment
+                <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -681,11 +749,11 @@ export default function AddMemberPage() {
 
         {/* Step 3: Payment */}
         {step === 3 && (
-          <div className="space-y-4 mb-16"> {/* Added mb-16 */}
-            <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+          <div className="space-y-4 pb-4">
+            <div className="bg-white rounded-xl border border-gray-200 p-4 mx-1 shadow-sm">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-green-50 to-green-100 rounded-lg flex items-center justify-center">
-                  <span className="text-green-600 text-lg">💰</span>
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg flex items-center justify-center">
+                  <DollarSign className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-900">Payment Details</h3>
@@ -693,7 +761,8 @@ export default function AddMemberPage() {
                 </div>
               </div>
 
-              <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+              {/* Plan Summary */}
+              <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm text-gray-600">Plan</span>
                   <span className="font-medium text-gray-900">{selectedPlan?.name}</span>
@@ -710,7 +779,7 @@ export default function AddMemberPage() {
                     </span>
                   </div>
                 )}
-                <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                <div className="flex justify-between items-center pt-2 border-t border-blue-200">
                   <span className="font-medium text-gray-900">
                     Total Amount
                   </span>
@@ -722,35 +791,43 @@ export default function AddMemberPage() {
                 </div>
               </div>
 
+              {/* Payment Amount */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Payment Amount (₹) <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none font-medium transition-all"
-                  placeholder="Enter amount"
-                  value={formData.paymentAmount}
-                  onChange={(e) => {
-                    const value = parseFloat(e.target.value);
-                    if (value >= 0 || e.target.value === '') {
-                      updateForm("paymentAmount", e.target.value);
-                    }
-                  }}
-                />
+                <div className="relative">
+                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-medium transition-all text-sm"
+                    placeholder="Enter amount"
+                    value={formData.paymentAmount}
+                    onChange={(e) => {
+                      const value = parseFloat(e.target.value);
+                      if (value >= 0 || e.target.value === '') {
+                        updateForm("paymentAmount", e.target.value);
+                      }
+                    }}
+                  />
+                </div>
               </div>
 
+              {/* Payment Status Alerts */}
               {formData.paymentAmount &&
                 formData.paymentAmount < (formData.useCustomPrice && formData.customPrice
                   ? parseFloat(formData.customPrice)
                   : selectedPlan?.price) && (
-                  <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                    <p className="text-sm font-medium text-amber-700">
-                      ⚠️ Partial Payment: ₹{formData.paymentAmount}
-                    </p>
-                    <p className="text-xs text-amber-600 mt-1">
+                  <div className="mb-4 p-3 bg-gradient-to-r from-amber-50 to-amber-100 border border-amber-200 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-amber-600" />
+                      <p className="text-sm font-medium text-amber-700">
+                        Partial Payment: ₹{formData.paymentAmount}
+                      </p>
+                    </div>
+                    <p className="text-xs text-amber-600 mt-1 ml-6">
                       Remaining due: ₹
                       {(formData.useCustomPrice && formData.customPrice
                         ? parseFloat(formData.customPrice)
@@ -759,26 +836,31 @@ export default function AddMemberPage() {
                   </div>
                 )}
               {formData.paymentAmount && parseFloat(formData.paymentAmount) === (formData.useCustomPrice && formData.customPrice ? parseFloat(formData.customPrice) : selectedPlan?.price) && (
-                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <p className="text-sm font-medium text-green-700">
-                    ✅ Full payment received
-                  </p>
+                <div className="mb-4 p-3 bg-gradient-to-r from-emerald-50 to-emerald-100 border border-emerald-200 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-emerald-600" />
+                    <p className="text-sm font-medium text-emerald-700">
+                      Full payment received
+                    </p>
+                  </div>
                 </div>
               )}
 
+              {/* Payment Mode */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Payment Mode
                 </label>
-                <div className="flex gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   {["cash", "upi", "card"].map((mode) => (
                     <button
                       key={mode}
                       onClick={() => updateForm("paymentMode", mode)}
-                      className={`flex-1 py-2 text-sm font-medium capitalize rounded-lg transition ${formData.paymentMode === mode
-                        ? "bg-gray-800 text-white"
-                        : "bg-gray-100 text-gray-600"
-                        }`}
+                      className={`py-2.5 text-xs font-medium capitalize rounded-lg transition-all active:scale-95 ${
+                        formData.paymentMode === mode
+                          ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
                     >
                       {mode}
                     </button>
@@ -786,12 +868,13 @@ export default function AddMemberPage() {
                 </div>
               </div>
 
+              {/* Notes */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Notes (Optional)
                 </label>
                 <textarea
-                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none resize-none transition-all placeholder:text-gray-400 text-sm"
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none transition-all placeholder:text-gray-400 text-sm"
                   rows={2}
                   placeholder="Any additional notes..."
                   value={formData.notes}
@@ -800,33 +883,63 @@ export default function AddMemberPage() {
               </div>
             </div>
 
-            <div className="space-y-3">
+            {/* Navigation Buttons */}
+            <div className="space-y-3 px-1">
               <div className="flex gap-3">
                 <button
                   onClick={() => handleSubmit(false)}
                   disabled={!formData.paymentAmount || loading}
-                  className="flex-1 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium rounded-lg hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                  className="flex-1 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  style={{ minHeight: '44px' }}
                 >
+                  <Save className="w-4 h-4" />
                   {loading ? "Saving..." : "Save Member"}
                 </button>
                 <button
                   onClick={() => handleSubmit(true)}
                   disabled={!formData.paymentAmount || loading}
-                  className="flex-1 py-3 bg-gradient-to-r from-[#F97316] to-[#FF8C42] text-white font-medium rounded-lg hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                  className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  style={{ minHeight: '44px' }}
                 >
+                  <Plus className="w-4 h-4" />
                   {loading ? "Saving..." : "Save & Add Another"}
                 </button>
               </div>
               <button
                 onClick={() => setStep(2)}
-                className="w-full py-3 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-all duration-200"
+                className="w-full py-3 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 active:scale-95 transition-all duration-200 flex items-center justify-center gap-2"
+                style={{ minHeight: '44px' }}
               >
-                Back
+                <ChevronLeft className="w-4 h-4" />
+                Back to Plan Selection
               </button>
+            </div>
+
+            {/* Login Info Preview */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-4 mx-1 text-white">
+              <div className="flex items-center gap-3 mb-3">
+                <Key className="w-5 h-5 text-white/80" />
+                <div>
+                  <h4 className="font-medium text-white">App Login Details</h4>
+                  <p className="text-white/80 text-xs">Will be shown after saving</p>
+                </div>
+              </div>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-white/80" />
+                  <span className="font-medium">Phone:</span>
+                  <span>{formData.phone || "Not set"}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Info className="w-4 h-4 text-white/80" />
+                  <span className="font-medium">Password:</span>
+                  <span>{formData.phone ? `${formData.phone.slice(-4)}123` : "Will be generated"}</span>
+                </div>
+              </div>
             </div>
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }

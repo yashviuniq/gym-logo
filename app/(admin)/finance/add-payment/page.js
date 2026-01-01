@@ -4,6 +4,21 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
+import { 
+  Search, 
+  User, 
+  CreditCard, 
+  ArrowLeft,
+  DollarSign,
+  Wallet,
+  Smartphone,
+  FileText,
+  Calendar,
+  Phone,
+  ChevronRight,
+  CheckCircle,
+  AlertCircle
+} from "lucide-react";
 
 export default function AddPaymentPage() {
   const router = useRouter();
@@ -111,65 +126,133 @@ export default function AddPaymentPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom mb-18">
       <Header title="Add Payment" />
 
-      <main className="px-4 py-4">
+      <main className="px-3 py-3 space-y-4">
+        {/* Progress Steps */}
+        <div className="bg-white rounded-xl p-4 mx-1">
+          <div className="flex items-center justify-between">
+            <div className={`flex items-center gap-2 ${step === 1 ? "text-blue-600" : "text-gray-400"}`}>
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${step === 1 ? "bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200" : "bg-gray-100"}`}>
+                <User className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-xs font-medium">Step 1</p>
+                <p className="text-sm font-semibold">Select Member</p>
+              </div>
+            </div>
+            
+            <div className="flex-1 h-0.5 mx-4 bg-gray-200"></div>
+            
+            <div className={`flex items-center gap-2 ${step === 2 ? "text-blue-600" : "text-gray-400"}`}>
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${step === 2 ? "bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200" : "bg-gray-100"}`}>
+                <CreditCard className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-xs font-medium">Step 2</p>
+                <p className="text-sm font-semibold">Payment Details</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Step 1: Select Member */}
         {step === 1 && (
           <div className="space-y-4">
-            <input
-              type="text"
-              placeholder="Search member by name or phone..."
-              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl outline-none"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              autoFocus
-            />
+            {/* Search Bar */}
+            <div className="bg-white rounded-xl p-3 mx-1">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="h-4 w-4 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search by name or phone number..."
+                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm placeholder:text-gray-400"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  autoFocus
+                />
+              </div>
+            </div>
 
+            {/* Members List */}
             {loading && !members.length ? (
               <div className="flex items-center justify-center py-12">
-                <div className="w-8 h-8 border-4 border-[#F97316] border-t-transparent rounded-full animate-spin"></div>
+                <div className="relative">
+                  <div className="w-12 h-12 border-4 border-blue-500/20 border-t-blue-600 rounded-full animate-spin"></div>
+                  <div className="absolute inset-0 w-12 h-12 border-4 border-transparent border-t-blue-500 rounded-full animate-spin animation-delay-200"></div>
+                </div>
               </div>
             ) : filteredMembers.length === 0 ? (
-              <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-                <p className="text-gray-500">No members found</p>
+              <div className="bg-white rounded-xl p-8 text-center mx-1">
+                <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <User className="w-8 h-8 text-gray-400" />
+                </div>
+                <h3 className="text-base font-semibold text-gray-900 mb-2">
+                  No members found
+                </h3>
+                <p className="text-gray-500 text-sm">
+                  Try adjusting your search criteria
+                </p>
               </div>
             ) : (
-              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                <div className="divide-y divide-gray-100">
-                  {filteredMembers.map((member) => (
-                    <button
-                      key={member.id}
-                      onClick={() => {
-                        setSelectedMember(member);
-                        // Auto-fill amount with due amount if exists
-                        if (member.dueAmount > 0) {
-                          setFormData(prev => ({ ...prev, amount: member.dueAmount.toString() }));
-                        }
-                        setStep(2);
-                      }}
-                      className="w-full p-4 flex items-center justify-between hover:bg-gray-50"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center font-bold">
-                          {member.name.charAt(0)}
-                        </div>
-                        <div className="text-left">
-                          <p className="font-medium text-gray-900">
-                            {member.name}
-                          </p>
-                          <p className="text-sm text-gray-500">{member.phone}</p>
+              <div className="space-y-3">
+                {filteredMembers.map((member) => (
+                  <button
+                    key={member.id}
+                    onClick={() => {
+                      setSelectedMember(member);
+                      // Auto-fill amount with due amount if exists
+                      if (member.dueAmount > 0) {
+                        setFormData(prev => ({ ...prev, amount: member.dueAmount.toString() }));
+                      }
+                      setStep(2);
+                    }}
+                    className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md active:scale-95 transition-all duration-200 cursor-pointer w-full mx-1 text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      {/* Avatar */}
+                      <div className="flex-shrink-0">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-sm">
+                          {member.name.charAt(0).toUpperCase()}
                         </div>
                       </div>
-                      {member.dueAmount > 0 && (
-                        <span className="text-sm text-red-500">
-                          ₹{member.dueAmount} due
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
+
+                      {/* Member Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="font-semibold text-gray-900 text-base truncate">
+                              {member.name}
+                            </h3>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Phone className="w-3 h-3 text-gray-400" />
+                              <span className="text-gray-500 text-sm">{member.phone}</span>
+                            </div>
+                          </div>
+                          <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                        </div>
+
+                        {/* Due Amount */}
+                        {member.dueAmount > 0 && (
+                          <div className="mt-3 flex items-center gap-2">
+                            <div className="w-8 h-8 bg-gradient-to-br from-red-50 to-red-100 rounded-lg flex items-center justify-center">
+                              <AlertCircle className="w-4 h-4 text-red-600" />
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500">Pending Payment</p>
+                              <p className="text-sm font-semibold text-red-600">
+                                ₹{member.dueAmount}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                ))}
               </div>
             )}
           </div>
@@ -178,128 +261,190 @@ export default function AddPaymentPage() {
         {/* Step 2: Payment Details */}
         {step === 2 && selectedMember && (
           <div className="space-y-4">
-            {/* Selected Member */}
-            <div className="bg-white rounded-xl p-4 shadow-sm flex items-center gap-3">
-              <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center font-bold">
-                {selectedMember.name.charAt(0)}
+            {/* Selected Member Card */}
+            <div className="bg-white rounded-xl p-4 mx-1 border border-gray-200 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-sm">
+                  {selectedMember.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="font-semibold text-gray-900 text-base truncate">
+                        {selectedMember.name}
+                      </h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Phone className="w-3 h-3 text-gray-400" />
+                        <span className="text-gray-500 text-sm">{selectedMember.phone}</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setStep(1)}
+                      className="text-sm text-blue-600 font-medium px-2 py-1 hover:bg-blue-50 rounded-lg transition-colors"
+                    >
+                      Change
+                    </button>
+                  </div>
+
+                  {selectedMember.dueAmount > 0 && (
+                    <div className="mt-3 flex items-center gap-2">
+                      <div className="w-8 h-8 bg-gradient-to-br from-red-50 to-red-100 rounded-lg flex items-center justify-center">
+                        <AlertCircle className="w-4 h-4 text-red-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Due Amount</p>
+                        <p className="text-sm font-semibold text-red-600">
+                          ₹{selectedMember.dueAmount}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="flex-1">
-                <p className="font-semibold text-gray-900">
-                  {selectedMember.name}
-                </p>
-                {selectedMember.dueAmount > 0 && (
-                  <p className="text-sm text-red-500">
-                    Due: ₹{selectedMember.dueAmount}
-                  </p>
-                )}
-              </div>
-              <button
-                onClick={() => setStep(1)}
-                className="text-sm text-blue-600"
-              >
-                Change
-              </button>
             </div>
 
             {/* Payment Form */}
-            <div className="bg-white rounded-xl p-4 shadow-sm space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Amount *
-                </label>
-                <input
-                  type="number"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-xl font-semibold outline-none"
-                  placeholder="₹ 0"
-                  value={formData.amount}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (value === '' || (!isNaN(value) && parseFloat(value) >= 0)) {
-                      updateForm("amount", value);
-                    }
-                  }}
-                  min="0.01"
-                  step="0.01"
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">Enter amount greater than 0</p>
-              </div>
-
+            <div className="bg-white rounded-xl p-4 mx-1 border border-gray-200 shadow-sm space-y-4">
+              {/* Amount Input */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Payment Type
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-gray-500" />
+                    Amount *
+                  </div>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <span className="text-2xl font-bold text-gray-400">₹</span>
+                  </div>
+                  <input
+                    type="number"
+                    className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl text-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="0.00"
+                    value={formData.amount}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === '' || (!isNaN(value) && parseFloat(value) >= 0)) {
+                        updateForm("amount", value);
+                      }
+                    }}
+                    min="0.01"
+                    step="0.01"
+                    required
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-2">Enter amount greater than 0</p>
+              </div>
+
+              {/* Payment Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-gray-500" />
+                    Payment Type
+                  </div>
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    "membership",
-                    "personal_training",
-                    "supplements",
-                    "other",
+                    { value: "membership", label: "Membership" },
+                    { value: "personal_training", label: "Training" },
+                    { value: "supplements", label: "Supplements" },
+                    { value: "other", label: "Other" }
                   ].map((type) => (
                     <button
-                      key={type}
+                      key={type.value}
                       type="button"
-                      onClick={() => updateForm("type", type)}
-                      className={`py-2 rounded-lg text-sm font-medium capitalize ${
-                        formData.type === type
-                          ? "bg-black text-white"
-                          : "bg-gray-100 text-gray-600"
+                      onClick={() => updateForm("type", type.value)}
+                      className={`py-3 rounded-lg text-sm font-medium capitalize transition-all ${
+                        formData.type === type.value
+                          ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                       }`}
                     >
-                      {type.replace("_", " ")}
+                      {type.label}
                     </button>
                   ))}
                 </div>
               </div>
 
+              {/* Payment Mode */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Payment Mode
+                  <div className="flex items-center gap-2">
+                    <Wallet className="w-4 h-4 text-gray-500" />
+                    Payment Mode
+                  </div>
                 </label>
-                <div className="flex gap-2">
-                  {["cash", "upi", "card"].map((mode) => (
-                    <button
-                      key={mode}
-                      type="button"
-                      onClick={() => updateForm("mode", mode)}
-                      className={`flex-1 py-2 rounded-lg text-sm font-medium capitalize ${
-                        formData.mode === mode
-                          ? "bg-black text-white"
-                          : "bg-gray-100 text-gray-600"
-                      }`}
-                    >
-                      {mode}
-                    </button>
-                  ))}
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: "cash", label: "Cash", icon: DollarSign },
+                    { value: "upi", label: "UPI", icon: Smartphone },
+                    { value: "card", label: "Card", icon: CreditCard }
+                  ].map((mode) => {
+                    const Icon = mode.icon;
+                    return (
+                      <button
+                        key={mode.value}
+                        type="button"
+                        onClick={() => updateForm("mode", mode.value)}
+                        className={`py-3 rounded-lg text-sm font-medium transition-all flex flex-col items-center gap-1 ${
+                          formData.mode === mode.value
+                            ? "bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 text-blue-700"
+                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        }`}
+                      >
+                        <Icon className="w-5 h-5" />
+                        {mode.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
+              {/* Notes */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Notes (Optional)
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-gray-500" />
+                    Notes (Optional)
+                  </div>
                 </label>
                 <textarea
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none resize-none"
-                  rows={2}
-                  placeholder="Payment notes..."
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-sm"
+                  rows={3}
+                  placeholder="Add any additional notes about this payment..."
                   value={formData.notes}
                   onChange={(e) => updateForm("notes", e.target.value)}
                 />
               </div>
 
+              {/* Action Buttons */}
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => setStep(1)}
-                  className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium"
+                  className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 active:scale-95 transition-all flex items-center justify-center gap-2"
+                  style={{ minHeight: '44px' }}
                 >
+                  <ArrowLeft className="w-4 h-4" />
                   Back
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={!formData.amount || loading}
-                  className="flex-1 py-3 bg-black text-white rounded-xl font-medium disabled:opacity-50"
+                  className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium disabled:opacity-50 hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
+                  style={{ minHeight: '44px' }}
                 >
-                  {loading ? "Processing..." : "Record Payment"}
+                  {loading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-5 h-5" />
+                      Record Payment
+                    </>
+                  )}
                 </button>
               </div>
             </div>

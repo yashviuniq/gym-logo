@@ -182,7 +182,7 @@ export default function AddAnnouncementPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3 bg-[#F97316] text-white rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+          className="w-full py-3 bg-indigo-800 cursor-pointer text-white rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
         >
           {loading ? "Creating..." : "Create Announcement"}
         </button>

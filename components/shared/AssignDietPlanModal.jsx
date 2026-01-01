@@ -122,12 +122,14 @@ export default function AssignDietPlanModal({ member, gymId, onClose, onAssign }
                 <div className="p-6 max-h-[60vh] overflow-y-auto">
                     {loadingPlans ? (
                         <div className="flex items-center justify-center py-8">
-                            <div className="w-8 h-8 border-4 border-[#F97316] border-t-transparent rounded-full animate-spin"></div>
+                            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                         </div>
                     ) : dietPlans.length === 0 ? (
                         <div className="text-center py-8">
                             <span className="text-4xl">🥗</span>
-                            <p className="text-gray-500 mt-2">No diet plans available</p>
+                            <p className="text-gray-500 mt-2">
+                                No diet plans available
+                            </p>
                             <p className="text-gray-400 text-sm mt-1">
                                 Create diet plans in Settings first
                             </p>
@@ -144,7 +146,7 @@ export default function AssignDietPlanModal({ member, gymId, onClose, onAssign }
                                     onClick={() => setSelectedPlan(plan.id)}
                                     className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
                                         selectedPlan === plan.id
-                                            ? "border-[#F97316] bg-orange-50"
+                                            ? "border-blue-600 bg-blue-50"
                                             : "border-gray-200 hover:border-gray-300 bg-white"
                                     }`}
                                 >
@@ -167,7 +169,9 @@ export default function AssignDietPlanModal({ member, gymId, onClose, onAssign }
                                             )}
                                         </div>
                                         {selectedPlan === plan.id && (
-                                            <span className="text-[#F97316] text-xl">✓</span>
+                                            <span className="text-indigo-600 text-xl">
+                                                ✓
+                                            </span>
                                         )}
                                     </div>
                                 </button>
@@ -189,7 +193,7 @@ export default function AssignDietPlanModal({ member, gymId, onClose, onAssign }
                         type="button"
                         onClick={handleAssign}
                         disabled={loading || !selectedPlan || loadingPlans}
-                        className="flex-1 py-3 bg-gradient-to-r from-[#F97316] to-[#FF8C42] text-white rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition"
+                        className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition"
                     >
                         {loading ? "Assigning..." : "Assign Plan"}
                     </button>
@@ -198,4 +202,3 @@ export default function AssignDietPlanModal({ member, gymId, onClose, onAssign }
         </div>
     );
 }
-

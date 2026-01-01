@@ -4,8 +4,21 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
-import Card from "@/components/shared/Card";
-import { Search, User, Clock, Calendar, CheckCircle, XCircle } from "lucide-react";
+import { 
+  Search, 
+  User, 
+  Clock, 
+  Calendar, 
+  CheckCircle, 
+  XCircle,
+  Filter,
+  ChevronRight,
+  Plus,
+  X,
+  Users,
+  BarChart3,
+  History
+} from "lucide-react";
 
 export default function AttendancePage() {
   const router = useRouter();
@@ -106,7 +119,6 @@ export default function AttendancePage() {
         console.error("Error fetching members:", error);
         setMembers([]);
       } else {
-        console.log("Fetched members:", membersData); // Debug log
         const transformedMembers = membersData?.map((member) => {
           const activeMembership = member.memberships?.find(m => m.status === "active");
           return {
@@ -157,10 +169,14 @@ export default function AttendancePage() {
         const peakTime = peakHour ? `${peakHour}:00-${parseInt(peakHour) + 2}:00` : "N/A";
 
         return {
-          date: new Date(date).toLocaleDateString("en-US", {
+          date: new Date(date).toLocaleDateString("en-IN", {
             month: "short",
             day: "numeric",
-            year: "numeric"
+          }),
+          fullDate: new Date(date).toLocaleDateString("en-IN", {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
           }),
           count: data?.length || 0,
           peakTime: peakTime,
@@ -191,42 +207,6 @@ export default function AttendancePage() {
     );
   }, [attendance, searchQuery]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 pb-24">
-        <Header title="Attendance" showBack={false} />
-        <main className="px-4 py-4">
-          <div className="flex items-center justify-center py-12">
-            <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  if (!selectedGym) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 pb-24">
-        <Header title="Attendance" showBack={false} />
-        <main className="px-4 py-4">
-          <div className="text-center py-12">
-            <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-3xl">🏢</span>
-            </div>
-            <p className="text-gray-600 text-lg font-medium mb-2">No Gym Selected</p>
-            <p className="text-gray-500 mb-6">Please select a gym first to manage attendance</p>
-            <button
-              onClick={() => router.push("/admin/dashboard")}
-              className="px-8 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all"
-            >
-              Go to Dashboard
-            </button>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
   const handleCheckOut = async (id, memberId) => {
     try {
       const currentTime = new Date().toLocaleTimeString("en-US", {
@@ -252,7 +232,7 @@ export default function AttendancePage() {
           a.id === id
             ? {
                 ...a,
-                checkOut: new Date().toLocaleTimeString("en-US", {
+                checkOut: new Date().toLocaleTimeString("en-IN", {
                   hour: "2-digit",
                   minute: "2-digit",
                 }),
@@ -314,7 +294,7 @@ export default function AttendancePage() {
         id: newRecord.id,
         memberId: newRecord.member_id,
         name: newRecord.members?.full_name || member.name,
-        checkIn: new Date(`1970-01-01T${newRecord.check_in_time}`).toLocaleTimeString("en-US", {
+        checkIn: new Date(`1970-01-01T${newRecord.check_in_time}`).toLocaleTimeString("en-IN", {
           hour: "2-digit",
           minute: "2-digit",
         }),
@@ -331,113 +311,180 @@ export default function AttendancePage() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom flex flex-col items-center justify-center">
+        <div className="relative">
+          <div className="w-14 h-14 border-4 border-blue-500/20 border-t-blue-600 rounded-full animate-spin"></div>
+          <div className="absolute inset-0 w-14 h-14 border-4 border-transparent border-t-blue-500 rounded-full animate-spin animation-delay-200"></div>
+        </div>
+        <p className="mt-6 text-gray-600 font-medium text-sm">Loading attendance...</p>
+      </div>
+    );
+  }
+
+  if (!selectedGym) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom">
+        <Header title="Attendance" showBack={false} />
+        <main className="px-4 py-4">
+          <div className="text-center py-12">
+            <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <Users className="w-10 h-10 text-white" />
+            </div>
+            <h2 className="text-lg font-bold text-gray-900 mb-2">No Gym Selected</h2>
+            <p className="text-gray-500 text-sm mb-6 px-4">
+              Please select a gym to view and manage attendance
+            </p>
+            <button
+              onClick={() => router.push("/admin/dashboard")}
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold text-sm active:scale-95 transition-transform"
+              style={{ minHeight: '44px' }}
+            >
+              Go to Dashboard
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 pb-24">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom">
       <Header title="Attendance" showBack={false} />
 
-      <main className="px-4 py-4">
-        {/* Date Selector */}
-        <div className="flex items-center gap-3 mb-6">
-          <div className="flex-1 relative">
-            <Calendar className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all shadow-sm"
-            />
+      <main className="px-3 py-3 space-y-4">
+        {/* Date Selector - Optimized for Mobile */}
+        <div className="bg-white rounded-xl p-3 mx-1 border border-gray-200 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-gray-500" />
+              <span className="text-sm font-medium text-gray-700">Select Date</span>
+            </div>
+            <button
+              onClick={() => setSelectedDate(new Date().toISOString().split("T")[0])}
+              className="px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-lg active:scale-95 transition-transform"
+              style={{ minHeight: '32px' }}
+            >
+              Today
+            </button>
           </div>
-          <button
-            onClick={() =>
-              setSelectedDate(new Date().toISOString().split("T")[0])
-            }
-            className="px-4 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl text-sm font-semibold shadow-md hover:shadow-lg transition-all"
-          >
-            Today
-          </button>
-        </div>
-
-        {/* Search Bar for Attendance List */}
-        <div className="relative mb-6">
-          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
-            type="text"
-            placeholder="Search attendance records..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all shadow-sm"
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
           />
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-center w-12 h-12 bg-blue-50 rounded-xl mb-3 mx-auto">
-              <User className="w-6 h-6 text-blue-600" />
+        {/* Stats Cards - Mobile Optimized */}
+        <div className="grid grid-cols-3 gap-2 px-1">
+          <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 font-medium">Total</p>
+                <p className="text-xl font-bold text-gray-900 mt-0.5">{todayStats.total}</p>
+              </div>
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg flex items-center justify-center">
+                <Users className="w-5 h-5 text-blue-600" />
+              </div>
             </div>
-            <p className="text-2xl font-bold text-gray-900 text-center">
-              {todayStats.total}
-            </p>
-            <p className="text-xs text-gray-600 font-medium text-center">Total</p>
           </div>
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-center w-12 h-12 bg-green-50 rounded-xl mb-3 mx-auto">
-              <CheckCircle className="w-6 h-6 text-green-600" />
+
+          <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 font-medium">Active</p>
+                <p className="text-xl font-bold text-emerald-600 mt-0.5">{todayStats.checkedIn}</p>
+              </div>
+              <div className="w-10 h-10 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-lg flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-emerald-600" />
+              </div>
             </div>
-            <p className="text-2xl font-bold text-green-600 text-center">
-              {todayStats.checkedIn}
-            </p>
-            <p className="text-xs text-gray-600 font-medium text-center">Active</p>
           </div>
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-center w-12 h-12 bg-gray-100 rounded-xl mb-3 mx-auto">
-              <XCircle className="w-6 h-6 text-gray-600" />
+
+          <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 font-medium">Completed</p>
+                <p className="text-xl font-bold text-blue-600 mt-0.5">{todayStats.checkedOut}</p>
+              </div>
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg flex items-center justify-center">
+                <History className="w-5 h-5 text-blue-600" />
+              </div>
             </div>
-            <p className="text-2xl font-bold text-blue-600 text-center">
-              {todayStats.checkedOut}
-            </p>
-            <p className="text-xs text-gray-600 font-medium text-center">Completed</p>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex bg-gray-100 p-1 rounded-2xl mb-6">
-          {["today", "history"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all ${
-                activeTab === tab
-                  ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              {tab === "today" ? "Today's Log" : "History"}
-            </button>
-          ))}
+        {/* Search Bar */}
+        <div className="bg-white rounded-xl p-3 mx-1 border border-gray-200 shadow-sm">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search attendance records..."
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm placeholder:text-gray-400"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
         </div>
 
-        {/* Today's Attendance List */}
+        {/* Filter Tabs */}
+        <div className="bg-white rounded-xl p-3 mx-1 border border-gray-200 shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <Filter className="w-4 h-4 text-gray-500" />
+            <span className="text-sm font-medium text-gray-700">View</span>
+          </div>
+          <div className="flex space-x-2 overflow-x-auto pb-1 -mx-1 px-1 no-scrollbar">
+            {[
+              { id: "today", label: "Today's Log", icon: <Clock className="w-3.5 h-3.5" /> },
+              { id: "history", label: "History", icon: <BarChart3 className="w-3.5 h-3.5" /> }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex-shrink-0 px-4 py-2.5 rounded-lg text-xs font-medium transition-all duration-200 flex items-center gap-2 ${
+                  activeTab === tab.id
+                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+                style={{ minHeight: '36px' }}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Attendance List */}
         {activeTab === "today" && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold text-gray-900">Attendance Records</h3>
-              <span className="text-sm text-gray-500">
+          <div className="space-y-3 pb-20">
+            <div className="flex items-center justify-between px-2">
+              <h3 className="font-semibold text-gray-900 text-sm">Attendance Records</h3>
+              <span className="text-xs text-gray-500">
                 {filteredAttendance.length} {filteredAttendance.length === 1 ? 'record' : 'records'}
               </span>
             </div>
             
             {filteredAttendance.length === 0 ? (
-              <div className="bg-white rounded-2xl p-8 text-center shadow-sm border border-gray-100">
-                <div className="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">📋</span>
+              <div className="bg-white rounded-xl p-6 text-center border border-gray-200 shadow-sm mx-1">
+                <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Users className="w-8 h-8 text-gray-400" />
                 </div>
-                <p className="text-gray-700 font-medium mb-2">No attendance records</p>
-                <p className="text-gray-500 text-sm mb-6">No one has checked in for this date yet</p>
+                <h3 className="text-base font-semibold text-gray-900 mb-2">No attendance records</h3>
+                <p className="text-gray-500 text-sm mb-4">
+                  No one has checked in for this date yet
+                </p>
                 <button
                   onClick={() => setShowMarkModal(true)}
-                  className="px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl text-sm font-semibold shadow-md hover:shadow-lg transition-all"
+                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 mx-auto"
+                  style={{ minHeight: '44px' }}
                 >
+                  <Plus className="w-5 h-5" />
                   Mark First Entry
                 </button>
               </div>
@@ -445,44 +492,73 @@ export default function AttendancePage() {
               filteredAttendance.map((record) => (
                 <div
                   key={record.id}
-                  className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all"
+                  className="bg-white rounded-xl border border-gray-200 p-3 hover:shadow-md transition-all duration-200 mx-1"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg bg-gradient-to-br from-orange-500 to-orange-600 shadow-md">
+                  <div className="flex items-start gap-3">
+                    {/* Avatar */}
+                    <div className="flex-shrink-0">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-sm">
                         {record.name.charAt(0).toUpperCase()}
                       </div>
-                      <div>
-                        <p className="font-semibold text-gray-900">
-                          {record.name}
-                        </p>
-                        <div className="flex items-center gap-3 mt-1">
-                          <div className="flex items-center gap-1 text-sm text-green-600">
-                            <Clock className="w-3 h-3" />
-                            <span>In: {record.checkIn}</span>
-                          </div>
-                          {record.checkOut && (
-                            <div className="flex items-center gap-1 text-sm text-red-600">
+                    </div>
+
+                    {/* Member Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between mb-1">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-gray-900 text-sm truncate">
+                            {record.name}
+                          </h3>
+                          <div className="flex items-center gap-3 mt-1">
+                            <div className="flex items-center gap-1 text-xs text-emerald-600">
                               <Clock className="w-3 h-3" />
-                              <span>Out: {record.checkOut}</span>
+                              <span>In: {record.checkIn}</span>
+                            </div>
+                            {record.checkOut && (
+                              <div className="flex items-center gap-1 text-xs text-blue-600">
+                                <Clock className="w-3 h-3" />
+                                <span>Out: {record.checkOut}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end gap-2">
+                          {record.status === "checked-in" ? (
+                            <div className="px-2.5 py-1.5 rounded-lg border bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200 text-emerald-700 flex items-center gap-1.5">
+                              <CheckCircle className="w-3.5 h-3.5" />
+                              <span className="text-xs font-medium">Active</span>
+                            </div>
+                          ) : (
+                            <div className="px-2.5 py-1.5 rounded-lg border bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 text-blue-700 flex items-center gap-1.5">
+                              <CheckCircle className="w-3.5 h-3.5" />
+                              <span className="text-xs font-medium">Completed</span>
                             </div>
                           )}
                         </div>
                       </div>
-                    </div>
-                    <div>
-                      {record.status === "checked-in" ? (
+
+                      {/* Action Buttons */}
+                      <div className="flex space-x-2 overflow-x-auto mt-3 pt-3 border-t border-gray-100 pb-1 -mx-1 px-1 no-scrollbar">
+                        {record.status === "checked-in" && (
+                          <button
+                            onClick={() => handleCheckOut(record.id, record.memberId)}
+                            className="flex-shrink-0 px-3 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-xs font-medium rounded-lg active:scale-95 transition-all flex items-center gap-2"
+                            style={{ minHeight: '36px' }}
+                          >
+                            <CheckCircle className="w-3.5 h-3.5" />
+                            Check Out
+                          </button>
+                        )}
+                        
                         <button
-                          onClick={() => handleCheckOut(record.id, record.memberId)}
-                          className="px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl text-sm font-medium shadow-sm hover:shadow-md transition-all"
+                          onClick={() => router.push(`/members/${record.memberId}`)}
+                          className="flex-shrink-0 px-3 py-2 bg-blue-50 text-blue-700 cursor-pointer text-xs font-medium rounded-lg active:bg-blue-100 transition-all flex items-center gap-2"
+                          style={{ minHeight: '36px' }}
                         >
-                          Check Out
+                          <User className="w-3.5 h-3.5" />
+                          View Profile
                         </button>
-                      ) : (
-                        <span className="px-4 py-2 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium">
-                          Completed
-                        </span>
-                      )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -493,47 +569,52 @@ export default function AttendancePage() {
 
         {/* History Tab */}
         {activeTab === "history" && (
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
-            <div className="p-6 border-b border-gray-100">
-              <h3 className="font-semibold text-gray-900 text-lg">
-                Attendance History
-              </h3>
-              <p className="text-gray-500 text-sm mt-1">Last 7 days</p>
+          <div className="space-y-3 pb-20">
+            <div className="flex items-center justify-between px-2">
+              <h3 className="font-semibold text-gray-900 text-sm">Attendance History</h3>
+              <span className="text-xs text-gray-500">Last 7 days</span>
             </div>
-            <div className="divide-y divide-gray-100">
-              {historyData.length > 0 ? (
-                historyData.map((day, index) => (
-                  <div
-                    key={index}
-                    onClick={() =>
-                      router.push(`/attendance/history?date=${day.rawDate}`)
-                    }
-                    className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-all"
-                  >
-                    <div>
-                      <p className="font-medium text-gray-900">{day.date}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Clock className="w-4 h-4 text-gray-400" />
-                        <p className="text-sm text-gray-500">
-                          Peak: {day.peakTime}
-                        </p>
+            
+            {historyData.length > 0 ? (
+              historyData.map((day, index) => (
+                <div
+                  key={index}
+                  onClick={() => router.push(`/attendance/history?date=${day.rawDate}`)}
+                  className="bg-white rounded-xl border border-gray-200 p-3 hover:shadow-md transition-all duration-200 cursor-pointer mx-1 active:scale-95"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg flex items-center justify-center">
+                        <Calendar className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900 text-sm">{day.fullDate}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Clock className="w-3 h-3 text-gray-400" />
+                          <p className="text-xs text-gray-500">
+                            Peak: {day.peakTime}
+                          </p>
+                        </div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-gray-900 text-xl">{day.count}</p>
+                      <p className="font-bold text-gray-900 text-lg">{day.count}</p>
                       <p className="text-xs text-gray-500">check-ins</p>
                     </div>
                   </div>
-                ))
-              ) : (
-                <div className="p-8 text-center">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Calendar className="w-6 h-6 text-gray-400" />
-                  </div>
-                  <p className="text-gray-500">No attendance history available</p>
                 </div>
-              )}
-            </div>
+              ))
+            ) : (
+              <div className="bg-white rounded-xl p-6 text-center border border-gray-200 shadow-sm mx-1">
+                <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <History className="w-8 h-8 text-gray-400" />
+                </div>
+                <h3 className="text-base font-semibold text-gray-900 mb-2">No history available</h3>
+                <p className="text-gray-500 text-sm">
+                  Attendance history will appear here
+                </p>
+              </div>
+            )}
           </div>
         )}
       </main>
@@ -541,9 +622,12 @@ export default function AttendancePage() {
       {/* Mark Attendance FAB */}
       <button
         onClick={() => setShowMarkModal(true)}
-        className="fixed bottom-24 right-6 w-16 h-16 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-full shadow-xl flex items-center justify-center text-2xl z-40 hover:shadow-2xl transition-all hover:scale-105"
+        className="fixed bottom-24 right-4 w-14 h-14 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full shadow-xl flex items-center justify-center z-40 hover:shadow-2xl transition-all hover:scale-105 active:scale-95"
+        style={{
+          boxShadow: '0 10px 25px -5px rgba(59, 130, 246, 0.5)',
+        }}
       >
-        <User className="w-6 h-6" />
+        <Plus className="w-6 h-6" />
       </button>
 
       {/* Mark Attendance Modal */}
@@ -589,39 +673,31 @@ function MarkAttendanceModal({
     return matchesSearch && !isAlreadyCheckedIn;
   });
 
-  // Debug log to see what's happening
-  useEffect(() => {
-    console.log("All members:", members);
-    console.log("Filtered members:", filteredMembers);
-    console.log("Search query:", searchQuery);
-    console.log("Already checked in IDs:", alreadyCheckedIn);
-  }, [members, filteredMembers, searchQuery]);
-
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-md rounded-2xl max-h-[90vh] overflow-hidden shadow-2xl">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl max-h-[85vh] overflow-hidden shadow-2xl animate-slide-up">
         {/* Modal Header */}
-        <div className="p-6 border-b border-gray-100">
+        <div className="p-4 border-b border-gray-200 sticky top-0 bg-white z-10">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-xl font-bold text-gray-900">Mark Attendance</h3>
-              <p className="text-gray-500 text-sm mt-1">Select a member to check in</p>
+              <h3 className="text-lg font-bold text-gray-900">Mark Attendance</h3>
+              <p className="text-gray-500 text-xs mt-0.5">Select a member to check in</p>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors active:scale-95"
             >
-              <XCircle className="w-6 h-6 text-gray-400" />
+              <X className="w-5 h-5 text-gray-500" />
             </button>
           </div>
           
           {/* Search Input */}
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="text"
               placeholder="Search member by name or phone..."
-              className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+              className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               autoFocus
@@ -629,29 +705,35 @@ function MarkAttendanceModal({
           </div>
           
           {/* Summary */}
-          <div className="flex items-center gap-4 mt-4 text-sm">
+          <div className="flex items-center gap-4 mt-3 text-xs">
             <span className="text-gray-600">
-              {filteredMembers.length} members found
+              {filteredMembers.length} available
             </span>
-            <span className="text-orange-600">
+            <span className="text-blue-600 font-medium">
               {alreadyCheckedIn.length} already checked in
             </span>
           </div>
         </div>
 
         {/* Member List */}
-        <div className="overflow-y-auto max-h-[60vh] p-4">
+        <div className="overflow-y-auto max-h-[60vh] p-2">
           {filteredMembers.length === 0 ? (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="text-center py-8 px-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <User className="w-6 h-6 text-gray-400" />
               </div>
-              <p className="text-gray-700 font-medium mb-2">No members found</p>
-              <p className="text-gray-500 text-sm">
+              <h3 className="text-sm font-semibold text-gray-900 mb-2">No members found</h3>
+              <p className="text-gray-500 text-xs mb-4">
                 {searchQuery 
                   ? "Try a different search term" 
                   : "All members are already checked in or no members available"}
               </p>
+              <button
+                onClick={onClose}
+                className="px-4 py-2 text-blue-600 text-sm font-medium hover:text-blue-700 active:scale-95 transition-transform"
+              >
+                Close
+              </button>
             </div>
           ) : (
             <div className="space-y-2">
@@ -659,31 +741,42 @@ function MarkAttendanceModal({
                 <div
                   key={member.id}
                   onClick={() => onMarkAttendance(member)}
-                  className="flex items-center gap-4 p-4 hover:bg-orange-50 rounded-xl transition-all cursor-pointer border border-gray-100 hover:border-orange-200 group"
+                  className="flex items-center gap-3 p-3 hover:bg-blue-50 rounded-xl transition-all cursor-pointer border border-gray-100 hover:border-blue-200 group active:scale-95"
                 >
-                  <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg bg-gradient-to-br from-orange-500 to-orange-600 shadow-sm">
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg bg-gradient-to-br from-blue-600 to-indigo-600 shadow-sm">
                     {member.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900 truncate">
+                    <p className="font-semibold text-gray-900 text-sm truncate">
                       {member.name}
                     </p>
-                    <p className="text-sm text-gray-500 truncate">
+                    <p className="text-xs text-gray-500 truncate">
                       {member.phone}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
+                      <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-lg">
                         {member.plan}
                       </span>
                     </div>
                   </div>
-                  <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center group-hover:bg-green-200 transition-colors">
-                    <CheckCircle className="w-4 h-4 text-green-600" />
+                  <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center group-hover:bg-emerald-200 transition-colors">
+                    <CheckCircle className="w-4 h-4 text-emerald-600" />
                   </div>
                 </div>
               ))}
             </div>
           )}
+        </div>
+
+        {/* Modal Footer */}
+        <div className="p-4 border-t border-gray-200 bg-white sticky bottom-0">
+          <button
+            onClick={onClose}
+            className="w-full py-3 bg-gray-100 text-gray-700 font-medium rounded-lg active:scale-95 transition-all duration-200"
+            style={{ minHeight: '44px' }}
+          >
+            Cancel
+          </button>
         </div>
       </div>
     </div>

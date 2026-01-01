@@ -347,6 +347,7 @@ export default function RenewMembershipModal({ member, gymId, onClose, onRenew }
                                     className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] outline-none text-sm"
                                     value={customStartDate}
                                     onChange={(e) => setCustomStartDate(e.target.value)}
+                                    max={new Date().toISOString().split("T")[0]}
                                 />
                             )}
                         </div>

@@ -23,7 +23,8 @@ import {
   Activity,
   MoreVertical,
   Bell,
-  Search
+  Search,
+  X
 } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -42,8 +43,16 @@ export default function AdminDashboard() {
     pendingDues: 0,
   });
   const [todayAttendanceList, setTodayAttendanceList] = useState([]);
+  const [allTodayAttendance, setAllTodayAttendance] = useState([]);
   const [pendingPayments, setPendingPayments] = useState([]);
+  const [allPendingPayments, setAllPendingPayments] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
+  const [allRecentActivity, setAllRecentActivity] = useState([]);
+  
+  // Modal states
+  const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+  const [showPaymentsModal, setShowPaymentsModal] = useState(false);
+  const [showActivityModal, setShowActivityModal] = useState(false);
 
   // Your existing logic remains exactly the same
   useEffect(() => {
@@ -137,11 +146,13 @@ export default function AdminDashboard() {
 
       const firstDayOfMonth = new Date();
       firstDayOfMonth.setDate(1);
+      const firstDayOfMonthStr = firstDayOfMonth.toISOString().split('T')[0];
+      
       const { data: payments, error: paymentsError } = await supabase
         .from("payments")
         .select("amount")
         .eq("gym_id", gymId)
-        .gte("created_at", firstDayOfMonth.toISOString())
+        .gte("created_at", firstDayOfMonthStr)
         .order("created_at", { ascending: false });
 
       if (!membersError && members) {
@@ -182,39 +193,39 @@ export default function AdminDashboard() {
       }
 
       if (attendance && !attendanceError) {
-        setTodayAttendanceList(
-          attendance.slice(0, 5).map((att) => ({
-            id: att.id,
-            name: att.members?.full_name || "Unknown",
-            checkIn: new Date(`1970-01-01T${att.check_in_time}`).toLocaleTimeString("en-US", {
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: true,
-            }),
-            status: att.check_out_time ? "left" : "active",
-          }))
-        );
+        const formattedAttendance = attendance.map((att) => ({
+          id: att.id,
+          name: att.members?.full_name || "Unknown",
+          checkIn: new Date(`1970-01-01T${att.check_in_time}`).toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          }),
+          status: att.check_out_time ? "left" : "active",
+        }));
+        setAllTodayAttendance(formattedAttendance);
+        setTodayAttendanceList(formattedAttendance.slice(0, 5));
       }
 
       if (members && !membersError) {
-        const membersDue = members
+        const allMembersDue = members
           .filter((m) => m.balance > 0)
           .sort((a, b) => b.balance - a.balance)
-          .slice(0, 5)
           .map((member) => ({
             id: member.id,
             name: member.full_name,
             amount: member.balance,
             dueDate: "Overdue",
           }));
-        setPendingPayments(membersDue);
+        setAllPendingPayments(allMembersDue);
+        setPendingPayments(allMembersDue.slice(0, 5));
       }
 
       let activities = [];
       
       if (attendance && !attendanceError) {
         activities = activities.concat(
-          attendance.slice(0, 3).map((att) => ({
+          attendance.map((att) => ({
             id: `att_${att.id}`,
             type: "attendance",
             text: `${att.members?.full_name || "Member"} checked ${att.check_out_time ? "out" : "in"}`,
@@ -226,7 +237,7 @@ export default function AdminDashboard() {
 
       const recentMembers = members
         ?.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-        .slice(0, 2);
+        .slice(0, 10);
       
       if (recentMembers) {
         activities = activities.concat(
@@ -240,6 +251,7 @@ export default function AdminDashboard() {
         );
       }
 
+      setAllRecentActivity(activities);
       setRecentActivity(activities.slice(0, 5));
 
     } catch (err) {
@@ -504,7 +516,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <button
-                onClick={() => router.push("/attendance")}
+                onClick={() => setShowAttendanceModal(true)}
                 className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-medium active:bg-indigo-100 transition-colors"
                 style={{ minHeight: '32px' }}
               >
@@ -574,13 +586,22 @@ export default function AdminDashboard() {
                   <p className="text-xs text-gray-500">Total: ₹{dashboardData.pendingDues.toLocaleString()}</p>
                 </div>
               </div>
-              <button
-                onClick={() => router.push("/finance")}
-                className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg text-xs font-medium active:scale-95 transition-transform"
-                style={{ minHeight: '32px' }}
-              >
-                Collect All
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowPaymentsModal(true)}
+                  className="px-3 py-1.5 bg-amber-50 text-amber-600 rounded-lg text-xs font-medium active:bg-amber-100 transition-colors"
+                  style={{ minHeight: '32px' }}
+                >
+                  View All
+                </button>
+                <button
+                  onClick={() => router.push("/finance")}
+                  className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg text-xs font-medium active:scale-95 transition-transform"
+                  style={{ minHeight: '32px' }}
+                >
+                  Collect All
+                </button>
+              </div>
             </div>
             <div className="space-y-2">
               {pendingPayments.length > 0 ? (
@@ -631,8 +652,11 @@ export default function AdminDashboard() {
               </div>
               <h3 className="text-sm font-bold text-gray-900">Recent Activity</h3>
             </div>
-            <button className="text-xs text-gray-500 active:text-gray-700 transition-colors">
-              View all →
+            <button 
+              onClick={() => setShowActivityModal(true)}
+className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-medium active:bg-indigo-100 transition-colors"
+            >
+              View all 
             </button>
           </div>
           <div className="space-y-2">
@@ -675,6 +699,234 @@ export default function AdminDashboard() {
           </div>
         </div>
       </main>
+
+      {/* Today's Attendance Modal */}
+      {showAttendanceModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-white rounded-t-2xl">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-indigo-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">Today's Check-ins</h2>
+                  <p className="text-xs text-gray-500">{allTodayAttendance.length} members checked in</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowAttendanceModal(false)}
+                className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center active:bg-gray-200"
+              >
+                <X className="w-4 h-4 text-gray-600" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+              {allTodayAttendance.length > 0 ? (
+                allTodayAttendance.map((member) => (
+                  <div
+                    key={member.id}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-xl"
+                  >
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                        member.status === "active" 
+                          ? "bg-green-100 text-green-600" 
+                          : "bg-gray-200 text-gray-600"
+                      }`}>
+                        <span className="text-sm font-bold">{member.name.charAt(0)}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{member.name}</p>
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-gray-400" />
+                          <p className="text-xs text-gray-500">{member.checkIn}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className={`w-2 h-2 rounded-full ${
+                        member.status === "active" ? "bg-green-500 animate-pulse" : "bg-gray-300"
+                      }`}></div>
+                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                        member.status === "active" 
+                          ? "bg-green-100 text-green-600" 
+                          : "bg-gray-100 text-gray-600"
+                      }`}>
+                        {member.status === "active" ? "Active" : "Left"}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                    <Calendar className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <p className="text-gray-500 font-medium">No check-ins today</p>
+                  <p className="text-xs text-gray-400 mt-1">Members will appear here when they check in</p>
+                </div>
+              )}
+            </div>
+            <div className="p-4 border-t bg-gray-50 rounded-b-2xl">
+              <button
+                onClick={() => {
+                  setShowAttendanceModal(false);
+                  router.push("/attendance");
+                }}
+                className="w-full py-3 bg-indigo-600 text-white rounded-xl font-medium active:bg-indigo-700 transition-colors"
+              >
+                Go to Attendance Page
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pending Payments Modal */}
+      {showPaymentsModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-white rounded-t-2xl">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+                  <DollarSign className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">Pending Payments</h2>
+                  <p className="text-xs text-gray-500">Total: ₹{dashboardData.pendingDues.toLocaleString()}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowPaymentsModal(false)}
+                className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center active:bg-gray-200"
+              >
+                <X className="w-4 h-4 text-gray-600" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+              {allPendingPayments.length > 0 ? (
+                allPendingPayments.map((payment) => (
+                  <div
+                    key={payment.id}
+                    onClick={() => {
+                      setShowPaymentsModal(false);
+                      router.push(`/members/${payment.id}`);
+                    }}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-xl active:bg-gray-100 cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <span className="text-sm font-bold text-red-600">₹</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{payment.name}</p>
+                        <span className="text-xs px-2 py-0.5 bg-red-100 text-red-600 rounded-full font-medium">
+                          Overdue
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0 pl-2">
+                      <p className="text-sm font-semibold text-red-600">₹{payment.amount.toLocaleString()}</p>
+                      <span className="text-xs text-blue-600 font-medium">View →</span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                    <CheckCircle className="w-8 h-8 text-green-500" />
+                  </div>
+                  <p className="text-gray-500 font-medium">All payments up to date!</p>
+                  <p className="text-xs text-gray-400 mt-1">Great job managing finances</p>
+                </div>
+              )}
+            </div>
+            <div className="p-4 border-t bg-gray-50 rounded-b-2xl">
+              <button
+                onClick={() => {
+                  setShowPaymentsModal(false);
+                  router.push("/finance");
+                }}
+                className="w-full py-3 bg-amber-500 text-white rounded-xl font-medium active:bg-amber-600 transition-colors"
+              >
+                Go to Finance Page
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Recent Activity Modal */}
+      {showActivityModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-2xl max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-white rounded-t-2xl">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                  <Activity className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">Recent Activity</h2>
+                  <p className="text-xs text-gray-500">{allRecentActivity.length} activities</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowActivityModal(false)}
+                className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center active:bg-gray-200"
+              >
+                <X className="w-4 h-4 text-gray-600" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+              {allRecentActivity.length > 0 ? (
+                allRecentActivity.map((activity) => (
+                  <div
+                    key={activity.id}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-xl"
+                  >
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                        activity.type === "attendance" 
+                          ? "bg-green-100" 
+                          : "bg-blue-100"
+                      }`}>
+                        <span className="text-lg">{activity.icon}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{activity.text}</p>
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-gray-400" />
+                          <p className="text-xs text-gray-500">{activity.time}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <span className="text-xs text-gray-400 flex-shrink-0 pl-2">
+                      {activity.time === "Today" ? "Just now" : activity.time}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                    <Activity className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <p className="text-gray-500 font-medium">No recent activity</p>
+                  <p className="text-xs text-gray-400 mt-1">Activity will appear here as events happen</p>
+                </div>
+              )}
+            </div>
+            <div className="p-4 border-t bg-gray-50 rounded-b-2xl">
+              <button
+                onClick={() => setShowActivityModal(false)}
+                className="w-full py-3 bg-gray-200 text-gray-700 rounded-xl font-medium active:bg-gray-300 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -61,10 +61,12 @@ export default function WorkoutPlansSettingsPage() {
       const gym = JSON.parse(storedGym);
       setGymId(gym.id);
 
+      // Only fetch admin-created plans (where created_by_member_id is null)
       const { data, error } = await supabase
         .from("workout_plans")
         .select("*")
         .eq("gym_id", gym.id)
+        .is("created_by_member_id", null)
         .order("created_at", { ascending: false });
 
       if (error) throw error;

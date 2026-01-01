@@ -68,10 +68,12 @@ export default function DietPlansSettingsPage() {
     try {
       setLoading(true);
 
+      // Only fetch admin-created plans (where created_by_member_id is null)
       const { data, error } = await supabase
         .from("diet_plans")
         .select("*")
         .eq("gym_id", gymId)
+        .is("created_by_member_id", null)
         .order("created_at", { ascending: false });
 
       if (error) throw error;

@@ -227,12 +227,11 @@ export default function WorkoutPage() {
             <p className="text-gray-500 mb-4">
               Your membership is not active. Please renew your membership to access workout plans.
             </p>
-            <button
-              onClick={() => router.push("/profile/renew")}
-              className="px-6 py-3 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 transition"
+            <div
+              className="px-6 py-3 bg-orange-300 text-white rounded-lg font-medium hover:bg-orange-600 transition"
             >
-              Renew Membership
-            </button>
+              Renew Membership to continue
+            </div>
           </div>
         </main>
       </div>

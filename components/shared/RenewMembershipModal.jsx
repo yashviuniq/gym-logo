@@ -452,11 +452,11 @@ export default function RenewMembershipModal({ member, gymId, onClose, onRenew }
                             <div className="space-y-1 text-sm">
                                 <div className="flex justify-between">
                                     <span className="text-gray-600">Plan Price:</span>
-                                    <span className="font-medium">₹{finalPrice}</span>
+                                    <span className="font-medium text-black">₹{finalPrice}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-gray-600">Amount Paid:</span>
-                                    <span className="font-medium">₹{paymentAmount}</span>
+                                    <span className="font-medium text-black">₹{paymentAmount}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-gray-600">Current Due:</span>

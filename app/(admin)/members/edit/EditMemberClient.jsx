@@ -4,10 +4,12 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
+import { useToast } from "@/contexts/ToastContext";
 
 export default function EditMemberClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { showSuccess, showError } = useToast();
   const memberId = searchParams.get("id");
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -16,6 +18,7 @@ export default function EditMemberClient() {
     name: "",
     phone: "",
     email: "",
+    selfPlanEditAccess: false,
   });
 
   useEffect(() => {
@@ -37,7 +40,7 @@ export default function EditMemberClient() {
 
       if (error) {
         console.error("Error fetching member:", error);
-        alert("Failed to load member data");
+        showError("Failed to load member data");
         return;
       }
 
@@ -46,11 +49,12 @@ export default function EditMemberClient() {
           name: data.full_name || "",
           phone: data.phone || "",
           email: data.email || "",
+          selfPlanEditAccess: data.self_plan_edit_access || false,
         });
       }
     } catch (err) {
       console.error("Error:", err);
-      alert("Failed to load member data");
+      showError("Failed to load member data");
     }
     setFetching(false);
   };
@@ -63,7 +67,7 @@ export default function EditMemberClient() {
     e.preventDefault();
     
     if (!memberId) {
-      alert("No member ID provided");
+      showError("No member ID provided");
       return;
     }
 
@@ -75,6 +79,7 @@ export default function EditMemberClient() {
           full_name: formData.name,
           phone: formData.phone,
           email: formData.email || null,
+          self_plan_edit_access: formData.selfPlanEditAccess,
         })
         .eq("id", memberId);
 
@@ -82,11 +87,11 @@ export default function EditMemberClient() {
         throw error;
       }
 
-      alert("Member updated successfully!");
+      showSuccess("Member updated successfully!");
       router.back();
     } catch (error) {
       console.error("Error updating member:", error);
-      alert("Failed to update member. Please try again.");
+      showError("Failed to update member. Please try again.");
     }
     setLoading(false);
   };
@@ -180,6 +185,32 @@ export default function EditMemberClient() {
               onChange={(e) => updateForm("email", e.target.value.toLowerCase().trim())}
               title="Please enter a valid email address"
             />
+          </div>
+
+          {/* Self Plan Edit Access Toggle */}
+          <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-xl">✏️</span>
+                <div>
+                  <p className="font-medium text-gray-900">Self Plan Edit Access</p>
+                  <p className="text-xs text-gray-600">Allow member to edit their workout/diet plans from the app</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => updateForm("selfPlanEditAccess", !formData.selfPlanEditAccess)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  formData.selfPlanEditAccess ? "bg-green-500" : "bg-gray-300"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    formData.selfPlanEditAccess ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
           </div>
 
           <div className="flex gap-3 pt-4">

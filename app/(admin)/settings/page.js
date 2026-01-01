@@ -24,6 +24,22 @@ const settingsSections = [
     color: "from-blue-500 to-indigo-500"
   },
   {
+    id: "diet-plans",
+    title: "Diet Plans",
+    description: "Create and manage diet plans with meals",
+    icon: "🥗",
+    href: "/settings/diet-plans",
+    color: "from-green-500 to-emerald-500"
+  },
+  {
+    id: "workout-plans",
+    title: "Workout Plans",
+    description: "Create and manage workout routines",
+    icon: "💪",
+    href: "/settings/workout-plans",
+    color: "from-blue-600 to-indigo-600"
+  },
+  {
     id: "notifications",
     title: "Notifications",
     description: "Reminders, alerts, payment notifications",
@@ -301,18 +317,7 @@ export default function SettingsPage() {
               </span>
             </div>
 
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center">
-                  <span className="text-gray-600">💾</span>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-700">Database Size</p>
-                  <p className="text-xs text-gray-500">Storage used</p>
-                </div>
-              </div>
-              <span className="font-semibold text-gray-900">{appStats.databaseSize}</span>
-            </div>
+          
           </div>
         </div>
 

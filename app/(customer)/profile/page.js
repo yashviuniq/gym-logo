@@ -208,12 +208,7 @@ export default function CustomerProfilePage() {
                 <p className="text-gray-400 text-sm">{profile.email}</p>
               )}
             </div>
-            <button
-              onClick={() => router.push("/profile/edit")}
-              className="p-2 bg-gray-100 rounded-lg"
-            >
-              ✏️
-            </button>
+         
           </div>
 
           {/* Member Since */}
@@ -272,13 +267,7 @@ export default function CustomerProfilePage() {
           )}
 
           {/* Renew Button */}
-          <button
-            onClick={() => router.push("/profile/renew")}
-            className="w-full mt-4 py-3 bg-white text-gray-900 rounded-xl font-semibold hover:bg-gray-100 transition flex items-center justify-center gap-2"
-          >
-            <span>🔄</span>
-            <span>Renew Membership</span>
-          </button>
+       
         </div>
 
         {/* Tabs */}

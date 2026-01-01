@@ -7,6 +7,8 @@ import Header from "@/components/layout/Header";
 import RenewMembershipModal from "@/components/shared/RenewMembershipModal";
 import RenewalHistoryModal from "@/components/shared/RenewalHistoryModal";
 import ResolvePendingPaymentModal from "@/components/shared/ResolvePendingPaymentModal";
+import AssignDietPlanModal from "@/components/shared/AssignDietPlanModal";
+import AssignWorkoutPlanModal from "@/components/shared/AssignWorkoutPlanModal";
 
 export default function MemberDetailPage() {
   const router = useRouter();
@@ -15,6 +17,8 @@ export default function MemberDetailPage() {
   const [showRenewModal, setShowRenewModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showResolvePaymentModal, setShowResolvePaymentModal] = useState(false);
+  const [showAssignDietModal, setShowAssignDietModal] = useState(false);
+  const [showAssignWorkoutModal, setShowAssignWorkoutModal] = useState(false);
   const [selectedPendingPayment, setSelectedPendingPayment] = useState(null);
   const [member, setMember] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -431,6 +435,24 @@ export default function MemberDetailPage() {
           ))}
         </div>
 
+        {/* Diet & Workout Plan Assignment Buttons */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <button
+            onClick={() => setShowAssignDietModal(true)}
+            className="py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-semibold hover:shadow-md transition flex items-center justify-center gap-2"
+          >
+            <span className="text-xl">🥗</span>
+            <span>Assign Diet</span>
+          </button>
+          <button
+            onClick={() => setShowAssignWorkoutModal(true)}
+            className="py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl font-semibold hover:shadow-md transition flex items-center justify-center gap-2"
+          >
+            <span className="text-xl">💪</span>
+            <span>Assign Workout</span>
+          </button>
+        </div>
+
         {/* Edit and Delete Buttons */}
         <div className="grid grid-cols-2 gap-3 mb-4">
           <button
@@ -645,6 +667,36 @@ export default function MemberDetailPage() {
             setSelectedPendingPayment(null);
           }}
           onResolved={handlePaymentResolved}
+        />
+      )}
+
+      {/* Assign Diet Plan Modal */}
+      {showAssignDietModal && (
+        <AssignDietPlanModal
+          member={member}
+          gymId={selectedGym?.id}
+          onClose={() => setShowAssignDietModal(false)}
+          onAssign={() => {
+            // Refresh member data if needed
+            if (selectedGym) {
+              fetchMemberDetails(params.id, selectedGym.id);
+            }
+          }}
+        />
+      )}
+
+      {/* Assign Workout Plan Modal */}
+      {showAssignWorkoutModal && (
+        <AssignWorkoutPlanModal
+          member={member}
+          gymId={selectedGym?.id}
+          onClose={() => setShowAssignWorkoutModal(false)}
+          onAssign={() => {
+            // Refresh member data if needed
+            if (selectedGym) {
+              fetchMemberDetails(params.id, selectedGym.id);
+            }
+          }}
         />
       )}
     </div>

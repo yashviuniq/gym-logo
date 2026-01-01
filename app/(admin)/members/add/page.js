@@ -29,6 +29,7 @@ export default function AddMemberPage() {
     notes: "",
     useCustomPrice: false,
     customPrice: "",
+    selfPlanEditAccess: false,
   });
 
   useEffect(() => {
@@ -177,6 +178,7 @@ export default function AddMemberPage() {
           email: formData.email || null,
           balance: Math.max(0, balanceOwed),
           created_by: createdBy,
+          self_plan_edit_access: formData.selfPlanEditAccess,
         })
         .select()
         .single();
@@ -271,6 +273,7 @@ export default function AddMemberPage() {
           notes: "",
           useCustomPrice: false,
           customPrice: "",
+          selfPlanEditAccess: false,
         });
         setStep(1);
       } else {
@@ -480,6 +483,32 @@ export default function AddMemberPage() {
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-1">Optional - 10 digits only</p>
+              </div>
+
+              {/* Self Plan Edit Access Toggle */}
+              <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4 border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl">✏️</span>
+                    <div>
+                      <p className="font-medium text-gray-900">Self Plan Edit Access</p>
+                      <p className="text-xs text-gray-600">Allow member to edit their workout/diet plans from the app</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => updateForm("selfPlanEditAccess", !formData.selfPlanEditAccess)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      formData.selfPlanEditAccess ? "bg-green-500" : "bg-gray-300"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        formData.selfPlanEditAccess ? "translate-x-6" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
+                </div>
               </div>
             </div>
 

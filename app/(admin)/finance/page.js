@@ -247,10 +247,10 @@ export default function FinancePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-600 via-blue-600 to-cyan-500 p-4 pb-20">
+      <div className="min-h-screen  bg-white p-4 pb-20">
         <Header title="Finance" />
-        <div className="flex items-center justify-center mt-20">
-          <div className="text-white">Loading financial data...</div>
+        <div className="flex items-center justify-center mt-50">
+          <div className="text-black">Loading financial data...</div>
         </div>
       </div>
     );

@@ -5,7 +5,31 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
 import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/contexts/ToastContext";
-import { PlusCircle, Edit2, Trash2, XCircle } from "lucide-react";
+import { 
+  PlusCircle, 
+  Edit2, 
+  Trash2, 
+  XCircle,
+  Dumbbell,
+  Search,
+  Filter,
+  ChevronRight,
+  Target,
+  TrendingUp,
+  Calendar,
+  Clock,
+  Plus,
+  CheckCircle,
+  AlertTriangle,
+  RefreshCw,
+  MoreVertical,
+  User,
+  Users,
+  Phone,
+  Mail,
+  CreditCard,
+  Key
+} from "lucide-react";
 
 const DAY_NAMES = ["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const GOALS = ["Fat Loss", "Muscle Gain", "Strength", "Endurance", "Flexibility", "General Fitness"];
@@ -19,6 +43,7 @@ export default function WorkoutPlansSettingsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingPlan, setEditingPlan] = useState(null);
   const [gymId, setGymId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     fetchWorkoutPlans();
@@ -52,6 +77,12 @@ export default function WorkoutPlansSettingsPage() {
     }
   };
 
+  const filteredPlans = workoutPlans.filter(plan =>
+    plan.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    plan.goal?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    plan.level?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this workout plan? This action cannot be undone.")) {
       return;
@@ -75,115 +106,235 @@ export default function WorkoutPlansSettingsPage() {
   const getLevelColor = (level) => {
     switch (level?.toLowerCase()) {
       case "beginner":
-        return "bg-green-100 text-green-700";
+        return "bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-200 text-emerald-700";
       case "intermediate":
-        return "bg-yellow-100 text-yellow-700";
+        return "bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200 text-amber-700";
       case "advanced":
-        return "bg-red-100 text-red-700";
+        return "bg-gradient-to-br from-red-50 to-red-100 border border-red-200 text-red-700";
       default:
-        return "bg-gray-100 text-gray-700";
+        return "bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 text-gray-700";
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 pb-24">
-        <Header title="Workout Plans" />
-        <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom flex flex-col items-center justify-center">
+        <div className="relative">
+          <div className="w-14 h-14 border-4 border-blue-500/20 border-t-blue-600 rounded-full animate-spin"></div>
+          <div className="absolute inset-0 w-14 h-14 border-4 border-transparent border-t-blue-500 rounded-full animate-spin animation-delay-200"></div>
         </div>
+        <p className="mt-6 text-gray-600 font-medium text-sm">Loading workout plans...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom">
       <Header title="Workout Plans" />
 
-      <main className="px-4 py-4">
-        {/* Header with Add Button */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Workout Plans</h2>
-            <p className="text-gray-500 text-sm mt-1">Create and manage workout plans for your members</p>
+      <main className="px-3 py-3 space-y-4">
+        {/* Stats Cards - Mobile Optimized */}
+        <div className="grid grid-cols-2 gap-2 px-1">
+          <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 font-medium">Total Plans</p>
+                <p className="text-xl font-bold text-gray-900 mt-0.5">{workoutPlans.length}</p>
+              </div>
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg flex items-center justify-center">
+                <Dumbbell className="w-5 h-5 text-blue-600" />
+              </div>
+            </div>
           </div>
+
+          <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 font-medium">Beginner</p>
+                <p className="text-xl font-bold text-emerald-600 mt-0.5">
+                  {workoutPlans.filter(p => p.level?.toLowerCase() === "beginner").length}
+                </p>
+              </div>
+              <div className="w-10 h-10 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-lg flex items-center justify-center">
+                <Target className="w-5 h-5 text-emerald-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 font-medium">Intermediate</p>
+                <p className="text-xl font-bold text-amber-600 mt-0.5">
+                  {workoutPlans.filter(p => p.level?.toLowerCase() === "intermediate").length}
+                </p>
+              </div>
+              <div className="w-10 h-10 bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-amber-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 font-medium">Advanced</p>
+                <p className="text-xl font-bold text-red-600 mt-0.5">
+                  {workoutPlans.filter(p => p.level?.toLowerCase() === "advanced").length}
+                </p>
+              </div>
+              <div className="w-10 h-10 bg-gradient-to-br from-red-50 to-red-100 rounded-lg flex items-center justify-center">
+                <Dumbbell className="w-5 h-5 text-red-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Search and Add Plan */}
+        <div className="bg-white rounded-xl p-3 mx-1 space-y-3">
+          {/* Search Bar */}
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search plans by title, goal, or level..."
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm placeholder:text-gray-400"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          {/* Add Plan Button */}
           <button
             onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl font-semibold hover:shadow-lg transition flex items-center gap-2"
+            className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2"
+            style={{ minHeight: '44px' }}
           >
-            <PlusCircle className="w-5 h-5" />
-            <span>New Plan</span>
+            <Plus className="w-5 h-5" />
+            Create New Plan
           </button>
         </div>
 
         {/* Workout Plans List */}
-        {workoutPlans.length === 0 ? (
-          <div className="bg-white rounded-xl p-12 text-center shadow-sm">
-            <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-4xl">💪</span>
+        <div className="space-y-3">
+          {filteredPlans.length === 0 ? (
+            <div className="bg-white rounded-xl border border-gray-200 p-8 text-center mx-1">
+              <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Dumbbell className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-base font-semibold text-gray-900 mb-2">
+                {searchQuery ? "No plans found" : "No workout plans yet"}
+              </h3>
+              <p className="text-gray-500 text-sm mb-6">
+                {searchQuery ? "Try adjusting your search" : "Create your first workout plan to get started"}
+              </p>
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="px-4 py-2 text-blue-600 text-sm font-medium hover:text-blue-700 active:scale-95 transition-transform"
+                >
+                  Clear search
+                </button>
+              )}
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Workout Plans Yet</h3>
-            <p className="text-gray-500 mb-6">Create your first workout plan to get started</p>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl font-semibold hover:shadow-lg transition"
-            >
-              Create Workout Plan
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {workoutPlans.map((plan) => (
-              <div key={plan.id} className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 flex-wrap mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900">{plan.title}</h3>
-                      {plan.is_template && (
-                        <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full font-medium">
-                          Template
-                        </span>
-                      )}
-                      {plan.level && (
-                        <span className={`px-2 py-0.5 text-xs rounded-full font-medium ${getLevelColor(plan.level)}`}>
-                          {plan.level}
-                        </span>
-                      )}
+          ) : (
+            <div className="space-y-3 pb-4">
+              {filteredPlans.map((plan) => (
+                <div
+                  key={plan.id}
+                  className="bg-white rounded-xl border border-gray-200 p-3 hover:shadow-md active:scale-95 transition-all duration-200 cursor-pointer mx-1"
+                  onClick={() => {/* Optional: Add view details */}}
+                >
+                  <div className="flex items-start gap-3">
+                    {/* Plan Icon */}
+                    <div className="flex-shrink-0">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center">
+                        <Dumbbell className="w-6 h-6 text-white" />
+                      </div>
                     </div>
-                    {plan.goal && (
-                      <p className="text-sm text-blue-600 mb-1">🎯 {plan.goal}</p>
-                    )}
-                    {plan.description && (
-                      <p className="text-sm text-gray-600 mb-2">{plan.description}</p>
-                    )}
-                    <p className="text-xs text-gray-500">
-                      Created: {new Date(plan.created_at).toLocaleDateString("en-IN")}
-                    </p>
+
+                    {/* Plan Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between mb-1">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-gray-900 text-base truncate">
+                            {plan.title}
+                          </h3>
+                          {plan.goal && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <Target className="w-3 h-3 text-gray-400" />
+                              <span className="text-gray-500 text-xs truncate">{plan.goal}</span>
+                            </div>
+                          )}
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-gray-400" />
+                      </div>
+
+                      {/* Plan Details */}
+                      <div className="mt-3 space-y-2">
+                        {plan.level && (
+                          <div className="flex items-center gap-2">
+                            <div className={`px-2.5 py-1.5 rounded-lg ${getLevelColor(plan.level)} flex items-center gap-1.5`}>
+                              <span className="text-xs font-medium">{plan.level}</span>
+                            </div>
+                            {plan.is_template && (
+                              <div className="px-2.5 py-1.5 rounded-lg bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 text-purple-700 flex items-center gap-1.5">
+                                <span className="text-xs font-medium">Template</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {plan.description && (
+                          <div className="text-sm text-gray-600 line-clamp-2">
+                            {plan.description}
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-gray-400" />
+                          <span className="text-gray-500 text-xs">
+                            Created: {new Date(plan.created_at).toLocaleDateString("en-IN")}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex space-x-2 overflow-x-auto mt-3 pt-3 border-t border-gray-100 pb-1 -mx-1 px-1 no-scrollbar">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingPlan(plan);
+                            setShowAddModal(true);
+                          }}
+                          className="flex-shrink-0 px-3 py-2 bg-blue-50 text-blue-700 text-xs font-medium rounded-lg active:bg-blue-100 transition-all flex items-center gap-2"
+                          style={{ minHeight: '36px' }}
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                          Edit
+                        </button>
+                        
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(plan.id);
+                          }}
+                          className="flex-shrink-0 px-3 py-2 bg-red-50 text-red-700 text-xs font-medium rounded-lg active:bg-red-100 transition-all flex items-center gap-2"
+                          style={{ minHeight: '36px' }}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Delete
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-
-                <div className="flex gap-2 mt-4">
-                  <button
-                    onClick={() => {
-                      setEditingPlan(plan);
-                      setShowAddModal(true);
-                    }}
-                    className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition flex items-center justify-center gap-2"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                    <span>Edit</span>
-                  </button>
-                  <button
-                    onClick={() => handleDelete(plan.id)}
-                    className="px-3 py-2 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 transition flex items-center justify-center gap-2"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </main>
 
       {/* Add/Edit Workout Plan Modal */}
@@ -469,41 +620,45 @@ function WorkoutPlanModal({ plan, gymId, onClose, onSave }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-4xl rounded-2xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 safe-area-inset-bottom mb-17">
+      <div className="bg-white w-full max-w-2xl rounded-2xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
         {/* Modal Header */}
-        <div className="p-6 border-b border-gray-100 flex-shrink-0">
+        <div className="p-4 border-b border-gray-100 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-2xl font-bold text-gray-900">
-                {plan ? "Edit Workout Plan" : "Create New Workout Plan"}
+              <h3 className="text-lg font-bold text-gray-900">
+                {plan ? "Edit Workout Plan" : "Create Workout Plan"}
               </h3>
-              <p className="text-gray-500 text-sm mt-1">
+              <p className="text-gray-500 text-xs mt-0.5">
                 {plan ? "Update your workout plan details" : "Add a new workout plan for your gym"}
               </p>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors active:scale-95"
+              style={{ minHeight: '40px', minWidth: '40px' }}
             >
-              <XCircle className="w-6 h-6 text-gray-400" />
+              <XCircle className="w-5 h-5 text-gray-400" />
             </button>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6">
-          <div className="space-y-6">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4">
+          <div className="space-y-4">
             {/* Basic Info */}
-            <div className="bg-gray-50 rounded-xl p-4 space-y-4">
-              <h4 className="font-semibold text-gray-900">Basic Information</h4>
+            <div className="bg-gray-50 rounded-xl p-3 space-y-3">
+              <div className="flex items-center gap-2">
+                <Dumbbell className="w-4 h-4 text-gray-500" />
+                <h4 className="font-semibold text-gray-900 text-sm">Basic Information</h4>
+              </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
                   Plan Title *
                 </label>
                 <input
                   type="text"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   required
@@ -511,13 +666,13 @@ function WorkoutPlanModal({ plan, gymId, onClose, onSave }) {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
                     Goal
                   </label>
                   <select
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
                     value={formData.goal}
                     onChange={(e) => setFormData({ ...formData, goal: e.target.value })}
                   >
@@ -529,11 +684,11 @@ function WorkoutPlanModal({ plan, gymId, onClose, onSave }) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
                     Level
                   </label>
                   <select
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
                     value={formData.level}
                     onChange={(e) => setFormData({ ...formData, level: e.target.value })}
                   >
@@ -546,28 +701,28 @@ function WorkoutPlanModal({ plan, gymId, onClose, onSave }) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
                   Description
                 </label>
                 <textarea
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
-                  rows={3}
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none text-sm"
+                  rows={2}
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Brief description of this workout plan"
                 />
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between pt-2">
                 <div>
-                  <p className="font-medium text-gray-900">Template Plan</p>
-                  <p className="text-sm text-gray-500">Use as reusable template</p>
+                  <p className="font-medium text-gray-900 text-sm">Template Plan</p>
+                  <p className="text-xs text-gray-500">Use as reusable template</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setFormData({ ...formData, is_template: !formData.is_template })}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    formData.is_template ? "bg-blue-500" : "bg-gray-300"
+                    formData.is_template ? "bg-gradient-to-r from-blue-600 to-indigo-600" : "bg-gray-300"
                   }`}
                 >
                   <span
@@ -580,132 +735,147 @@ function WorkoutPlanModal({ plan, gymId, onClose, onSave }) {
             </div>
 
             {/* Days and Exercises */}
-            <div className="space-y-4">
-              <h4 className="font-semibold text-gray-900">Weekly Workout Plan (Mon-Sat)</h4>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-gray-500" />
+                <h4 className="font-semibold text-gray-900 text-sm">Weekly Plan (Mon-Sat)</h4>
+              </div>
               
-              {[1, 2, 3, 4, 5, 6].map(dayNum => {
-                const day = days[dayNum];
-                if (!day) return null;
+              <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                {[1, 2, 3, 4, 5, 6].map(dayNum => {
+                  const day = days[dayNum];
+                  if (!day) return null;
 
-                return (
-                  <div key={dayNum} className="border border-gray-200 rounded-xl p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <h5 className="font-semibold text-gray-900">{day.day_name || DAY_NAMES[dayNum]}</h5>
-                        <input
-                          type="text"
-                          className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                          placeholder="Focus (e.g., Chest & Triceps)"
-                          value={day.focus}
-                          onChange={(e) => updateDayFocus(dayNum, e.target.value)}
-                        />
+                  return (
+                    <div key={dayNum} className="border border-gray-200 rounded-xl p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <h5 className="font-semibold text-gray-900 text-sm">{day.day_name || DAY_NAMES[dayNum]}</h5>
+                          <input
+                            type="text"
+                            className="px-2 py-1 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                            placeholder="Focus (e.g., Chest & Triceps)"
+                            value={day.focus}
+                            onChange={(e) => updateDayFocus(dayNum, e.target.value)}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => addExerciseToDay(dayNum)}
+                          className="px-2 py-1 text-xs bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:shadow-md active:scale-95 transition-all"
+                        >
+                          + Add Exercise
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => addExerciseToDay(dayNum)}
-                        className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition"
-                      >
-                        + Add Exercise
-                      </button>
-                    </div>
 
-                    {day.exercises && day.exercises.length > 0 && (
-                      <div className="space-y-2">
-                        {day.exercises.map((exercise, exerciseIndex) => (
-                          <div key={exerciseIndex} className="bg-gray-50 rounded-lg p-3">
-                            <div className="grid grid-cols-6 gap-2 items-center">
-                              <div className="col-span-2">
+                      {day.exercises && day.exercises.length > 0 && (
+                        <div className="space-y-2">
+                          {day.exercises.map((exercise, exerciseIndex) => (
+                            <div key={exerciseIndex} className="bg-gray-50 rounded-lg p-2">
+                              <div className="grid grid-cols-6 gap-1 items-center">
+                                <div className="col-span-3">
+                                  <input
+                                    type="text"
+                                    className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                    placeholder="Exercise name"
+                                    value={exercise.exercise_name}
+                                    onChange={(e) => updateExercise(dayNum, exerciseIndex, "exercise_name", e.target.value)}
+                                  />
+                                </div>
+                                <div>
+                                  <input
+                                    type="number"
+                                    className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                    placeholder="Sets"
+                                    value={exercise.sets}
+                                    onChange={(e) => updateExercise(dayNum, exerciseIndex, "sets", e.target.value)}
+                                  />
+                                </div>
+                                <div>
+                                  <input
+                                    type="text"
+                                    className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                    placeholder="Reps"
+                                    value={exercise.reps}
+                                    onChange={(e) => updateExercise(dayNum, exerciseIndex, "reps", e.target.value)}
+                                  />
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <input
+                                    type="text"
+                                    className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                    placeholder="Weight"
+                                    value={exercise.weight}
+                                    onChange={(e) => updateExercise(dayNum, exerciseIndex, "weight", e.target.value)}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => removeExercise(dayNum, exerciseIndex)}
+                                    className="p-1 text-red-500 hover:bg-red-50 rounded-lg active:scale-95 transition-all"
+                                    style={{ minHeight: '32px', minWidth: '32px' }}
+                                  >
+                                    <XCircle className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="mt-1">
                                 <input
                                   type="text"
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                                  placeholder="Exercise name"
-                                  value={exercise.exercise_name}
-                                  onChange={(e) => updateExercise(dayNum, exerciseIndex, "exercise_name", e.target.value)}
+                                  className="w-full px-2 py-1 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                  placeholder="Notes (optional)"
+                                  value={exercise.notes || ""}
+                                  onChange={(e) => updateExercise(dayNum, exerciseIndex, "notes", e.target.value)}
                                 />
                               </div>
-                              <div>
+                              <div className="mt-1">
                                 <input
                                   type="number"
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                                  placeholder="Sets"
-                                  value={exercise.sets}
-                                  onChange={(e) => updateExercise(dayNum, exerciseIndex, "sets", e.target.value)}
-                                />
-                              </div>
-                              <div>
-                                <input
-                                  type="text"
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                                  placeholder="Reps"
-                                  value={exercise.reps}
-                                  onChange={(e) => updateExercise(dayNum, exerciseIndex, "reps", e.target.value)}
-                                />
-                              </div>
-                              <div>
-                                <input
-                                  type="text"
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                                  placeholder="Weight"
-                                  value={exercise.weight}
-                                  onChange={(e) => updateExercise(dayNum, exerciseIndex, "weight", e.target.value)}
-                                />
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <input
-                                  type="number"
-                                  className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                                  placeholder="Rest(s)"
+                                  className="w-full px-2 py-1 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                  placeholder="Rest (seconds)"
                                   value={exercise.rest_seconds}
                                   onChange={(e) => updateExercise(dayNum, exerciseIndex, "rest_seconds", e.target.value)}
                                 />
-                                <button
-                                  type="button"
-                                  onClick={() => removeExercise(dayNum, exerciseIndex)}
-                                  className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
-                                >
-                                  ✕
-                                </button>
                               </div>
                             </div>
-                            <div className="mt-2">
-                              <input
-                                type="text"
-                                className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                                placeholder="Notes (optional)"
-                                value={exercise.notes || ""}
-                                onChange={(e) => updateExercise(dayNum, exerciseIndex, "notes", e.target.value)}
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                          ))}
+                        </div>
+                      )}
 
-                    {(!day.exercises || day.exercises.length === 0) && (
-                      <p className="text-gray-400 text-sm text-center py-2">No exercises added</p>
-                    )}
-                  </div>
-                );
-              })}
+                      {(!day.exercises || day.exercises.length === 0) && (
+                        <p className="text-gray-400 text-xs text-center py-2">No exercises added</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </form>
 
         {/* Modal Footer */}
-        <div className="p-6 border-t border-gray-100 flex-shrink-0 flex gap-3">
+        <div className="p-4 border-t border-gray-100 flex-shrink-0 flex gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition"
+            className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 active:scale-95 transition-all"
+            style={{ minHeight: '44px' }}
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="flex-1 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition"
+            className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:shadow-lg active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ minHeight: '44px' }}
           >
-            {loading ? "Saving..." : (plan ? "Update Plan" : "Create Plan")}
+            {loading ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                Saving...
+              </div>
+            ) : (
+              plan ? "Update Plan" : "Create Plan"
+            )}
           </button>
         </div>
       </div>

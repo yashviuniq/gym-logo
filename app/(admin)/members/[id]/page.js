@@ -9,6 +9,36 @@ import RenewalHistoryModal from "@/components/shared/RenewalHistoryModal";
 import ResolvePendingPaymentModal from "@/components/shared/ResolvePendingPaymentModal";
 import AssignDietPlanModal from "@/components/shared/AssignDietPlanModal";
 import AssignWorkoutPlanModal from "@/components/shared/AssignWorkoutPlanModal";
+import {
+  Phone,
+  Mail,
+  Calendar,
+  CheckCircle,
+  AlertTriangle,
+  Clock,
+  Users,
+  DollarSign,
+  CreditCard,
+  Key,
+  RefreshCw,
+  FileText,
+  BarChart3,
+  Trash2,
+  Edit,
+  MessageCircle,
+  PhoneCall,
+  Shield,
+  Plus,
+  ChevronRight,
+  Download,
+  Eye,
+  MoreVertical,
+  ChevronLeft,
+  Building,
+  History,
+  Utensils,
+  Dumbbell
+} from "lucide-react";
 
 export default function MemberDetailPage() {
   const router = useRouter();
@@ -27,7 +57,6 @@ export default function MemberDetailPage() {
   const [pendingPayments, setPendingPayments] = useState([]);
 
   useEffect(() => {
-    // Get selected gym from localStorage
     const storedGym = localStorage.getItem("selectedGym");
     if (storedGym) {
       const gym = JSON.parse(storedGym);
@@ -41,7 +70,6 @@ export default function MemberDetailPage() {
   const fetchMemberDetails = async (memberId, gymId) => {
     setLoading(true);
     try {
-      // Fetch member with memberships and payments
       const { data: memberData, error } = await supabase
         .from("members")
         .select(`
@@ -84,12 +112,10 @@ export default function MemberDetailPage() {
         return;
       }
 
-      // Get active membership
       const activeMembership = memberData.memberships?.find(
         (m) => m.status === "active"
       ) || memberData.memberships?.[0];
 
-      // Calculate membership status
       let memberStatus = "inactive";
       if (activeMembership) {
         const endDate = new Date(activeMembership.end_date);
@@ -101,7 +127,6 @@ export default function MemberDetailPage() {
         }
       }
 
-      // Transform member data
       const transformedMember = {
         id: memberData.id,
         gymId: memberData.gym_id,
@@ -117,7 +142,7 @@ export default function MemberDetailPage() {
           : "N/A",
         dueAmount: Math.max(0, memberData.balance || 0),
         balance: memberData.balance || 0,
-        attendance: [], // Will be fetched separately if needed
+        attendance: [],
         payments: memberData.payments?.map(p => ({
           id: p.id,
           date: new Date(p.paid_at || p.created_at).toLocaleDateString("en-IN"),
@@ -131,7 +156,6 @@ export default function MemberDetailPage() {
 
       setMember(transformedMember);
 
-      // Get pending payments
       const pending = memberData.payments?.filter(p => p.status === "pending").map(p => ({
         id: p.id,
         amount: p.amount,
@@ -140,7 +164,6 @@ export default function MemberDetailPage() {
       })) || [];
       setPendingPayments(pending);
 
-      // Build renewal history from memberships
       const history = memberData.memberships?.map(m => ({
         planName: m.membership_plans?.name || "Unknown",
         duration: m.membership_plans?.duration_days || 0,
@@ -154,7 +177,6 @@ export default function MemberDetailPage() {
 
       setRenewalHistory(history);
 
-      // Fetch attendance
       const { data: attendanceData } = await supabase
         .from("attendance")
         .select("*")
@@ -185,7 +207,6 @@ export default function MemberDetailPage() {
     if (!confirmDelete) return;
 
     try {
-      // Delete member (cascading deletes will handle related records)
       const { error } = await supabase
         .from("members")
         .delete()
@@ -195,38 +216,61 @@ export default function MemberDetailPage() {
         throw error;
       }
 
-      alert("Member deleted successfully!");
+      showSuccess("Member deleted successfully!");
       router.push("/members");
     } catch (error) {
       console.error("Error deleting member:", error);
-      alert("Failed to delete member. Please try again.");
+      showError("Failed to delete member. Please try again.");
     }
   };
 
-  const getStatusColor = (status) => {
+  const getStatusConfig = (status) => {
     switch (status) {
       case "active":
-        return "bg-green-100 text-green-700";
+        return {
+          color: "bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200",
+          text: "text-emerald-700",
+          dot: "bg-emerald-500",
+          label: "Active",
+          icon: <CheckCircle className="w-3.5 h-3.5" />
+        };
       case "expired":
-        return "bg-red-100 text-red-700";
+        return {
+          color: "bg-gradient-to-br from-red-50 to-red-100 border-red-200",
+          text: "text-red-700",
+          dot: "bg-red-500",
+          label: "Expired",
+          icon: <Clock className="w-3.5 h-3.5" />
+        };
+      case "inactive":
+        return {
+          color: "bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200",
+          text: "text-gray-700",
+          dot: "bg-gray-500",
+          label: "Inactive",
+          icon: <AlertTriangle className="w-3.5 h-3.5" />
+        };
       default:
-        return "bg-gray-100 text-gray-700";
+        return {
+          color: "bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200",
+          text: "text-gray-700",
+          dot: "bg-gray-500",
+          label: "Inactive",
+          icon: <AlertTriangle className="w-3.5 h-3.5" />
+        };
     }
   };
 
   const handleRenewal = (renewalData) => {
-    // Add new renewal to history
     setRenewalHistory((prev) => [renewalData, ...prev]);
     setShowRenewModal(false);
-    // Refresh member data
     if (selectedGym) {
       fetchMemberDetails(params.id, selectedGym.id);
     }
-    alert("Membership renewed successfully!");
+    showSuccess("Membership renewed successfully!");
   };
 
   const handlePaymentResolved = () => {
-    // Refresh member data after payment resolution
     if (selectedGym) {
       fetchMemberDetails(params.id, selectedGym.id);
     }
@@ -237,33 +281,40 @@ export default function MemberDetailPage() {
     setShowResolvePaymentModal(true);
   };
 
-  // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 pb-24">
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
         <Header title="Member Details" />
-        <main className="px-4 py-4">
+        <main className="px-3 py-3">
           <div className="flex items-center justify-center py-12">
-            <div className="w-8 h-8 border-4 border-[#F97316] border-t-transparent rounded-full animate-spin"></div>
+            <div className="relative">
+              <div className="w-14 h-14 border-4 border-blue-500/20 border-t-blue-600 rounded-full animate-spin"></div>
+              <div className="absolute inset-0 w-14 h-14 border-4 border-transparent border-t-blue-500 rounded-full animate-spin animation-delay-200"></div>
+            </div>
           </div>
         </main>
       </div>
     );
   }
 
-  // No member found
   if (!member) {
     return (
-      <div className="min-h-screen bg-gray-50 pb-24">
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
         <Header title="Member Details" />
-        <main className="px-4 py-4">
+        <main className="px-3 py-3">
           <div className="text-center py-12">
-            <span className="text-4xl">👤</span>
-            <p className="text-gray-500 mt-2">Member not found</p>
+            <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <Users className="w-10 h-10 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Member Not Found</h3>
+            <p className="text-gray-500 text-center mb-6 max-w-sm mx-auto">
+              The member you're looking for doesn't exist or has been removed.
+            </p>
             <button
               onClick={() => router.push("/members")}
-              className="mt-4 px-6 py-2 bg-[#F97316] text-white rounded-lg"
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg transition-all duration-300 flex items-center gap-2 mx-auto"
             >
+              <ChevronLeft className="w-4 h-4" />
               Back to Members
             </button>
           </div>
@@ -272,37 +323,46 @@ export default function MemberDetailPage() {
     );
   }
 
+  const statusConfig = getStatusConfig(member.status);
+
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 mb-17">
       <Header title="Member Details" />
 
-      <main className="px-4 py-4">
+      <main className="px-3 py-3 space-y-4">
         {/* Profile Header */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm mb-4">
-          <div className="flex items-start gap-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-gray-800 to-gray-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-              {member.name.charAt(0)}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+          <div className="flex items-start gap-4 mb-4">
+            <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-xl shadow-sm">
+              {member.name.charAt(0).toUpperCase()}
             </div>
-            <div className="flex-1">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900">
-                  {member.name}
-                </h2>
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                    member.status
-                  )}`}
-                >
-                  {member.status}
-                </span>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between mb-1">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 truncate">
+                    {member.name}
+                  </h2>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Phone className="w-3.5 h-3.5 text-gray-400" />
+                    <span className="text-gray-600 text-sm">{member.phone}</span>
+                  </div>
+                  {member.email && (
+                    <div className="flex items-center gap-2 mt-1">
+                      <Mail className="w-3.5 h-3.5 text-gray-400" />
+                      <span className="text-gray-600 text-sm truncate">{member.email}</span>
+                    </div>
+                  )}
+                </div>
+                <div className={`px-2.5 py-1.5 rounded-lg border ${statusConfig.color} ${statusConfig.text} flex items-center gap-1.5`}>
+                  {statusConfig.icon}
+                  <span className="text-xs font-medium">{statusConfig.label}</span>
+                </div>
               </div>
-              <p className="text-gray-500 text-sm">{member.phone}</p>
-              <p className="text-gray-400 text-sm">{member.email}</p>
             </div>
           </div>
 
           {/* Quick Stats */}
-          <div className="grid grid-cols-3 gap-4 mt-6 pt-4 border-t border-gray-100">
+          <div className="grid grid-cols-3 gap-3 pt-4 border-t border-gray-100">
             <div className="text-center">
               <p className="text-lg font-bold text-gray-900">{member.plan}</p>
               <p className="text-xs text-gray-500">Current Plan</p>
@@ -314,10 +374,7 @@ export default function MemberDetailPage() {
               <p className="text-xs text-gray-500">This Month</p>
             </div>
             <div className="text-center">
-              <p
-                className={`text-lg font-bold ${member.dueAmount > 0 ? "text-red-500" : "text-green-500"
-                  }`}
-              >
+              <p className={`text-lg font-bold ${member.dueAmount > 0 ? "text-red-600" : "text-emerald-600"}`}>
                 ₹{member.dueAmount}
               </p>
               <p className="text-xs text-gray-500">Due Amount</p>
@@ -327,10 +384,10 @@ export default function MemberDetailPage() {
 
         {/* Pending Payments Alert */}
         {pendingPayments.length > 0 && (
-          <div className="bg-amber-50 border-l-4 border-amber-500 rounded-xl p-4 mb-4 shadow-sm">
+          <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center text-white text-xl flex-shrink-0">
-                ⚠️
+              <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-gray-900 mb-1">
@@ -343,7 +400,7 @@ export default function MemberDetailPage() {
                   {pendingPayments.map((payment) => (
                     <div 
                       key={payment.id}
-                      className="bg-white rounded-lg p-3 flex items-center justify-between border border-amber-200"
+                      className="bg-white rounded-lg p-3 border border-amber-200 flex items-center justify-between"
                     >
                       <div>
                         <p className="font-semibold text-gray-900">₹{payment.amount}</p>
@@ -353,7 +410,7 @@ export default function MemberDetailPage() {
                       </div>
                       <button
                         onClick={() => handleResolvePendingPayment(payment)}
-                        className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition"
+                        className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm font-medium rounded-lg hover:shadow-lg transition-all duration-300"
                       >
                         Resolve
                       </button>
@@ -367,10 +424,10 @@ export default function MemberDetailPage() {
 
         {/* Due Amount Alert */}
         {member.dueAmount > 0 && (
-          <div className="bg-red-50 border-l-4 border-red-500 rounded-xl p-4 mb-4 shadow-sm">
+          <div className="bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-xl p-4">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center text-white text-xl flex-shrink-0">
-                💰
+              <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-pink-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                <DollarSign className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-gray-900 mb-1">
@@ -388,7 +445,7 @@ export default function MemberDetailPage() {
                   </div>
                   <button
                     onClick={() => router.push(`/members/${member.id}/payment`)}
-                    className="w-full px-4 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition"
+                    className="w-full px-4 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white font-semibold rounded-lg hover:shadow-lg transition-all duration-300"
                   >
                     Collect Payment
                   </button>
@@ -398,247 +455,291 @@ export default function MemberDetailPage() {
           </div>
         )}
 
-        {/* Action Buttons */}
-        <div className="grid grid-cols-4 gap-3 mb-4">
-          {[{
-              label: "Credentials",
-              icon: "🔐",
-              action: () => router.push(`/members/${member.id}/credentials`),
-            },
-            {
-              label: "Call",
-              icon: "📞",
-              action: () => window.open(`tel:${member.phone}`),
-            },
-            {
-              label: "WhatsApp",
-              icon: "💬",
-              action: () => window.open(`https://wa.me/91${member.phone}`),
-            },
-            {
-              label: "Payment",
-              icon: "💳",
-              action: () => router.push(`/members/${member.id}/payment`),
-            },
-            
-          ].map((btn, index) => (
-            <button
-              key={index}
-              onClick={btn.action}
-              className="bg-white rounded-xl p-3 shadow-sm flex flex-col items-center gap-1 hover:bg-gray-50 transition"
-            >
-              <span className="text-xl">{btn.icon}</span>
-              <span className="text-xs font-medium text-gray-600">
-                {btn.label}
-              </span>
-            </button>
-          ))}
+        {/* Quick Action Buttons */}
+        <div className="grid grid-cols-4 gap-3">
+          <button
+            onClick={() => router.push(`/members/${member.id}/credentials`)}
+            className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm flex flex-col items-center gap-1 hover:shadow-md transition-all duration-200 active:scale-95"
+          >
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg flex items-center justify-center">
+              <Key className="w-5 h-5 text-blue-600" />
+            </div>
+            <span className="text-xs font-medium text-gray-600">Credentials</span>
+          </button>
+          
+          <button
+            onClick={() => window.open(`tel:${member.phone}`)}
+            className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm flex flex-col items-center gap-1 hover:shadow-md transition-all duration-200 active:scale-95"
+          >
+            <div className="w-10 h-10 bg-gradient-to-br from-green-50 to-green-100 rounded-lg flex items-center justify-center">
+              <PhoneCall className="w-5 h-5 text-green-600" />
+            </div>
+            <span className="text-xs font-medium text-gray-600">Call</span>
+          </button>
+          
+          <button
+            onClick={() => window.open(`https://wa.me/91${member.phone}`)}
+            className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm flex flex-col items-center gap-1 hover:shadow-md transition-all duration-200 active:scale-95"
+          >
+            <div className="w-10 h-10 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-lg flex items-center justify-center">
+              <MessageCircle className="w-5 h-5 text-emerald-600" />
+            </div>
+            <span className="text-xs font-medium text-gray-600">WhatsApp</span>
+          </button>
+          
+          <button
+            onClick={() => router.push(`/members/${member.id}/payment`)}
+            className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm flex flex-col items-center gap-1 hover:shadow-md transition-all duration-200 active:scale-95"
+          >
+            <div className="w-10 h-10 bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg flex items-center justify-center">
+              <CreditCard className="w-5 h-5 text-amber-600" />
+            </div>
+            <span className="text-xs font-medium text-gray-600">Payment</span>
+          </button>
         </div>
 
-        {/* Diet & Workout Plan Assignment Buttons */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
+        {/* Diet & Workout Plan Assignment */}
+        <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => setShowAssignDietModal(true)}
-            className="py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-semibold hover:shadow-md transition flex items-center justify-center gap-2"
+            className="p-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 active:scale-95"
           >
-            <span className="text-xl">🥗</span>
+            <Utensils className="w-4 h-4" />
             <span>Assign Diet</span>
           </button>
           <button
             onClick={() => setShowAssignWorkoutModal(true)}
-            className="py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl font-semibold hover:shadow-md transition flex items-center justify-center gap-2"
+            className="p-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 active:scale-95"
           >
-            <span className="text-xl">💪</span>
+            <Dumbbell className="w-4 h-4" />
             <span>Assign Workout</span>
           </button>
         </div>
 
         {/* Edit and Delete Buttons */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => router.push(`/members/edit?id=${member.id}`)}
-            className="py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 active:scale-[0.98] transition-all duration-200"
+            className="p-3 bg-white border-2 border-gray-200 text-gray-700 rounded-xl font-semibold hover:border-gray-300 hover:shadow-sm transition-all duration-200 flex items-center justify-center gap-2 active:scale-95"
           >
-            ✏️ Edit Member
+            <Edit className="w-4 h-4" />
+            Edit Member
           </button>
           <button
             onClick={handleDeleteMember}
-            className="py-3 bg-red-50 border-2 border-red-200 text-red-600 rounded-xl font-semibold hover:bg-red-100 active:scale-[0.98] transition-all duration-200"
+            className="p-3 bg-gradient-to-r from-red-50 to-pink-50 border-2 border-red-200 text-red-600 rounded-xl font-semibold hover:border-red-300 hover:shadow-sm transition-all duration-200 flex items-center justify-center gap-2 active:scale-95"
           >
-            🗑️ Delete Member
+            <Trash2 className="w-4 h-4" />
+            Delete Member
           </button>
         </div>
 
         {/* Membership Actions */}
-        <div className={`grid gap-3 mb-4 ${member.status === "active" ? "grid-cols-1" : "grid-cols-2"}`}>
+        <div className={`grid gap-3 ${member.status === "active" ? "grid-cols-1" : "grid-cols-2"}`}>
           {member.status !== "active" && (
             <button
               onClick={() => setShowRenewModal(true)}
-              className="bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl p-3 shadow-sm flex flex-col items-center gap-1 hover:shadow-md transition"
+              className="p-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 active:scale-95"
             >
-              <span className="text-xl">🔄</span>
-              <span className="text-xs font-medium">Renew</span>
+              <RefreshCw className="w-4 h-4" />
+              Renew Membership
             </button>
           )}
           <button
             onClick={() => setShowHistoryModal(true)}
-            className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl p-3 shadow-sm flex flex-col items-center gap-1 hover:shadow-md transition"
+            className="p-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 active:scale-95"
           >
-            <span className="text-xl">📜</span>
-            <span className="text-xs font-medium">History</span>
+            <History className="w-4 h-4" />
+            View History
           </button>
-        
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-4 overflow-x-auto">
-          {["overview", "attendance", "payments"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition ${activeTab === tab
-                ? "bg-black text-white"
-                : "bg-white text-gray-600"
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-1">
+          <div className="flex overflow-x-auto">
+            {[
+              { id: "overview", label: "Overview", icon: <Eye className="w-4 h-4" /> },
+              { id: "attendance", label: "Attendance", icon: <BarChart3 className="w-4 h-4" /> },
+              { id: "payments", label: "Payments", icon: <CreditCard className="w-4 h-4" /> }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+                  activeTab === tab.id 
+                  ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm" 
+                  : "text-gray-600 hover:text-gray-900"
                 }`}
-            >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </button>
-          ))}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Tab Content */}
         {activeTab === "overview" && (
-          <div className="bg-white rounded-xl p-4 shadow-sm space-y-4">
-            <h3 className="font-semibold text-gray-900">
-              Personal Information
-            </h3>
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-4">
+            <h3 className="font-semibold text-gray-900">Personal Information</h3>
             <div className="grid grid-cols-2 gap-4">
-              {[
-                { label: "Gender", value: member.gender },
-                { label: "Age", value: member.age },
-                { label: "Join Date", value: member.joinDate },
-                { label: "Valid Till", value: member.validTill },
-              ].map((item, index) => (
-                <div key={index}>
-                  <p className="text-xs text-gray-500">{item.label}</p>
-                  <p className="text-sm font-medium text-gray-900">
-                    {item.value}
-                  </p>
-                </div>
-              ))}
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">Address</p>
-              <p className="text-sm font-medium text-gray-900">
-                {member.address}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">Emergency Contact</p>
-              <p className="text-sm font-medium text-gray-900">
-                {member.emergencyContact}
-              </p>
-            </div>
-            {member.notes && (
               <div>
-                <p className="text-xs text-gray-500">Notes</p>
-                <p className="text-sm text-gray-700">{member.notes}</p>
+                <p className="text-xs text-gray-500">Join Date</p>
+                <p className="text-sm font-medium text-gray-900">{member.joinDate}</p>
               </div>
-            )}
+              <div>
+                <p className="text-xs text-gray-500">Valid Till</p>
+                <p className="text-sm font-medium text-gray-900">{member.validTill}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Plan Price</p>
+                <p className="text-sm font-medium text-gray-900">₹{member.planPrice}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Current Balance</p>
+                <p className={`text-sm font-medium ${member.balance >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                  ₹{member.balance}
+                </p>
+              </div>
+            </div>
+            <div className="pt-3 border-t border-gray-100">
+              <h4 className="font-semibold text-gray-900 mb-3">Recent Activity</h4>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Last Payment</span>
+                  <span className="font-medium text-gray-900">
+                    {member.payments[0] ? `₹${member.payments[0].amount}` : 'No payments yet'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Last Visit</span>
+                  <span className="font-medium text-gray-900">
+                    {member.attendance[0] ? member.attendance[0].date : 'No visits yet'}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
         {activeTab === "attendance" && (
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="p-4 border-b border-gray-100">
               <h3 className="font-semibold text-gray-900">Recent Attendance</h3>
             </div>
             <div className="divide-y divide-gray-100">
-              {member.attendance.map((record, index) => (
-                <div
-                  key={index}
-                  className="p-4 flex items-center justify-between"
-                >
-                  <div>
-                    <p className="font-medium text-gray-900">{record.date}</p>
-                    <p className="text-sm text-gray-500">
-                      {record.checkIn} - {record.checkOut}
-                    </p>
+              {member.attendance.length > 0 ? (
+                member.attendance.map((record, index) => (
+                  <div
+                    key={index}
+                    className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                  >
+                    <div>
+                      <p className="font-medium text-gray-900">{record.date}</p>
+                      <p className="text-sm text-gray-500">
+                        {record.checkIn} - {record.checkOut}
+                      </p>
+                    </div>
+                    <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+                      <CheckCircle className="w-4 h-4 text-emerald-600" />
+                    </div>
                   </div>
-                  <span className="text-green-500">✓</span>
+                ))
+              ) : (
+                <div className="p-8 text-center">
+                  <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <BarChart3 className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <p className="text-gray-500 text-sm">No attendance records found</p>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         )}
 
         {activeTab === "payments" && (
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="p-4 border-b border-gray-100 flex items-center justify-between">
               <h3 className="font-semibold text-gray-900">Payment History</h3>
               <button
                 onClick={() => router.push(`/members/${member.id}/payment`)}
-                className="text-sm text-blue-600 font-medium"
+                className="px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-medium rounded-lg hover:shadow-lg transition-all duration-300 flex items-center gap-2"
               >
-                + Add Payment
+                <Plus className="w-3.5 h-3.5" />
+                Add Payment
               </button>
             </div>
             <div className="divide-y divide-gray-100">
-              {member.payments.map((payment) => (
-                <div
-                  key={payment.id}
-                  className="p-4 flex items-center justify-between"
-                >
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900">
-                      ₹{payment.amount}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {payment.type} • {payment.date}
-                    </p>
-                    {payment.payment_mode && (
-                      <p className="text-xs text-gray-400 mt-1">
-                        {payment.payment_mode.toUpperCase()}
-                      </p>
-                    )}
+              {member.payments.length > 0 ? (
+                member.payments.map((payment) => (
+                  <div
+                    key={payment.id}
+                    className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg flex items-center justify-center">
+                          <CreditCard className="w-4 h-4 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">
+                            ₹{payment.amount}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {payment.type} • {payment.date}
+                          </p>
+                          {payment.payment_mode && (
+                            <p className="text-xs text-gray-400 mt-1">
+                              {payment.payment_mode.toUpperCase()}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2.5 py-1 text-xs rounded-lg border ${
+                        payment.status === 'paid' 
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                          : 'bg-amber-50 text-amber-700 border-amber-200'
+                      }`}>
+                        {payment.status}
+                      </span>
+                      {payment.status === 'pending' && (
+                        <button
+                          onClick={() => {
+                            const pendingPayment = pendingPayments.find(p => p.id === payment.id);
+                            if (pendingPayment) {
+                              handleResolvePendingPayment(pendingPayment);
+                            }
+                          }}
+                          className="px-3 py-1 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-medium rounded-lg hover:shadow-lg transition-all duration-300"
+                        >
+                          Resolve
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      payment.status === 'paid' 
-                        ? 'bg-green-100 text-green-700' 
-                        : 'bg-amber-100 text-amber-700'
-                    }`}>
-                      {payment.status}
-                    </span>
-                    {payment.status === 'pending' && (
-                      <button
-                        onClick={() => {
-                          const pendingPayment = pendingPayments.find(p => p.id === payment.id);
-                          if (pendingPayment) {
-                            handleResolvePendingPayment(pendingPayment);
-                          }
-                        }}
-                        className="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 transition"
-                      >
-                        Resolve
-                      </button>
-                    )}
+                ))
+              ) : (
+                <div className="p-8 text-center">
+                  <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <CreditCard className="w-8 h-8 text-gray-400" />
                   </div>
+                  <p className="text-gray-500 text-sm">No payment records found</p>
+                  <button
+                    onClick={() => router.push(`/members/${member.id}/payment`)}
+                    className="mt-4 px-4 py-2 text-blue-600 text-sm font-medium hover:text-blue-700"
+                  >
+                    Add first payment
+                  </button>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         )}
-
-        {/* Danger Zone */}
-        <div className="mt-6 p-4 bg-white rounded-xl shadow-sm">
-          <button className="w-full py-3 text-red-500 font-medium hover:bg-red-50 rounded-lg transition">
-            Delete Member
-          </button>
-        </div>
       </main>
 
-      {/* Renew Membership Modal */}
+      {/* Modals */}
       {showRenewModal && (
         <RenewMembershipModal
           member={member}
@@ -648,7 +749,6 @@ export default function MemberDetailPage() {
         />
       )}
 
-      {/* Renewal History Modal */}
       {showHistoryModal && (
         <RenewalHistoryModal
           member={member}
@@ -657,7 +757,6 @@ export default function MemberDetailPage() {
         />
       )}
 
-      {/* Resolve Pending Payment Modal */}
       {showResolvePaymentModal && selectedPendingPayment && (
         <ResolvePendingPaymentModal
           payment={selectedPendingPayment}
@@ -670,14 +769,12 @@ export default function MemberDetailPage() {
         />
       )}
 
-      {/* Assign Diet Plan Modal */}
       {showAssignDietModal && (
         <AssignDietPlanModal
           member={member}
           gymId={selectedGym?.id}
           onClose={() => setShowAssignDietModal(false)}
           onAssign={() => {
-            // Refresh member data if needed
             if (selectedGym) {
               fetchMemberDetails(params.id, selectedGym.id);
             }
@@ -685,14 +782,12 @@ export default function MemberDetailPage() {
         />
       )}
 
-      {/* Assign Workout Plan Modal */}
       {showAssignWorkoutModal && (
         <AssignWorkoutPlanModal
           member={member}
           gymId={selectedGym?.id}
           onClose={() => setShowAssignWorkoutModal(false)}
           onAssign={() => {
-            // Refresh member data if needed
             if (selectedGym) {
               fetchMemberDetails(params.id, selectedGym.id);
             }

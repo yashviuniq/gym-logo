@@ -224,7 +224,7 @@ export default function EditMemberClient() {
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-3.5 bg-gradient-to-r from-[#F97316] to-[#FF8C42] text-white rounded-xl font-semibold disabled:opacity-50 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+            className="flex-1 py-3.5 bg-gradient-to-r from-[#3B82F6] to-[#4F46E5] text-white rounded-xl font-semibold disabled:opacity-50 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
             >
               {loading ? "Saving..." : "Save Changes"}
             </button>

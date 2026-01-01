@@ -4,7 +4,26 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
-import Card from "@/components/shared/Card";
+import { 
+  Megaphone,
+  Search,
+  Plus,
+  Filter,
+  Calendar,
+  Clock,
+  Eye,
+  Edit2,
+  Power,
+  Trash2,
+  CheckCircle,
+  XCircle,
+  Bell,
+  TrendingUp,
+  ChevronRight,
+  X,
+  AlertTriangle,
+  MessageSquare
+} from "lucide-react";
 
 export default function AnnouncementsPage() {
   const router = useRouter();
@@ -13,7 +32,11 @@ export default function AnnouncementsPage() {
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedGym, setSelectedGym] = useState(null);
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [stats, setStats] = useState({
+    total: 0,
+    active: 0,
+    inactive: 0
+  });
 
   useEffect(() => {
     const storedGym = localStorage.getItem("selectedGym");
@@ -25,6 +48,17 @@ export default function AnnouncementsPage() {
       setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    const activeCount = announcements.filter(a => a.status === "active").length;
+    const inactiveCount = announcements.filter(a => a.status === "inactive").length;
+    
+    setStats({
+      total: announcements.length,
+      active: activeCount,
+      inactive: inactiveCount
+    });
+  }, [announcements]);
 
   const fetchAnnouncements = async (gymId) => {
     setLoading(true);
@@ -57,8 +91,8 @@ export default function AnnouncementsPage() {
     return matchesSearch && matchesStatus;
   });
 
-  const handleDelete = async (id) => {
-    if (!confirm("Are you sure you want to delete this announcement?")) return;
+  const handleDelete = async (id, title) => {
+    if (!confirm(`Are you sure you want to delete "${title}"?`)) return;
 
     try {
       const { error } = await supabase
@@ -77,7 +111,7 @@ export default function AnnouncementsPage() {
     }
   };
 
-  const handleToggleStatus = async (id, currentStatus) => {
+  const handleToggleStatus = async (id, currentStatus, title) => {
     try {
       const newStatus = currentStatus === "active" ? "inactive" : "active";
       const { error } = await supabase
@@ -102,175 +136,374 @@ export default function AnnouncementsPage() {
     return date.toLocaleDateString("en-IN", {
       day: "numeric",
       month: "short",
-      year: "numeric",
     });
+  };
+
+  const getStatusConfig = (status) => {
+    switch (status) {
+      case "active":
+        return {
+          bg: "bg-gradient-to-r from-emerald-500 to-emerald-400",
+          text: "text-emerald-700",
+          lightBg: "bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200",
+          label: "Active",
+          icon: <CheckCircle className="w-3.5 h-3.5" />
+        };
+      case "inactive":
+        return {
+          bg: "bg-gradient-to-r from-gray-400 to-gray-300",
+          text: "text-gray-700",
+          lightBg: "bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200",
+          label: "Inactive",
+          icon: <XCircle className="w-3.5 h-3.5" />
+        };
+      default:
+        return {
+          bg: "bg-gradient-to-r from-gray-400 to-gray-300",
+          text: "text-gray-700",
+          lightBg: "bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200",
+          label: "Inactive",
+          icon: <XCircle className="w-3.5 h-3.5" />
+        };
+    }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 pb-24">
-        <Header title="Announcements" showBack={false} />
-        <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom flex flex-col items-center justify-center">
+        <div className="relative">
+          <div className="w-14 h-14 border-4 border-blue-500/20 border-t-blue-600 rounded-full animate-spin"></div>
+          <div className="absolute inset-0 w-14 h-14 border-4 border-transparent border-t-blue-500 rounded-full animate-spin animation-delay-200"></div>
         </div>
+        <p className="mt-6 text-gray-600 font-medium text-sm">Loading announcements...</p>
+      </div>
+    );
+  }
+
+  if (!selectedGym) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom">
+        <Header title="Announcements" showBack={false} />
+        <main className="px-4 py-4">
+          <div className="text-center py-12">
+            <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <Megaphone className="w-10 h-10 text-white" />
+            </div>
+            <h2 className="text-lg font-bold text-gray-900 mb-2">No Gym Selected</h2>
+            <p className="text-gray-500 text-sm mb-6 px-4">
+              Please select a gym to view and manage announcements
+            </p>
+            <button
+              onClick={() => router.push("/admin/dashboard")}
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold text-sm active:scale-95 transition-transform"
+              style={{ minHeight: '44px' }}
+            >
+              Go to Dashboard
+            </button>
+          </div>
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom">
       <Header title="Announcements" showBack={false} />
 
-      <main className="px-4 py-4 space-y-4">
-        {/* Summary Cards */}
-        <div className="grid grid-cols-3 gap-3">
-          <Card padding="md" className="bg-blue-50">
-            <p className="text-blue-600 text-sm">Total</p>
-            <p className="text-2xl font-bold text-blue-700">
-              {announcements.length}
-            </p>
-          </Card>
-          <Card padding="md" className="bg-green-50">
-            <p className="text-green-600 text-sm">Active</p>
-            <p className="text-2xl font-bold text-green-700">
-              {announcements.filter((a) => a.status === "active").length}
-            </p>
-          </Card>
-          <Card padding="md" className="bg-gray-50">
-            <p className="text-gray-600 text-sm">Inactive</p>
-            <p className="text-2xl font-bold text-gray-700">
-              {announcements.filter((a) => a.status === "inactive").length}
-            </p>
-          </Card>
+      <main className="px-3 py-3 space-y-4">
+        {/* Stats Cards - Mobile Optimized */}
+        <div className="grid grid-cols-2 gap-2 px-1">
+          <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 font-medium">Total</p>
+                <p className="text-xl font-bold text-gray-900 mt-0.5">{stats.total}</p>
+              </div>
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg flex items-center justify-center">
+                <Megaphone className="w-5 h-5 text-blue-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 font-medium">Active</p>
+                <p className="text-xl font-bold text-emerald-600 mt-0.5">{stats.active}</p>
+              </div>
+              <div className="w-10 h-10 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-lg flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-emerald-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 font-medium">Inactive</p>
+                <p className="text-xl font-bold text-gray-600 mt-0.5">{stats.inactive}</p>
+              </div>
+              <div className="w-10 h-10 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg flex items-center justify-center">
+                <Bell className="w-5 h-5 text-gray-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 font-medium">Today</p>
+                <p className="text-xl font-bold text-indigo-600 mt-0.5">
+                  {announcements.filter(a => {
+                    const today = new Date().toDateString();
+                    const announcementDate = new Date(a.announced_at).toDateString();
+                    return announcementDate === today;
+                  }).length}
+                </p>
+              </div>
+              <div className="w-10 h-10 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-indigo-600" />
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Search and Add Button */}
-        <div className="flex gap-3">
-          <div className="flex-1 relative">
+        {/* Search and Add Member */}
+        <div className="bg-white rounded-xl p-3 mx-1 border border-gray-200 shadow-sm space-y-3">
+          {/* Search Bar */}
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-gray-400" />
+            </div>
             <input
               type="text"
-              placeholder="Search announcements..."
-              className="w-full px-4 py-3 pl-10 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#F97316]/50 focus:border-[#F97316]/50"
+              placeholder="Search announcements by title or content..."
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm placeholder:text-gray-400"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-            <span className="absolute left-3 top-3.5 text-gray-400">🔍</span>
           </div>
+
+          {/* Add Announcement Button */}
           <button
             onClick={() => router.push("/announcements/add")}
-            className="px-6 py-3 bg-[#F97316] text-white rounded-xl font-semibold hover:bg-[#F97316]/90 transition shadow-md"
+            className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2"
+            style={{ minHeight: '44px' }}
           >
-            + Add
+            <Plus className="w-5 h-5" />
+            Add New Announcement
           </button>
         </div>
 
-        {/* Filter Tabs */}
-        <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-          {["all", "active", "inactive"].map((status) => (
-            <button
-              key={status}
-              onClick={() => setFilterStatus(status)}
-              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition ${
-                filterStatus === status
-                  ? "btn-gradient-orange text-white shadow-md"
-                  : "bg-white text-gray-600 border border-gray-200 hover:border-[#F97316]/30"
-              }`}
-            >
-              {status.charAt(0).toUpperCase() + status.slice(1)}
-            </button>
-          ))}
+        {/* Filter Tabs - Horizontal Scroll on Mobile */}
+        <div className="bg-white rounded-xl p-3 mx-1 border border-gray-200 shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <Filter className="w-4 h-4 text-gray-500" />
+            <span className="text-sm font-medium text-gray-700">Filter by Status</span>
+          </div>
+          <div className="flex space-x-2 overflow-x-auto pb-1 -mx-1 px-1 no-scrollbar">
+            {[
+              { id: "all", label: "All", count: stats.total },
+              { id: "active", label: "Active", count: stats.active },
+              { id: "inactive", label: "Inactive", count: stats.inactive }
+            ].map((filter) => (
+              <button
+                key={filter.id}
+                onClick={() => setFilterStatus(filter.id)}
+                className={`flex-shrink-0 px-4 py-2.5 rounded-lg text-xs font-medium transition-all duration-200 flex items-center gap-2 ${
+                  filterStatus === filter.id
+                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+                style={{ minHeight: '36px' }}
+              >
+                {filter.label}
+                <span className={`px-2 py-0.5 text-xs rounded-full ${
+                  filterStatus === filter.id 
+                    ? "bg-white/20" 
+                    : "bg-white text-gray-600"
+                }`}>
+                  {filter.count}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Announcements List */}
-        <div className="space-y-3">
-          {filteredAnnouncements.length === 0 ? (
-            <Card padding="md" className="text-center py-12">
-              <p className="text-gray-500 text-lg mb-2">No announcements found</p>
-              <button
-                onClick={() => router.push("/announcements/add")}
-                className="text-[#F97316] font-medium"
-              >
-                Create your first announcement
-              </button>
-            </Card>
-          ) : (
-            filteredAnnouncements.map((announcement) => (
-              <Card
+        <div className="space-y-3 pb-20">
+          {filteredAnnouncements.map((announcement) => {
+            const statusConfig = getStatusConfig(announcement.status);
+            const isExpired = announcement.expires_at && new Date(announcement.expires_at) < new Date();
+            
+            return (
+              <div
                 key={announcement.id}
-                padding="md"
-                className="hover:shadow-md transition"
+                onClick={() => router.push(`/announcements/${announcement.id}`)}
+                className="bg-white rounded-xl border border-gray-200 p-3 hover:shadow-md active:scale-95 transition-all duration-200 cursor-pointer mx-1"
               >
-                <div className="space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-gray-900 text-lg">
-                          {announcement.title}
-                        </h3>
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                            announcement.status === "active"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-gray-100 text-gray-600"
-                          }`}
-                        >
-                          {announcement.status}
-                        </span>
+                <div className="flex items-start gap-3">
+                  {/* Icon */}
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-sm relative">
+                      <Megaphone className="w-6 h-6" />
+                      <div className={`absolute -bottom-1 -right-1 w-5 h-5 ${statusConfig.bg} rounded-full border-2 border-white flex items-center justify-center`}>
+                        {statusConfig.icon}
                       </div>
-                      <p className="text-gray-600 text-sm line-clamp-2">
-                        {announcement.message}
-                      </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between text-xs text-gray-500">
-                    <div className="flex items-center gap-4">
-                      <span>📅 {formatDate(announcement.announced_at)}</span>
+                  {/* Announcement Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between mb-1">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-gray-900 text-sm truncate">
+                            {announcement.title}
+                          </h3>
+                          <div className={`px-2 py-1 rounded-lg border ${statusConfig.lightBg} ${statusConfig.text} flex items-center gap-1.5`}>
+                            {statusConfig.icon}
+                            <span className="text-xs font-medium">{statusConfig.label}</span>
+                          </div>
+                        </div>
+                        <p className="text-gray-600 text-xs mt-1 line-clamp-2">
+                          {announcement.message}
+                        </p>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
+                    </div>
+
+                    {/* Date Info */}
+                    <div className="mt-3 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                          <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Announced</p>
+                          <p className="text-sm font-medium text-gray-900">
+                            {formatDate(announcement.announced_at)}
+                          </p>
+                        </div>
+                      </div>
+
                       {announcement.expires_at && (
-                        <span>⏰ Expires: {formatDate(announcement.expires_at)}</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center">
+                            <Clock className="w-3.5 h-3.5 text-amber-600" />
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Expires</p>
+                            <p className={`text-sm font-medium ${isExpired ? 'text-red-600' : 'text-gray-900'}`}>
+                              {formatDate(announcement.expires_at)}
+                              {isExpired && ' (Expired)'}
+                            </p>
+                          </div>
+                        </div>
                       )}
                     </div>
-                  </div>
 
-                  <div className="flex gap-2 pt-2 border-t border-gray-100">
-                    <button
-                      onClick={() =>
-                        router.push(`/announcements/${announcement.id}`)
-                      }
-                      className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition text-sm"
-                    >
-                      View
-                    </button>
-                    <button
-                      onClick={() =>
-                        router.push(`/announcements/${announcement.id}/edit`)
-                      }
-                      className="flex-1 py-2 bg-blue-50 text-blue-600 rounded-lg font-medium hover:bg-blue-100 transition text-sm"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() =>
-                        handleToggleStatus(announcement.id, announcement.status)
-                      }
-                      className="flex-1 py-2 bg-yellow-50 text-yellow-600 rounded-lg font-medium hover:bg-yellow-100 transition text-sm"
-                    >
-                      {announcement.status === "active" ? "Deactivate" : "Activate"}
-                    </button>
-                    <button
-                      onClick={() => handleDelete(announcement.id)}
-                      className="px-4 py-2 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 transition text-sm"
-                    >
-                      Delete
-                    </button>
+                    {/* Action Buttons - Horizontal Scroll on Mobile */}
+                    <div className="flex space-x-2 overflow-x-auto mt-3 pt-3 border-t border-gray-100 pb-1 -mx-1 px-1 no-scrollbar">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/announcements/${announcement.id}`);
+                        }}
+                        className="flex-shrink-0 px-3 py-2 bg-blue-50 text-blue-700 cursor-pointer text-xs font-medium rounded-lg active:bg-blue-100 transition-all flex items-center gap-2"
+                        style={{ minHeight: '36px' }}
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        View
+                      </button>
+                      
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/announcements/${announcement.id}/edit`);
+                        }}
+                        className="flex-shrink-0 px-3 py-2 bg-indigo-50 text-indigo-700 cursor-pointer text-xs font-medium rounded-lg active:bg-indigo-100 transition-all flex items-center gap-2"
+                        style={{ minHeight: '36px' }}
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                        Edit
+                      </button>
+                      
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleStatus(announcement.id, announcement.status, announcement.title);
+                        }}
+                        className={`flex-shrink-0 px-3 py-2 text-xs font-medium rounded-lg active:scale-95 transition-all flex items-center gap-2 ${
+                          announcement.status === "active"
+                            ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white"
+                            : "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white"
+                        }`}
+                        style={{ minHeight: '36px' }}
+                      >
+                        <Power className="w-3.5 h-3.5" />
+                        {announcement.status === "active" ? "Deactivate" : "Activate"}
+                      </button>
+                      
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(announcement.id, announcement.title);
+                        }}
+                        className="flex-shrink-0 px-3 py-2 bg-red-50 cursor-pointer text-red-700 text-xs font-medium rounded-lg active:bg-red-100 transition-all flex items-center gap-2"
+                        style={{ minHeight: '36px' }}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </Card>
-            ))
-          )}
+              </div>
+            );
+          })}
         </div>
+
+        {/* Empty State */}
+        {filteredAnnouncements.length === 0 && (
+          <div className="text-center py-8 px-4">
+            <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Megaphone className="w-8 h-8 text-gray-400" />
+            </div>
+            <h3 className="text-base font-semibold text-gray-900 mb-2">
+              {searchQuery || filterStatus !== "all" 
+                ? "No announcements found" 
+                : "No announcements yet"}
+            </h3>
+            <p className="text-gray-500 text-sm mb-4">
+              {searchQuery || filterStatus !== "all" 
+                ? "Try adjusting your search or filter criteria" 
+                : "Add your first announcement to communicate with members"}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              {(searchQuery || filterStatus !== "all") && (
+                <button
+                  onClick={() => {
+                    setSearchQuery("");
+                    setFilterStatus("all");
+                  }}
+                  className="px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg active:scale-95 transition-transform text-sm"
+                >
+                  Clear filters
+                </button>
+              )}
+              <button
+                onClick={() => router.push("/announcements/add")}
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2"
+                style={{ minHeight: '44px' }}
+              >
+                <Plus className="w-5 h-5" />
+                Create First Announcement
+              </button>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
 }
-

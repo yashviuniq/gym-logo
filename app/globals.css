@@ -47,6 +47,26 @@
   }
 }
 
+/* If you want to use Tailwind classes instead of inline styles */
+@layer utilities {
+  .animation-delay-200 {
+    animation-delay: -0.2s;
+  }
+}
+
+/* For better spinner animation */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
 /* Toast Animations */
 @keyframes slide-in-right {
   from {
@@ -97,7 +117,22 @@ body {
 .card-base:hover {
   box-shadow: var(--shadow-md);
 }
+/* Add to your global CSS or tailwind config */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Safe area support */
+@supports (padding: max(0px)) {
+  .safe-area-inset-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}
 /* Dark Card Variant */
 .card-dark {
   background: var(--dark-black);

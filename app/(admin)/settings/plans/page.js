@@ -4,7 +4,27 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
 import { supabase } from "@/lib/supabaseClient";
-import { PlusCircle, Users, Calendar, IndianRupee, Edit2, Trash2, CheckCircle, XCircle, Zap, Clock } from "lucide-react";
+import { 
+  PlusCircle, 
+  Users, 
+  Calendar, 
+  IndianRupee, 
+  Edit2, 
+  Trash2, 
+  CheckCircle, 
+  XCircle, 
+  Zap, 
+  Clock,
+  Filter,
+  ChevronRight,
+  Plus,
+  X,
+  AlertCircle,
+  BarChart3,
+  DollarSign,
+  Tag,
+  ArrowLeft
+} from "lucide-react";
 
 export default function PlansSettingsPage() {
   const router = useRouter();
@@ -13,28 +33,29 @@ export default function PlansSettingsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingPlan, setEditingPlan] = useState(null);
   const [gymId, setGymId] = useState(null);
-  const [activeTab, setActiveTab] = useState("all"); // "all", "active", "inactive"
+  const [activeTab, setActiveTab] = useState("all");
+  const [selectedGym, setSelectedGym] = useState(null);
 
   useEffect(() => {
-    fetchPlans();
+    const storedGym = localStorage.getItem("selectedGym");
+    if (storedGym) {
+      const gym = JSON.parse(storedGym);
+      setSelectedGym(gym);
+      setGymId(gym.id);
+      fetchPlans(gym.id);
+    } else {
+      setLoading(false);
+    }
   }, []);
 
-  const fetchPlans = async () => {
+  const fetchPlans = async (gymId) => {
     try {
       setLoading(true);
-      const storedGym = localStorage.getItem("selectedGym");
-      if (!storedGym) {
-        console.error("No gym selected");
-        setLoading(false);
-        return;
-      }
-      const gym = JSON.parse(storedGym);
-      setGymId(gym.id);
 
       const { data: plansData, error: plansError } = await supabase
         .from("membership_plans")
         .select("*")
-        .eq("gym_id", gym.id)
+        .eq("gym_id", gymId)
         .order("duration_days", { ascending: true });
 
       if (plansError) throw plansError;
@@ -42,7 +63,7 @@ export default function PlansSettingsPage() {
       const { data: membershipsData, error: membershipsError } = await supabase
         .from("memberships")
         .select("plan_id")
-        .eq("gym_id", gym.id)
+        .eq("gym_id", gymId)
         .eq("status", "active");
 
       if (membershipsError) throw membershipsError;
@@ -125,110 +146,163 @@ export default function PlansSettingsPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 pb-24">
-        <Header title="Membership Plans" />
-        <div className="flex flex-col items-center justify-center h-96">
-          <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-          <p className="text-gray-600">Loading plans...</p>
-        </div>
-      </div>
-    );
-  }
-
   const activePlans = plans.filter(p => p.active);
   const totalMembers = plans.reduce((sum, p) => sum + p.members, 0);
   const totalRevenue = plans.reduce((sum, p) => sum + (p.price * p.members), 0);
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 pb-24">
-      <Header title="Membership Plans" />
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom flex flex-col items-center justify-center">
+        <div className="relative">
+          <div className="w-14 h-14 border-4 border-blue-500/20 border-t-blue-600 rounded-full animate-spin"></div>
+          <div className="absolute inset-0 w-14 h-14 border-4 border-transparent border-t-blue-500 rounded-full animate-spin animation-delay-200"></div>
+        </div>
+        <p className="mt-6 text-gray-600 font-medium text-sm">Loading plans...</p>
+      </div>
+    );
+  }
 
-      <main className="px-4 py-4 space-y-6">
-        {/* Header with Add Button */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Membership Plans</h1>
-            <p className="text-gray-600">Manage your gym's membership packages</p>
+  if (!selectedGym) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom">
+        <Header title="Membership Plans" showBack={true} />
+        <main className="px-4 py-4">
+          <div className="text-center py-12">
+            <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <Tag className="w-10 h-10 text-white" />
+            </div>
+            <h2 className="text-lg font-bold text-gray-900 mb-2">No Gym Selected</h2>
+            <p className="text-gray-500 text-sm mb-6 px-4">
+              Please select a gym to view and manage membership plans
+            </p>
+            <button
+              onClick={() => router.push("/admin/dashboard")}
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold text-sm active:scale-95 transition-transform"
+              style={{ minHeight: '44px' }}
+            >
+              Go to Dashboard
+            </button>
           </div>
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom">
+      <Header title="Membership Plans" showBack={false} />
+
+      <main className="px-3 py-3 space-y-4">
+        {/* Back Button */}
+        <button
+          onClick={() => router.push("/settings")}
+          className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl border border-gray-200 shadow-sm hover:bg-gray-50 active:scale-95 transition-all text-gray-700 font-medium text-sm"
+          style={{ minHeight: '44px' }}
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Settings
+        </button>
+
+        {/* Stats Cards - Mobile Optimized */}
+        <div className="grid grid-cols-2 gap-2 px-1">
+          <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 font-medium">Active Plans</p>
+                <p className="text-xl font-bold text-emerald-600 mt-0.5">{activePlans.length}</p>
+                <p className="text-xs text-gray-400 mt-1">of {plans.length} total</p>
+              </div>
+              <div className="w-10 h-10 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-lg flex items-center justify-center">
+                <Zap className="w-5 h-5 text-emerald-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 font-medium">Total Members</p>
+                <p className="text-xl font-bold text-blue-600 mt-0.5">{totalMembers}</p>
+                <p className="text-xs text-gray-400 mt-1">across all plans</p>
+              </div>
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg flex items-center justify-center">
+                <Users className="w-5 h-5 text-blue-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 font-medium">Monthly Revenue</p>
+                <p className="text-xl font-bold text-indigo-600 mt-0.5">
+                  ₹{totalRevenue.toLocaleString()}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">estimated</p>
+              </div>
+              <div className="w-10 h-10 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg flex items-center justify-center">
+                <IndianRupee className="w-5 h-5 text-indigo-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 font-medium">Avg. Price</p>
+                <p className="text-xl font-bold text-amber-600 mt-0.5">
+                  ₹{plans.length > 0 ? (plans.reduce((sum, p) => sum + p.price, 0) / plans.length).toFixed(0) : 0}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">per plan</p>
+              </div>
+              <div className="w-10 h-10 bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg flex items-center justify-center">
+                <DollarSign className="w-5 h-5 text-amber-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Add Plan Button */}
+        <div className="bg-white rounded-xl p-3 mx-1 border border-gray-200 shadow-sm">
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all"
+            className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2"
+            style={{ minHeight: '44px' }}
           >
-            <PlusCircle className="w-5 h-5" />
-            Add Plan
+            <Plus className="w-5 h-5" />
+            Add New Plan
           </button>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm font-medium">Active Plans</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">{activePlans.length}</p>
-                <p className="text-xs text-gray-500 mt-2">of {plans.length} total</p>
-              </div>
-              <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
-                <Zap className="w-6 h-6 text-orange-600" />
-              </div>
-            </div>
+        {/* Filter Tabs - Horizontal Scroll on Mobile */}
+        <div className="bg-white rounded-xl p-3 mx-1 border border-gray-200 shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <Filter className="w-4 h-4 text-gray-500" />
+            <span className="text-sm font-medium text-gray-700">Filter by Status</span>
           </div>
-
-          <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm font-medium">Total Members</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">{totalMembers}</p>
-                <p className="text-xs text-gray-500 mt-2">across all plans</p>
-              </div>
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                <Users className="w-6 h-6 text-green-600" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm font-medium">Monthly Revenue</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">₹{totalRevenue.toLocaleString()}</p>
-                <p className="text-xs text-gray-500 mt-2">estimated</p>
-              </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <IndianRupee className="w-6 h-6 text-blue-600" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Filter Tabs */}
-        <div className="bg-white rounded-2xl p-2 shadow-sm border border-gray-200">
-          <div className="flex space-x-2">
+          <div className="grid grid-cols-3 gap-2">
             {[
-              { id: "all", label: "All Plans", count: plans.length },
+              { id: "all", label: "All", count: plans.length },
               { id: "active", label: "Active", count: activePlans.length },
               { id: "inactive", label: "Inactive", count: plans.length - activePlans.length }
-            ].map((tab) => (
+            ].map((filter) => (
               <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all relative ${
-                  activeTab === tab.id
-                    ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                key={filter.id}
+                onClick={() => setActiveTab(filter.id)}
+                className={`py-2.5 rounded-lg text-xs font-medium transition-all duration-200 flex flex-col items-center justify-center ${
+                  activeTab === filter.id
+                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
+                style={{ minHeight: '64px' }}
               >
-                <span className="flex items-center justify-center gap-2">
-                  {tab.label}
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    activeTab === tab.id
-                      ? "bg-white/20 text-white"
-                      : "bg-gray-100 text-gray-600"
-                  }`}>
-                    {tab.count}
-                  </span>
+                <span>{filter.label}</span>
+                <span className={`mt-1 px-2 py-0.5 text-xs rounded-full ${
+                  activeTab === filter.id 
+                    ? "bg-white/20" 
+                    : "bg-white text-gray-600"
+                }`}>
+                  {filter.count}
                 </span>
               </button>
             ))}
@@ -236,143 +310,168 @@ export default function PlansSettingsPage() {
         </div>
 
         {/* Plans List */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">Plans List</h3>
-            <span className="text-sm text-gray-500">
+        <div className="space-y-3 pb-20">
+          <div className="flex items-center justify-between px-2">
+            <h3 className="font-semibold text-gray-900 text-sm">Plans List</h3>
+            <span className="text-xs text-gray-500">
               {filteredPlans.length} {filteredPlans.length === 1 ? 'plan' : 'plans'} found
             </span>
           </div>
-
+          
           {filteredPlans.length === 0 ? (
-            <div className="bg-white rounded-2xl p-8 text-center shadow-sm border border-gray-200">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Calendar className="w-6 h-6 text-gray-400" />
+            <div className="bg-white rounded-xl p-6 text-center border border-gray-200 shadow-sm mx-1">
+              <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Tag className="w-8 h-8 text-gray-400" />
               </div>
-              <p className="text-gray-700 font-medium mb-2">No plans found</p>
-              <p className="text-gray-500 text-sm mb-6">
+              <h3 className="text-base font-semibold text-gray-900 mb-2">
+                {activeTab === "all" 
+                  ? "No plans yet" 
+                  : `No ${activeTab} plans available`}
+              </h3>
+              <p className="text-gray-500 text-sm mb-4">
                 {activeTab === "all" 
                   ? "Create your first membership plan to get started" 
-                  : `No ${activeTab} plans available`}
+                  : `Try changing the filter to see other plans`}
               </p>
               <button
                 onClick={() => setShowAddModal(true)}
-                className="px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl text-sm font-semibold shadow-md hover:shadow-lg transition-all"
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 mx-auto"
+                style={{ minHeight: '44px' }}
               >
-                Create New Plan
+                <Plus className="w-5 h-5" />
+                Create First Plan
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredPlans.map((plan) => (
-                <div
-                  key={plan.id}
-                  className={`bg-white rounded-2xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-all ${
-                    !plan.active ? "opacity-75" : ""
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-4">
-                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
-                        plan.active 
-                          ? "bg-gradient-to-br from-orange-500 to-orange-600" 
-                          : "bg-gray-200"
-                      }`}>
-                        {plan.active ? (
-                          <Calendar className="w-6 h-6 text-white" />
-                        ) : (
-                          <Clock className="w-6 h-6 text-gray-600" />
-                        )}
-                      </div>
-                      <div>
+            filteredPlans.map((plan) => (
+              <div
+                key={plan.id}
+                className="bg-white rounded-xl border border-gray-200 p-3 hover:shadow-md transition-all duration-200 mx-1"
+              >
+                <div className="flex items-start gap-3">
+                  {/* Plan Icon */}
+                  <div className="flex-shrink-0">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-sm ${
+                      plan.active 
+                        ? "bg-gradient-to-br from-blue-600 to-indigo-600" 
+                        : "bg-gradient-to-br from-gray-400 to-gray-500"
+                    }`}>
+                      <Calendar className="w-6 h-6" />
+                    </div>
+                  </div>
+
+                  {/* Plan Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between mb-1">
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <h4 className="text-xl font-bold text-gray-900">{plan.name}</h4>
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          <h3 className="font-semibold text-gray-900 text-sm truncate">
+                            {plan.name}
+                          </h3>
+                          <div className={`px-2 py-1 rounded-lg text-xs font-medium flex items-center gap-1.5 ${
                             plan.active
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
+                              ? "bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200 text-emerald-700"
+                              : "bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200 text-gray-700"
                           }`}>
-                            {plan.active ? "Active" : "Inactive"}
-                          </span>
+                            {plan.active ? (
+                              <CheckCircle className="w-3.5 h-3.5" />
+                            ) : (
+                              <XCircle className="w-3.5 h-3.5" />
+                            )}
+                            <span>{plan.active ? "Active" : "Inactive"}</span>
+                          </div>
                         </div>
                         {plan.description && (
-                          <p className="text-gray-600 text-sm mt-1">{plan.description}</p>
+                          <p className="text-gray-600 text-xs mt-1 line-clamp-2">
+                            {plan.description}
+                          </p>
                         )}
                       </div>
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-gray-900">₹{plan.price}</p>
+                        <p className="text-xs text-gray-500">per plan</p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-3xl font-bold text-gray-900">₹{plan.price}</p>
-                      <p className="text-sm text-gray-500">per plan</p>
-                    </div>
-                  </div>
 
-                  {/* Plan Details */}
-                  <div className="grid grid-cols-2 gap-4 mb-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
-                        <Calendar className="w-5 h-5 text-blue-600" />
+                    {/* Plan Details */}
+                    <div className="mt-3 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                          <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Duration</p>
+                          <p className="text-sm font-medium text-gray-900">
+                            {plan.duration} days ({Math.round(plan.duration/30)} months)
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Duration</p>
-                        <p className="font-semibold text-gray-900">{plan.duration} days</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
-                        <Users className="w-5 h-5 text-green-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Members</p>
-                        <p className="font-semibold text-gray-900">{plan.members} active</p>
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                    <div className="text-xs text-gray-500">
-                      Created {new Date(plan.created_at).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric'
-                      })}
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center">
+                          <Users className="w-3.5 h-3.5 text-emerald-600" />
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500">Active Members</p>
+                          <p className="text-sm font-medium text-gray-900">
+                            {plan.members} members
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3">
+
+                    {/* Action Buttons - Horizontal Scroll on Mobile */}
+                    <div className="flex space-x-2 overflow-x-auto mt-3 pt-3 border-t border-gray-100 pb-1 -mx-1 px-1 no-scrollbar">
                       <button
-                        onClick={() => setEditingPlan(plan)}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-xl text-sm font-medium hover:bg-blue-100 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingPlan(plan);
+                        }}
+                        className="flex-shrink-0 px-3 py-2 bg-blue-50 text-blue-700 cursor-pointer text-xs font-medium rounded-lg active:bg-blue-100 transition-all flex items-center gap-2"
+                        style={{ minHeight: '36px' }}
                       >
-                        <Edit2 className="w-4 h-4" />
+                        <Edit2 className="w-3.5 h-3.5" />
                         Edit
                       </button>
+                      
                       <button
-                        onClick={() => togglePlanStatus(plan.id)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          togglePlanStatus(plan.id);
+                        }}
+                        className={`flex-shrink-0 px-3 py-2 text-xs font-medium rounded-lg active:scale-95 transition-all flex items-center gap-2 ${
                           plan.active
-                            ? "bg-red-50 text-red-600 hover:bg-red-100"
-                            : "bg-green-50 text-green-600 hover:bg-green-100"
+                            ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white"
+                            : "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white"
                         }`}
+                        style={{ minHeight: '36px' }}
                       >
-                        {plan.active ? <XCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
+                        {plan.active ? <XCircle className="w-3.5 h-3.5" /> : <CheckCircle className="w-3.5 h-3.5" />}
                         {plan.active ? "Deactivate" : "Activate"}
                       </button>
+                      
                       <button
-                        onClick={() => handleDeletePlan(plan.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeletePlan(plan.id);
+                        }}
                         disabled={plan.members > 0}
-                        className={`p-2 rounded-xl ${
+                        className={`flex-shrink-0 px-3 py-2 text-xs font-medium rounded-lg flex items-center gap-2 ${
                           plan.members > 0
                             ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                            : "bg-red-50 text-red-600 hover:bg-red-100"
+                            : "bg-red-50 text-red-700 hover:bg-red-100 active:bg-red-200 transition-all"
                         }`}
+                        style={{ minHeight: '36px' }}
                         title={plan.members > 0 ? "Cannot delete plan with active members" : "Delete plan"}
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Delete
                       </button>
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))
           )}
         </div>
       </main>
@@ -387,7 +486,7 @@ export default function PlansSettingsPage() {
             setEditingPlan(null);
           }}
           onSave={() => {
-            fetchPlans();
+            fetchPlans(gymId);
             setShowAddModal(false);
             setEditingPlan(null);
           }}
@@ -430,11 +529,9 @@ function PlanModal({ plan, gymId, onClose, onSave }) {
     try {
       setSaving(true);
       
-      // Convert duration to days based on selected unit
       const durationInDays = calculateDays(formData.duration, durationUnit);
 
       if (plan) {
-        // Update existing plan
         const { error } = await supabase
           .from("membership_plans")
           .update({
@@ -449,7 +546,6 @@ function PlanModal({ plan, gymId, onClose, onSave }) {
 
         if (error) throw error;
       } else {
-        // Create new plan
         const { error } = await supabase
           .from("membership_plans")
           .insert({
@@ -474,30 +570,30 @@ function PlanModal({ plan, gymId, onClose, onSave }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-2xl rounded-2xl max-h-[90vh] overflow-hidden shadow-2xl">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 mb-17">
+      <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl max-h-[85vh] overflow-hidden shadow-2xl animate-slide-up">
         {/* Modal Header */}
-        <div className="p-6 border-b border-gray-100">
-          <div className="flex items-center justify-between">
+        <div className="p-4 border-b border-gray-200 sticky top-0 bg-white z-10">
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-2xl font-bold text-gray-900">
+              <h3 className="text-lg font-bold text-gray-900">
                 {plan ? "Edit Plan" : "Create New Plan"}
               </h3>
-              <p className="text-gray-500 text-sm mt-1">
+              <p className="text-gray-500 text-xs mt-0.5">
                 {plan ? "Update your membership plan details" : "Add a new membership plan to your gym"}
               </p>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors active:scale-95"
             >
-              <XCircle className="w-6 h-6 text-gray-400" />
+              <X className="w-5 h-5 text-gray-500" />
             </button>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="overflow-y-auto max-h-[60vh] p-6">
-          <div className="space-y-6">
+        <form onSubmit={handleSubmit} className="overflow-y-auto max-h-[60vh] p-4">
+          <div className="space-y-4">
             {/* Plan Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -505,8 +601,8 @@ function PlanModal({ plan, gymId, onClose, onSave }) {
               </label>
               <input
                 type="text"
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
-                placeholder="e.g., Monthly Premium, Quarterly Basic, Annual Gold"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
+                placeholder="e.g., Monthly Premium, Quarterly Basic"
                 value={formData.name}
                 onChange={(e) => updateForm("name", e.target.value)}
                 required
@@ -519,7 +615,7 @@ function PlanModal({ plan, gymId, onClose, onSave }) {
                 Description (Optional)
               </label>
               <textarea
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all resize-none"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none text-sm"
                 placeholder="Describe the benefits and features of this plan..."
                 rows={3}
                 value={formData.description}
@@ -528,7 +624,7 @@ function PlanModal({ plan, gymId, onClose, onSave }) {
             </div>
 
             {/* Duration and Price */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Duration *
@@ -536,7 +632,7 @@ function PlanModal({ plan, gymId, onClose, onSave }) {
                 <div className="flex gap-2">
                   <input
                     type="number"
-                    className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                    className="flex-1 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
                     placeholder="30"
                     value={formData.duration}
                     onChange={(e) => updateForm("duration", parseInt(e.target.value))}
@@ -546,7 +642,7 @@ function PlanModal({ plan, gymId, onClose, onSave }) {
                   <select
                     value={durationUnit}
                     onChange={(e) => setDurationUnit(e.target.value)}
-                    className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                    className="px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
                   >
                     <option value="days">Days</option>
                     <option value="weeks">Weeks</option>
@@ -565,12 +661,12 @@ function PlanModal({ plan, gymId, onClose, onSave }) {
                   Price (₹) *
                 </label>
                 <div className="relative">
-                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
-                    <IndianRupee className="w-5 h-5 text-gray-400" />
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                    <IndianRupee className="w-4 h-4 text-gray-400" />
                   </div>
                   <input
                     type="number"
-                    className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                    className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
                     placeholder="1500"
                     value={formData.price}
                     onChange={(e) => updateForm("price", parseFloat(e.target.value))}
@@ -583,57 +679,59 @@ function PlanModal({ plan, gymId, onClose, onSave }) {
             </div>
 
             {/* Status Toggle */}
-            <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-6">
+            <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-semibold text-gray-900">Plan Status</p>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="font-semibold text-gray-900 text-sm">Plan Status</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
                     {formData.active 
-                      ? "This plan will be available for new members" 
-                      : "This plan will be hidden from new members"}
+                      ? "Available for new members" 
+                      : "Hidden from new members"}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => updateForm("active", !formData.active)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    formData.active ? "bg-green-500" : "bg-gray-300"
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                    formData.active ? "bg-emerald-500" : "bg-gray-300"
                   }`}
                 >
                   <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      formData.active ? "translate-x-6" : "translate-x-1"
+                    className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                      formData.active ? "translate-x-5" : "translate-x-0.5"
                     }`}
                   />
                 </button>
               </div>
-              <div className={`mt-4 p-3 rounded-lg ${formData.active ? "bg-green-50 text-green-800" : "bg-gray-100 text-gray-800"}`}>
-                <p className="text-sm font-medium">
+              <div className={`mt-3 p-2 rounded-md text-xs ${formData.active ? "bg-emerald-50 text-emerald-800" : "bg-gray-100 text-gray-800"}`}>
+                <p className="font-medium">
                   {formData.active ? "✓ Active Plan" : "✗ Inactive Plan"}
                 </p>
-                <p className="text-xs mt-1">
+                <p className="mt-0.5">
                   {formData.active 
                     ? "Members can purchase this plan" 
-                    : "Existing members remain active, but new members cannot join"}
+                    : "Existing members remain active"}
                 </p>
               </div>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-4 pt-6 border-t border-gray-100">
+          <div className="flex gap-3 pt-6 border-t border-gray-200 mt-4">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors disabled:opacity-50"
+              className="flex-1 py-3 bg-gray-100 text-gray-700 font-medium rounded-lg active:scale-95 transition-all duration-200 text-sm"
               disabled={saving}
+              style={{ minHeight: '44px' }}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl font-semibold shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={saving}
+              style={{ minHeight: '44px' }}
             >
               {saving ? (
                 <span className="flex items-center justify-center gap-2">

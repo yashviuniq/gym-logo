@@ -4,8 +4,28 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
-import Card from "@/components/shared/Card";
 import RenewMembershipModal from "@/components/shared/RenewMembershipModal";
+import { 
+  Users, 
+  CheckCircle, 
+  AlertTriangle, 
+  DollarSign, 
+  Clock,
+  Search,
+  Plus,
+  Filter,
+  User as UserIcon,
+  Calendar,
+  CreditCard,
+  Key,
+  Trash2,
+  RefreshCw,
+  ChevronRight,
+  Building,
+  Phone,
+  Mail,
+  MoreVertical
+} from "lucide-react";
 
 export default function MembersPage() {
   const router = useRouter();
@@ -145,31 +165,35 @@ export default function MembersPage() {
     switch (status) {
       case "active":
         return {
-          color: "bg-emerald-50 border-emerald-200",
+          color: "bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200",
           text: "text-emerald-700",
           dot: "bg-emerald-500",
-          label: "Active"
+          label: "Active",
+          icon: <CheckCircle className="w-3.5 h-3.5" />
         };
       case "expired":
         return {
-          color: "bg-red-50 border-red-200",
+          color: "bg-gradient-to-br from-red-50 to-red-100 border-red-200",
           text: "text-red-700",
           dot: "bg-red-500",
-          label: "Expired"
+          label: "Expired",
+          icon: <Clock className="w-3.5 h-3.5" />
         };
       case "inactive":
         return {
-          color: "bg-gray-50 border-gray-200",
+          color: "bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200",
           text: "text-gray-700",
           dot: "bg-gray-500",
-          label: "Inactive"
+          label: "Inactive",
+          icon: <AlertTriangle className="w-3.5 h-3.5" />
         };
       default:
         return {
-          color: "bg-gray-50 border-gray-200",
+          color: "bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200",
           text: "text-gray-700",
           dot: "bg-gray-500",
-          label: "Inactive"
+          label: "Inactive",
+          icon: <AlertTriangle className="w-3.5 h-3.5" />
         };
     }
   };
@@ -223,130 +247,132 @@ export default function MembersPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-        <Header title="Members" showBack={false} />
-        <div className="p-6">
-          <div className="flex flex-col items-center justify-center h-[60vh]">
-            <div className="relative">
-              <div className="w-16 h-16 border-4 border-orange-200 rounded-full"></div>
-              <div className="w-16 h-16 border-4 border-t-orange-500 border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin absolute top-0 left-0"></div>
-            </div>
-            <p className="mt-4 text-gray-600 font-medium">Loading members...</p>
-          </div>
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom flex flex-col items-center justify-center">
+        <div className="relative">
+          <div className="w-14 h-14 border-4 border-blue-500/20 border-t-blue-600 rounded-full animate-spin"></div>
+          <div className="absolute inset-0 w-14 h-14 border-4 border-transparent border-t-blue-500 rounded-full animate-spin animation-delay-200"></div>
         </div>
+        <p className="mt-6 text-gray-600 font-medium text-sm">Loading members...</p>
       </div>
     );
   }
 
   if (!selectedGym) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom">
         <Header title="Members" showBack={false} />
-        <div className="p-6">
-          <div className="flex flex-col items-center justify-center h-[60vh]">
-            <div className="w-20 h-20 bg-gradient-to-br from-orange-100 to-orange-50 rounded-2xl flex items-center justify-center mb-6">
-              <span className="text-3xl">🏢</span>
+        <main className="px-4 py-4">
+          <div className="text-center py-12">
+            <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <Building className="w-10 h-10 text-white" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Gym Selected</h3>
-            <p className="text-gray-500 text-center mb-6 max-w-sm">
+            <h2 className="text-lg font-bold text-gray-900 mb-2">No Gym Selected</h2>
+            <p className="text-gray-500 text-sm mb-6 px-4">
               Please select a gym to view and manage members
             </p>
             <button
               onClick={() => router.push("/admin/dashboard")}
-              className="px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-medium rounded-xl hover:shadow-lg transition-all duration-300"
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold text-sm active:scale-95 transition-transform"
+              style={{ minHeight: '44px' }}
             >
               Go to Dashboard
             </button>
           </div>
-        </div>
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom">
       <Header title="Members" showBack={false} />
 
-      <div className="p-4 sm:p-6 max-w-7xl mx-auto">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-          <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+      <main className="px-3 py-3 space-y-4">
+        {/* Stats Cards - Mobile Optimized */}
+        <div className="grid grid-cols-2 gap-2 px-1">
+          <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500 font-medium">Total Members</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{stats.total}</p>
+                <p className="text-xs text-gray-500 font-medium">Total</p>
+                <p className="text-xl font-bold text-gray-900 mt-0.5">{stats.total}</p>
               </div>
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl flex items-center justify-center">
-                <span className="text-blue-600">👥</span>
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg flex items-center justify-center">
+                <Users className="w-5 h-5 text-blue-600" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+          <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500 font-medium">Active</p>
-                <p className="text-2xl font-bold text-emerald-600 mt-1">{stats.active}</p>
+                <p className="text-xs text-gray-500 font-medium">Active</p>
+                <p className="text-xl font-bold text-emerald-600 mt-0.5">{stats.active}</p>
               </div>
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl flex items-center justify-center">
-                <span className="text-emerald-600">✅</span>
+              <div className="w-10 h-10 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-lg flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-emerald-600" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+          <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500 font-medium">Pending Dues</p>
-                <p className="text-2xl font-bold text-amber-600 mt-1">{stats.dues}</p>
+                <p className="text-xs text-gray-500 font-medium">Dues</p>
+                <p className="text-xl font-bold text-amber-600 mt-0.5">{stats.dues}</p>
               </div>
-              <div className="w-10 h-10 bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl flex items-center justify-center">
-                <span className="text-amber-600">💰</span>
+              <div className="w-10 h-10 bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg flex items-center justify-center">
+                <DollarSign className="w-5 h-5 text-amber-600" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+          <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500 font-medium">Expired</p>
-                <p className="text-2xl font-bold text-red-600 mt-1">{stats.expired}</p>
+                <p className="text-xs text-gray-500 font-medium">Expired</p>
+                <p className="text-xl font-bold text-red-600 mt-0.5">{stats.expired}</p>
               </div>
-              <div className="w-10 h-10 bg-gradient-to-br from-red-50 to-red-100 rounded-xl flex items-center justify-center">
-                <span className="text-red-600">⏰</span>
+              <div className="w-10 h-10 bg-gradient-to-br from-red-50 to-red-100 rounded-lg flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Search and Filter Section */}
-        <div className="mb-6">
-          <div className="flex flex-col sm:flex-row gap-4 mb-4">
-            <div className="flex-1 relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <input
-                type="text"
-                placeholder="Search by name, phone, or email..."
-                className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all placeholder:text-gray-400"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+        {/* Search and Add Member */}
+        <div className="bg-white rounded-xl p-3 mx-1 space-y-3">
+          {/* Search Bar */}
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-gray-400" />
             </div>
-            <button
-              onClick={() => router.push("/members/add")}
-              className="px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-medium rounded-xl hover:shadow-lg transition-all duration-300 flex items-center gap-2 whitespace-nowrap"
-            >
-              <span>+</span>
-              Add Member
-            </button>
+            <input
+              type="text"
+              placeholder="Search by name, phone, or email..."
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm placeholder:text-gray-400"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
 
-          {/* Filter Tabs */}
-          <div className="flex gap-2 overflow-x-auto pb-2">
+          {/* Add Member Button */}
+          <button
+            onClick={() => router.push("/members/add")}
+            className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2"
+            style={{ minHeight: '44px' }}
+          >
+            <Plus className="w-5 h-5" />
+            Add New Member
+          </button>
+        </div>
+
+        {/* Filter Tabs - Horizontal Scroll on Mobile */}
+        <div className="bg-white rounded-xl p-3 mx-1">
+          <div className="flex items-center gap-2 mb-2">
+            <Filter className="w-4 h-4 text-gray-500" />
+            <span className="text-xs font-medium text-gray-700">Filter by Status</span>
+          </div>
+          <div className="flex space-x-2 overflow-x-auto pb-1 -mx-1 px-1 no-scrollbar">
             {[
               { id: "all", label: "All", count: stats.total },
               { id: "active", label: "Active", count: stats.active },
@@ -356,17 +382,18 @@ export default function MembersPage() {
               <button
                 key={filter.id}
                 onClick={() => setFilterStatus(filter.id)}
-                className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all flex items-center gap-2 ${
+                className={`flex-shrink-0 px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200 flex items-center gap-2 ${
                   filterStatus === filter.id
-                    ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md"
-                    : "bg-white text-gray-600 border border-gray-200 hover:border-orange-300"
+                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
+                style={{ minHeight: '36px' }}
               >
                 {filter.label}
                 <span className={`px-2 py-0.5 text-xs rounded-full ${
                   filterStatus === filter.id 
                     ? "bg-white/20" 
-                    : "bg-gray-100 text-gray-600"
+                    : "bg-white text-gray-600"
                 }`}>
                   {filter.count}
                 </span>
@@ -380,17 +407,16 @@ export default function MembersPage() {
           {filteredMembers.map((member) => {
             const statusConfig = getStatusConfig(member.status);
             
-             
             return (
               <div
                 key={member.id}
                 onClick={() => router.push(`/members/${member.id}`)}
-                className="bg-white rounded-2xl border border-gray-100 p-4 hover:shadow-lg transition-all duration-300 cursor-pointer hover:border-orange-200 group"
+                className="bg-white rounded-xl border border-gray-200 p-3 hover:shadow-md active:scale-95 transition-all duration-200 cursor-pointer mx-1"
               >
-                <div className="flex items-start gap-4">
+                <div className="flex items-start gap-3">
                   {/* Avatar */}
                   <div className="flex-shrink-0">
-                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white font-bold text-lg shadow-md">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-sm">
                       {member.name.charAt(0).toUpperCase()}
                     </div>
                   </div>
@@ -398,98 +424,114 @@ export default function MembersPage() {
                   {/* Member Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between mb-1">
-                      <div>
-                        <h3 className="font-semibold text-gray-900 text-lg truncate">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-gray-900 text-base truncate">
                           {member.name}
                         </h3>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-gray-500 text-sm">{member.phone}</span>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mt-1">
+                          <div className="flex items-center gap-1">
+                            <Phone className="w-3 h-3 text-gray-400" />
+                            <span className="text-gray-500 text-xs truncate">{member.phone}</span>
+                          </div>
                           {member.email && (
-                            <>
-                              <span className="text-gray-300">•</span>
-                              <span className="text-gray-500 text-sm truncate">{member.email}</span>
-                            </>
+                            <div className="flex items-center gap-1">
+                              <Mail className="w-3 h-3 text-gray-400" />
+                              <span className="text-gray-500 text-xs truncate hidden sm:block">
+                                {member.email}
+                              </span>
+                            </div>
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className={`px-3 py-1 rounded-full border ${statusConfig.color} ${statusConfig.text} flex items-center gap-1.5`}>
-                          <div className={`w-2 h-2 rounded-full ${statusConfig.dot}`}></div>
-                          {statusConfig.label}
+                      <div className="flex flex-col items-end gap-2">
+                        <div className={`px-2.5 py-1.5 rounded-lg border ${statusConfig.color} ${statusConfig.text} flex items-center gap-1.5`}>
+                          <div className={statusConfig.text}>
+                            {statusConfig.icon}
+                          </div>
+                          <span className="text-xs font-medium">{statusConfig.label}</span>
                         </div>
+                        <ChevronRight className="w-4 h-4 text-gray-400" />
                       </div>
                     </div>
 
-                    {/* Plan and Due Info */}
-                    <div className="flex flex-wrap items-center gap-4 mt-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-gray-400">📋</span>
-                        <span className="text-sm font-medium text-gray-700">{member.plan}</span>
+                    {/* Plan and Status Info */}
+                    <div className="mt-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                            <UserIcon className="w-4 h-4 text-blue-600" />
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Plan</p>
+                            <p className="text-sm font-medium text-gray-900">{member.plan}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="text-right">
+                          <p className="text-xs text-gray-500">Valid Till</p>
+                          <p className="text-sm font-medium text-gray-900">{member.validTill}</p>
+                        </div>
                       </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <span className="text-gray-400">📅</span>
-                        <span className="text-sm text-gray-600">
-                          Valid till <span className="font-medium">{member.validTill}</span>
-                        </span>
-                        {member.daysRemaining !== null && (
+
+                      {member.daysRemaining !== null && (
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-gray-400" />
                           <span className={`text-xs ${getDaysRemainingColor(member.daysRemaining)}`}>
-                            ({member.daysRemaining > 0 ? `${member.daysRemaining} days left` : 'Expired'})
+                            {member.daysRemaining > 0 
+                              ? `${member.daysRemaining} days remaining`
+                              : 'Membership expired'}
                           </span>
-                        )}
-                      </div>
+                        </div>
+                      )}
 
                       {member.dueAmount > 0 && (
                         <div className="flex items-center gap-2">
-                          <span className="text-amber-500">💰</span>
-                          <span className="text-sm font-semibold text-amber-600">
-                            ₹{member.dueAmount} due
-                          </span>
+                          <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center">
+                            <CreditCard className="w-4 h-4 text-amber-600" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-xs text-gray-500">Pending Payment</p>
+                            <p className="text-sm font-semibold text-amber-600">
+                              ₹{member.dueAmount}
+                            </p>
+                          </div>
                         </div>
                       )}
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/members/${member.id}/credentials`);
-                          }}
-                          className="px-4 py-2 bg-blue-50 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-100 transition-all flex items-center gap-2"
-                        >
-                          {member.hasCredentials ? (
-                            <>
-                              <span>🔐</span>
-                              View Credentials
-                            </>
-                          ) : (
-                            <>
-                              <span>🔑</span>
-                              Create Credentials
-                            </>
-                          )}
-                        </button>
-                        
-                        <button
-                          onClick={(e) => handleDeleteMember(e, member)}
-                          className="px-4 py-2 bg-red-50 text-red-700 text-sm font-medium rounded-lg hover:bg-red-100 transition-all flex items-center gap-2"
-                        >
-                          <span>🗑️</span>
-                          Delete
-                        </button>
-                      </div>
+                    {/* Action Buttons - Horizontal Scroll on Mobile */}
+                    <div className="flex space-x-2 overflow-x-auto mt-3 pt-3 border-t border-gray-100 pb-1 -mx-1 px-1 no-scrollbar">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/members/${member.id}/credentials`);
+                        }}
+                        className="flex-shrink-0 px-3 py-2 bg-blue-50 text-blue-700 cursor-pointer text-xs font-medium rounded-lg active:bg-blue-100 transition-all flex items-center gap-2"
+                        style={{ minHeight: '36px' }}
+                      >
+                        <Key className="w-3.5 h-3.5" />
+                        {member.hasCredentials ? 'Credentials' : 'Setup Login'}
+                      </button>
                       
                       {member.status === "expired" && (
                         <button
                           onClick={(e) => handleRenewClick(e, member)}
-                          className="px-5 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm font-medium rounded-lg hover:shadow-md transition-all flex items-center gap-2"
+                          className="flex-shrink-0 px-3 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-xs font-medium rounded-lg active:scale-95 transition-all flex items-center gap-2"
+                          style={{ minHeight: '36px' }}
                         >
-                          <span>🔄</span>
-                          Renew Plan
+                          <RefreshCw className="w-3.5 h-3.5" />
+                          Renew
                         </button>
                       )}
+                      
+                      <button
+                        onClick={(e) => handleDeleteMember(e, member)}
+                        className="flex-shrink-0 px-3 py-2 bg-red-50 cursor-pointer text-red-700 text-xs font-medium rounded-lg active:bg-red-100 transition-all flex items-center gap-2"
+                        style={{ minHeight: '36px' }}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Delete
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -498,29 +540,36 @@ export default function MembersPage() {
           })}
         </div>
 
+        {/* Empty State */}
         {filteredMembers.length === 0 && (
-          <div className="text-center py-12">
-            <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
-              <span className="text-3xl">👤</span>
+          <div className="text-center py-8 px-4">
+            <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Users className="w-8 h-8 text-gray-400" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No members found</h3>
-            <p className="text-gray-500 max-w-sm mx-auto mb-6">
+            <h3 className="text-base font-semibold text-gray-900 mb-2">
+              {searchQuery || filterStatus !== "all" 
+                ? "No members found" 
+                : "No members yet"}
+            </h3>
+            <p className="text-gray-500 text-sm mb-4">
               {searchQuery || filterStatus !== "all" 
                 ? "Try adjusting your search or filter criteria" 
-                : "Get started by adding your first member"}
+                : "Add your first member to get started"}
             </p>
-            <button
-              onClick={() => {
-                setSearchQuery("");
-                setFilterStatus("all");
-              }}
-              className="px-6 py-2 text-orange-600 font-medium hover:text-orange-700"
-            >
-              Clear filters
-            </button>
+            {(searchQuery || filterStatus !== "all") && (
+              <button
+                onClick={() => {
+                  setSearchQuery("");
+                  setFilterStatus("all");
+                }}
+                className="px-4 py-2 text-blue-600 text-sm font-medium hover:text-blue-700 active:scale-95 transition-transform"
+              >
+                Clear filters
+              </button>
+            )}
           </div>
         )}
-      </div>
+      </main>
 
       {/* Renew Membership Modal */}
       {showRenewModal && selectedMember && (

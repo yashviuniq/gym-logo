@@ -92,10 +92,10 @@ const settingsSections = [
 
 const quickActions = [
   {
-    label: "Export Data",
+    label: "Export Member Analytics",
     icon: Download,
     action: "export",
-    description: "Export member data",
+    description: "Generate payment report",
     color: "bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200"
   },
   {
@@ -119,6 +119,7 @@ export default function SettingsPage() {
   const [gymName, setGymName] = useState("Loading...");
   const [totalMembers, setTotalMembers] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [appStats, setAppStats] = useState({
     version: "1.2.5",
     lastUpdated: "Jan 15, 2025",
@@ -163,17 +164,278 @@ export default function SettingsPage() {
     }
   };
 
-  const handleQuickAction = (action) => {
+  const handleQuickAction = async (action) => {
     switch (action) {
       case "export":
-        alert("Export functionality coming soon!");
+        setExporting(true);
+        try {
+          await exportMembersPDF();
+        } finally {
+          setExporting(false);
+        }
         break;
       case "backup":
         alert("Backup functionality coming soon!");
         break;
       case "help":
-        alert("Help & Support coming soon!");
+        alert("Contact details phone no - +91 7498341146                                       email id - shaibyasolutions@gmail.com");
         break;
+    }
+  };
+
+  const exportMembersPDF = async () => {
+    try {
+      // Dynamic import for jsPDF and jspdf-autotable
+      const jsPDF = (await import("jspdf")).default;
+      const autoTable = (await import("jspdf-autotable")).default;
+
+      const storedGym = localStorage.getItem("selectedGym");
+      if (!storedGym) {
+        alert("No gym selected!");
+        return;
+      }
+
+      const gym = JSON.parse(storedGym);
+
+      // Fetch members with their payment data and balance
+      const { data: members, error: membersError } = await supabase
+        .from("members")
+        .select(`
+          id,
+          full_name,
+          phone,
+          created_at,
+          balance,
+          memberships (
+            id,
+            status,
+            start_date,
+            end_date,
+            membership_plans (
+              name,
+              price
+            )
+          )
+        `)
+        .eq("gym_id", gym.id);
+
+      if (membersError) throw membersError;
+
+      if (!members || members.length === 0) {
+        alert("No members found to export!");
+        return;
+      }
+
+      // Fetch all payments for this gym
+      const { data: payments, error: paymentsError } = await supabase
+        .from("payments")
+        .select("member_id, amount, status")
+        .eq("gym_id", gym.id);
+
+      if (paymentsError) throw paymentsError;
+
+      // Calculate totals for each member
+      const memberData = (members || []).map((member) => {
+        // Get total paid amount (status is 'paid')
+        const memberPayments = payments?.filter(
+          (p) => p.member_id === member.id && p.status === "paid"
+        ) || [];
+        const totalPaid = Math.round(
+          memberPayments.reduce((sum, p) => sum + (p.amount || 0), 0)
+        );
+
+        // Get due amount from member balance field (rounded)
+        const dueAmount = Math.round(member.balance || 0);
+
+        // Get membership info
+        const allMemberships = member.memberships || [];
+        const activeMembership = allMemberships.find((m) => m.status === "active");
+        const planName = activeMembership?.membership_plans?.name || "No Plan";
+
+        // Calculate total plans count (number of memberships/renewals)
+        const totalPlans = allMemberships.length;
+
+        // Calculate total membership days across all memberships
+        let totalMembershipDays = 0;
+        allMemberships.forEach((membership) => {
+          if (membership.start_date && membership.end_date) {
+            const startDate = new Date(membership.start_date);
+            const endDate = new Date(membership.end_date);
+            const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+            totalMembershipDays += days > 0 ? days : 0;
+          }
+        });
+
+        // Check if regular customer: (totalPlans >= 2 && totalMembershipDays >= 180) || totalMembershipDays >= 365
+        const isRegularCustomer = 
+          (totalPlans >= 2 && totalMembershipDays >= 180) || totalMembershipDays >= 365;
+
+        // Add regular customer tag to name
+        const displayName = isRegularCustomer 
+          ? `${member.full_name || "N/A"} (Regular)`
+          : member.full_name || "N/A";
+
+        return {
+          name: displayName,
+          phone: member.phone || "N/A",
+          plan: planName,
+          joinDate: member.created_at
+            ? new Date(member.created_at).toLocaleDateString("en-IN", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })
+            : "N/A",
+          totalPaid: totalPaid,
+          dueAmount: dueAmount,
+          isRegularCustomer: isRegularCustomer,
+        };
+      });
+
+      // Sort by total paid amount in descending order
+      memberData.sort((a, b) => b.totalPaid - a.totalPaid);
+
+      // Create PDF in landscape mode for better spacing
+      const doc = new jsPDF("landscape");
+      const pageWidth = doc.internal.pageSize.getWidth();
+
+      // Header
+      doc.setFillColor(37, 99, 235); // Blue color
+      doc.rect(0, 0, pageWidth, 40, "F");
+
+      // Gym Name
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(22);
+      doc.setFont("helvetica", "bold");
+      doc.text(gym.name || "Gym", pageWidth / 2, 18, { align: "center" });
+
+      // Report Title
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "normal");
+      doc.text("Member Payment Report", pageWidth / 2, 28, { align: "center" });
+
+      // Report Date
+      doc.setFontSize(10);
+      doc.text(
+        `Generated on: ${new Date().toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "long",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })}`,
+        pageWidth / 2,
+        36,
+        { align: "center" }
+      );
+
+      // Summary Section
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text("Summary", 14, 52);
+
+      // Use "Rs." instead of ₹ for better PDF compatibility
+      const formatCurrency = (value) => `Rs. ${Math.round(value || 0).toLocaleString("en-IN")}`;
+
+      const totalMembersCount = memberData.length;
+      const grandTotalPaid = Math.round(memberData.reduce((sum, m) => sum + m.totalPaid, 0));
+      const grandTotalDue = Math.round(memberData.reduce((sum, m) => sum + m.dueAmount, 0));
+
+      // Summary Box
+      doc.setFillColor(248, 250, 252);
+      doc.roundedRect(14, 56, pageWidth - 28, 24, 3, 3, "F");
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(100, 100, 100);
+
+      const summaryY = 66;
+      const colWidth = (pageWidth - 28) / 3;
+
+      doc.text("Total Members", 14 + colWidth * 0 + 10, summaryY);
+      doc.text("Total Collected", 14 + colWidth * 1 + 10, summaryY);
+      doc.text("Total Due", 14 + colWidth * 2 + 10, summaryY);
+
+      doc.setTextColor(0, 0, 0);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.text(totalMembersCount.toString(), 14 + colWidth * 0 + 10, summaryY + 8);
+      doc.setTextColor(34, 197, 94); // Green
+      doc.text(formatCurrency(grandTotalPaid), 14 + colWidth * 1 + 10, summaryY + 8);
+      doc.setTextColor(239, 68, 68); // Red
+      doc.text(formatCurrency(grandTotalDue), 14 + colWidth * 2 + 10, summaryY + 8);
+
+      // Table Header
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text("Member Details (Sorted by Total Paid)", 14, 92);
+
+      // Create table
+      const tableData = memberData.map((member, index) => [
+        (index + 1).toString(),
+        member.name,
+        member.phone,
+        member.plan,
+        member.joinDate,
+        formatCurrency(member.totalPaid),
+        formatCurrency(member.dueAmount),
+      ]);
+
+      autoTable(doc, {
+        startY: 98,
+        head: [["#", "Name", "Phone", "Plan", "Join Date", "Total Paid", "Due Amount"]],
+        body: tableData,
+        theme: "striped",
+        styles: {
+          cellPadding: 4,
+        },
+        headStyles: {
+          fillColor: [37, 99, 235],
+          textColor: 255,
+          fontSize: 10,
+          fontStyle: "bold",
+          halign: "center",
+        },
+        bodyStyles: {
+          fontSize: 9,
+          textColor: [50, 50, 50],
+        },
+        columnStyles: {
+          0: { halign: "center", cellWidth: 12 },
+          1: { halign: "left", cellWidth: 45 },
+          2: { halign: "center", cellWidth: 30 },
+          3: { halign: "center", cellWidth: 25 },
+          4: { halign: "center", cellWidth: 28 },
+          5: { halign: "right", cellWidth: 55, textColor: [34, 197, 94], fontStyle: "bold" },
+          6: { halign: "right", cellWidth: 55, textColor: [239, 68, 68], fontStyle: "bold" },
+        },
+        alternateRowStyles: {
+          fillColor: [248, 250, 252],
+        },
+        margin: { left: 14, right: 14 },
+        didDrawPage: function (data) {
+          // Footer on each page
+          doc.setFontSize(8);
+          doc.setTextColor(150, 150, 150);
+          doc.text(
+            `Page ${data.pageNumber}`,
+            pageWidth / 2,
+            doc.internal.pageSize.getHeight() - 10,
+            { align: "center" }
+          );
+        },
+      });
+
+      // Save the PDF
+      const fileName = `${gym.name?.replace(/\s+/g, "_") || "Gym"}_Members_Report_${new Date().toISOString().split("T")[0]}.pdf`;
+      doc.save(fileName);
+
+      alert("PDF exported successfully!");
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+      alert("Failed to export PDF. Please try again.");
     }
   };
 
@@ -285,17 +547,26 @@ export default function SettingsPage() {
           <div className="grid grid-cols-3 gap-2">
             {quickActions.map((action) => {
               const Icon = action.icon;
+              const isExportAction = action.action === "export";
+              const isDisabled = isExportAction && exporting;
               return (
                 <button
                   key={action.action}
-                  onClick={() => handleQuickAction(action.action)}
-                  className={`${action.color} rounded-xl p-3 flex flex-col items-center gap-2 transition-all duration-200 hover:shadow-md active:scale-95`}
+                  onClick={() => !isDisabled && handleQuickAction(action.action)}
+                  disabled={isDisabled}
+                  className={`${action.color} rounded-xl p-3 flex flex-col items-center gap-2 transition-all duration-200 hover:shadow-md active:scale-95 ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-                    <Icon className="w-5 h-5 text-gray-700" />
+                    {isExportAction && exporting ? (
+                      <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-700 rounded-full animate-spin"></div>
+                    ) : (
+                      <Icon className="w-5 h-5 text-gray-700" />
+                    )}
                   </div>
                   <div className="text-center">
-                    <p className="font-medium text-gray-900 text-xs">{action.label}</p>
+                    <p className="font-medium text-gray-900 text-xs">
+                      {isExportAction && exporting ? "Generating..." : action.label}
+                    </p>
                     <p className="text-xs text-gray-500 mt-0.5 truncate">{action.description}</p>
                   </div>
                 </button>

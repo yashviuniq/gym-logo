@@ -1,72 +1,212 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Header from "@/components/layout/Header";
-
-const mockHistoryData = [
-  {
-    id: 1,
-    name: "John Doe",
-    checkIn: "06:30 AM",
-    checkOut: "08:00 AM",
-    duration: "1h 30m",
-  },
-  {
-    id: 2,
-    name: "Jane Smith",
-    checkIn: "07:15 AM",
-    checkOut: "09:00 AM",
-    duration: "1h 45m",
-  },
-  {
-    id: 3,
-    name: "Mike Johnson",
-    checkIn: "06:45 AM",
-    checkOut: "08:30 AM",
-    duration: "1h 45m",
-  },
-  {
-    id: 4,
-    name: "Sarah Wilson",
-    checkIn: "08:00 AM",
-    checkOut: "09:30 AM",
-    duration: "1h 30m",
-  },
-  {
-    id: 5,
-    name: "Tom Brown",
-    checkIn: "05:30 AM",
-    checkOut: "07:00 AM",
-    duration: "1h 30m",
-  },
-];
+import { supabase } from "@/lib/supabaseClient";
 
 function AttendanceHistoryContent() {
   const searchParams = useSearchParams();
-  const dateParam = searchParams.get("date") || "Jan 15, 2025";
+  const dateParam = searchParams.get("date");
   const [filterTime, setFilterTime] = useState("all");
+  const [attendanceData, setAttendanceData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedGym, setSelectedGym] = useState(null);
+  
+  // Format the date for display
+  const displayDate = dateParam 
+    ? new Date(dateParam).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+      })
+    : "No Date";
+
+  // Get gym from localStorage
+  useEffect(() => {
+    const storedGym = localStorage.getItem("selectedGym");
+    if (storedGym) {
+      const gym = JSON.parse(storedGym);
+      setSelectedGym(gym);
+    }
+  }, []);
+
+  // Fetch attendance data for the specific date
+  useEffect(() => {
+    const fetchAttendanceHistory = async () => {
+      if (!selectedGym?.id || !dateParam) {
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("attendance")
+          .select(`
+            id,
+            member_id,
+            check_in_time,
+            check_out_time,
+            members (
+              id,
+              full_name,
+              phone
+            )
+          `)
+          .eq("gym_id", selectedGym.id)
+          .eq("check_in_date", dateParam)
+          .order("check_in_time", { ascending: false });
+
+        if (error) {
+          console.error("Error fetching attendance:", error);
+          setAttendanceData([]);
+        } else {
+          // Transform data
+          const transformedData = (data || []).map((record) => {
+            const checkInTime = new Date(`1970-01-01T${record.check_in_time}`);
+            const checkOutTime = record.check_out_time 
+              ? new Date(`1970-01-01T${record.check_out_time}`)
+              : null;
+            
+            let duration = "N/A";
+            if (checkOutTime) {
+              const diffMs = checkOutTime - checkInTime;
+              const diffMins = Math.floor(diffMs / 60000);
+              const hours = Math.floor(diffMins / 60);
+              const mins = diffMins % 60;
+              duration = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+            }
+
+            return {
+              id: record.id,
+              name: record.members?.full_name || "Unknown",
+              checkIn: checkInTime.toLocaleTimeString("en-US", {
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+              checkOut: checkOutTime
+                ? checkOutTime.toLocaleTimeString("en-US", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : "N/A",
+              duration: duration,
+              checkInHour: checkInTime.getHours(),
+            };
+          });
+          
+          setAttendanceData(transformedData);
+        }
+      } catch (err) {
+        console.error("Error:", err);
+        setAttendanceData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAttendanceHistory();
+  }, [selectedGym?.id, dateParam]);
+
+  // Calculate statistics
+  const stats = {
+    total: attendanceData.length,
+    peakTime: "N/A",
+    avgDuration: "N/A"
+  };
+
+  if (attendanceData.length > 0) {
+    // Calculate peak time (most common hour)
+    const hourCounts = {};
+    attendanceData.forEach(record => {
+      const hour = record.checkInHour;
+      hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+    });
+    
+    const peakHour = Object.keys(hourCounts).reduce((a, b) => 
+      hourCounts[a] > hourCounts[b] ? a : b, null);
+    
+    if (peakHour) {
+      const startHour = parseInt(peakHour);
+      const endHour = startHour + 2;
+      const formatHour = (h) => {
+        const hour12 = h > 12 ? h - 12 : h === 0 ? 12 : h;
+        const ampm = h >= 12 ? "PM" : "AM";
+        return `${hour12} ${ampm}`;
+      };
+      stats.peakTime = `${formatHour(startHour)}-${formatHour(endHour)}`;
+    }
+
+    // Calculate average duration (only for checked-out members)
+    const durationsInMinutes = attendanceData
+      .filter(r => r.duration !== "N/A")
+      .map(r => {
+        const parts = r.duration.split(" ");
+        let totalMins = 0;
+        parts.forEach(part => {
+          if (part.includes("h")) {
+            totalMins += parseInt(part) * 60;
+          } else if (part.includes("m")) {
+            totalMins += parseInt(part);
+          }
+        });
+        return totalMins;
+      });
+
+    if (durationsInMinutes.length > 0) {
+      const avgMins = Math.floor(
+        durationsInMinutes.reduce((a, b) => a + b, 0) / durationsInMinutes.length
+      );
+      const hours = Math.floor(avgMins / 60);
+      const mins = avgMins % 60;
+      stats.avgDuration = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+    }
+  }
+
+  // Filter attendance by time of day
+  const filteredAttendance = attendanceData.filter(record => {
+    if (filterTime === "all") return true;
+    const hour = record.checkInHour;
+    if (filterTime === "morning") return hour >= 5 && hour < 12;
+    if (filterTime === "afternoon") return hour >= 12 && hour < 17;
+    if (filterTime === "evening") return hour >= 17 || hour < 5;
+    return true;
+  });
 
   const timeFilters = ["all", "morning", "afternoon", "evening"];
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-24">
+        <Header title="Attendance History" />
+        <main className="px-4 py-4">
+          <div className="flex items-center justify-center py-8">
+            <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      <Header title={`Attendance - ${dateParam}`} />
+      <Header title={`Attendance - ${displayDate}`} />
 
       <main className="px-4 py-4">
         {/* Summary */}
         <div className="bg-gradient-to-br from-gray-900 to-gray-700 rounded-2xl p-6 text-white mb-4">
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
-              <p className="text-3xl font-bold">{mockHistoryData.length}</p>
+              <p className="text-3xl font-bold">{stats.total}</p>
               <p className="text-gray-300 text-sm">Total</p>
             </div>
             <div>
-              <p className="text-3xl font-bold">6-8 AM</p>
+              <p className="text-3xl font-bold">{stats.peakTime}</p>
               <p className="text-gray-300 text-sm">Peak Time</p>
             </div>
             <div>
-              <p className="text-3xl font-bold">1h 36m</p>
+              <p className="text-3xl font-bold">{stats.avgDuration}</p>
               <p className="text-gray-300 text-sm">Avg Duration</p>
             </div>
           </div>
@@ -91,36 +231,47 @@ function AttendanceHistoryContent() {
 
         {/* Attendance List */}
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          <div className="divide-y divide-gray-100">
-            {mockHistoryData.map((record) => (
-              <div key={record.id} className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-gray-800 to-gray-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                      {record.name.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{record.name}</p>
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <span className="text-green-500">
-                          ↓ {record.checkIn}
-                        </span>
-                        <span className="text-red-500">
-                          ↑ {record.checkOut}
-                        </span>
+          {filteredAttendance.length === 0 ? (
+            <div className="p-8 text-center text-gray-500">
+              <p className="text-lg mb-2">No attendance records found</p>
+              <p className="text-sm">
+                {filterTime !== "all" 
+                  ? `No records for ${filterTime} time period`
+                  : "No one checked in on this date"}
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {filteredAttendance.map((record) => (
+                <div key={record.id} className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-gray-800 to-gray-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                        {record.name.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{record.name}</p>
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                          <span className="text-green-500">
+                            ↓ {record.checkIn}
+                          </span>
+                          <span className={record.checkOut === "N/A" ? "text-gray-400" : "text-red-500"}>
+                            ↑ {record.checkOut}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">
-                      {record.duration}
-                    </p>
-                    <p className="text-xs text-gray-500">duration</p>
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-gray-900">
+                        {record.duration}
+                      </p>
+                      <p className="text-xs text-gray-500">duration</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
     </div>

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
 import { supabase } from "@/lib/supabaseClient";
+import { Edit2, Camera } from "lucide-react";
 
 export default function CustomerProfilePage() {
   const router = useRouter();
@@ -188,17 +189,27 @@ export default function CustomerProfilePage() {
         {/* Profile Card */}
         <div className="bg-white rounded-2xl p-6 shadow-sm">
           <div className="flex items-center gap-4">
-            {profile.profileImage ? (
-              <img
-                src={profile.profileImage}
-                alt={profile.name}
-                className="w-20 h-20 rounded-full object-cover"
-              />
-            ) : (
-              <div className="w-20 h-20 bg-gradient-to-br from-gray-800 to-gray-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-                {profile.name.charAt(0)}
+            {/* Clickable Profile Image */}
+            <div 
+              className="relative cursor-pointer group"
+              onClick={() => router.push("/profile/edit")}
+            >
+              {profile.profileImage ? (
+                <img
+                  src={profile.profileImage}
+                  alt={profile.name}
+                  className="w-20 h-20 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-20 h-20 bg-gradient-to-br from-gray-800 to-gray-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                  {profile.name.charAt(0)}
+                </div>
+              )}
+              {/* Camera overlay on hover */}
+              <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <Camera className="w-6 h-6 text-white" />
               </div>
-            )}
+            </div>
             <div className="flex-1">
               <h2 className="text-xl font-bold text-gray-900">
                 {profile.name}
@@ -208,7 +219,13 @@ export default function CustomerProfilePage() {
                 <p className="text-gray-400 text-sm">{profile.email}</p>
               )}
             </div>
-         
+            {/* Edit Button */}
+            <button
+              onClick={() => router.push("/profile/edit")}
+              className="p-2.5 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+            >
+              <Edit2 className="w-5 h-5 text-gray-600" />
+            </button>
           </div>
 
           {/* Member Since */}

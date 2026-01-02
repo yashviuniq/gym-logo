@@ -205,6 +205,7 @@ export default function RenewMembershipModal({ member, gymId, onClose, onRenew }
                 .update({ balance: newBalance })
                 .eq("id", member.id);
 
+            // Success! Prepare renewal data
             const renewalData = {
                 planId: selectedPlan,
                 planName: plan.name,
@@ -217,13 +218,25 @@ export default function RenewMembershipModal({ member, gymId, onClose, onRenew }
                 renewedAt: new Date().toISOString(),
             };
 
-            onRenew(renewalData);
+            setLoading(false);
+            
+            // Show success message
+            alert("Membership renewed successfully!");
+            
+            // Close modal first
+            onClose();
+            
+            // Then notify parent (wrapped in try-catch to prevent error propagation)
+            try {
+                onRenew(renewalData);
+            } catch (callbackError) {
+                console.error("Error in onRenew callback:", callbackError);
+            }
         } catch (err) {
             console.error("Error during renewal:", err);
+            setLoading(false);
             alert("An error occurred. Please try again.");
         }
-        
-        setLoading(false);
     };
 
     return (

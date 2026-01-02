@@ -136,6 +136,7 @@ export default function SettingsPage() {
       const storedGym = localStorage.getItem("selectedGym");
       if (!storedGym) {
         console.error("No gym selected");
+        setLoading(false);
         router.push("/admin/dashboard");
         return;
       }

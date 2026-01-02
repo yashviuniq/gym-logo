@@ -29,26 +29,56 @@ export default function AnnouncementsPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [selectedGym, setSelectedGym] = useState(null);
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedGym, setSelectedGym] = useState(null);
   const [stats, setStats] = useState({
     total: 0,
     active: 0,
     inactive: 0
   });
 
+  // Get gym from localStorage
   useEffect(() => {
     const storedGym = localStorage.getItem("selectedGym");
     if (storedGym) {
-      const gym = JSON.parse(storedGym);
-      setSelectedGym(gym);
-      fetchAnnouncements(gym.id);
+      setSelectedGym(JSON.parse(storedGym));
     } else {
       setLoading(false);
     }
   }, []);
 
+  // Fetch announcements directly from Supabase
+  const fetchAnnouncements = async (gymId) => {
+    if (!gymId) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("announcements")
+        .select("*")
+        .eq("gym_id", gymId)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching announcements:", error);
+        setAnnouncements([]);
+      } else {
+        setAnnouncements(data || []);
+      }
+    } catch (err) {
+      console.error("Error:", err);
+      setAnnouncements([]);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    if (selectedGym?.id) {
+      fetchAnnouncements(selectedGym.id);
+    }
+  }, [selectedGym?.id]);
+
+  // Calculate stats when announcements change
   useEffect(() => {
     const activeCount = announcements.filter(a => a.status === "active").length;
     const inactiveCount = announcements.filter(a => a.status === "inactive").length;
@@ -59,26 +89,6 @@ export default function AnnouncementsPage() {
       inactive: inactiveCount
     });
   }, [announcements]);
-
-  const fetchAnnouncements = async (gymId) => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("announcements")
-        .select("*")
-        .eq("gym_id", gymId)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-
-      setAnnouncements(data || []);
-    } catch (error) {
-      console.error("Error fetching announcements:", error);
-      setAnnouncements([]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const filteredAnnouncements = announcements.filter((announcement) => {
     const matchesSearch =
@@ -102,7 +112,8 @@ export default function AnnouncementsPage() {
 
       if (error) throw error;
 
-      if (selectedGym) {
+      // Refresh announcements data
+      if (selectedGym?.id) {
         fetchAnnouncements(selectedGym.id);
       }
     } catch (error) {
@@ -121,7 +132,8 @@ export default function AnnouncementsPage() {
 
       if (error) throw error;
 
-      if (selectedGym) {
+      // Refresh announcements data
+      if (selectedGym?.id) {
         fetchAnnouncements(selectedGym.id);
       }
     } catch (error) {

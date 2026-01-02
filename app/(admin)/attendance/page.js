@@ -28,37 +28,38 @@ export default function AttendancePage() {
   const [activeTab, setActiveTab] = useState("today");
   const [showMarkModal, setShowMarkModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [attendance, setAttendance] = useState([]);
-  const [members, setMembers] = useState([]);
   const [selectedGym, setSelectedGym] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [historyData, setHistoryData] = useState([]);
   const [searchModalQuery, setSearchModalQuery] = useState("");
+  const [rawAttendance, setRawAttendance] = useState([]);
+  const [rawMembers, setRawMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
 
+  // Get gym from localStorage
   useEffect(() => {
     const storedGym = localStorage.getItem("selectedGym");
     if (storedGym) {
       const gym = JSON.parse(storedGym);
       setSelectedGym(gym);
-      fetchAttendanceData(gym.id, selectedDate);
-      fetchMembers(gym.id);
       fetchHistoryData(gym.id);
     } else {
       setLoading(false);
     }
-  }, [selectedDate]);
+  }, []);
 
-  const fetchAttendanceData = async (gymId, date) => {
+  // Fetch attendance data directly from Supabase
+  const fetchAttendance = async (gymId, date) => {
+    if (!gymId) return;
     setLoading(true);
     try {
-      const { data: attendanceData, error } = await supabase
+      const { data, error } = await supabase
         .from("attendance")
         .select(`
           id,
           member_id,
+          check_in_date,
           check_in_time,
           check_out_time,
-          count,
           members (
             id,
             full_name,
@@ -71,36 +72,22 @@ export default function AttendancePage() {
 
       if (error) {
         console.error("Error fetching attendance:", error);
-        setAttendance([]);
+        setRawAttendance([]);
       } else {
-        const transformedAttendance = attendanceData?.map((record) => ({
-          id: record.id,
-          memberId: record.member_id,
-          name: record.members?.full_name || "Unknown",
-          checkIn: new Date(`1970-01-01T${record.check_in_time}`).toLocaleTimeString("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-          checkOut: record.check_out_time
-            ? new Date(`1970-01-01T${record.check_out_time}`).toLocaleTimeString("en-US", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-            : null,
-          status: record.check_out_time ? "checked-out" : "checked-in",
-        })) || [];
-        setAttendance(transformedAttendance);
+        setRawAttendance(data || []);
       }
     } catch (err) {
       console.error("Error:", err);
-      setAttendance([]);
+      setRawAttendance([]);
     }
     setLoading(false);
   };
 
+  // Fetch members data directly from Supabase
   const fetchMembers = async (gymId) => {
+    if (!gymId) return;
     try {
-      const { data: membersData, error } = await supabase
+      const { data, error } = await supabase
         .from("members")
         .select(`
           id,
@@ -109,32 +96,69 @@ export default function AttendancePage() {
           memberships (
             id,
             status,
-            end_date,
-            membership_plans (name)
+            membership_plans (
+              name
+            )
           )
         `)
-        .eq("gym_id", gymId);
+        .eq("gym_id", gymId)
+        .order("full_name", { ascending: true });
 
       if (error) {
         console.error("Error fetching members:", error);
-        setMembers([]);
+        setRawMembers([]);
       } else {
-        const transformedMembers = membersData?.map((member) => {
-          const activeMembership = member.memberships?.find(m => m.status === "active");
-          return {
-            id: member.id,
-            name: member.full_name || "Unnamed Member",
-            phone: member.phone || "No Phone",
-            plan: activeMembership?.membership_plans?.name || "No Plan",
-          };
-        }) || [];
-        setMembers(transformedMembers);
+        setRawMembers(data || []);
       }
     } catch (err) {
       console.error("Error:", err);
-      setMembers([]);
+      setRawMembers([]);
     }
   };
+
+  useEffect(() => {
+    if (selectedGym?.id) {
+      fetchAttendance(selectedGym.id, selectedDate);
+      fetchMembers(selectedGym.id);
+    }
+  }, [selectedGym?.id, selectedDate]);
+
+  // Transform attendance data
+  const attendance = useMemo(() => {
+    if (!rawAttendance?.length) return [];
+    
+    return rawAttendance.map((record) => ({
+      id: record.id,
+      memberId: record.member_id,
+      name: record.members?.full_name || "Unknown",
+      checkIn: new Date(`1970-01-01T${record.check_in_time}`).toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      checkOut: record.check_out_time
+        ? new Date(`1970-01-01T${record.check_out_time}`).toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        : null,
+      status: record.check_out_time ? "checked-out" : "checked-in",
+    }));
+  }, [rawAttendance]);
+
+  // Transform members data for the modal
+  const members = useMemo(() => {
+    if (!rawMembers?.length) return [];
+    
+    return rawMembers.map((member) => {
+      const activeMembership = member.memberships?.find(m => m.status === "active");
+      return {
+        id: member.id,
+        name: member.full_name || "Unnamed Member",
+        phone: member.phone || "No Phone",
+        plan: activeMembership?.membership_plans?.name || "No Plan",
+      };
+    });
+  }, [rawMembers]);
 
   const fetchHistoryData = async (gymId) => {
     try {
@@ -227,20 +251,8 @@ export default function AttendancePage() {
         return;
       }
 
-      setAttendance((prev) =>
-        prev.map((a) =>
-          a.id === id
-            ? {
-                ...a,
-                checkOut: new Date().toLocaleTimeString("en-IN", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                }),
-                status: "checked-out",
-              }
-            : a
-        )
-      );
+      // Refresh attendance data
+      fetchAttendance(selectedGym.id, selectedDate);
     } catch (err) {
       console.error("Error:", err);
       alert("Failed to check out. Please try again.");
@@ -290,19 +302,8 @@ export default function AttendancePage() {
         return;
       }
 
-      const transformedRecord = {
-        id: newRecord.id,
-        memberId: newRecord.member_id,
-        name: newRecord.members?.full_name || member.name,
-        checkIn: new Date(`1970-01-01T${newRecord.check_in_time}`).toLocaleTimeString("en-IN", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        checkOut: null,
-        status: "checked-in",
-      };
-
-      setAttendance((prev) => [transformedRecord, ...prev]);
+      // Refresh attendance data
+      fetchAttendance(selectedGym.id, selectedDate);
       setShowMarkModal(false);
       setSearchModalQuery("");
     } catch (err) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
@@ -31,11 +31,12 @@ export default function MembersPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [members, setMembers] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [selectedGym, setSelectedGym] = useState(null);
   const [showRenewModal, setShowRenewModal] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
+  const [membersWithCredentials, setMembersWithCredentials] = useState(new Set());
+  const [rawMembers, setRawMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     total: 0,
     active: 0,
@@ -43,19 +44,128 @@ export default function MembersPage() {
     dues: 0
   });
 
+  // Get gym from localStorage
   useEffect(() => {
     const storedGym = localStorage.getItem("selectedGym");
     if (storedGym) {
-      const gym = JSON.parse(storedGym);
-      setSelectedGym(gym);
-      fetchMembers(gym.id);
+      setSelectedGym(JSON.parse(storedGym));
     } else {
       setLoading(false);
     }
   }, []);
 
+  // Fetch members data directly from Supabase
+  const fetchMembers = async (gymId) => {
+    if (!gymId) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("members")
+        .select(`
+          id,
+          full_name,
+          phone,
+          email,
+          gym_id,
+          balance,
+          profile_image,
+          created_at,
+          memberships (
+            id,
+            plan_id,
+            start_date,
+            end_date,
+            status,
+            membership_plans (
+              id,
+              name,
+              price,
+              duration_days
+            )
+          )
+        `)
+        .eq("gym_id", gymId)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching members:", error);
+        setRawMembers([]);
+      } else {
+        setRawMembers(data || []);
+      }
+    } catch (err) {
+      console.error("Error:", err);
+      setRawMembers([]);
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
-    // Calculate stats whenever members change
+    if (selectedGym?.id) {
+      fetchMembers(selectedGym.id);
+    }
+  }, [selectedGym?.id]);
+
+  // Fetch credentials for members
+  useEffect(() => {
+    const fetchCredentials = async () => {
+      if (!rawMembers?.length) return;
+      
+      const memberIds = rawMembers.map(m => m.id);
+      const { data: credentialsData } = await supabase
+        .from("member_credentials")
+        .select("member_id")
+        .in("member_id", memberIds);
+
+      setMembersWithCredentials(new Set(credentialsData?.map(c => c.member_id) || []));
+    };
+
+    fetchCredentials();
+  }, [rawMembers]);
+
+  // Transform members data with memoization
+  const members = useMemo(() => {
+    if (!rawMembers?.length) return [];
+
+    return rawMembers.map((member) => {
+      const activeMembership = member.memberships?.find(
+        (m) => m.status === "active"
+      ) || member.memberships?.[0];
+
+      let memberStatus = "inactive";
+      if (activeMembership) {
+        const endDate = new Date(activeMembership.end_date);
+        const today = new Date();
+        if (endDate > today && activeMembership.status === "active") {
+          memberStatus = "active";
+        } else if (endDate <= today) {
+          memberStatus = "expired";
+        }
+      }
+
+      return {
+        id: member.id,
+        gymId: member.gym_id,
+        name: member.full_name,
+        phone: member.phone,
+        email: member.email,
+        plan: activeMembership?.membership_plans?.name || "No Plan",
+        status: memberStatus,
+        validTill: activeMembership?.end_date
+          ? new Date(activeMembership.end_date).toLocaleDateString("en-IN")
+          : "N/A",
+        dueAmount: Math.max(0, member.balance || 0),
+        balance: member.balance || 0,
+        hasCredentials: membersWithCredentials.has(member.id),
+        daysRemaining: activeMembership?.end_date 
+          ? Math.ceil((new Date(activeMembership.end_date) - new Date()) / (1000 * 60 * 60 * 24))
+          : null,
+      };
+    });
+  }, [rawMembers, membersWithCredentials]);
+
+  // Calculate stats whenever members change
+  useEffect(() => {
     const activeCount = members.filter(m => m.status === "active").length;
     const expiredCount = members.filter(m => m.status === "expired").length;
     const duesCount = members.filter(m => m.dueAmount > 0).length;
@@ -67,89 +177,6 @@ export default function MembersPage() {
       dues: duesCount
     });
   }, [members]);
-
-  const fetchMembers = async (gymId) => {
-    setLoading(true);
-    try {
-      const { data: membersData, error } = await supabase
-        .from("members")
-        .select(`
-          id,
-          full_name,
-          phone,
-          email,
-          balance,
-          gym_id,
-          created_at,
-          memberships (
-            id,
-            plan_id,
-            start_date,
-            end_date,
-            status,
-            membership_plans (
-              name,
-              price,
-              duration_days
-            )
-          )
-        `)
-        .eq("gym_id", gymId)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-
-      const memberIds = membersData?.map(m => m.id) || [];
-      const { data: credentialsData } = await supabase
-        .from("member_credentials")
-        .select("member_id")
-        .in("member_id", memberIds);
-
-      const membersWithCredentials = new Set(credentialsData?.map(c => c.member_id) || []);
-
-      const transformedMembers = membersData?.map((member) => {
-        const activeMembership = member.memberships?.find(
-          (m) => m.status === "active"
-        ) || member.memberships?.[0];
-
-        let memberStatus = "inactive";
-        if (activeMembership) {
-          const endDate = new Date(activeMembership.end_date);
-          const today = new Date();
-          if (endDate > today && activeMembership.status === "active") {
-            memberStatus = "active";
-          } else if (endDate <= today) {
-            memberStatus = "expired";
-          }
-        }
-
-        return {
-          id: member.id,
-          gymId: member.gym_id,
-          name: member.full_name,
-          phone: member.phone,
-          email: member.email,
-          plan: activeMembership?.membership_plans?.name || "No Plan",
-          status: memberStatus,
-          validTill: activeMembership?.end_date
-            ? new Date(activeMembership.end_date).toLocaleDateString("en-IN")
-            : "N/A",
-          dueAmount: Math.max(0, member.balance || 0),
-          balance: member.balance || 0,
-          hasCredentials: membersWithCredentials.has(member.id),
-          daysRemaining: activeMembership?.end_date 
-            ? Math.ceil((new Date(activeMembership.end_date) - new Date()) / (1000 * 60 * 60 * 24))
-            : null,
-        };
-      }) || [];
-
-      setMembers(transformedMembers);
-    } catch (err) {
-      console.error("Error:", err);
-      setMembers([]);
-    }
-    setLoading(false);
-  };
 
   const filteredMembers = members.filter((member) => {
     const matchesSearch =
@@ -214,7 +241,8 @@ export default function MembersPage() {
   const handleRenewal = (renewalData) => {
     setShowRenewModal(false);
     setSelectedMember(null);
-    if (selectedGym) {
+    // Refresh members data
+    if (selectedGym?.id) {
       fetchMembers(selectedGym.id);
     }
   };
@@ -236,7 +264,8 @@ export default function MembersPage() {
 
       if (error) throw error;
 
-      if (selectedGym) {
+      // Refresh members data after deletion
+      if (selectedGym?.id) {
         fetchMembers(selectedGym.id);
       }
     } catch (error) {

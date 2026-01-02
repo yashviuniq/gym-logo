@@ -151,7 +151,7 @@ export default function AddMemberPage() {
             <h2 className="text-lg font-bold text-gray-900 mb-2">No Plans Available</h2>
             <p className="text-gray-500 text-sm mb-6">Please create membership plans first</p>
             <button
-              onClick={() => router.push("/membership-plans")}
+              onClick={() => router.push("/settings/plans")}
               className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold text-sm active:scale-95 transition-transform"
               style={{ minHeight: '44px' }}
             >
@@ -307,7 +307,9 @@ export default function AddMemberPage() {
         });
         setStep(1);
       } else {
+        // Navigate and refresh to show new member
         router.push("/members");
+        router.refresh();
       }
 
     } catch (error) {

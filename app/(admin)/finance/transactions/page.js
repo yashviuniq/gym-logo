@@ -1,79 +1,74 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
 
-const mockTransactions = [
-  {
-    id: 1,
-    name: "John Doe",
-    type: "membership",
-    amount: 2500,
-    mode: "upi",
-    date: "2025-01-15",
-    status: "paid",
-  },
-  {
-    id: 2,
-    name: "Jane Smith",
-    type: "personal_training",
-    amount: 5000,
-    mode: "cash",
-    date: "2025-01-15",
-    status: "paid",
-  },
-  {
-    id: 3,
-    name: "Mike Johnson",
-    type: "membership",
-    amount: 1000,
-    mode: "card",
-    date: "2025-01-14",
-    status: "partial",
-  },
-  {
-    id: 4,
-    name: "Sarah Wilson",
-    type: "supplements",
-    amount: 1500,
-    mode: "upi",
-    date: "2025-01-14",
-    status: "paid",
-  },
-  {
-    id: 5,
-    name: "Tom Brown",
-    type: "membership",
-    amount: 2500,
-    mode: "cash",
-    date: "2025-01-13",
-    status: "paid",
-  },
-  {
-    id: 6,
-    name: "Emily Davis",
-    type: "membership",
-    amount: 2500,
-    mode: "upi",
-    date: "2025-01-12",
-    status: "paid",
-  },
-  {
-    id: 7,
-    name: "Chris Lee",
-    type: "personal_training",
-    amount: 3000,
-    mode: "card",
-    date: "2025-01-11",
-    status: "paid",
-  },
-];
-
 export default function TransactionsPage() {
+  const router = useRouter();
   const [filterMode, setFilterMode] = useState("all");
   const [filterType, setFilterType] = useState("all");
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedGym, setSelectedGym] = useState(null);
 
-  const filteredTransactions = mockTransactions.filter((txn) => {
+  useEffect(() => {
+    const storedGym = localStorage.getItem("selectedGym");
+    if (storedGym) {
+      const gym = JSON.parse(storedGym);
+      setSelectedGym(gym);
+      fetchTransactions(gym.id);
+    } else {
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchTransactions = async (gymId) => {
+    setLoading(true);
+    try {
+      const { data: payments, error } = await supabase
+        .from("payments")
+        .select(`
+          id,
+          amount,
+          payment_mode,
+          status,
+          paid_at,
+          created_at,
+          members (
+            id,
+            full_name,
+            phone
+          )
+        `)
+        .eq("gym_id", gymId)
+        .order("created_at", { ascending: false })
+        .limit(100);
+
+      if (error) {
+        console.error("Error fetching transactions:", error);
+        setTransactions([]);
+      } else {
+        const transformedTransactions = payments.map((payment) => ({
+          id: payment.id,
+          name: payment.members?.full_name || "Unknown",
+          type: "membership",
+          amount: parseFloat(payment.amount),
+          mode: payment.payment_mode?.toLowerCase() || "cash",
+          date: payment.paid_at || payment.created_at,
+          status: payment.status || "paid",
+        }));
+        setTransactions(transformedTransactions);
+      }
+    } catch (err) {
+      console.error("Error:", err);
+      setTransactions([]);
+    }
+    setLoading(false);
+  };
+
+  const filteredTransactions = transactions.filter((txn) => {
     const matchesMode = filterMode === "all" || txn.mode === filterMode;
     const matchesType = filterType === "all" || txn.type === filterType;
     return matchesMode && matchesType;
@@ -85,11 +80,62 @@ export default function TransactionsPage() {
   );
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    });
+    const date = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) {
+      return `Today, ${date.toLocaleTimeString("en-IN", { 
+        hour: "2-digit", 
+        minute: "2-digit" 
+      })}`;
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return `Yesterday, ${date.toLocaleTimeString("en-IN", { 
+        hour: "2-digit", 
+        minute: "2-digit" 
+      })}`;
+    } else {
+      const dateStr = date.toLocaleDateString("en-IN", { 
+        month: "short", 
+        day: "numeric",
+        year: date.getFullYear() !== today.getFullYear() ? "numeric" : undefined
+      });
+      const timeStr = date.toLocaleTimeString("en-IN", { 
+        hour: "2-digit", 
+        minute: "2-digit" 
+      });
+      return `${dateStr}, ${timeStr}`;
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-24">
+        <Header title="All Transactions" />
+        <div className="flex items-center justify-center h-96">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!selectedGym) {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-24">
+        <Header title="All Transactions" />
+        <div className="px-4 py-4 text-center">
+          <p className="text-gray-500">Please select a gym first</p>
+          <button
+            onClick={() => router.push("/admin/dashboard")}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg"
+          >
+            Go to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">

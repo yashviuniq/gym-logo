@@ -34,6 +34,43 @@ export default function AddMemberPage() {
   const [selectedGym, setSelectedGym] = useState(null);
   const [membershipPlans, setMembershipPlans] = useState([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
+  
+  // Helper function to get today's date string in YYYY-MM-DD format
+  const getTodayString = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today.toISOString().split("T")[0];
+  };
+
+  // Helper function to check if selected date is in the past
+  const isStartDateInPast = (dateString) => {
+    const selectedDate = new Date(dateString + 'T00:00:00');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return selectedDate < today;
+  };
+
+  // Calculate remaining days when start date is in the past
+  const calculateRemainingDays = (startDateString, durationDays) => {
+    const startDate = new Date(startDateString + 'T00:00:00');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Calculate end date based on original start date
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + durationDays);
+    
+    // If end date is before today, membership would be expired
+    if (endDate <= today) {
+      return 0;
+    }
+    
+    // Calculate remaining days from today to end date
+    const diffTime = endDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -61,10 +98,6 @@ export default function AddMemberPage() {
     } else {
       setLoadingPlans(false);
     }
-    
-    // Always set start date to today
-    const today = new Date().toISOString().split("T")[0];
-    setFormData(prev => ({ ...prev, startDate: today }));
   }, []);
 
   const fetchMembershipPlans = async (gymId) => {
@@ -219,7 +252,7 @@ export default function AddMemberPage() {
       }
 
       // 2. Calculate membership end date using duration_days from the plan
-      const startDate = new Date(formData.startDate);
+      const startDate = new Date(formData.startDate + 'T00:00:00');
       
       if (!selectedPlan) {
         throw new Error("Selected plan not found");
@@ -233,7 +266,17 @@ export default function AddMemberPage() {
       const endDate = new Date(startDate);
       endDate.setDate(endDate.getDate() + durationDays);
 
-      // 3. Create membership
+      // Check if start date is in the past - if so, validate remaining days
+      if (isStartDateInPast(formData.startDate)) {
+        const remainingDays = calculateRemainingDays(formData.startDate, durationDays);
+        if (remainingDays <= 0) {
+          showError("The selected start date would result in an expired membership. Please choose a more recent date.");
+          setLoading(false);
+          return;
+        }
+      }
+
+      // 3. Create membership - always active since we don't allow future dates
       const { error: membershipError } = await supabase
         .from("memberships")
         .insert({
@@ -285,7 +328,11 @@ export default function AddMemberPage() {
         console.log("Credentials creation skipped:", credError);
       }
 
-      showSuccess(`Member added successfully! Login: ${formData.phone} | Password: ${defaultPassword}`);
+      // Show success message with appropriate status info
+      const statusMessage = isStartDateInPast(formData.startDate) 
+        ? ` (${calculateRemainingDays(formData.startDate, durationDays)} days remaining)` 
+        : '';
+      showSuccess(`Member added successfully!${statusMessage} Login: ${formData.phone} | Password: ${defaultPassword}`);
       
       if (addAnother) {
         setFormData({
@@ -694,14 +741,31 @@ export default function AddMemberPage() {
                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <input
                     type="date"
-                    disabled
-                    readOnly
+                    max={getTodayString()}
                     className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
                     value={formData.startDate}
                     onChange={(e) => updateForm("startDate", e.target.value)}
                   />
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Membership will start from this date</p>
+                <p className="text-xs text-gray-500 mt-1">Select today or a past date when membership started</p>
+                
+                {/* Past Date Info - Show remaining days */}
+                {formData.startDate && formData.planId && isStartDateInPast(formData.startDate) && (
+                  <div className="mt-2 p-2 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Info className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                      {calculateRemainingDays(formData.startDate, selectedPlan?.duration_days || 0) > 0 ? (
+                        <p className="text-xs font-medium text-blue-700">
+                          Start date is in the past. Member will have <span className="font-bold">{calculateRemainingDays(formData.startDate, selectedPlan?.duration_days || 0)} days</span> remaining from today.
+                        </p>
+                      ) : (
+                        <p className="text-xs font-medium text-red-600">
+                          ⚠️ This start date would result in an expired membership. Please choose a more recent date.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -773,6 +837,28 @@ export default function AddMemberPage() {
                   <span className="text-sm text-gray-600">Duration</span>
                   <span className="font-medium text-gray-900">{selectedPlan?.duration}</span>
                 </div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-gray-600">Start Date</span>
+                  <span className="font-medium text-gray-900">
+                    {new Date(formData.startDate + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  </span>
+                </div>
+                {/* Show membership status */}
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-gray-600">Status</span>
+                  <span className="font-medium px-2 py-0.5 rounded-full text-xs bg-emerald-100 text-emerald-700">
+                    Active
+                  </span>
+                </div>
+                {/* Show remaining days if start date is in past */}
+                {isStartDateInPast(formData.startDate) && selectedPlan && (
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm text-gray-600">Remaining Days</span>
+                    <span className="font-medium text-blue-700">
+                      {calculateRemainingDays(formData.startDate, selectedPlan.duration_days)} days
+                    </span>
+                  </div>
+                )}
                 {formData.useCustomPrice && (
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm text-gray-600">Original Price</span>
@@ -799,7 +885,10 @@ export default function AddMemberPage() {
                   Payment Amount (₹) <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-semibold">
+  ₹
+</span>
+
                   <input
                     type="number"
                     min="0"

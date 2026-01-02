@@ -43,7 +43,7 @@ export default function LoginPage() {
       
       if (userType === "admin") {
         // Admin login through Supabase Auth
-        const loginCredential = isEmailLogin ? emailOrPhone : `${emailOrPhone}@placeholder.com`;
+        const loginCredential = isEmailLogin ? emailOrPhone.toLowerCase() : `${emailOrPhone}@placeholder.com`;
         
         const { data, error } = await supabase.auth.signInWithPassword({
           email: loginCredential,

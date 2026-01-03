@@ -143,18 +143,18 @@ export default function LoginPage() {
       <main className="relative z-10 min-h-screen flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-md">
           {/* Logo and Header */}
-          <div className="text-center mb-8">
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg">
-                <Dumbbell className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-white">GymFlow</h1>
-                <p className="text-sm text-gray-400">Management System</p>
-              </div>
+          <div className="text-center mb-12">
+            <div className="mb-6 flex justify-center">
+              <img 
+                src="/icons/logo2.png" 
+                alt="SFit.ai Logo" 
+                className="w-42 h-24 rounded-3xl shadow-2xl object-cover border-4 border-white/10"
+              />
             </div>
+            <h1 className="text-4xl font-bold text-white mb-2">SFit.ai</h1>
+            <p className="text-lg text-gray-400 mb-6">Fitness Management</p>
             
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 mb-4">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
               <Shield className="w-4 h-4 text-blue-400" />
               <span className="text-sm font-medium text-white/90">Secure Login</span>
             </div>
@@ -317,7 +317,7 @@ export default function LoginPage() {
           {/* Bottom Notice */}
           <div className="mt-6 text-center">
             <p className="text-xs text-gray-500">
-              © {new Date().getFullYear()} GymFlow • Created by Shabiya Solutions
+              © {new Date().getFullYear()} SFit.ai • Created by Shabiya Solutions
             </p>
             <p className="text-xs text-gray-500 mt-1">
               Secure login with end-to-end encryption

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/layout/Header";
 import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/contexts/ToastContext";
@@ -35,8 +35,25 @@ const DAY_NAMES = ["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "
 const GOALS = ["Fat Loss", "Muscle Gain", "Strength", "Endurance", "Flexibility", "General Fitness"];
 const LEVELS = ["Beginner", "Intermediate", "Advanced"];
 
+// Wrapper component to handle Suspense for useSearchParams
 export default function WorkoutPlansSettingsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom flex flex-col items-center justify-center">
+        <div className="relative">
+          <div className="w-14 h-14 border-4 border-blue-500/20 border-t-blue-600 rounded-full animate-spin"></div>
+        </div>
+        <p className="mt-6 text-gray-600 font-medium text-sm">Loading...</p>
+      </div>
+    }>
+      <WorkoutPlansContent />
+    </Suspense>
+  );
+}
+
+function WorkoutPlansContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { showSuccess, showError } = useToast();
   const [workoutPlans, setWorkoutPlans] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +65,42 @@ export default function WorkoutPlansSettingsPage() {
   useEffect(() => {
     fetchWorkoutPlans();
   }, []);
+
+  // Handle edit URL parameter
+  useEffect(() => {
+    const editPlanId = searchParams.get("edit");
+    if (editPlanId && workoutPlans.length > 0 && !editingPlan) {
+      // First check if plan exists in the list (general plans)
+      let planToEdit = workoutPlans.find(p => p.id === editPlanId);
+      
+      if (planToEdit) {
+        setEditingPlan(planToEdit);
+      } else {
+        // Plan not found in general list, try to fetch it directly (might be member-specific)
+        fetchAndEditPlan(editPlanId);
+      }
+    }
+  }, [searchParams, workoutPlans]);
+
+  const fetchAndEditPlan = async (planId) => {
+    try {
+      const { data, error } = await supabase
+        .from("workout_plans")
+        .select("*")
+        .eq("id", planId)
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setEditingPlan(data);
+      } else {
+        showError("Workout plan not found");
+      }
+    } catch (error) {
+      console.error("Error fetching workout plan:", error);
+      showError("Failed to load workout plan for editing");
+    }
+  };
 
   const fetchWorkoutPlans = async () => {
     try {
@@ -61,12 +114,12 @@ export default function WorkoutPlansSettingsPage() {
       const gym = JSON.parse(storedGym);
       setGymId(gym.id);
 
-      // Only fetch admin-created plans (where created_by_member_id is null)
+      // Only fetch general workout plans (not member-specific)
       const { data, error } = await supabase
         .from("workout_plans")
         .select("*")
         .eq("gym_id", gym.id)
-        .is("created_by_member_id", null)
+        .is("member_id", null)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -347,11 +400,19 @@ export default function WorkoutPlansSettingsPage() {
           onClose={() => {
             setShowAddModal(false);
             setEditingPlan(null);
+            // Clear URL params when closing
+            if (searchParams.get("edit")) {
+              router.replace("/settings/workout-plans");
+            }
           }}
           onSave={() => {
             fetchWorkoutPlans();
             setShowAddModal(false);
             setEditingPlan(null);
+            // Clear URL params when saving
+            if (searchParams.get("edit")) {
+              router.replace("/settings/workout-plans");
+            }
           }}
         />
       )}

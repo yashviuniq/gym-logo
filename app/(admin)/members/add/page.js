@@ -87,6 +87,7 @@ export default function AddMemberPage() {
     useCustomPrice: false,
     customPrice: "",
     selfPlanEditAccess: false,
+    nextPaymentDate: "",
   });
 
   useEffect(() => {
@@ -229,6 +230,13 @@ export default function AddMemberPage() {
       const paymentAmount = Math.round(parseFloat(formData.paymentAmount) * 100) / 100;
       const balanceOwed = Math.round((finalPrice - paymentAmount) * 100) / 100;
 
+      // Validate next payment date for partial payments
+      if (balanceOwed > 0 && !formData.nextPaymentDate) {
+        showError("Please select a next payment date for partial payment");
+        setLoading(false);
+        return;
+      }
+
       const storedUser = localStorage.getItem("gymUser");
       const currentUser = storedUser ? JSON.parse(storedUser) : null;
       const createdBy = currentUser?.id;
@@ -296,17 +304,30 @@ export default function AddMemberPage() {
 
       // 4. Create payment record if payment was made
       if (paymentAmount > 0) {
+        const totalPrice = formData.useCustomPrice && formData.customPrice
+          ? parseFloat(formData.customPrice)
+          : selectedPlan.price;
+        const remainingAmount = totalPrice - paymentAmount;
+        
+        const paymentData = {
+          gym_id: selectedGym.id,
+          member_id: member.id,
+          amount: paymentAmount,
+          payment_mode: formData.paymentMode,
+          status: "paid",
+          notes: formData.notes || null,
+          updated_by: createdBy,
+        };
+
+        // Add next payment date and remaining amount for partial payments
+        if (remainingAmount > 0 && formData.nextPaymentDate) {
+          paymentData.next_payment_date = formData.nextPaymentDate;
+          paymentData.remaining_amount = remainingAmount;
+        }
+
         const { error: paymentError } = await supabase
           .from("payments")
-          .insert({
-            gym_id: selectedGym.id,
-            member_id: member.id,
-            amount: paymentAmount,
-            payment_mode: formData.paymentMode,
-            status: "paid",
-            notes: formData.notes || null,
-            updated_by: createdBy,
-          });
+          .insert(paymentData);
 
         if (paymentError) {
           console.error("Payment error:", paymentError);
@@ -352,6 +373,7 @@ export default function AddMemberPage() {
           useCustomPrice: false,
           customPrice: "",
           selfPlanEditAccess: false,
+          nextPaymentDate: "",
         });
         setStep(1);
       } else {
@@ -912,19 +934,57 @@ export default function AddMemberPage() {
                 formData.paymentAmount < (formData.useCustomPrice && formData.customPrice
                   ? parseFloat(formData.customPrice)
                   : selectedPlan?.price) && (
-                  <div className="mb-4 p-3 bg-gradient-to-r from-amber-50 to-amber-100 border border-amber-200 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4 text-amber-600" />
-                      <p className="text-sm font-medium text-amber-700">
-                        Partial Payment: ₹{formData.paymentAmount}
+                  <div className="mb-4 space-y-3">
+                    <div className="p-3 bg-gradient-to-r from-amber-50 to-amber-100 border border-amber-200 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-amber-600" />
+                        <p className="text-sm font-medium text-amber-700">
+                          Partial Payment: ₹{formData.paymentAmount}
+                        </p>
+                      </div>
+                      <p className="text-xs text-amber-600 mt-1 ml-6">
+                        Remaining due: ₹
+                        {(formData.useCustomPrice && formData.customPrice
+                          ? parseFloat(formData.customPrice)
+                          : selectedPlan?.price) - parseFloat(formData.paymentAmount)}
                       </p>
                     </div>
-                    <p className="text-xs text-amber-600 mt-1 ml-6">
-                      Remaining due: ₹
-                      {(formData.useCustomPrice && formData.customPrice
-                        ? parseFloat(formData.customPrice)
-                        : selectedPlan?.price) - parseFloat(formData.paymentAmount)}
-                    </p>
+                    
+                    {/* Next Payment Date - Required for partial payments */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Next Payment Date <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <input
+                          type="date"
+                          min={new Date().toISOString().split('T')[0]}
+                          className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+                          value={formData.nextPaymentDate}
+                          onChange={(e) => updateForm("nextPaymentDate", e.target.value)}
+                          required
+                        />
+                      </div>
+                      {formData.nextPaymentDate && (
+                        <div className="mt-2 p-2 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+                          <p className="text-xs text-blue-700">
+                            <span className="font-semibold">Reminder:</span> Remaining ₹
+                            {(formData.useCustomPrice && formData.customPrice
+                              ? parseFloat(formData.customPrice)
+                              : selectedPlan?.price) - parseFloat(formData.paymentAmount)}{" "}
+                            to be paid on{" "}
+                            <span className="font-semibold">
+                              {new Date(formData.nextPaymentDate + 'T00:00:00').toLocaleDateString('en-IN', { 
+                                day: '2-digit', 
+                                month: '2-digit', 
+                                year: 'numeric' 
+                              })}
+                            </span>
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               {formData.paymentAmount && parseFloat(formData.paymentAmount) === (formData.useCustomPrice && formData.customPrice ? parseFloat(formData.customPrice) : selectedPlan?.price) && (

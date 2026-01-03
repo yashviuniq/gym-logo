@@ -37,8 +37,13 @@ import {
   Building,
   History,
   Utensils,
-  Dumbbell
+  Dumbbell,
+  Apple,
+  Edit2,
+  Trash2 as TrashIcon,
+  Eye as EyeIcon
 } from "lucide-react";
+import { useToast } from "@/contexts/ToastContext";
 
 export default function MemberDetailPage() {
   const router = useRouter();
@@ -53,8 +58,13 @@ export default function MemberDetailPage() {
   const [member, setMember] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedGym, setSelectedGym] = useState(null);
+  const [nextPaymentInfo, setNextPaymentInfo] = useState(null);
   const [renewalHistory, setRenewalHistory] = useState([]);
   const [pendingPayments, setPendingPayments] = useState([]);
+  const [assignedDietPlans, setAssignedDietPlans] = useState([]);
+  const [assignedWorkoutPlans, setAssignedWorkoutPlans] = useState([]);
+  const [editingDietPlan, setEditingDietPlan] = useState(null);
+  const { showSuccess, showError } = useToast();
 
   useEffect(() => {
     const storedGym = localStorage.getItem("selectedGym");
@@ -209,10 +219,150 @@ export default function MemberDetailPage() {
         setMember({ ...transformedMember });
       }
 
+      // Fetch assigned diet plans
+      await fetchAssignedDietPlans(memberId);
+      
+      // Fetch assigned workout plans
+      await fetchAssignedWorkoutPlans(memberId);
+
+      // Fetch next payment info for partial payments
+      await fetchNextPaymentInfo(memberId);
+
     } catch (err) {
       console.error("Error:", err);
     }
     setLoading(false);
+  };
+
+  const fetchNextPaymentInfo = async (memberId) => {
+    try {
+      const { data, error } = await supabase
+        .from("payments")
+        .select("next_payment_date, remaining_amount")
+        .eq("member_id", memberId)
+        .not("next_payment_date", "is", null)
+        .gt("remaining_amount", 0)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!error && data) {
+        setNextPaymentInfo({
+          nextPaymentDate: data.next_payment_date,
+          remainingAmount: data.remaining_amount
+        });
+      }
+    } catch (err) {
+      console.error("Error fetching next payment info:", err);
+    }
+  };
+
+  const fetchAssignedDietPlans = async (memberId) => {
+    try {
+      const { data, error } = await supabase
+        .from("member_diets")
+        .select(`
+          id,
+          assigned_at,
+          diet_plans (
+            id,
+            title,
+            description,
+            member_id,
+            is_template
+          )
+        `)
+        .eq("member_id", memberId)
+        .order("assigned_at", { ascending: false });
+
+      if (!error && data) {
+        setAssignedDietPlans(data.map(d => ({
+          id: d.id,
+          planId: d.diet_plans?.id,
+          title: d.diet_plans?.title || "Unknown Plan",
+          description: d.diet_plans?.description,
+          assignedAt: d.assigned_at,
+          isCustom: !!d.diet_plans?.member_id,
+          isTemplate: d.diet_plans?.is_template
+        })));
+      }
+    } catch (err) {
+      console.error("Error fetching diet plans:", err);
+    }
+  };
+
+  const fetchAssignedWorkoutPlans = async (memberId) => {
+    try {
+      const { data, error } = await supabase
+        .from("member_workouts")
+        .select(`
+          id,
+          assigned_at,
+          workout_plans (
+            id,
+            title,
+            description,
+            member_id
+          )
+        `)
+        .eq("member_id", memberId)
+        .order("assigned_at", { ascending: false });
+
+      if (!error && data) {
+        setAssignedWorkoutPlans(data.map(w => ({
+          id: w.id,
+          planId: w.workout_plans?.id,
+          title: w.workout_plans?.title || "Unknown Plan",
+          description: w.workout_plans?.description,
+          assignedAt: w.assigned_at,
+          isCustom: !!w.workout_plans?.member_id
+        })));
+      }
+    } catch (err) {
+      console.error("Error fetching workout plans:", err);
+    }
+  };
+
+  const handleRemoveDietPlan = async (assignmentId) => {
+    if (!window.confirm("Are you sure you want to remove this diet plan from the member?")) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("member_diets")
+        .delete()
+        .eq("id", assignmentId);
+
+      if (error) throw error;
+
+      showSuccess("Diet plan removed successfully");
+      fetchAssignedDietPlans(member.id);
+    } catch (err) {
+      console.error("Error removing diet plan:", err);
+      showError("Failed to remove diet plan");
+    }
+  };
+
+  const handleRemoveWorkoutPlan = async (assignmentId) => {
+    if (!window.confirm("Are you sure you want to remove this workout plan from the member?")) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("member_workouts")
+        .delete()
+        .eq("id", assignmentId);
+
+      if (error) throw error;
+
+      showSuccess("Workout plan removed successfully");
+      fetchAssignedWorkoutPlans(member.id);
+    } catch (err) {
+      console.error("Error removing workout plan:", err);
+      showError("Failed to remove workout plan");
+    }
   };
 
   const handleDeleteMember = async () => {
@@ -468,6 +618,25 @@ export default function MemberDetailPage() {
                       <p className="text-2xl font-bold text-red-600">₹{member.dueAmount}</p>
                     </div>
                   </div>
+                  {/* Next Payment Date Display */}
+                  {nextPaymentInfo && nextPaymentInfo.nextPaymentDate && (
+                    <div className="mb-3 p-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Calendar className="w-4 h-4 text-amber-600" />
+                        <p className="text-sm font-semibold text-amber-800">Next Payment Due</p>
+                      </div>
+                      <p className="text-sm text-amber-700">
+                        ₹{nextPaymentInfo.remainingAmount} to be paid on{" "}
+                        <span className="font-bold">
+                          {new Date(nextPaymentInfo.nextPaymentDate).toLocaleDateString("en-IN", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric"
+                          })}
+                        </span>
+                      </p>
+                    </div>
+                  )}
                   <button
                     onClick={() => router.push(`/members/${member.id}/payment`)}
                     className="w-full px-4 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white font-semibold rounded-lg hover:shadow-lg transition-all duration-300"
@@ -646,6 +815,171 @@ export default function MemberDetailPage() {
                 </div>
               </div>
             </div>
+
+            {/* Assigned Diet Plans Section */}
+            <div className="pt-3 border-t border-gray-100">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                  <Apple className="w-4 h-4 text-emerald-600" />
+                  Assigned Diet Plans
+                </h4>
+                <button
+                  onClick={() => setShowAssignDietModal(true)}
+                  className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Add
+                </button>
+              </div>
+              {assignedDietPlans.length === 0 ? (
+                <div className="text-center py-4 bg-gray-50 rounded-lg">
+                  <Apple className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                  <p className="text-sm text-gray-500">No diet plans assigned</p>
+                  <button
+                    onClick={() => setShowAssignDietModal(true)}
+                    className="mt-2 text-xs text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Assign a diet plan
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {assignedDietPlans.map((plan) => (
+                    <div
+                      key={plan.id}
+                      className="p-3 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-gray-900 truncate">{plan.title}</p>
+                            {plan.isCustom && (
+                              <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[10px] rounded-full font-medium">
+                                Custom
+                              </span>
+                            )}
+                            {plan.isTemplate && (
+                              <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-[10px] rounded-full font-medium">
+                                Template
+                              </span>
+                            )}
+                          </div>
+                          {plan.description && (
+                            <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{plan.description}</p>
+                          )}
+                          <p className="text-[10px] text-gray-400 mt-1">
+                            Assigned: {new Date(plan.assignedAt).toLocaleDateString("en-IN")}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1 ml-2">
+                          <button
+                            onClick={() => router.push(`/settings/diet-plans?view=${plan.planId}`)}
+                            className="p-1.5 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                            title="View Plan"
+                          >
+                            <EyeIcon className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => router.push(`/settings/diet-plans?edit=${plan.planId}`)}
+                            className="p-1.5 text-amber-600 hover:bg-amber-100 rounded-lg transition-colors"
+                            title="Edit Plan"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleRemoveDietPlan(plan.id)}
+                            className="p-1.5 text-red-500 hover:bg-red-100 rounded-lg transition-colors"
+                            title="Remove Plan"
+                          >
+                            <TrashIcon className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Assigned Workout Plans Section */}
+            <div className="pt-3 border-t border-gray-100">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                  <Dumbbell className="w-4 h-4 text-blue-600" />
+                  Assigned Workout Plans
+                </h4>
+                <button
+                  onClick={() => setShowAssignWorkoutModal(true)}
+                  className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Add
+                </button>
+              </div>
+              {assignedWorkoutPlans.length === 0 ? (
+                <div className="text-center py-4 bg-gray-50 rounded-lg">
+                  <Dumbbell className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                  <p className="text-sm text-gray-500">No workout plans assigned</p>
+                  <button
+                    onClick={() => setShowAssignWorkoutModal(true)}
+                    className="mt-2 text-xs text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Assign a workout plan
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {assignedWorkoutPlans.map((plan) => (
+                    <div
+                      key={plan.id}
+                      className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-gray-900 truncate">{plan.title}</p>
+                            {plan.isCustom && (
+                              <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[10px] rounded-full font-medium">
+                                Custom
+                              </span>
+                            )}
+                          </div>
+                          {plan.description && (
+                            <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{plan.description}</p>
+                          )}
+                          <p className="text-[10px] text-gray-400 mt-1">
+                            Assigned: {new Date(plan.assignedAt).toLocaleDateString("en-IN")}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1 ml-2">
+                          <button
+                            onClick={() => router.push(`/settings/workout-plans?view=${plan.planId}`)}
+                            className="p-1.5 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                            title="View Plan"
+                          >
+                            <EyeIcon className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => router.push(`/settings/workout-plans?edit=${plan.planId}`)}
+                            className="p-1.5 text-amber-600 hover:bg-amber-100 rounded-lg transition-colors"
+                            title="Edit Plan"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleRemoveWorkoutPlan(plan.id)}
+                            className="p-1.5 text-red-500 hover:bg-red-100 rounded-lg transition-colors"
+                            title="Remove Plan"
+                          >
+                            <TrashIcon className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -802,9 +1136,7 @@ export default function MemberDetailPage() {
           gymId={selectedGym?.id}
           onClose={() => setShowAssignDietModal(false)}
           onAssign={() => {
-            if (selectedGym) {
-              fetchMemberDetails(params.id, selectedGym.id);
-            }
+            fetchAssignedDietPlans(member.id);
           }}
         />
       )}
@@ -815,9 +1147,7 @@ export default function MemberDetailPage() {
           gymId={selectedGym?.id}
           onClose={() => setShowAssignWorkoutModal(false)}
           onAssign={() => {
-            if (selectedGym) {
-              fetchMemberDetails(params.id, selectedGym.id);
-            }
+            fetchAssignedWorkoutPlans(member.id);
           }}
         />
       )}

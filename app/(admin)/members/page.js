@@ -136,11 +136,24 @@ export default function MembersPage() {
       if (activeMembership) {
         const endDate = new Date(activeMembership.end_date);
         const today = new Date();
-        if (endDate > today && activeMembership.status === "active") {
+        today.setHours(0, 0, 0, 0);
+        endDate.setHours(0, 0, 0, 0);
+        
+        if (endDate >= today && activeMembership.status === "active") {
           memberStatus = "active";
-        } else if (endDate <= today) {
+        } else if (endDate < today || activeMembership.status === "expired") {
           memberStatus = "expired";
         }
+      }
+
+      // Calculate days remaining
+      let daysRemaining = null;
+      if (activeMembership?.end_date) {
+        const endDate = new Date(activeMembership.end_date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        endDate.setHours(0, 0, 0, 0);
+        daysRemaining = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
       }
 
       return {
@@ -157,9 +170,7 @@ export default function MembersPage() {
         dueAmount: Math.max(0, member.balance || 0),
         balance: member.balance || 0,
         hasCredentials: membersWithCredentials.has(member.id),
-        daysRemaining: activeMembership?.end_date 
-          ? Math.ceil((new Date(activeMembership.end_date) - new Date()) / (1000 * 60 * 60 * 24))
-          : null,
+        daysRemaining: daysRemaining,
       };
     });
   }, [rawMembers, membersWithCredentials]);
@@ -502,6 +513,7 @@ export default function MembersPage() {
                         </div>
                       </div>
 
+                      {/* Show days remaining for active memberships */}
                       {member.daysRemaining !== null && (
                         <div className="flex items-center gap-2">
                           <Calendar className="w-4 h-4 text-gray-400" />

@@ -89,7 +89,7 @@ export default function WelcomePage() {
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg">
                     <Dumbbell className="w-6 h-6 text-white" />
                   </div>
-                  <span className="text-2xl font-bold text-white">GymFlow</span>
+                  <span className="text-2xl font-bold text-white">SFit.ai</span>
                 </div>
                 
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
@@ -300,7 +300,7 @@ export default function WelcomePage() {
           {/* Footer */}
           <div className="pt-12 pb-8 text-center">
             <div className="text-gray-500 text-sm mb-2">
-              © {new Date().getFullYear()} GymFlow • All rights reserved
+              © {new Date().getFullYear()} SFit.ai • All rights reserved
             </div>
             <div className="text-gray-400 text-xs">
               Created by Shabiya Solutions

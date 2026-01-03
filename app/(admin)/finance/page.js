@@ -220,11 +220,14 @@ export default function FinancePage() {
   };
 
   const formatCurrency = (amount) => {
+    // Round to 2 decimal places before formatting
+    const roundedAmount = Math.round(parseFloat(amount || 0) * 100) / 100;
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
-      minimumFractionDigits: 0
-    }).format(amount);
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    }).format(roundedAmount);
   };
 
   const getPaymentModeIcon = (mode) => {

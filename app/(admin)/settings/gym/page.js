@@ -105,6 +105,24 @@ export default function GymSettingsPage() {
 
     setLoading(true);
     try {
+      // Check if gym name already exists (excluding current gym)
+      const { data: existingGym, error: checkError } = await supabase
+        .from("gyms")
+        .select("id, name")
+        .eq("name", formData.name.trim())
+        .neq("id", gymId)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        // PGRST116 means no rows found, which is what we want
+        throw checkError;
+      }
+
+      if (existingGym) {
+        showError("Gym name already exists. Please choose a different name.");
+        setLoading(false);
+        return;
+      }
       // Get current user for updated_by
       const storedUser = localStorage.getItem("gymUser");
       const user = storedUser ? JSON.parse(storedUser) : null;

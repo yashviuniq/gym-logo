@@ -225,8 +225,9 @@ export default function AddMemberPage() {
       const finalPrice = formData.useCustomPrice && formData.customPrice 
         ? parseFloat(formData.customPrice) 
         : selectedPlan?.price;
-      const paymentAmount = parseFloat(formData.paymentAmount);
-      const balanceOwed = finalPrice - paymentAmount;
+      // Round to 2 decimal places to avoid floating-point precision errors
+      const paymentAmount = Math.round(parseFloat(formData.paymentAmount) * 100) / 100;
+      const balanceOwed = Math.round((finalPrice - paymentAmount) * 100) / 100;
 
       const storedUser = localStorage.getItem("gymUser");
       const currentUser = storedUser ? JSON.parse(storedUser) : null;
@@ -301,7 +302,7 @@ export default function AddMemberPage() {
             gym_id: selectedGym.id,
             member_id: member.id,
             amount: paymentAmount,
-            mode: formData.payment_mode,
+            payment_mode: formData.paymentMode,
             status: "paid",
             notes: formData.notes || null,
             updated_by: createdBy,

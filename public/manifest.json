@@ -1,43 +1,44 @@
 {
     "name": "Gym Management App",
-    "short_name": "GymApp",
+    "short_name": "SFit.ai",
     "description": "Gym Management PWA",
     "start_url": "/",
     "display": "standalone",
-    "background_color": "#ffffff",
-    "theme_color": "#000000",
+    
+    "background_color": "#8F7AFF",
+    "theme_color": "#3E8BFF",
     "icons": [
       {
-        "src": "/icons/landing-screen.png",
+        "src": "/icons/logo.png",
         "sizes": "540x720",
         "type": "image/png",
         "purpose": "maskable"
       },
       {
-        "src": "/icons/landing-screen.png",
+        "src": "/icons/logo.png",
         "sizes": "16x16",
         "type": "image/png"
       },
       {
-      "src": "/icons/landing-screen.png",
+      "src": "/icons/logo.png",
         "sizes": "32x32",
         "type": "image/png"
       },
       {
-        "src": "/icons/landing-screen.png",
+        "src": "/icons/logo.png",
         "sizes": "96x96",
         "type": "image/png"
       },
       {
-       "src": "/icons/landing-screen.png",
+        "src": "/icons/logo.png",
         "sizes": "192x192",
         "type": "image/png",
         "purpose": "any maskable"
       },
       {
-        "src": "/icons/logo.jpg",
+        "src": "/icons/logo.png",
         "sizes": "512x512",
-        "type": "image/jpg",
+        "type": "image/png",
         "purpose": "any maskable"
       }
     ]

@@ -37,6 +37,8 @@ export default function FinancePage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("overview");
   const [dateFilter, setDateFilter] = useState("month");
+  const [customStartDate, setCustomStartDate] = useState("");
+  const [customEndDate, setCustomEndDate] = useState("");
   const [selectedGym, setSelectedGym] = useState(null);
   const [loading, setLoading] = useState(true);
   const [financialData, setFinancialData] = useState({
@@ -58,7 +60,7 @@ export default function FinancePage() {
     } else {
       setLoading(false);
     }
-  }, [dateFilter]);
+  }, [dateFilter, customStartDate, customEndDate]);
 
   const fetchFinancialData = async (gymId) => {
     setLoading(true);
@@ -68,15 +70,24 @@ export default function FinancePage() {
       firstDayOfMonth.setDate(1);
 
       let startDate = today;
+      let endDate = today;
+      
       if (dateFilter === "week") {
         const weekStart = new Date();
         weekStart.setDate(weekStart.getDate() - 7);
         startDate = weekStart.toISOString().split('T')[0];
       } else if (dateFilter === "month") {
         startDate = firstDayOfMonth.toISOString().split('T')[0];
+      } else if (dateFilter === "custom") {
+        if (!customStartDate || !customEndDate) {
+          setLoading(false);
+          return;
+        }
+        startDate = customStartDate;
+        endDate = customEndDate;
       }
 
-      const { data: payments, error: paymentsError } = await supabase
+      let paymentsQuery = supabase
         .from("payments")
         .select(`
           id,
@@ -91,9 +102,25 @@ export default function FinancePage() {
             phone
           )
         `)
-        .eq("gym_id", gymId)
-        .gte("created_at", startDate)
-        .order("created_at", { ascending: false });
+        .eq("gym_id", gymId);
+      
+      // Apply date filtering
+      if (dateFilter === "custom") {
+        // For custom dates, ensure proper start and end of day
+        const startDateTime = new Date(startDate);
+        startDateTime.setHours(0, 0, 0, 0);
+        
+        const endDateTime = new Date(endDate);
+        endDateTime.setHours(23, 59, 59, 999);
+        
+        paymentsQuery = paymentsQuery
+          .gte("created_at", startDateTime.toISOString())
+          .lte("created_at", endDateTime.toISOString());
+      } else {
+        paymentsQuery = paymentsQuery.gte("created_at", startDate);
+      }
+      
+      const { data: payments, error: paymentsError } = await paymentsQuery.order("created_at", { ascending: false });
 
       const { data: membersData, error: membersError } = await supabase
         .from("members")
@@ -111,11 +138,21 @@ export default function FinancePage() {
         .eq("gym_id", gymId)
         .gt("balance", 0);
 
-      const { data: expensesData, error: expensesError } = await supabase
+      let expensesQuery = supabase
         .from("expenses")
         .select("amount")
-        .eq("gym_id", gymId)
-        .gte("expense_date", startDate);
+        .eq("gym_id", gymId);
+      
+      // Apply date filtering for expenses
+      if (dateFilter === "custom") {
+        expensesQuery = expensesQuery
+          .gte("expense_date", startDate)
+          .lte("expense_date", endDate);
+      } else {
+        expensesQuery = expensesQuery.gte("expense_date", startDate);
+      }
+      
+      const { data: expensesData, error: expensesError } = await expensesQuery;
 
       if (expensesError) {
         console.error("Expenses query error:", expensesError);
@@ -130,9 +167,16 @@ export default function FinancePage() {
       }
 
       if (!paymentsError && payments) {
-        const todayPayments = payments.filter(p => 
-          new Date(p.created_at).toDateString() === new Date().toDateString()
-        );
+        let todayPayments;
+        if (dateFilter === "custom") {
+          // For custom range, show all payments in the range
+          todayPayments = payments;
+        } else {
+          // For other filters, show actual today's payments
+          todayPayments = payments.filter(p => 
+            new Date(p.created_at).toDateString() === new Date().toDateString()
+          );
+        }
         
         const todayCollection = todayPayments.reduce((sum, p) => sum + p.amount, 0);
         const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
@@ -174,11 +218,29 @@ export default function FinancePage() {
       }
 
       if (!membersError && membersData) {
+        // Fetch payments with next_payment_date for pending payments
+        const { data: paymentsWithNextDate } = await supabase
+          .from("payments")
+          .select(`
+            id,
+            member_id,
+            next_payment_date,
+            remaining_amount
+          `)
+          .eq("gym_id", gymId)
+          .not("next_payment_date", "is", null)
+          .gt("remaining_amount", 0);
+
         const pendingData = membersData.map((member) => {
           const activeMembership = member.memberships?.find(m => m.status === "active");
-          const dueDate = activeMembership?.end_date || null;
+          const memberPaymentWithDate = paymentsWithNextDate?.find(p => p.member_id === member.id);
+          
+          // Use next_payment_date if available, otherwise fall back to membership end_date
+          const nextPaymentDate = memberPaymentWithDate?.next_payment_date;
+          const dueDate = nextPaymentDate || activeMembership?.end_date || null;
+          
           const daysOverdue = dueDate ? 
-            Math.max(0, Math.ceil((new Date() - new Date(dueDate)) / (1000 * 60 * 60 * 24))) : 0;
+            Math.ceil((new Date() - new Date(dueDate)) / (1000 * 60 * 60 * 24)) : 0;
 
           return {
             id: member.id,
@@ -186,7 +248,10 @@ export default function FinancePage() {
             phone: member.phone,
             amount: member.balance,
             dueDate: dueDate ? new Date(dueDate).toLocaleDateString("en-IN") : "No due date",
-            daysOverdue,
+            nextPaymentDate: nextPaymentDate,
+            remainingAmount: memberPaymentWithDate?.remaining_amount || member.balance,
+            daysOverdue: Math.max(0, daysOverdue),
+            isOverdue: daysOverdue > 0,
           };
         });
         setPendingPayments(pendingData);
@@ -289,7 +354,7 @@ export default function FinancePage() {
             <span className="text-sm font-medium text-gray-700">Period</span>
           </div>
           <div className="flex space-x-2 overflow-x-auto pb-1 -mx-1 px-1 no-scrollbar">
-            {["today", "week", "month"].map((filter) => (
+            {["today", "week", "month", "custom"].map((filter) => (
               <button
                 key={filter}
                 onClick={() => setDateFilter(filter)}
@@ -305,6 +370,37 @@ export default function FinancePage() {
               </button>
             ))}
           </div>
+          
+          {/* Custom Date Range Picker */}
+          {dateFilter === "custom" && (
+            <div className="mt-3 pt-3 border-t border-gray-200">
+              <div className="space-y-2">
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">Start Date</label>
+                  <input
+                    type="date"
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                    max={customEndDate || new Date().toISOString().split('T')[0]}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">End Date</label>
+                  <input
+                    type="date"
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value)}
+                    min={customStartDate}
+                    max={new Date().toISOString().split('T')[0]}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Stats Cards - Mobile Optimized */}
@@ -312,7 +408,9 @@ export default function FinancePage() {
           <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-500 font-medium">Today's Collection</p>
+                <p className="text-xs text-gray-500 font-medium">
+                  {dateFilter === "custom" ? "Period Collection" : "Today's Collection"}
+                </p>
                 <p className="text-xl font-bold text-emerald-600 mt-0.5">
                   {formatCurrency(financialData.todayCollection)}
                 </p>
@@ -327,7 +425,7 @@ export default function FinancePage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-medium">
-                  {dateFilter === "today" ? "Today" : dateFilter === "week" ? "Weekly" : "Monthly"} Revenue
+                  {dateFilter === "today" ? "Today" : dateFilter === "week" ? "Weekly" : dateFilter === "custom" ? "Custom" : "Monthly"} Revenue
                 </p>
                 <p className="text-xl font-bold text-blue-600 mt-0.5">
                   {formatCurrency(financialData.monthlyRevenue)}
@@ -534,12 +632,27 @@ export default function FinancePage() {
                       className="bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200 rounded-lg p-3 hover:shadow-sm transition-all"
                     >
                       <div className="flex items-start justify-between mb-2">
-                        <div>
+                        <div className="flex-1 min-w-0">
                           <p className="font-semibold text-gray-900 text-sm">{member.name}</p>
                           <div className="flex items-center gap-1 mt-1">
                             <Phone className="w-3 h-3 text-gray-400" />
                             <span className="text-xs text-gray-500">{member.phone}</span>
                           </div>
+                          {/* Next Payment Date Display */}
+                          {member.nextPaymentDate && (
+                            <div className="mt-2 px-2 py-1 bg-white/70 rounded border border-amber-200 inline-block">
+                              <p className="text-xs text-amber-800">
+                                <span className="font-medium">Due:</span> {formatCurrency(member.amount)} on{" "}
+                                <span className="font-semibold">
+                                  {new Date(member.nextPaymentDate).toLocaleDateString("en-IN", {
+                                    day: "2-digit",
+                                    month: "short",
+                                    year: "numeric"
+                                  })}
+                                </span>
+                              </p>
+                            </div>
+                          )}
                         </div>
                         <p className="text-lg font-bold text-amber-600">
                           {formatCurrency(member.amount)}
@@ -549,21 +662,51 @@ export default function FinancePage() {
                       <div className="flex items-center justify-between mt-3">
                         <span
                           className={`px-2.5 py-1 text-xs rounded-lg font-medium ${
-                            member.daysOverdue > 0
+                            member.isOverdue
                               ? "bg-gradient-to-br from-red-50 to-red-100 text-red-700 border border-red-200"
                               : "bg-gradient-to-br from-amber-50 to-amber-100 text-amber-700 border border-amber-200"
                           }`}
                         >
-                          {member.daysOverdue > 0
+                          {member.isOverdue
                             ? `${member.daysOverdue} days overdue`
-                            : `Due: ${member.dueDate}`}
+                            : member.nextPaymentDate
+                              ? `Due: ${new Date(member.nextPaymentDate).toLocaleDateString("en-IN")}`
+                              : `Due: ${member.dueDate}`}
                         </span>
                         
                         <div className="flex items-center gap-2">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              window.open(`https://wa.me/91${member.phone}`);
+                              const gymName = selectedGym?.name || "Our Gym";
+                              const dueDateText = member.nextPaymentDate 
+                                ? new Date(member.nextPaymentDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+                                : member.dueDate;
+                              const message = `Dear ${member.name},
+
+Greetings from *${gymName}*! 🏋️‍♂️
+
+We hope you're making great progress with your fitness journey! This is a friendly reminder regarding your pending membership payment.
+
+💳 *Pending Amount:* ${formatCurrency(member.amount)}
+${member.isOverdue ? `⏰ *Overdue by:* ${member.daysOverdue} days` : `📅 *Payment Due Date:* ${dueDateText}`}
+
+We kindly request you to clear the payment at your earliest convenience to continue enjoying uninterrupted access to our facilities.
+
+You can make the payment through:
+• Cash at the reception
+• UPI/Card at the gym
+• Bank transfer
+
+Feel free to reach out if you have any questions or need assistance.
+
+Thank you for your cooperation! 💪
+
+Best regards,
+*${gymName} Team*`;
+                              
+                              const encodedMessage = encodeURIComponent(message);
+                              window.open(`https://wa.me/91${member.phone}?text=${encodedMessage}`);
                             }}
                             className="px-3 py-1.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-lg active:scale-95 transition-transform flex items-center gap-1"
                             style={{ minHeight: '32px' }}

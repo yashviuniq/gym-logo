@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/layout/Header";
 import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/contexts/ToastContext";
@@ -40,8 +40,25 @@ const MEAL_TYPES = [
   { value: "bedtime", label: "Bedtime", icon: <Clock className="w-4 h-4" /> },
 ];
 
+// Wrapper component to handle Suspense for useSearchParams
 export default function DietPlansSettingsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom flex flex-col items-center justify-center">
+        <div className="relative">
+          <div className="w-14 h-14 border-4 border-blue-500/20 border-t-blue-600 rounded-full animate-spin"></div>
+        </div>
+        <p className="mt-6 text-gray-600 font-medium text-sm">Loading...</p>
+      </div>
+    }>
+      <DietPlansContent />
+    </Suspense>
+  );
+}
+
+function DietPlansContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { showSuccess, showError } = useToast();
   const [dietPlans, setDietPlans] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -64,16 +81,52 @@ export default function DietPlansSettingsPage() {
     }
   }, []);
 
+  // Handle edit URL parameter
+  useEffect(() => {
+    const editPlanId = searchParams.get("edit");
+    if (editPlanId && dietPlans.length > 0 && !editingPlan) {
+      // First check if plan exists in the list (general plans)
+      let planToEdit = dietPlans.find(p => p.id === editPlanId);
+      
+      if (planToEdit) {
+        setEditingPlan(planToEdit);
+      } else {
+        // Plan not found in general list, try to fetch it directly (might be member-specific)
+        fetchAndEditPlan(editPlanId);
+      }
+    }
+  }, [searchParams, dietPlans]);
+
+  const fetchAndEditPlan = async (planId) => {
+    try {
+      const { data, error } = await supabase
+        .from("diet_plans")
+        .select("*")
+        .eq("id", planId)
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setEditingPlan(data);
+      } else {
+        showError("Diet plan not found");
+      }
+    } catch (error) {
+      console.error("Error fetching diet plan:", error);
+      showError("Failed to load diet plan for editing");
+    }
+  };
+
   const fetchDietPlans = async (gymId) => {
     try {
       setLoading(true);
 
-      // Only fetch admin-created plans (where created_by_member_id is null)
+      // Only fetch general diet plans (not member-specific ones)
       const { data, error } = await supabase
         .from("diet_plans")
         .select("*")
         .eq("gym_id", gymId)
-        .is("created_by_member_id", null)
+        .is("member_id", null)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -441,11 +494,19 @@ export default function DietPlansSettingsPage() {
           onClose={() => {
             setShowAddModal(false);
             setEditingPlan(null);
+            // Clear URL params when closing
+            if (searchParams.get("edit")) {
+              router.replace("/settings/diet-plans");
+            }
           }}
           onSave={() => {
             fetchDietPlans(gymId);
             setShowAddModal(false);
             setEditingPlan(null);
+            // Clear URL params when saving
+            if (searchParams.get("edit")) {
+              router.replace("/settings/diet-plans");
+            }
           }}
         />
       )}

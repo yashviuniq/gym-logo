@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
 import { supabase } from "@/lib/supabaseClient";
-import { Edit2, Camera } from "lucide-react";
+import { Edit2, Camera, Calendar, AlertTriangle, DollarSign } from "lucide-react";
 
 export default function CustomerProfilePage() {
   const router = useRouter();
@@ -14,6 +14,7 @@ export default function CustomerProfilePage() {
   const [membership, setMembership] = useState(null);
   const [payments, setPayments] = useState([]);
   const [gymInfo, setGymInfo] = useState(null);
+  const [pendingPaymentInfo, setPendingPaymentInfo] = useState(null);
 
   useEffect(() => {
     fetchProfileData();
@@ -114,6 +115,38 @@ export default function CustomerProfilePage() {
           type: p.membership_id ? "Membership" : "Other",
           status: p.status,
         })));
+      }
+
+      // Fetch pending payment with next payment date
+      const { data: pendingData } = await supabase
+        .from("payments")
+        .select("next_payment_date, remaining_amount")
+        .eq("member_id", member.id)
+        .not("next_payment_date", "is", null)
+        .gt("remaining_amount", 0)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (pendingData) {
+        setPendingPaymentInfo({
+          nextPaymentDate: pendingData.next_payment_date,
+          remainingAmount: pendingData.remaining_amount,
+        });
+      }
+
+      // Also check member balance
+      const { data: balanceData } = await supabase
+        .from("members")
+        .select("balance")
+        .eq("id", member.id)
+        .single();
+
+      if (balanceData && balanceData.balance > 0 && !pendingData) {
+        setPendingPaymentInfo({
+          remainingAmount: balanceData.balance,
+          nextPaymentDate: null,
+        });
       }
 
       // Fetch gym info
@@ -286,6 +319,46 @@ export default function CustomerProfilePage() {
           {/* Renew Button */}
        
         </div>
+
+        {/* Pending Payment Alert */}
+        {pendingPaymentInfo && pendingPaymentInfo.remainingAmount > 0 && (
+          <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-semibold text-gray-900 mb-1">
+                  Pending Payment
+                </h4>
+                <div className="flex items-center gap-2 mb-2">
+                  <DollarSign className="w-4 h-4 text-amber-600" />
+                  <p className="text-lg font-bold text-amber-600">
+                    ₹{pendingPaymentInfo.remainingAmount}
+                  </p>
+                </div>
+                {pendingPaymentInfo.nextPaymentDate && (
+                  <div className="flex items-center gap-2 p-2 bg-white rounded-lg border border-amber-200">
+                    <Calendar className="w-4 h-4 text-amber-600" />
+                    <p className="text-sm text-amber-800">
+                      Due on{" "}
+                      <span className="font-semibold">
+                        {new Date(pendingPaymentInfo.nextPaymentDate).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric"
+                        })}
+                      </span>
+                    </p>
+                  </div>
+                )}
+                <p className="text-xs text-gray-500 mt-2">
+                  Please clear your dues at the gym reception.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="flex gap-2">

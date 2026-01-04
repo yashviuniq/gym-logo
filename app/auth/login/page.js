@@ -303,12 +303,7 @@ export default function LoginPage() {
                     ← Back to Home
                   </Link>
                   <span className="text-gray-500">•</span>
-                  <Link
-                    href="/privacy"
-                    className="text-xs text-gray-500 hover:text-gray-400 transition-colors"
-                  >
-                    Privacy Policy
-                  </Link>
+                  
                 </div>
               </div>
             </div>

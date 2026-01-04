@@ -153,7 +153,14 @@ export default function CustomerProfilePage() {
       if (memberData.gym_id) {
         const { data: gymData, error: gymError } = await supabase
           .from("gyms")
-          .select("id, name, address, phone, email, weekday_open, weekday_close, weekend_open, weekend_close")
+          .select(`
+            id, name, address, phone, email, website,
+            weekday_morning_start, weekday_morning_end,
+            weekday_evening_start, weekday_evening_end,
+            weekend_morning_start, weekend_morning_end,
+            weekend_evening_start, weekend_evening_end,
+            sunday_off
+          `)
           .eq("id", memberData.gym_id)
           .single();
 
@@ -167,16 +174,25 @@ export default function CustomerProfilePage() {
             return `${displayHour}:${minutes} ${ampm}`;
           };
 
-          const timings = gymData.weekday_open && gymData.weekday_close
-            ? `${formatTime(gymData.weekday_open)} - ${formatTime(gymData.weekday_close)}`
-            : "Not set";
-
           setGymInfo({
             name: gymData.name,
             address: gymData.address || "",
             phone: gymData.phone || "",
             email: gymData.email || "",
-            timings: timings,
+            website: gymData.website || "",
+            weekdayMorning: gymData.weekday_morning_start && gymData.weekday_morning_end
+              ? `${formatTime(gymData.weekday_morning_start)} - ${formatTime(gymData.weekday_morning_end)}`
+              : null,
+            weekdayEvening: gymData.weekday_evening_start && gymData.weekday_evening_end
+              ? `${formatTime(gymData.weekday_evening_start)} - ${formatTime(gymData.weekday_evening_end)}`
+              : null,
+            weekendMorning: gymData.weekend_morning_start && gymData.weekend_morning_end
+              ? `${formatTime(gymData.weekend_morning_start)} - ${formatTime(gymData.weekend_morning_end)}`
+              : null,
+            weekendEvening: gymData.weekend_evening_start && gymData.weekend_evening_end
+              ? `${formatTime(gymData.weekend_evening_start)} - ${formatTime(gymData.weekend_evening_end)}`
+              : null,
+            sundayOff: gymData.sunday_off || false,
           });
         }
       }
@@ -476,47 +492,114 @@ export default function CustomerProfilePage() {
           <div className="bg-white rounded-xl p-4 shadow-sm space-y-4">
             {gymInfo ? (
               <>
-                <h3 className="font-semibold text-gray-900">{gymInfo.name}</h3>
+                <h3 className="font-semibold text-gray-900 text-lg">{gymInfo.name}</h3>
 
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {gymInfo.address && (
                     <div className="flex items-start gap-3">
                       <span className="text-lg">📍</span>
-                      <div>
-                        <p className="text-xs text-gray-500">Address</p>
+                      <div className="flex-1">
+                        <p className="text-xs text-gray-500 mb-0.5">Address</p>
                         <p className="text-sm text-gray-900">{gymInfo.address}</p>
                       </div>
                     </div>
                   )}
+                  
                   {gymInfo.phone && (
                     <div className="flex items-start gap-3">
                       <span className="text-lg">📞</span>
-                      <div>
-                        <p className="text-xs text-gray-500">Phone</p>
+                      <div className="flex-1">
+                        <p className="text-xs text-gray-500 mb-0.5">Phone</p>
                         <a
                           href={`tel:${gymInfo.phone}`}
-                          className="text-sm text-blue-600"
+                          className="text-sm text-blue-600 font-medium"
                         >
                           {gymInfo.phone}
                         </a>
                       </div>
                     </div>
                   )}
+                  
                   {gymInfo.email && (
                     <div className="flex items-start gap-3">
                       <span className="text-lg">✉️</span>
-                      <div>
-                        <p className="text-xs text-gray-500">Email</p>
+                      <div className="flex-1">
+                        <p className="text-xs text-gray-500 mb-0.5">Email</p>
                         <p className="text-sm text-gray-900">{gymInfo.email}</p>
                       </div>
                     </div>
                   )}
-                  {gymInfo.timings && (
+
+                  {gymInfo.website && (
+                    <div className="flex items-start gap-3">
+                      <span className="text-lg">🌐</span>
+                      <div className="flex-1">
+                        <p className="text-xs text-gray-500 mb-0.5">Website</p>
+                        <a
+                          href={gymInfo.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-600 font-medium"
+                        >
+                          {gymInfo.website}
+                        </a>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Operating Hours */}
+                  {(gymInfo.weekdayMorning || gymInfo.weekdayEvening || gymInfo.weekendMorning || gymInfo.weekendEvening) && (
                     <div className="flex items-start gap-3">
                       <span className="text-lg">🕐</span>
-                      <div>
-                        <p className="text-xs text-gray-500">Timings</p>
-                        <p className="text-sm text-gray-900">{gymInfo.timings}</p>
+                      <div className="flex-1">
+                        <p className="text-xs text-gray-500 mb-2">Operating Hours</p>
+                        
+                        {/* Weekdays */}
+                        {(gymInfo.weekdayMorning || gymInfo.weekdayEvening) && (
+                          <div className="mb-3">
+                            <p className="text-xs font-semibold text-gray-700 mb-1">Weekdays (Mon - Fri)</p>
+                            <div className="space-y-1">
+                              {gymInfo.weekdayMorning && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded">Morning</span>
+                                  <span className="text-sm text-gray-900 font-medium">{gymInfo.weekdayMorning}</span>
+                                </div>
+                              )}
+                              {gymInfo.weekdayEvening && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">Evening</span>
+                                  <span className="text-sm text-gray-900 font-medium">{gymInfo.weekdayEvening}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Weekends */}
+                        {(gymInfo.weekendMorning || gymInfo.weekendEvening) && (
+                          <div>
+                            <p className="text-xs font-semibold text-gray-700 mb-1">
+                              Weekends {gymInfo.sundayOff ? "(Saturday Only)" : "(Sat - Sun)"}
+                            </p>
+                            <div className="space-y-1">
+                              {gymInfo.weekendMorning && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded">Morning</span>
+                                  <span className="text-sm text-gray-900 font-medium">{gymInfo.weekendMorning}</span>
+                                </div>
+                              )}
+                              {gymInfo.weekendEvening && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">Evening</span>
+                                  <span className="text-sm text-gray-900 font-medium">{gymInfo.weekendEvening}</span>
+                                </div>
+                              )}
+                            </div>
+                            {gymInfo.sundayOff && (
+                              <p className="text-xs text-red-600 mt-2 font-medium">⚠️ Closed on Sundays</p>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -527,7 +610,7 @@ export default function CustomerProfilePage() {
                   <div className="flex gap-3 pt-4 border-t border-gray-100">
                     <button
                       onClick={() => window.open(`tel:${gymInfo.phone}`)}
-                      className="flex-1 py-2 bg-gray-100 rounded-lg text-sm font-medium"
+                      className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors"
                     >
                       📞 Call
                     </button>
@@ -535,7 +618,7 @@ export default function CustomerProfilePage() {
                       onClick={() =>
                         window.open(`https://wa.me/91${gymInfo.phone.replace(/\D/g, '')}`)
                       }
-                      className="flex-1 py-2 bg-green-100 text-green-700 rounded-lg text-sm font-medium"
+                      className="flex-1 py-2.5 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-sm font-medium transition-colors"
                     >
                       💬 WhatsApp
                     </button>

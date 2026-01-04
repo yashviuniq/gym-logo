@@ -17,8 +17,13 @@ const DAY_NAMES = ["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "
 const GOALS = ["Fat Loss", "Muscle Gain", "Strength", "Endurance", "Flexibility", "General Fitness"];
 const LEVELS = ["Beginner", "Intermediate", "Advanced"];
 
-export default function AssignWorkoutPlanModal({ member, gymId, onClose, onAssign }) {
+export default function AssignWorkoutPlanModal({ member, memberId, memberName, gymId, trainerId, onClose, onAssign, onAssigned }) {
     const { showSuccess, showError } = useToast();
+    
+    // Support both old prop format (member object) and new format (memberId + memberName)
+    const actualMemberId = memberId || member?.id;
+    const actualMemberName = memberName || member?.name;
+    const actualGymId = gymId || member?.gymId;
     const [workoutPlans, setWorkoutPlans] = useState([]);
     const [selectedPlan, setSelectedPlan] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -50,18 +55,18 @@ export default function AssignWorkoutPlanModal({ member, gymId, onClose, onAssig
         
         // Set default title with member name
         setFormData({
-            title: `${member.name}'s Workout Plan`,
-            description: `Custom workout plan created specifically for ${member.name}`,
+            title: `${actualMemberName}'s Workout Plan`,
+            description: `Custom workout plan created specifically for ${actualMemberName}`,
             goal: "",
             level: "",
         });
-    }, [member.name]);
+    }, [actualMemberName]);
 
     // Fetch workout plans from database
     useEffect(() => {
         const fetchPlans = async () => {
             try {
-                const targetGymId = gymId || member.gymId;
+                const targetGymId = actualGymId;
                 if (!targetGymId) {
                     console.error("No gym ID available");
                     setLoadingPlans(false);
@@ -90,7 +95,7 @@ export default function AssignWorkoutPlanModal({ member, gymId, onClose, onAssig
         };
 
         fetchPlans();
-    }, [gymId, member.gymId]);
+    }, [actualGymId]);
 
     const handleAssign = async () => {
         if (!selectedPlan) {
@@ -104,7 +109,7 @@ export default function AssignWorkoutPlanModal({ member, gymId, onClose, onAssig
             const { data: existing } = await supabase
                 .from("member_workouts")
                 .select("id")
-                .eq("member_id", member.id)
+                .eq("member_id", actualMemberId)
                 .eq("workout_plan_id", selectedPlan)
                 .maybeSingle();
 
@@ -118,8 +123,9 @@ export default function AssignWorkoutPlanModal({ member, gymId, onClose, onAssig
             const { error } = await supabase
                 .from("member_workouts")
                 .insert({
-                    member_id: member.id,
+                    member_id: actualMemberId,
                     workout_plan_id: selectedPlan,
+                    assigned_by_trainer_id: trainerId || null,
                 });
 
             if (error) {
@@ -129,6 +135,9 @@ export default function AssignWorkoutPlanModal({ member, gymId, onClose, onAssig
             showSuccess("Workout plan assigned successfully!");
             if (onAssign) {
                 onAssign();
+            }
+            if (onAssigned) {
+                onAssigned();
             }
             onClose();
         } catch (error) {
@@ -144,7 +153,7 @@ export default function AssignWorkoutPlanModal({ member, gymId, onClose, onAssig
             return;
         }
 
-        const targetGymId = gymId || member.gymId;
+        const targetGymId = actualGymId;
         if (!targetGymId) {
             showError("No gym selected");
             return;
@@ -167,7 +176,8 @@ export default function AssignWorkoutPlanModal({ member, gymId, onClose, onAssig
                     level: formData.level || null,
                     is_template: false,
                     created_by: createdBy,
-                    member_id: member.id, // This makes it member-specific
+                    member_id: actualMemberId, // This makes it member-specific
+                    trainer_id: trainerId || null,
                 })
                 .select()
                 .single();
@@ -221,8 +231,9 @@ export default function AssignWorkoutPlanModal({ member, gymId, onClose, onAssig
             const { error: assignError } = await supabase
                 .from("member_workouts")
                 .insert({
-                    member_id: member.id,
+                    member_id: actualMemberId,
                     workout_plan_id: planId,
+                    assigned_by_trainer_id: trainerId || null,
                 });
 
             if (assignError) throw assignError;
@@ -230,6 +241,9 @@ export default function AssignWorkoutPlanModal({ member, gymId, onClose, onAssig
             showSuccess("Custom workout plan created and assigned successfully!");
             if (onAssign) {
                 onAssign();
+            }
+            if (onAssigned) {
+                onAssigned();
             }
             onClose();
         } catch (error) {
@@ -311,8 +325,8 @@ export default function AssignWorkoutPlanModal({ member, gymId, onClose, onAssig
                             </h3>
                             <p className="text-gray-500 text-xs sm:text-sm mt-1">
                                 {mode === "select" 
-                                    ? `Select a workout plan for ${member.name}` 
-                                    : `Create a personalized workout plan for ${member.name}`}
+                                    ? `Select a workout plan for ${actualMemberName}` 
+                                    : `Create a personalized workout plan for ${actualMemberName}`}
                             </p>
                         </div>
                         <button
@@ -499,7 +513,7 @@ export default function AssignWorkoutPlanModal({ member, gymId, onClose, onAssig
 
                                 <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
                                     <p className="text-xs text-amber-700">
-                                        <strong>Note:</strong> This workout plan will be created exclusively for {member.name} and won't appear in the general workout plans list.
+                                        <strong>Note:</strong> This workout plan will be created exclusively for {actualMemberName} and won't appear in the general workout plans list.
                                     </p>
                                 </div>
                             </div>

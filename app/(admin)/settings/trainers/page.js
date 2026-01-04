@@ -1,0 +1,441 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Header from "@/components/layout/Header";
+import { supabase } from "@/lib/supabaseClient";
+import {
+  Users,
+  Plus,
+  Search,
+  UserCheck,
+  Dumbbell,
+  Apple,
+  MoreVertical,
+  ChevronRight,
+  Phone,
+  Mail,
+  Calendar,
+  Edit2,
+  Trash2,
+  UserPlus,
+  AlertCircle,
+  CheckCircle
+} from "lucide-react";
+
+export default function TrainersPage() {
+  const router = useRouter();
+  const [trainers, setTrainers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedGym, setSelectedGym] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [stats, setStats] = useState({
+    total: 0,
+    active: 0,
+    totalAssignments: 0
+  });
+
+  useEffect(() => {
+    const storedGym = localStorage.getItem("selectedGym");
+    if (storedGym) {
+      setSelectedGym(JSON.parse(storedGym));
+    } else {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (selectedGym?.id) {
+      fetchTrainers();
+    }
+  }, [selectedGym?.id]);
+
+  const fetchTrainers = async () => {
+    if (!selectedGym?.id) return;
+    setLoading(true);
+
+    try {
+      // Fetch trainers with their assignments count
+      const { data: trainersData, error } = await supabase
+        .from("gym_trainers")
+        .select(`
+          id,
+          profile_id,
+          specialization,
+          bio,
+          is_active,
+          hire_date,
+          created_at,
+          profiles:profile_id (
+            id,
+            first_name,
+            last_name,
+            email,
+            phone
+          )
+        `)
+        .eq("gym_id", selectedGym.id)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching trainers:", error);
+        setTrainers([]);
+        return;
+      }
+
+      // Get assignment counts for each trainer
+      const trainerIds = trainersData?.map(t => t.profile_id) || [];
+      
+      let assignmentCounts = {};
+      let dietCounts = {};
+      let workoutCounts = {};
+
+      if (trainerIds.length > 0) {
+        // Get member assignments count
+        const { data: assignments } = await supabase
+          .from("trainer_member_assignments")
+          .select("trainer_id")
+          .eq("gym_id", selectedGym.id)
+          .eq("is_active", true)
+          .in("trainer_id", trainerIds);
+
+        // Count assignments per trainer
+        assignments?.forEach(a => {
+          assignmentCounts[a.trainer_id] = (assignmentCounts[a.trainer_id] || 0) + 1;
+        });
+
+        // Get diet plans count
+        const { data: diets } = await supabase
+          .from("diet_plans")
+          .select("trainer_id")
+          .eq("gym_id", selectedGym.id)
+          .in("trainer_id", trainerIds);
+
+        diets?.forEach(d => {
+          dietCounts[d.trainer_id] = (dietCounts[d.trainer_id] || 0) + 1;
+        });
+
+        // Get workout plans count
+        const { data: workouts } = await supabase
+          .from("workout_plans")
+          .select("trainer_id")
+          .eq("gym_id", selectedGym.id)
+          .in("trainer_id", trainerIds);
+
+        workouts?.forEach(w => {
+          workoutCounts[w.trainer_id] = (workoutCounts[w.trainer_id] || 0) + 1;
+        });
+      }
+
+      // Map trainers with counts
+      const enrichedTrainers = trainersData?.map(t => ({
+        id: t.id,
+        profileId: t.profile_id,
+        name: `${t.profiles?.first_name || ""} ${t.profiles?.last_name || ""}`.trim(),
+        email: t.profiles?.email,
+        phone: t.profiles?.phone,
+        specialization: t.specialization,
+        bio: t.bio,
+        isActive: t.is_active,
+        hireDate: t.hire_date,
+        assignedMembers: assignmentCounts[t.profile_id] || 0,
+        dietPlans: dietCounts[t.profile_id] || 0,
+        workoutPlans: workoutCounts[t.profile_id] || 0
+      })) || [];
+
+      setTrainers(enrichedTrainers);
+      
+      // Calculate stats
+      const totalAssignments = Object.values(assignmentCounts).reduce((a, b) => a + b, 0);
+      setStats({
+        total: enrichedTrainers.length,
+        active: enrichedTrainers.filter(t => t.isActive).length,
+        totalAssignments
+      });
+    } catch (err) {
+      console.error("Error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteTrainer = async (trainerId) => {
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("gym_trainers")
+        .delete()
+        .eq("id", trainerId);
+
+      if (error) throw error;
+      
+      fetchTrainers();
+      setDeleteConfirm(null);
+    } catch (err) {
+      console.error("Error deleting trainer:", err);
+      alert("Failed to delete trainer");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const filteredTrainers = trainers.filter(trainer =>
+    trainer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    trainer.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    trainer.phone?.includes(searchQuery) ||
+    trainer.specialization?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-50 pb-24">
+      <Header title="Trainer Management" />
+
+      <main className="px-4 py-4 space-y-4">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-white rounded-xl p-4 shadow-sm">
+            <div className="flex items-center gap-2 mb-1">
+              <Users className="w-4 h-4 text-blue-600" />
+              <span className="text-xs text-gray-500">Total</span>
+            </div>
+            <p className="text-xl font-bold text-gray-900">{stats.total}</p>
+          </div>
+          <div className="bg-white rounded-xl p-4 shadow-sm">
+            <div className="flex items-center gap-2 mb-1">
+              <CheckCircle className="w-4 h-4 text-green-600" />
+              <span className="text-xs text-gray-500">Active</span>
+            </div>
+            <p className="text-xl font-bold text-gray-900">{stats.active}</p>
+          </div>
+          <div className="bg-white rounded-xl p-4 shadow-sm">
+            <div className="flex items-center gap-2 mb-1">
+              <UserCheck className="w-4 h-4 text-purple-600" />
+              <span className="text-xs text-gray-500">Assigned</span>
+            </div>
+            <p className="text-xl font-bold text-gray-900">{stats.totalAssignments}</p>
+          </div>
+        </div>
+
+        {/* Search and Add */}
+        <div className="flex gap-3">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search trainers..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+          <button
+            onClick={() => router.push("/settings/trainers/add")}
+            className="px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl flex items-center gap-2 font-medium shadow-md hover:shadow-lg transition-shadow"
+          >
+            <Plus className="w-5 h-5" />
+            <span className="hidden sm:inline">Add</span>
+          </button>
+        </div>
+
+        {/* Trainers List */}
+        {loading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white rounded-xl p-4 shadow-sm animate-pulse">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gray-200 rounded-full" />
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-200 rounded w-1/3 mb-2" />
+                    <div className="h-3 bg-gray-200 rounded w-1/2" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filteredTrainers.length === 0 ? (
+          <div className="bg-white rounded-xl p-8 shadow-sm text-center">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Users className="w-8 h-8 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              {searchQuery ? "No trainers found" : "No trainers yet"}
+            </h3>
+            <p className="text-gray-500 mb-4">
+              {searchQuery 
+                ? "Try a different search term" 
+                : "Add your first trainer to get started"}
+            </p>
+            {!searchQuery && (
+              <button
+                onClick={() => router.push("/settings/trainers/add")}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium"
+              >
+                <UserPlus className="w-4 h-4" />
+                Add Trainer
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filteredTrainers.map((trainer) => (
+              <div
+                key={trainer.id}
+                className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-start gap-3">
+                  {/* Avatar */}
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg ${
+                    trainer.isActive 
+                      ? "bg-gradient-to-br from-blue-500 to-indigo-600" 
+                      : "bg-gray-400"
+                  }`}>
+                    {trainer.name.charAt(0).toUpperCase()}
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-semibold text-gray-900 truncate">
+                        {trainer.name}
+                      </h3>
+                      {trainer.isActive ? (
+                        <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                          Active
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">
+                          Inactive
+                        </span>
+                      )}
+                    </div>
+
+                    {trainer.specialization && (
+                      <p className="text-sm text-blue-600 font-medium mb-1">
+                        {trainer.specialization}
+                      </p>
+                    )}
+
+                    <div className="flex flex-wrap gap-2 text-xs text-gray-500 mb-2">
+                      {trainer.phone && (
+                        <span className="flex items-center gap-1">
+                          <Phone className="w-3 h-3" />
+                          {trainer.phone}
+                        </span>
+                      )}
+                      {trainer.email && (
+                        <span className="flex items-center gap-1">
+                          <Mail className="w-3 h-3" />
+                          {trainer.email}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Stats */}
+                    <div className="flex gap-4 text-sm">
+                      <div className="flex items-center gap-1">
+                        <UserCheck className="w-4 h-4 text-purple-500" />
+                        <span className="text-gray-600">
+                          <strong>{trainer.assignedMembers}</strong> members
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Apple className="w-4 h-4 text-green-500" />
+                        <span className="text-gray-600">
+                          <strong>{trainer.dietPlans}</strong> diets
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Dumbbell className="w-4 h-4 text-orange-500" />
+                        <span className="text-gray-600">
+                          <strong>{trainer.workoutPlans}</strong> workouts
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => router.push(`/settings/trainers/${trainer.id}`)}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="View Details"
+                    >
+                      <ChevronRight className="w-5 h-5 text-gray-400" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
+                  <button
+                    onClick={() => router.push(`/settings/trainers/${trainer.id}`)}
+                    className="flex-1 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                  >
+                    View Details
+                  </button>
+                  <button
+                    onClick={() => router.push(`/settings/trainers/${trainer.id}/assign`)}
+                    className="flex-1 py-2 text-sm font-medium text-purple-600 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors"
+                  >
+                    Assign Members
+                  </button>
+                  <button
+                    onClick={() => setDeleteConfirm(trainer)}
+                    className="py-2 px-3 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {deleteConfirm && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 bg-red-100 rounded-full">
+                  <AlertCircle className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Delete Trainer</h3>
+                  <p className="text-sm text-gray-500">This action cannot be undone</p>
+                </div>
+              </div>
+              
+              <p className="text-gray-600 mb-6">
+                Are you sure you want to remove <strong>{deleteConfirm.name}</strong> from your gym?
+                {deleteConfirm.assignedMembers > 0 && (
+                  <span className="block mt-2 text-amber-600 text-sm">
+                    ⚠️ This trainer has {deleteConfirm.assignedMembers} assigned member(s).
+                  </span>
+                )}
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setDeleteConfirm(null)}
+                  className="flex-1 py-2 px-4 border border-gray-200 rounded-xl font-medium text-gray-700 hover:bg-gray-50"
+                  disabled={deleting}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleDeleteTrainer(deleteConfirm.id)}
+                  className="flex-1 py-2 px-4 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 disabled:opacity-50"
+                  disabled={deleting}
+                >
+                  {deleting ? "Deleting..." : "Delete"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}

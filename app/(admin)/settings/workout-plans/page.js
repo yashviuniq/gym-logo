@@ -114,16 +114,26 @@ function WorkoutPlansContent() {
       const gym = JSON.parse(storedGym);
       setGymId(gym.id);
 
-      // Only fetch general workout plans (not member-specific)
+      // Fetch general workout plans with creator info (not member-specific)
       const { data, error } = await supabase
         .from("workout_plans")
-        .select("*")
+        .select(`
+          *,
+          creator:created_by(id, role)
+        `)
         .eq("gym_id", gym.id)
         .is("member_id", null)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setWorkoutPlans(data || []);
+      
+      // Filter out plans created by trainers (only show admin/owner created plans)
+      const adminPlans = (data || []).filter(plan => {
+        // If no creator info or creator role is not trainer, include it
+        return !plan.creator || plan.creator.role !== 'trainer';
+      });
+      
+      setWorkoutPlans(adminPlans);
     } catch (error) {
       console.error("Error fetching workout plans:", error);
       showError("Failed to load workout plans");

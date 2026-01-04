@@ -121,16 +121,26 @@ function DietPlansContent() {
     try {
       setLoading(true);
 
-      // Only fetch general diet plans (not member-specific ones)
+      // Fetch general diet plans with creator info (not member-specific ones)
       const { data, error } = await supabase
         .from("diet_plans")
-        .select("*")
+        .select(`
+          *,
+          creator:created_by(id, role)
+        `)
         .eq("gym_id", gymId)
         .is("member_id", null)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setDietPlans(data || []);
+      
+      // Filter out plans created by trainers (only show admin/owner created plans)
+      const adminPlans = (data || []).filter(plan => {
+        // If no creator info or creator role is not trainer, include it
+        return !plan.creator || plan.creator.role !== 'trainer';
+      });
+      
+      setDietPlans(adminPlans);
     } catch (error) {
       console.error("Error fetching diet plans:", error);
       showError("Failed to load diet plans");

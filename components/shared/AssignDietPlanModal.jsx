@@ -27,8 +27,13 @@ const MEAL_TYPES = [
     { value: "bedtime", label: "Bedtime", icon: <Clock className="w-4 h-4" /> },
 ];
 
-export default function AssignDietPlanModal({ member, gymId, onClose, onAssign }) {
+export default function AssignDietPlanModal({ member, memberId, memberName, gymId, trainerId, onClose, onAssign, onAssigned }) {
     const { showSuccess, showError } = useToast();
+    
+    // Support both old prop format (member object) and new format (memberId + memberName)
+    const actualMemberId = memberId || member?.id;
+    const actualMemberName = memberName || member?.name;
+    const actualGymId = gymId || member?.gymId;
     const [dietPlans, setDietPlans] = useState([]);
     const [selectedPlan, setSelectedPlan] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -57,16 +62,16 @@ export default function AssignDietPlanModal({ member, gymId, onClose, onAssign }
         
         // Set default title with member name
         setFormData({
-            title: `${member.name}'s Diet Plan`,
-            description: `Custom diet plan created specifically for ${member.name}`,
+            title: `${actualMemberName}'s Diet Plan`,
+            description: `Custom diet plan created specifically for ${actualMemberName}`,
         });
-    }, [member.name]);
+    }, [actualMemberName]);
 
     // Fetch diet plans from database
     useEffect(() => {
         const fetchPlans = async () => {
             try {
-                const targetGymId = gymId || member.gymId;
+                const targetGymId = actualGymId;
                 if (!targetGymId) {
                     console.error("No gym ID available");
                     setLoadingPlans(false);
@@ -95,7 +100,7 @@ export default function AssignDietPlanModal({ member, gymId, onClose, onAssign }
         };
 
         fetchPlans();
-    }, [gymId, member.gymId]);
+    }, [actualGymId]);
 
     const handleAssign = async () => {
         if (!selectedPlan) {
@@ -113,7 +118,7 @@ export default function AssignDietPlanModal({ member, gymId, onClose, onAssign }
             const { data: existing } = await supabase
                 .from("member_diets")
                 .select("id")
-                .eq("member_id", member.id)
+                .eq("member_id", actualMemberId)
                 .eq("diet_plan_id", selectedPlan)
                 .maybeSingle();
 
@@ -127,9 +132,10 @@ export default function AssignDietPlanModal({ member, gymId, onClose, onAssign }
             const { error } = await supabase
                 .from("member_diets")
                 .insert({
-                    member_id: member.id,
+                    member_id: actualMemberId,
                     diet_plan_id: selectedPlan,
                     assigned_by: assignedBy,
+                    assigned_by_trainer_id: trainerId || null,
                 });
 
             if (error) {
@@ -139,6 +145,9 @@ export default function AssignDietPlanModal({ member, gymId, onClose, onAssign }
             showSuccess("Diet plan assigned successfully!");
             if (onAssign) {
                 onAssign();
+            }
+            if (onAssigned) {
+                onAssigned();
             }
             onClose();
         } catch (error) {
@@ -154,7 +163,7 @@ export default function AssignDietPlanModal({ member, gymId, onClose, onAssign }
             return;
         }
 
-        const targetGymId = gymId || member.gymId;
+        const targetGymId = actualGymId;
         if (!targetGymId) {
             showError("No gym selected");
             return;
@@ -175,7 +184,7 @@ export default function AssignDietPlanModal({ member, gymId, onClose, onAssign }
                     description: formData.description || null,
                     is_template: false,
                     created_by: createdBy,
-                    member_id: member.id, // This makes it member-specific
+                    member_id: actualMemberId, // This makes it member-specific
                 })
                 .select()
                 .single();
@@ -242,9 +251,10 @@ export default function AssignDietPlanModal({ member, gymId, onClose, onAssign }
             const { error: assignError } = await supabase
                 .from("member_diets")
                 .insert({
-                    member_id: member.id,
+                    member_id: actualMemberId,
                     diet_plan_id: planId,
                     assigned_by: createdBy,
+                    assigned_by_trainer_id: trainerId || null,
                 });
 
             if (assignError) throw assignError;
@@ -252,6 +262,9 @@ export default function AssignDietPlanModal({ member, gymId, onClose, onAssign }
             showSuccess("Custom diet plan created and assigned successfully!");
             if (onAssign) {
                 onAssign();
+            }
+            if (onAssigned) {
+                onAssigned();
             }
             onClose();
         } catch (error) {
@@ -348,8 +361,8 @@ export default function AssignDietPlanModal({ member, gymId, onClose, onAssign }
                             </h3>
                             <p className="text-gray-500 text-xs sm:text-sm mt-1">
                                 {mode === "select" 
-                                    ? `Select a diet plan for ${member.name}` 
-                                    : `Create a personalized diet plan for ${member.name}`}
+                                    ? `Select a diet plan for ${actualMemberName}` 
+                                    : `Create a personalized diet plan for ${actualMemberName}`}
                             </p>
                         </div>
                         <button
@@ -493,7 +506,7 @@ export default function AssignDietPlanModal({ member, gymId, onClose, onAssign }
 
                                 <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
                                     <p className="text-xs text-amber-700">
-                                        <strong>Note:</strong> This diet plan will be created exclusively for {member.name} and won't appear in the general diet plans list.
+                                        <strong>Note:</strong> This diet plan will be created exclusively for {actualMemberName} and won't appear in the general diet plans list.
                                     </p>
                                 </div>
                             </div>

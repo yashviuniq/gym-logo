@@ -18,10 +18,15 @@ export default function GymSettingsPage() {
     phone: "",
     email: "",
     website: "",
-    weekdayOpen: "05:00",
-    weekdayClose: "23:00",
-    weekendOpen: "06:00",
-    weekendClose: "22:00",
+    weekdayMorningStart: "06:00",
+    weekdayMorningEnd: "12:00",
+    weekdayEveningStart: "16:00",
+    weekdayEveningEnd: "22:00",
+    weekendMorningStart: "06:00",
+    weekendMorningEnd: "12:00",
+    weekendEveningStart: "16:00",
+    weekendEveningEnd: "22:00",
+    sundayOff: false,
     qrEnabled: true,
     qrType: "dynamic",
   });
@@ -61,10 +66,15 @@ export default function GymSettingsPage() {
           phone: gymData.phone || "",
           email: gymData.email || "",
           website: gymData.website || "",
-          weekdayOpen: gymData.weekday_open || "05:00",
-          weekdayClose: gymData.weekday_close || "23:00",
-          weekendOpen: gymData.weekend_open || "06:00",
-          weekendClose: gymData.weekend_close || "22:00",
+          weekdayMorningStart: gymData.weekday_morning_start || "06:00",
+          weekdayMorningEnd: gymData.weekday_morning_end || "12:00",
+          weekdayEveningStart: gymData.weekday_evening_start || "16:00",
+          weekdayEveningEnd: gymData.weekday_evening_end || "22:00",
+          weekendMorningStart: gymData.weekend_morning_start || "06:00",
+          weekendMorningEnd: gymData.weekend_morning_end || "12:00",
+          weekendEveningStart: gymData.weekend_evening_start || "16:00",
+          weekendEveningEnd: gymData.weekend_evening_end || "22:00",
+          sundayOff: gymData.sunday_off || false,
           qrEnabled: gymData.qr_enabled !== null ? gymData.qr_enabled : true,
           qrType: gymData.qr_type || "dynamic",
         });
@@ -138,10 +148,15 @@ export default function GymSettingsPage() {
           phone: cleanPhone || null,
           email: formData.email?.trim() || null,
           website: formData.website?.trim() || null,
-          weekday_open: formData.weekdayOpen,
-          weekday_close: formData.weekdayClose,
-          weekend_open: formData.weekendOpen,
-          weekend_close: formData.weekendClose,
+          weekday_morning_start: formData.weekdayMorningStart,
+          weekday_morning_end: formData.weekdayMorningEnd,
+          weekday_evening_start: formData.weekdayEveningStart,
+          weekday_evening_end: formData.weekdayEveningEnd,
+          weekend_morning_start: formData.weekendMorningStart,
+          weekend_morning_end: formData.weekendMorningEnd,
+          weekend_evening_start: formData.weekendEveningStart,
+          weekend_evening_end: formData.weekendEveningEnd,
+          sunday_off: formData.sundayOff,
           qr_enabled: formData.qrEnabled,
           qr_type: formData.qrType,
           updated_by: user?.id || null,
@@ -268,54 +283,134 @@ export default function GymSettingsPage() {
         <div className="bg-white rounded-xl p-4 shadow-sm space-y-4">
           <h3 className="font-semibold text-gray-900">Operating Hours</h3>
 
+          {/* Weekdays */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Weekdays (Mon - Fri)
             </label>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs text-gray-500">Opening</label>
-                <input
-                  type="time"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none"
-                  value={formData.weekdayOpen}
-                  onChange={(e) => updateForm("weekdayOpen", e.target.value)}
-                />
+            
+            {/* Morning Shift */}
+            <div className="mb-3">
+              <label className="text-xs font-medium text-gray-600 mb-1 block">Morning Shift</label>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-gray-500">Start</label>
+                  <input
+                    type="time"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#F97316]/50 focus:border-[#F97316]/50"
+                    value={formData.weekdayMorningStart}
+                    onChange={(e) => updateForm("weekdayMorningStart", e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500">End</label>
+                  <input
+                    type="time"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#F97316]/50 focus:border-[#F97316]/50"
+                    value={formData.weekdayMorningEnd}
+                    onChange={(e) => updateForm("weekdayMorningEnd", e.target.value)}
+                  />
+                </div>
               </div>
-              <div>
-                <label className="text-xs text-gray-500">Closing</label>
-                <input
-                  type="time"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none"
-                  value={formData.weekdayClose}
-                  onChange={(e) => updateForm("weekdayClose", e.target.value)}
-                />
+            </div>
+
+            {/* Evening Shift */}
+            <div>
+              <label className="text-xs font-medium text-gray-600 mb-1 block">Evening Shift</label>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-gray-500">Start</label>
+                  <input
+                    type="time"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#F97316]/50 focus:border-[#F97316]/50"
+                    value={formData.weekdayEveningStart}
+                    onChange={(e) => updateForm("weekdayEveningStart", e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500">End</label>
+                  <input
+                    type="time"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#F97316]/50 focus:border-[#F97316]/50"
+                    value={formData.weekdayEveningEnd}
+                    onChange={(e) => updateForm("weekdayEveningEnd", e.target.value)}
+                  />
+                </div>
               </div>
             </div>
           </div>
 
+          {/* Weekends */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Weekends (Sat - Sun)
-            </label>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs text-gray-500">Opening</label>
-                <input
-                  type="time"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none"
-                  value={formData.weekendOpen}
-                  onChange={(e) => updateForm("weekendOpen", e.target.value)}
-                />
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Weekends {formData.sundayOff ? "(Saturday Only)" : "(Sat - Sun)"}
+              </label>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-600">Sunday Off</span>
+                <button
+                  type="button"
+                  onClick={() => updateForm("sundayOff", !formData.sundayOff)}
+                  className={`w-11 h-6 rounded-full transition ${
+                    formData.sundayOff ? "bg-orange-500" : "bg-gray-300"
+                  }`}
+                >
+                  <div
+                    className={`w-5 h-5 bg-white rounded-full shadow transition transform ${
+                      formData.sundayOff ? "translate-x-5" : "translate-x-0.5"
+                    }`}
+                  ></div>
+                </button>
               </div>
-              <div>
-                <label className="text-xs text-gray-500">Closing</label>
-                <input
-                  type="time"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none"
-                  value={formData.weekendClose}
-                  onChange={(e) => updateForm("weekendClose", e.target.value)}
-                />
+            </div>
+            
+            {/* Morning Shift */}
+            <div className="mb-3">
+              <label className="text-xs font-medium text-gray-600 mb-1 block">Morning Shift</label>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-gray-500">Start</label>
+                  <input
+                    type="time"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#F97316]/50 focus:border-[#F97316]/50"
+                    value={formData.weekendMorningStart}
+                    onChange={(e) => updateForm("weekendMorningStart", e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500">End</label>
+                  <input
+                    type="time"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#F97316]/50 focus:border-[#F97316]/50"
+                    value={formData.weekendMorningEnd}
+                    onChange={(e) => updateForm("weekendMorningEnd", e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Evening Shift */}
+            <div>
+              <label className="text-xs font-medium text-gray-600 mb-1 block">Evening Shift</label>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-gray-500">Start</label>
+                  <input
+                    type="time"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#F97316]/50 focus:border-[#F97316]/50"
+                    value={formData.weekendEveningStart}
+                    onChange={(e) => updateForm("weekendEveningStart", e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500">End</label>
+                  <input
+                    type="time"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#F97316]/50 focus:border-[#F97316]/50"
+                    value={formData.weekendEveningEnd}
+                    onChange={(e) => updateForm("weekendEveningEnd", e.target.value)}
+                  />
+                </div>
               </div>
             </div>
           </div>

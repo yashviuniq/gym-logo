@@ -100,7 +100,7 @@ export default function CustomerAnnouncementsPage() {
       <div className="min-h-screen bg-gray-50 pb-24">
         <Header title="Announcements" showBack={false} />
         <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
         </div>
       </div>
     );
@@ -130,11 +130,11 @@ export default function CustomerAnnouncementsPage() {
                 className="bg-white rounded-xl shadow-sm overflow-hidden cursor-pointer hover:shadow-md transition-all"
               >
                 {/* Header */}
-                <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-4 text-white">
+                <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-4 text-white">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <h3 className="font-bold text-lg mb-1">{announcement.title}</h3>
-                      <p className="text-orange-100 text-xs">
+                      <p className="text-blue-100 text-xs">
                         {formatDate(announcement.announced_at)} • {formatTime(announcement.announced_at)}
                       </p>
                     </div>
@@ -156,7 +156,7 @@ export default function CustomerAnnouncementsPage() {
                     </div>
                   )}
 
-                  <div className="mt-3 flex items-center text-orange-600 text-sm font-medium">
+                  <div className="mt-3 flex items-center text-blue-600 text-sm font-medium">
                     <span>Read more</span>
                     <span className="ml-2">→</span>
                   </div>

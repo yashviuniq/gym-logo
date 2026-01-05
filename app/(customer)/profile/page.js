@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
 import { supabase } from "@/lib/supabaseClient";
+import { ProfilePageSkeleton } from "@/components/shared/CustomerSkeleton";
 import { Edit2, Camera, Calendar, AlertTriangle, DollarSign } from "lucide-react";
 
 export default function CustomerProfilePage() {
@@ -205,14 +206,7 @@ export default function CustomerProfilePage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 pb-24">
-        <Header title="My Profile" showBack={false} />
-        <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
-        </div>
-      </div>
-    );
+    return <ProfilePageSkeleton />;
   }
 
   if (!profile) {

@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
+import { AttendancePageSkeleton } from "@/components/shared/Skeleton";
 import { 
   Search, 
   User, 
@@ -313,15 +314,7 @@ export default function AttendancePage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom flex flex-col items-center justify-center">
-        <div className="relative">
-          <div className="w-14 h-14 border-4 border-blue-500/20 border-t-blue-600 rounded-full animate-spin"></div>
-          <div className="absolute inset-0 w-14 h-14 border-4 border-transparent border-t-blue-500 rounded-full animate-spin animation-delay-200"></div>
-        </div>
-        <p className="mt-6 text-gray-600 font-medium text-sm">Loading attendance...</p>
-      </div>
-    );
+    return <AttendancePageSkeleton />;
   }
 
   if (!selectedGym) {

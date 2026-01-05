@@ -24,6 +24,14 @@ const adminNavItems = [
   { href: "/settings", label: "Settings", icon: <Settings className="w-5 h-5" /> },
 ];
 
+const trainerNavItems = [
+  { href: "/trainer/dashboard", label: "Home", icon: <Home className="w-5 h-5" /> },
+  { href: "/trainer/members", label: "Members", icon: <Users className="w-5 h-5" /> },
+  { href: "/trainer/diet-plans", label: "Diet", icon: <Apple className="w-5 h-5" /> },
+  { href: "/trainer/workout-plans", label: "Workout", icon: <Dumbbell className="w-5 h-5" /> },
+  { href: "/trainer/profile", label: "Profile", icon: <User className="w-5 h-5" /> },
+];
+
 const customerNavItems = [
   { href: "/user/dashboard", label: "Home", icon: <Home className="w-5 h-5" /> },
   { href: "/workout", label: "Workout", icon: <Dumbbell className="w-5 h-5" /> },
@@ -34,14 +42,28 @@ const customerNavItems = [
 
 export default function BottomNav({ role = "admin" }) {
   const pathname = usePathname();
-  const navItems = role === "admin" ? adminNavItems : customerNavItems;
+  
+  const getNavItems = () => {
+    switch (role) {
+      case "trainer":
+        return trainerNavItems;
+      case "customer":
+      case "member":
+        return customerNavItems;
+      default:
+        return adminNavItems;
+    }
+  };
+  
+  const navItems = getNavItems();
+  const homePath = navItems[0]?.href;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-200 z-50 safe-area-bottom">
       <div className="flex justify-around items-center  max-w-screen-md mx-auto">
         {navItems.map((item) => {
           const isActive = pathname === item.href || 
-                          (item.href !== "/admin/dashboard" && pathname.startsWith(item.href));
+                          (item.href !== homePath && pathname.startsWith(item.href));
           
           return (
             <Link

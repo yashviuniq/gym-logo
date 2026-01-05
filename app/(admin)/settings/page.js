@@ -80,13 +80,12 @@ const settingsSections = [
     color: "from-blue-600 to-indigo-600"
   },
   {
-    id: "staff",
-    title: "Staff & Access",
-    description: "Sub-admin roles, permissions",
+    id: "trainers",
+    title: "Trainers",
+    description: "Manage trainers and member assignments",
     icon: Shield,
-    href: "/settings/staff",
-    badge: "Coming Soon",
-    color: "from-gray-500 to-gray-600"
+    href: "/settings/trainers",
+    color: "from-blue-600 to-indigo-600"
   },
 ];
 

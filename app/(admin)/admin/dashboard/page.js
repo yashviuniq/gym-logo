@@ -46,7 +46,7 @@ export default function AdminDashboard() {
   const [allTodayAttendance, setAllTodayAttendance] = useState([]);
   const [pendingPayments, setPendingPayments] = useState([]);
   const [allPendingPayments, setAllPendingPayments] = useState([]);
-  const [recentActivity, setRecentActivity] = useState([]);
+  const [recentActivity, setRecentActivity] = useState([]); 
   const [allRecentActivity, setAllRecentActivity] = useState([]);
   
   // Modal states
@@ -150,7 +150,7 @@ export default function AdminDashboard() {
       
       const { data: payments, error: paymentsError } = await supabase
         .from("payments")
-        .select("amount")
+        .select("id, amount, created_at, collected_by, collected_by_name, members(full_name)")
         .eq("gym_id", gymId)
         .gte("created_at", firstDayOfMonthStr)
         .order("created_at", { ascending: false });
@@ -248,6 +248,31 @@ export default function AdminDashboard() {
             time: new Date(member.created_at).toLocaleDateString(),
             icon: "🆕",
           }))
+        );
+      }
+
+      // Add recent payments to activities (especially trainer collections)
+      if (payments && !paymentsError) {
+        const recentPayments = payments.slice(0, 10);
+        activities = activities.concat(
+          recentPayments.map((payment) => {
+            const memberName = payment.members?.full_name || "Member";
+            const amount = parseFloat(payment.amount || 0).toLocaleString();
+            let text = `Payment of ₹${amount} from ${memberName}`;
+            
+            // If collected by a trainer, show trainer name
+            if (payment.collected_by && payment.collected_by_name) {
+              text = `${payment.collected_by_name} collected ₹${amount} from ${memberName}`;
+            }
+            
+            return {
+              id: `payment_${payment.id}`,
+              type: "payment",
+              text,
+              time: new Date(payment.created_at).toLocaleDateString(),
+              icon: payment.collected_by ? "👨‍🏫" : "💰",
+            };
+          })
         );
       }
 

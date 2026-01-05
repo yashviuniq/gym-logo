@@ -96,6 +96,8 @@ export default function FinancePage() {
           status,
           paid_at,
           created_at,
+          collected_by,
+          collected_by_name,
           members (
             id,
             full_name,
@@ -199,6 +201,7 @@ export default function FinancePage() {
           mode: payment.payment_mode,
           date: formatDate(payment.created_at),
           status: payment.status,
+          collectedBy: payment.collected_by_name || null,
         }));
         setRecentTransactions(transformedTransactions);
 
@@ -573,8 +576,12 @@ export default function FinancePage() {
       
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center">
-                          <DollarSign className="w-4 h-4 text-emerald-600" />
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                          txn.collectedBy 
+                            ? "bg-gradient-to-br from-purple-50 to-purple-100"
+                            : "bg-gradient-to-br from-emerald-50 to-emerald-100"
+                        }`}>
+                          <DollarSign className={`w-4 h-4 ${txn.collectedBy ? "text-purple-600" : "text-emerald-600"}`} />
                         </div>
                         <div>
                           <p className="font-medium text-gray-900 text-sm">{txn.name}</p>
@@ -584,6 +591,14 @@ export default function FinancePage() {
                             </span>
                             <span className="text-xs text-gray-400">•</span>
                             <span className="text-xs text-gray-500">{txn.mode}</span>
+                            {txn.collectedBy && (
+                              <>
+                                <span className="text-xs text-gray-400">•</span>
+                                <span className="text-xs text-purple-600 font-medium">
+                                  by {txn.collectedBy}
+                                </span>
+                              </>
+                            )}
                           </div>
                         </div>
                       </div>

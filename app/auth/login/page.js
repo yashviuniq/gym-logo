@@ -25,7 +25,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [userType, setUserType] = useState("admin"); // "admin" or "member"
+  const [userType, setUserType] = useState("admin"); // "admin", "trainer", or "member"
   const [showContactModal, setShowContactModal] = useState(false);
 
   // Helper function to detect if input is email or phone
@@ -67,6 +67,31 @@ export default function LoginPage() {
         }));
         router.push("/admin/dashboard");
         
+      } else if (userType === "trainer") {
+        // Trainer login through profiles table
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: emailOrPhone,
+          password,
+        });
+
+        if (error) {
+          setError("Invalid email/phone or password");
+          setLoading(false);
+          return;
+        }
+
+        // Store trainer info
+        const user = data.user;
+        localStorage.setItem("gymUser", JSON.stringify({
+          id: user.id,
+          name: user.user_metadata?.name || user.email,
+          email: user.email,
+          phone: user.user_metadata?.phone,
+          role: "trainer",
+          userType: "trainer"
+        }));
+        
+        router.push("/trainer/dashboard");
       } else {
         // Member login through member_credentials table
         const loginType = isEmailLogin ? "email" : "phone";
@@ -163,28 +188,39 @@ export default function LoginPage() {
           {/* Login Card */}
           <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-2xl">
             {/* User Type Selector */}
-            <div className="flex gap-2 mb-6">
+            <div className="grid grid-cols-3 gap-2 mb-6">
               <button
                 onClick={() => setUserType("admin")}
-                className={`flex-1 py-3 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                className={`py-3 rounded-lg text-xs font-medium transition-all flex flex-col items-center justify-center gap-1 ${
                   userType === "admin"
                     ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg"
                     : "bg-white/5 text-gray-400 hover:bg-white/10"
                 }`}
               >
                 <Building className="w-4 h-4" />
-                Gym Admin
+                <span>Admin</span>
+              </button>
+              <button
+                onClick={() => setUserType("trainer")}
+                className={`py-3 rounded-lg text-xs font-medium transition-all flex flex-col items-center justify-center gap-1 ${
+                  userType === "trainer"
+                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg"
+                    : "bg-white/5 text-gray-400 hover:bg-white/10"
+                }`}
+              >
+                <Dumbbell className="w-4 h-4" />
+                <span>Trainer</span>
               </button>
               <button
                 onClick={() => setUserType("member")}
-                className={`flex-1 py-3 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                className={`py-3 rounded-lg text-xs font-medium transition-all flex flex-col items-center justify-center gap-1 ${
                   userType === "member"
                     ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg"
                     : "bg-white/5 text-gray-400 hover:bg-white/10"
                 }`}
               >
                 <User className="w-4 h-4" />
-                Member
+                <span>Member</span>
               </button>
             </div>
 

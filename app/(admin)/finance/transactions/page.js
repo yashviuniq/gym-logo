@@ -36,6 +36,8 @@ export default function TransactionsPage() {
           status,
           paid_at,
           created_at,
+          collected_by,
+          collected_by_name,
           members (
             id,
             full_name,
@@ -58,6 +60,7 @@ export default function TransactionsPage() {
           mode: payment.payment_mode?.toLowerCase() || "cash",
           date: payment.paid_at || payment.created_at,
           status: payment.status || "paid",
+          collectedBy: payment.collected_by_name || null,
         }));
         setTransactions(transformedTransactions);
       }
@@ -202,14 +205,19 @@ export default function TransactionsPage() {
                 className="p-4 flex items-center justify-between"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                    <span className="text-green-600 font-bold">₹</span>
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    txn.collectedBy ? "bg-purple-100" : "bg-green-100"
+                  }`}>
+                    <span className={`font-bold ${txn.collectedBy ? "text-purple-600" : "text-green-600"}`}>₹</span>
                   </div>
                   <div>
                     <p className="font-medium text-gray-900">{txn.name}</p>
                     <p className="text-xs text-gray-500 capitalize">
                       {txn.type.replace("_", " ")} • {txn.mode} •{" "}
                       {formatDate(txn.date)}
+                      {txn.collectedBy && (
+                        <span className="text-purple-600 font-medium"> • by {txn.collectedBy}</span>
+                      )}
                     </p>
                   </div>
                 </div>

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
+import { UserDashboardSkeleton } from "@/components/shared/CustomerSkeleton";
 
 const quickLinks = [
   { label: "Workout", icon: "💪", href: "/workout", color: "bg-blue-100" },
@@ -221,14 +222,7 @@ export default function CustomerDashboard() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 pb-24">
-        <Header title="Home" showBack={false} />
-        <div className="flex items-center justify-center mt-20">
-          <div className="text-gray-500">Loading dashboard...</div>
-        </div>
-      </div>
-    );
+    return <UserDashboardSkeleton />;
   }
 
   return (

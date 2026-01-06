@@ -114,7 +114,7 @@ export default function AddTrainerPage() {
           last_name: formData.lastName.trim(),
           email: formData.email.trim().toLowerCase(),
           phone: formData.phone.trim(),
-          password: formData.password, // In production, hash this
+          password: formData.password,
           role: "trainer"
         })
         .select()

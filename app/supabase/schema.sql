@@ -69,6 +69,8 @@ CREATE TABLE profiles (
     phone VARCHAR(20),
     password TEXT,
     role profile_role NOT NULL DEFAULT 'member',
+    permissions JSONB DEFAULT '{"dashboard": true, "members": true, "attendance": true, "announcements": true, "finance": true, "analytics": true, "monitoring": true, "settings": true}'::jsonb,
+    gym_id UUID REFERENCES gyms(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -76,6 +78,8 @@ CREATE TABLE profiles (
 COMMENT ON TABLE profiles IS 'User profiles for all roles - owner, admin, trainer, member';
 COMMENT ON COLUMN profiles.email IS 'Email for admin/owner/trainer login';
 COMMENT ON COLUMN profiles.password IS 'Password for admin/owner/trainer login (hash in production)';
+COMMENT ON COLUMN profiles.permissions IS 'Feature permissions for admin role: {dashboard, members, attendance, announcements, finance, analytics, monitoring, settings}';
+COMMENT ON COLUMN profiles.gym_id IS 'Gym assignment for admin/trainer roles';
 
 -- ------------------------------------------------------------
 -- 3.2 GYMS TABLE

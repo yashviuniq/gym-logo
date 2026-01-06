@@ -14,14 +14,16 @@ import {
   Apple,
   Bell
 } from "lucide-react";
+import { usePermissions } from "@/lib/hooks/usePermissions";
+import { hasPermission, PERMISSIONS } from "@/lib/constants/permissions";
 
-const adminNavItems = [
-  { href: "/admin/dashboard", label: "Home", icon: <Home className="w-5 h-5" /> },
-  { href: "/members", label: "Members", icon: <Users className="w-5 h-5" /> },
-  { href: "/attendance", label: "Attendance", icon: <CalendarCheck className="w-5 h-5" /> },
-  { href: "/announcements", label: "Alerts", icon: <Megaphone className="w-5 h-5" /> },
-  { href: "/finance", label: "Finance", icon: <CreditCard className="w-5 h-5" /> },
-  { href: "/settings", label: "Settings", icon: <Settings className="w-5 h-5" /> },
+const allAdminNavItems = [
+  { href: "/admin/dashboard", label: "Home", icon: <Home className="w-5 h-5" />, permission: PERMISSIONS.DASHBOARD },
+  { href: "/members", label: "Members", icon: <Users className="w-5 h-5" />, permission: PERMISSIONS.MEMBERS },
+  { href: "/attendance", label: "Attendance", icon: <CalendarCheck className="w-5 h-5" />, permission: PERMISSIONS.ATTENDANCE },
+  { href: "/announcements", label: "Alerts", icon: <Megaphone className="w-5 h-5" />, permission: PERMISSIONS.ANNOUNCEMENTS },
+  { href: "/finance", label: "Finance", icon: <CreditCard className="w-5 h-5" />, permission: PERMISSIONS.FINANCE },
+  { href: "/settings", label: "Settings", icon: <Settings className="w-5 h-5" />, permission: PERMISSIONS.SETTINGS },
 ];
 
 const trainerNavItems = [
@@ -42,6 +44,7 @@ const customerNavItems = [
 
 export default function BottomNav({ role = "admin" }) {
   const pathname = usePathname();
+  const { permissions, loading } = usePermissions();
   
   const getNavItems = () => {
     switch (role) {
@@ -50,8 +53,15 @@ export default function BottomNav({ role = "admin" }) {
       case "customer":
       case "member":
         return customerNavItems;
+      case "admin":
+      case "owner":
+        // Filter based on permissions
+        if (!permissions) return allAdminNavItems;
+        return allAdminNavItems.filter(item => 
+          !item.permission || hasPermission(permissions, item.permission)
+        );
       default:
-        return adminNavItems;
+        return allAdminNavItems;
     }
   };
   

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
 import RenewMembershipModal from "@/components/shared/RenewMembershipModal";
+import ShareReceiptModal from "@/components/shared/ShareReceiptModal";
 import { MembersPageSkeleton } from "@/components/shared/Skeleton";
 import { 
   Users, 
@@ -25,7 +26,8 @@ import {
   Building,
   Phone,
   Mail,
-  MoreVertical
+  MoreVertical,
+  Share2
 } from "lucide-react";
 
 export default function MembersPage() {
@@ -34,6 +36,7 @@ export default function MembersPage() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedGym, setSelectedGym] = useState(null);
   const [showRenewModal, setShowRenewModal] = useState(false);
+  const [showShareReceiptModal, setShowShareReceiptModal] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
   const [membersWithCredentials, setMembersWithCredentials] = useState(new Set());
   const [rawMembers, setRawMembers] = useState([]);
@@ -547,6 +550,20 @@ export default function MembersPage() {
                         {member.hasCredentials ? 'Credentials' : 'Setup Login'}
                       </button>
                       
+                      {/* Share Receipt Button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedMember(member);
+                          setShowShareReceiptModal(true);
+                        }}
+                        className="flex-shrink-0 px-3 py-2 bg-green-50 text-green-700 cursor-pointer text-xs font-medium rounded-lg active:bg-green-100 transition-all flex items-center gap-2"
+                        style={{ minHeight: '36px' }}
+                      >
+                        <Share2 className="w-3.5 h-3.5" />
+                        Share Receipt
+                      </button>
+                      
                       {member.status === "expired" && (
                         <button
                           onClick={(e) => handleRenewClick(e, member)}
@@ -615,6 +632,18 @@ export default function MembersPage() {
             setSelectedMember(null);
           }}
           onRenew={handleRenewal}
+        />
+      )}
+
+      {/* Share Receipt Modal */}
+      {showShareReceiptModal && selectedMember && (
+        <ShareReceiptModal
+          member={selectedMember}
+          gymData={selectedGym}
+          onClose={() => {
+            setShowShareReceiptModal(false);
+            setSelectedMember(null);
+          }}
         />
       )}
     </div>

@@ -66,7 +66,7 @@ export default function LoginPage() {
         }
 
         // Store user info with permissions
-        localStorage.setItem("user", JSON.stringify({
+        const userData = {
           id: profile.id,
           name: `${profile.first_name} ${profile.last_name}`,
           email: profile.email,
@@ -74,7 +74,12 @@ export default function LoginPage() {
           role: profile.role,
           gym_id: profile.gym_id,
           permissions: profile.permissions
-        }));
+        };
+        
+        localStorage.setItem("gymUser", JSON.stringify(userData));
+        // Set session expiry to 7 days
+        const expiryTime = Date.now() + (7 * 24 * 60 * 60 * 1000);
+        localStorage.setItem("gymUserExpiry", expiryTime.toString());
         
         router.push("/admin/dashboard");
         
@@ -93,14 +98,19 @@ export default function LoginPage() {
 
         // Store trainer info
         const user = data.user;
-        localStorage.setItem("gymUser", JSON.stringify({
+        const trainerData = {
           id: user.id,
           name: user.user_metadata?.name || user.email,
           email: user.email,
           phone: user.user_metadata?.phone,
           role: "trainer",
           userType: "trainer"
-        }));
+        };
+        
+        localStorage.setItem("gymUser", JSON.stringify(trainerData));
+        // Set session expiry to 7 days
+        const expiryTime = Date.now() + (7 * 24 * 60 * 60 * 1000);
+        localStorage.setItem("gymUserExpiry", expiryTime.toString());
         
         router.push("/trainer/dashboard");
       } else {
@@ -139,14 +149,20 @@ export default function LoginPage() {
 
         // Store member info
         const member = credentials.members;
-        localStorage.setItem("member", JSON.stringify({
+        const memberData = {
           id: member.id,
           name: member.full_name,
           email: member.email,
           phone: member.phone,
+          role: "member",
           gymId: member.gym_id,
           profileImage: member.profile_image
-        }));
+        };
+        
+        localStorage.setItem("gymUser", JSON.stringify(memberData));
+        // Set session expiry to 7 days
+        const expiryTime = Date.now() + (7 * 24 * 60 * 60 * 1000);
+        localStorage.setItem("gymUserExpiry", expiryTime.toString());
         
         router.push("/user/dashboard");
       }

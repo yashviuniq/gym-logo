@@ -627,7 +627,11 @@ export default function CustomerProfilePage() {
 
         {/* Logout Button */}
         <button
-          onClick={() => router.push("/auth/login")}
+          onClick={() => {
+            localStorage.removeItem("gymUser");
+            localStorage.removeItem("gymUserExpiry");
+            router.push("/auth/login");
+          }}
           className="w-full py-3 bg-red-50 text-red-600 rounded-xl font-medium"
         >
           Logout

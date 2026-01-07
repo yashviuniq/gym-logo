@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/contexts/ToastContext";
+import { createPaymentReceipt } from "@/lib/receiptGenerator";
 import {
   X,
   CreditCard,
@@ -20,7 +21,8 @@ const PAYMENT_MODES = [
 
 export default function CollectPaymentModal({ 
   member, 
-  gymId, 
+  gymId,
+  gymData,
   trainerId, 
   trainerName,
   onClose, 
@@ -46,7 +48,7 @@ export default function CollectPaymentModal({
     setLoading(true);
     try {
       // Record payment in database with trainer info
-      const { error: paymentError } = await supabase
+      const { data: paymentData, error: paymentError } = await supabase
         .from("payments")
         .insert({
           gym_id: gymId,
@@ -58,7 +60,9 @@ export default function CollectPaymentModal({
           created_at: new Date().toISOString(),
           collected_by: trainerId,
           collected_by_name: trainerName || "Trainer",
-        });
+        })
+        .select("id")
+        .single();
 
       if (paymentError) throw paymentError;
 
@@ -70,6 +74,44 @@ export default function CollectPaymentModal({
         .eq("id", member.id);
 
       if (balanceError) throw balanceError;
+
+      // Generate payment receipt (async, don't block UI)
+      try {
+        let gymInfo = gymData;
+        if (!gymInfo) {
+          const { data: fetchedGym } = await supabase
+            .from("gyms")
+            .select("id, name, address")
+            .eq("id", gymId)
+            .single();
+          gymInfo = fetchedGym;
+        }
+
+        createPaymentReceipt({
+          gymId: gymId,
+          gymName: gymInfo?.name || "Gym",
+          gymAddress: gymInfo?.address || "",
+          gymPhone: gymInfo?.phone || "",
+          memberId: member.id,
+          memberName: member.name || member.full_name,
+          memberPhone: member.phone,
+          memberEmail: member.email,
+          planName: member.plan || "Due Payment",
+          planDuration: 0,
+          validityStart: null,
+          validityEnd: member.validTill,
+          amount: amount,
+          paymentMode: formData.mode,
+          paymentId: paymentData?.id,
+          paymentDate: new Date()
+        }).then(result => {
+          if (result.success) {
+            console.log("Receipt generated:", result.receiptNumber);
+          }
+        });
+      } catch (receiptError) {
+        console.error("Receipt generation error:", receiptError);
+      }
 
       showSuccess(`Payment of ₹${amount.toLocaleString()} collected successfully!`);
       onPaymentCollected?.();

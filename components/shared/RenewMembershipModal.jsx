@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { createPaymentReceipt } from "@/lib/receiptGenerator";
 
-export default function RenewMembershipModal({ member, gymId, onClose, onRenew }) {
+export default function RenewMembershipModal({ member, gymId, gymData, onClose, onRenew }) {
     const [membershipPlans, setMembershipPlans] = useState([]);
     const [selectedPlan, setSelectedPlan] = useState(null);
     const [customPrice, setCustomPrice] = useState("");
@@ -177,8 +178,9 @@ export default function RenewMembershipModal({ member, gymId, onClose, onRenew }
 
             // 3. Create payment record
             const paymentAmountNum = parseFloat(paymentAmount) || 0;
+            let paymentId = null;
             if (paymentAmountNum > 0) {
-                const { error: paymentError } = await supabase
+                const { data: paymentData, error: paymentError } = await supabase
                     .from("payments")
                     .insert({
                         gym_id: targetGymId,
@@ -188,10 +190,56 @@ export default function RenewMembershipModal({ member, gymId, onClose, onRenew }
                         payment_mode: paymentMode,
                         status: "paid",
                         paid_at: new Date().toISOString()
-                    });
+                    })
+                    .select("id")
+                    .single();
 
                 if (paymentError) {
                     console.error("Error creating payment:", paymentError);
+                } else {
+                    paymentId = paymentData?.id;
+                    
+                    // 3.1 Generate payment receipt (async, don't block)
+                    try {
+                        // Get gym data for receipt
+                        let gymInfo = gymData;
+                        if (!gymInfo) {
+                            const { data: fetchedGym } = await supabase
+                                .from("gyms")
+                                .select("id, name, address")
+                                .eq("id", targetGymId)
+                                .single();
+                            gymInfo = fetchedGym;
+                        }
+
+                        createPaymentReceipt({
+                            gymId: targetGymId,
+                            gymName: gymInfo?.name || "Gym",
+                            gymAddress: gymInfo?.address || "",
+                            gymPhone: gymInfo?.phone || "",
+                            memberId: member.id,
+                            memberName: member.name,
+                            memberPhone: member.phone,
+                            memberEmail: member.email,
+                            planName: plan.name,
+                            planDuration: plan.duration_days,
+                            validityStart: startDate,
+                            validityEnd: newEndDate,
+                            amount: paymentAmountNum,
+                            paymentMode: paymentMode,
+                            paymentId: paymentId,
+                            paymentDate: new Date()
+                        }).then(result => {
+                            if (result.success) {
+                                console.log("Receipt generated:", result.receiptNumber);
+                            } else {
+                                console.error("Failed to generate receipt:", result.error);
+                            }
+                        });
+                    } catch (receiptError) {
+                        console.error("Receipt generation error:", receiptError);
+                        // Don't fail the renewal if receipt fails
+                    }
                 }
             }
 

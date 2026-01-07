@@ -42,29 +42,40 @@ export default function LoginPage() {
       const isEmailLogin = isEmail(emailOrPhone);
       
       if (userType === "admin") {
-        // Admin login through Supabase Auth
-        const loginCredential = isEmailLogin ? emailOrPhone.toLowerCase() : `${emailOrPhone}@placeholder.com`;
+        // Admin/Owner login through profiles table
+        const searchField = isEmailLogin ? "email" : "phone";
         
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: loginCredential,
-          password,
-        });
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq(searchField, emailOrPhone)
+          .in("role", ["admin", "owner"])
+          .maybeSingle();
 
-        if (error) {
-          setError(error.message);
+        if (profileError || !profile) {
+          setError("Invalid email/phone or password");
           setLoading(false);
           return;
         }
 
-        // Store admin info for dashboard
-        const user = data.user;
-        localStorage.setItem("admin", JSON.stringify({
-          id: user.id,
-          name: user.user_metadata?.name || user.email,
-          email: user.email,
-          phone: user.user_metadata?.phone,
-          role: user.user_metadata?.role || "admin"
+        // Verify password
+        if (profile.password !== password) {
+          setError("Invalid email/phone or password");
+          setLoading(false);
+          return;
+        }
+
+        // Store user info with permissions
+        localStorage.setItem("user", JSON.stringify({
+          id: profile.id,
+          name: `${profile.first_name} ${profile.last_name}`,
+          email: profile.email,
+          phone: profile.phone,
+          role: profile.role,
+          gym_id: profile.gym_id,
+          permissions: profile.permissions
         }));
+        
         router.push("/admin/dashboard");
         
       } else if (userType === "trainer") {
@@ -119,7 +130,7 @@ export default function LoginPage() {
           return;
         }
 
-        // Verify password (assuming bcrypt or similar is used)
+        // Verify password
         if (credentials.password !== password) {
           setError("Invalid email/phone or password");
           setLoading(false);

@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
 import { supabase } from "@/lib/supabaseClient";
+import { usePermissions } from "@/lib/hooks/usePermissions";
+import { hasPermission, PERMISSIONS } from "@/lib/constants/permissions";
 import {
   Settings as SettingsIcon,
   Users,
@@ -115,6 +117,7 @@ const quickActions = [
 
 export default function SettingsPage() {
   const router = useRouter();
+  const { permissions } = usePermissions();
   const [gymName, setGymName] = useState("Loading...");
   const [totalMembers, setTotalMembers] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -496,7 +499,15 @@ export default function SettingsPage() {
           </div>
           
           <div className="space-y-3">
-            {settingsSections.map((section) => {
+            {settingsSections
+              .filter((section) => {
+                // Hide membership plans, diet plans, and workout plans if members permission is false
+                if (!hasPermission(permissions, PERMISSIONS.MEMBERS)) {
+                  return !['plans', 'diet-plans', 'workout-plans'].includes(section.id);
+                }
+                return true;
+              })
+              .map((section) => {
               const Icon = section.icon;
               return (
                 <div
@@ -544,7 +555,15 @@ export default function SettingsPage() {
           </div>
           
           <div className="grid grid-cols-3 gap-2">
-            {quickActions.map((action) => {
+            {quickActions
+              .filter((action) => {
+                // Hide export action if members permission is false
+                if (!hasPermission(permissions, PERMISSIONS.MEMBERS)) {
+                  return action.action !== 'export';
+                }
+                return true;
+              })
+              .map((action) => {
               const Icon = action.icon;
               const isExportAction = action.action === "export";
               const isDisabled = isExportAction && exporting;

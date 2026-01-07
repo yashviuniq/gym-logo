@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
 import { DashboardPageSkeleton } from "@/components/shared/Skeleton";
+import { usePermissions } from "@/lib/hooks/usePermissions";
+import { hasPermission, PERMISSIONS } from "@/lib/constants/permissions";
 import { 
   Users, 
   CheckCircle, 
@@ -35,6 +37,7 @@ export default function AdminDashboard() {
   const [gyms, setGyms] = useState([]);
   const [selectedGym, setSelectedGym] = useState(null);
   const [loadingGyms, setLoadingGyms] = useState(true);
+  const { permissions } = usePermissions();
   const [dashboardData, setDashboardData] = useState({
     totalMembers: 0,
     activeMembers: 0,
@@ -58,6 +61,42 @@ export default function AdminDashboard() {
   // Your existing logic remains exactly the same
   useEffect(() => {
     const checkAuth = async () => {
+      // Check localStorage for admin/owner users
+      const storedUser = localStorage.getItem("user");
+      
+      if (storedUser) {
+        // Admin/Owner logged in via localStorage
+        const userData = JSON.parse(storedUser);
+        if (["owner", "admin"].includes(userData.role)) {
+          setUser(userData);
+          setLoading(false);
+          
+          // First check if there's already a selected gym in localStorage
+          const storedGym = localStorage.getItem("selectedGym");
+          if (storedGym) {
+            const gymData = JSON.parse(storedGym);
+            setGyms([gymData]);
+            setSelectedGym(gymData);
+            setLoadingGyms(false);
+            fetchDashboardData(gymData.id);
+            return;
+          }
+          
+          // For admin/owner with gym_id, fetch that specific gym
+          if (userData.gym_id) {
+            await fetchGymById(userData.gym_id);
+          } else if (userData.role === "owner") {
+            // Owner without gym_id, fetch gyms by owner_id
+            await fetchGyms(userData.id);
+          } else {
+            // Admin without gym_id and no stored gym
+            setLoadingGyms(false);
+          }
+          return;
+        }
+      }
+      
+      // Check Supabase auth for trainer users
       const { data } = await supabase.auth.getUser();
       const userRole = data.user?.role;
       if (!data.user || !["owner", "admin", "trainer"].includes(userRole)) {
@@ -70,6 +109,31 @@ export default function AdminDashboard() {
     };
     checkAuth();
   }, [router]);
+
+  const fetchGymById = async (gymId) => {
+    setLoadingGyms(true);
+    try {
+      const { data: gymData, error } = await supabase
+        .from("gyms")
+        .select("id, name, address, timezone, created_at")
+        .eq("id", gymId)
+        .single();
+
+      if (error) {
+        console.error("Error fetching gym:", error);
+        setGyms([]);
+      } else if (gymData) {
+        setGyms([gymData]);
+        setSelectedGym(gymData);
+        localStorage.setItem("selectedGym", JSON.stringify(gymData));
+        fetchDashboardData(gymData.id);
+      }
+    } catch (err) {
+      console.error("Error:", err);
+      setGyms([]);
+    }
+    setLoadingGyms(false);
+  };
 
   const fetchGyms = async (userId) => {
     setLoadingGyms(true);
@@ -417,42 +481,46 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* KPI Cards Grid - 2x2 on mobile */}
+        {/* KPI Cards Grid - 2x2 on mobile - Permission Based */}
         <div className="grid grid-cols-2 gap-2 px-1">
-          <MobileKPICard
-            title="Total Members"
-            value={dashboardData.totalMembers}
-            icon={<Users className="w-4 h-4" />}
-            color="blue"
-            
-            onClick={() => router.push("/members")}
-          />
-          <MobileKPICard
-            title="Active"
-            value={dashboardData.activeMembers}
-            icon={<CheckCircle className="w-4 h-4" />}
-            color="green"
-          
-            onClick={() => router.push("/members?filter=active")}
-          />
-          <MobileKPICard
-            title="Expired"
-            value={dashboardData.expiredMembers}
-            icon={<AlertTriangle className="w-4 h-4" />}
-            color="amber"
-            onClick={() => router.push("/members?filter=expired")}
-          />
-          <MobileKPICard
-            title="Today"
-            value={dashboardData.todayAttendance}
-            icon={<Calendar className="w-4 h-4" />}
-            color="indigo"
-            
-            onClick={() => router.push("/attendance")}
-          />
+          {hasPermission(permissions, PERMISSIONS.MEMBERS) && (
+            <>
+              <MobileKPICard
+                title="Total Members"
+                value={dashboardData.totalMembers}
+                icon={<Users className="w-4 h-4" />}
+                color="blue"
+                onClick={() => router.push("/members")}
+              />
+              <MobileKPICard
+                title="Active"
+                value={dashboardData.activeMembers}
+                icon={<CheckCircle className="w-4 h-4" />}
+                color="green"
+                onClick={() => router.push("/members?filter=active")}
+              />
+              <MobileKPICard
+                title="Expired"
+                value={dashboardData.expiredMembers}
+                icon={<AlertTriangle className="w-4 h-4" />}
+                color="amber"
+                onClick={() => router.push("/members?filter=expired")}
+              />
+            </>
+          )}
+          {hasPermission(permissions, PERMISSIONS.ATTENDANCE) && (
+            <MobileKPICard
+              title="Today"
+              value={dashboardData.todayAttendance}
+              icon={<Calendar className="w-4 h-4" />}
+              color="indigo"
+              onClick={() => router.push("/attendance")}
+            />
+          )}
         </div>
 
-        {/* Revenue Card - Mobile Optimized */}
+        {/* Revenue Card - Permission Based */}
+        {hasPermission(permissions, PERMISSIONS.FINANCE) && (
         <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-4 text-white mx-1">
           <div className="flex items-start justify-between mb-4">
             <div className="flex-1">
@@ -483,8 +551,9 @@ export default function AdminDashboard() {
             </div>
           </button>
         </div>
+        )}
 
-        {/* Quick Actions - Horizontal Scroll on Mobile */}
+        {/* Quick Actions - Permission Based */}
         <div className="bg-white rounded-xl p-3 mx-1">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold text-gray-900">Quick Actions</h3>
@@ -494,11 +563,11 @@ export default function AdminDashboard() {
           </div>
           <div className="flex space-x-2 overflow-x-auto pb-2 -mx-1 px-1 no-scrollbar">
             {[
-              { label: "Add Member", icon: <UserPlus className="w-4 h-4" />, href: "/members/add", color: "bg-blue-500" },
-              { label: "Attendance", icon: <CheckCircle className="w-4 h-4" />, href: "/attendance", color: "bg-green-500" },
-              { label: "Payment", icon: <CreditCard className="w-4 h-4" />, href: "/finance", color: "bg-indigo-500" },
-              { label: "Members", icon: <Users className="w-4 h-4" />, href: "/members", color: "bg-blue-600" }
-            ].map((action) => (
+              { label: "Add Member", icon: <UserPlus className="w-4 h-4" />, href: "/members/add", color: "bg-blue-500", permission: PERMISSIONS.MEMBERS },
+              { label: "Attendance", icon: <CheckCircle className="w-4 h-4" />, href: "/attendance", color: "bg-green-500", permission: PERMISSIONS.ATTENDANCE },
+              { label: "Payment", icon: <CreditCard className="w-4 h-4" />, href: "/finance", color: "bg-indigo-500", permission: PERMISSIONS.FINANCE },
+              { label: "Members", icon: <Users className="w-4 h-4" />, href: "/members", color: "bg-blue-600", permission: PERMISSIONS.MEMBERS }
+            ].filter(action => hasPermission(permissions, action.permission)).map((action) => (
               <button
                 key={action.label}
                 onClick={() => router.push(action.href)}
@@ -520,7 +589,8 @@ export default function AdminDashboard() {
 
         {/* Attendance & Payments - Stacked on Mobile */}
         <div className="space-y-3 px-1">
-          {/* Today's Attendance */}
+          {/* Today's Attendance - Permission Based */}
+          {hasPermission(permissions, PERMISSIONS.ATTENDANCE) && (
           <div className="bg-white rounded-xl p-3">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
@@ -590,8 +660,10 @@ export default function AdminDashboard() {
               )}
             </div>
           </div>
+          )}
 
-          {/* Pending Payments */}
+          {/* Pending Payments - Permission Based */}
+          {hasPermission(permissions, PERMISSIONS.FINANCE) && (
           <div className="bg-white rounded-xl p-3">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
@@ -658,6 +730,7 @@ export default function AdminDashboard() {
               )}
             </div>
           </div>
+          )}
         </div>
 
         {/* Recent Activity */}

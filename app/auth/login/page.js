@@ -155,11 +155,13 @@ export default function LoginPage() {
           email: member.email,
           phone: member.phone,
           role: "member",
-          gymId: member.gym_id,
+          gym_id: member.gym_id,
           profileImage: member.profile_image
         };
         
+        // Store with both keys for compatibility
         localStorage.setItem("gymUser", JSON.stringify(memberData));
+        localStorage.setItem("member", JSON.stringify(memberData));
         // Set session expiry to 7 days
         const expiryTime = Date.now() + (7 * 24 * 60 * 60 * 1000);
         localStorage.setItem("gymUserExpiry", expiryTime.toString());

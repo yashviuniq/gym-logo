@@ -668,6 +668,8 @@ export default function SettingsPage() {
             onClick={() => {
               if (window.confirm("Are you sure you want to logout?")) {
                 localStorage.removeItem("selectedGym");
+                localStorage.removeItem("gymUser");
+                localStorage.removeItem("gymUserExpiry");
                 router.push("/auth/login");
               }
             }}

@@ -106,6 +106,8 @@ export default function TrainerProfilePage() {
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
+      localStorage.removeItem("gymUser");
+      localStorage.removeItem("gymUserExpiry");
       router.push("/auth/login");
     } catch (error) {
       showToast("Error logging out", "error");

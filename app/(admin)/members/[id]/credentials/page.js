@@ -111,22 +111,25 @@ export default function MemberCredentialsPage() {
 
     const handleResetPassword = async () => {
         const newPassword = prompt("Enter new password for member:");
-        if (!newPassword) return;
+        if (!newPassword || newPassword.trim() === "") return;
 
         try {
             const { error } = await supabase
                 .from("member_credentials")
-                .update({ password: newPassword })
-                .eq("member_id", member.id);
+                .update({ password: newPassword.trim() })
+                .eq("member_id", member.id)
+                .single();
 
             if (error) {
+                console.error("Password reset error:", error);
                 showError("Failed to reset password");
             } else {
                 showSuccess("Password updated successfully!");
                 fetchMemberCredentials();
             }
         } catch (err) {
-            showError("An error occurred");
+            console.error("Password reset exception:", err);
+            showError("An error occurred while resetting password");
         }
     };
 

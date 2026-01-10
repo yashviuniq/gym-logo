@@ -61,6 +61,7 @@ export default function AttendancePage() {
           check_in_date,
           check_in_time,
           check_out_time,
+          membership_status,
           members (
             id,
             full_name,
@@ -143,6 +144,7 @@ export default function AttendancePage() {
           })
         : null,
       status: record.check_out_time ? "checked-out" : "checked-in",
+      membershipStatus: record.membership_status || "ACTIVE",
     }));
   }, [rawAttendance]);
 
@@ -221,6 +223,7 @@ export default function AttendancePage() {
     total: attendance.length,
     checkedIn: attendance.filter((a) => a.status === "checked-in").length,
     checkedOut: attendance.filter((a) => a.status === "checked-out").length,
+    expired: attendance.filter((a) => a.membershipStatus === "EXPIRED").length,
   };
 
   // Filter attendance by search query
@@ -426,6 +429,27 @@ export default function AttendancePage() {
           </div>
         </div>
 
+        {/* Expired Membership Alert */}
+        {todayStats.expired > 0 && (
+          <div className="bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-300 rounded-xl p-3 mx-1 shadow-sm">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center">
+                <XCircle className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-bold text-red-900 mb-1">
+                  ⚠️ {todayStats.expired} Expired {todayStats.expired === 1 ? 'Membership' : 'Memberships'}
+                </h3>
+                <p className="text-xs text-red-700 leading-relaxed">
+                  {todayStats.expired === 1 
+                    ? 'A member with expired membership checked in today. Contact them for renewal.'
+                    : `${todayStats.expired} members with expired memberships checked in today. Contact them for renewal.`}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Filter Tabs */}
         <div className="bg-white rounded-xl p-3 mx-1 border border-gray-200 shadow-sm">
           <div className="flex items-center gap-2 mb-3">
@@ -500,9 +524,22 @@ export default function AttendancePage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between mb-1">
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-gray-900 text-sm truncate">
-                            {record.name}
-                          </h3>
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-gray-900 text-sm truncate">
+                              {record.name}
+                            </h3>
+                            {record.membershipStatus === "EXPIRED" && (
+                              <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-red-100 text-red-700 rounded border border-red-300">
+                                EXPIRED
+                              </span>
+                            )}
+                          </div>
+                          {record.membershipStatus === "EXPIRED" && (
+                            <div className="flex items-center gap-1 text-xs text-red-600 bg-red-50 px-2 py-1 rounded mb-1">
+                              <XCircle className="w-3 h-3" />
+                              <span className="font-medium">Membership expired - Requires renewal</span>
+                            </div>
+                          )}
                           <div className="flex items-center gap-3 mt-1">
                             <div className="flex items-center gap-1 text-xs text-emerald-600">
                               <Clock className="w-3 h-3" />

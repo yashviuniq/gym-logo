@@ -233,6 +233,92 @@ function getDeviceSN(query) {
   return query.SN || query.sn || query.SerialNumber || 'UNKNOWN';
 }
 
+/**
+ * Update daily attendance summary table used by the web app
+ * Writes to your existing `attendance` table:
+ * - CHECK_IN: create or increment today's record
+ * - CHECK_OUT: set check_out_time for today's record
+ * - ALWAYS: Store membership_status (ACTIVE, EXPIRED, etc.)
+ */
+async function updateDailyAttendance({ gym_id, member_id, status, timestamp, membership_status }, logger) {
+  if (!member_id) return; // skip unknown members
+
+  try {
+    const dt = new Date(timestamp);
+    const dateStr = dt.toISOString().split('T')[0];
+    const timeStr = dt.toTimeString().split(' ')[0]; // HH:MM:SS local
+
+    // Fetch today's attendance row
+    const { data: existing, error: fetchErr } = await supabase
+      .from('attendance')
+      .select('id, count, check_in_time, check_out_time')
+      .eq('gym_id', gym_id)
+      .eq('member_id', member_id)
+      .eq('check_in_date', dateStr)
+      .maybeSingle();
+
+    if (fetchErr) {
+      logger.error({ msg: 'Attendance fetch error', error: fetchErr });
+      return;
+    }
+
+    if (status === 'CHECK_IN') {
+      if (!existing) {
+        // First check-in of the day
+        const { error: insertErr } = await supabase
+          .from('attendance')
+          .insert({
+            gym_id,
+            member_id,
+            check_in_date: dateStr,
+            check_in_time: timeStr,
+            count: 1,
+            membership_status: membership_status || 'ACTIVE', // Store membership status
+          });
+        if (insertErr) logger.error({ msg: 'Attendance insert error', error: insertErr });
+      } else {
+        // Subsequent check-in: increment count, keep earliest check_in_time, update membership_status
+        const { error: updErr } = await supabase
+          .from('attendance')
+          .update({ 
+            count: (existing.count || 1) + 1,
+            membership_status: membership_status || 'ACTIVE', // Always update to latest status
+          })
+          .eq('id', existing.id);
+        if (updErr) logger.error({ msg: 'Attendance update error', error: updErr });
+      }
+    } else if (status === 'CHECK_OUT') {
+      if (!existing) {
+        // No prior check-in; create a row and set check_out_time
+        const { error: insertErr } = await supabase
+          .from('attendance')
+          .insert({
+            gym_id,
+            member_id,
+            check_in_date: dateStr,
+            check_in_time: timeStr,
+            check_out_time: timeStr,
+            count: 1,
+            membership_status: membership_status || 'ACTIVE',
+          });
+        if (insertErr) logger.error({ msg: 'Attendance insert (checkout) error', error: insertErr });
+      } else {
+        // Update today's record with checkout time and membership status
+        const { error: updErr } = await supabase
+          .from('attendance')
+          .update({ 
+            check_out_time: timeStr,
+            membership_status: membership_status || 'ACTIVE', // Update status on checkout too
+          })
+          .eq('id', existing.id);
+        if (updErr) logger.error({ msg: 'Attendance checkout update error', error: updErr });
+      }
+    }
+  } catch (e) {
+    logger.error({ msg: 'Exception in updateDailyAttendance', error: e.message });
+  }
+}
+
 export default async function admsRoutes(fastify, options) {
   
   /**
@@ -302,12 +388,16 @@ export default async function admsRoutes(fastify, options) {
           fastify.log
         );
         
+        const recordTimestamp = new Date(record.timestamp).toISOString();
+        const recordDate = recordTimestamp.split('T')[0]; // Extract YYYY-MM-DD
+        
         dbRecords.push({
           gym_id: gym_id,                    // From device lookup
           user_id: record.user_id,           // Fingerprint PIN
           device_sn: deviceSN,
           member_id: member_id,              // Linked member UUID (nullable)
-          timestamp: new Date(record.timestamp).toISOString(),
+          attendance_date: recordDate,       // Date only (YYYY-MM-DD)
+          timestamp: recordTimestamp,
           status: record.status,
           membership_status: membership_status,  // ACTIVE, EXPIRED, etc.
           raw_data: {
@@ -344,6 +434,20 @@ export default async function admsRoutes(fastify, options) {
         expiredMemberships: expiredCount,
         duration: `${Date.now() - startTime}ms`
       });
+
+      // ============================================
+      // STEP 5: Update daily attendance summary table
+      // So the Next.js /attendance view reflects real-time entries
+      // ============================================
+      for (const r of dbRecords) {
+        await updateDailyAttendance({
+          gym_id: r.gym_id,
+          member_id: r.member_id,
+          status: r.status,
+          timestamp: r.timestamp,
+          membership_status: r.membership_status, // Now pass membership status
+        }, fastify.log);
+      }
       
       return reply.code(200).send('OK');
       

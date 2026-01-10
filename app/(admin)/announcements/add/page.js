@@ -93,10 +93,57 @@ export default function AddAnnouncementPage() {
 
       // Get count of app users who will see this announcement
       const appUsersCount = await getAppUsersCount(selectedGym.id);
+
+      // Send push notification to all members with app access
+      if (appUsersCount > 0) {
+        try {
+          // Get all member IDs for this gym (members use their own ID, not a user_id field)
+          const { data: members, error: membersError } = await supabase
+            .from("members")
+            .select("id")
+            .eq("gym_id", selectedGym.id);
+
+          console.log('📢 Announcement members query result:', members?.length || 0, 'members', 'error:', membersError?.message);
+          if (members && members.length > 0) {
+            console.log('📋 Member IDs:', members.map(m => m.id));
+          }
+
+          if (!membersError && members && members.length > 0) {
+            const memberIds = members.map(m => m.id);
+
+            console.log('🚀 Sending announcement to', memberIds.length, 'members');
+            // Send notification via API
+            const notifResponse = await fetch('/api/notifications/send', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                userIds: memberIds,
+                notification: {
+                  title: `📢 ${formData.title.trim()}`,
+                  body: formData.message.trim().substring(0, 100) + (formData.message.length > 100 ? '...' : ''),
+                  type: 'announcement',
+                  url: '/user/dashboard',
+                  data: {
+                    announcement_id: announcement.id,
+                    gym_id: selectedGym.id
+                  }
+                }
+              })
+            });
+            const notifJson = await notifResponse.json();
+            console.log('✅ Notification API response:', notifJson);
+          }
+        } catch (notifError) {
+          console.error('Error sending notifications:', notifError);
+          // Don't fail the announcement creation if notification fails
+        }
+      }
       
       if (appUsersCount > 0) {
         alert(
-          `Announcement created successfully! It will be visible to ${appUsersCount} app users when they open the app.`
+          `Announcement created successfully! Push notifications sent to ${appUsersCount} app users.`
         );
       } else {
         alert("Announcement created successfully!");
@@ -167,13 +214,13 @@ export default function AddAnnouncementPage() {
         {/* Info Note */}
         <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
           <div className="flex items-start gap-3">
-            <span className="text-xl">ℹ️</span>
+            <span className="text-xl">📢</span>
             <div>
               <p className="text-sm font-medium text-blue-900">
-                App Users Notification
+                Instant Push Notifications
               </p>
               <p className="text-xs text-blue-700 mt-1">
-                This announcement will automatically appear to all members who have the gym app when they open it. No push notification needed.
+                This announcement will be sent as a push notification to all registered app users immediately.
               </p>
             </div>
           </div>

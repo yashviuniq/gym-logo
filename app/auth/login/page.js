@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
+import { saveSession, SESSION_KEYS } from "@/lib/sessionStorage";
 import Link from "next/link";
 import { 
   Dumbbell, 
@@ -76,10 +77,11 @@ export default function LoginPage() {
           permissions: profile.permissions
         };
         
-        localStorage.setItem("gymUser", JSON.stringify(userData));
-        // Set session expiry to 7 days
-        const expiryTime = Date.now() + (7 * 24 * 60 * 60 * 1000);
-        localStorage.setItem("gymUserExpiry", expiryTime.toString());
+        // Save to persistent storage (IndexedDB + localStorage)
+        await saveSession(SESSION_KEYS.USER, JSON.stringify(userData));
+        // Set session expiry to 30 days for PWA
+        const expiryTime = Date.now() + (30 * 24 * 60 * 60 * 1000);
+        await saveSession(SESSION_KEYS.EXPIRY, expiryTime.toString());
         
         router.push("/admin/dashboard");
         
@@ -107,10 +109,11 @@ export default function LoginPage() {
           userType: "trainer"
         };
         
-        localStorage.setItem("gymUser", JSON.stringify(trainerData));
-        // Set session expiry to 7 days
-        const expiryTime = Date.now() + (7 * 24 * 60 * 60 * 1000);
-        localStorage.setItem("gymUserExpiry", expiryTime.toString());
+        // Save to persistent storage (IndexedDB + localStorage)
+        await saveSession(SESSION_KEYS.USER, JSON.stringify(trainerData));
+        // Set session expiry to 30 days for PWA
+        const expiryTime = Date.now() + (30 * 24 * 60 * 60 * 1000);
+        await saveSession(SESSION_KEYS.EXPIRY, expiryTime.toString());
         
         router.push("/trainer/dashboard");
       } else {
@@ -159,12 +162,12 @@ export default function LoginPage() {
           profileImage: member.profile_image
         };
         
-        // Store with both keys for compatibility
-        localStorage.setItem("gymUser", JSON.stringify(memberData));
-        localStorage.setItem("member", JSON.stringify(memberData));
-        // Set session expiry to 7 days
-        const expiryTime = Date.now() + (7 * 24 * 60 * 60 * 1000);
-        localStorage.setItem("gymUserExpiry", expiryTime.toString());
+        // Save to persistent storage (IndexedDB + localStorage)
+        await saveSession(SESSION_KEYS.USER, JSON.stringify(memberData));
+        localStorage.setItem("member", JSON.stringify(memberData)); // compatibility
+        // Set session expiry to 30 days for PWA
+        const expiryTime = Date.now() + (30 * 24 * 60 * 60 * 1000);
+        await saveSession(SESSION_KEYS.EXPIRY, expiryTime.toString());
         
         router.push("/user/dashboard");
       }

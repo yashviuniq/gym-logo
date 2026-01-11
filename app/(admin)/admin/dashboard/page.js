@@ -27,7 +27,8 @@ import {
   MoreVertical,
   Bell,
   Search,
-  X
+  X,
+  XCircle
 } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -61,8 +62,8 @@ export default function AdminDashboard() {
   // Your existing logic remains exactly the same
   useEffect(() => {
     const checkAuth = async () => {
-      // Check localStorage for admin/owner users
-      const storedUser = localStorage.getItem("user");
+      // Check localStorage for admin/owner users (stored as 'gymUser')
+      const storedUser = localStorage.getItem("gymUser");
       
       if (storedUser) {
         // Admin/Owner logged in via localStorage
@@ -96,7 +97,7 @@ export default function AdminDashboard() {
         }
       }
       
-      // Check Supabase auth for trainer users
+      // Fallback: Check Supabase auth for trainer users
       const { data } = await supabase.auth.getUser();
       const userRole = data.user?.role;
       if (!data.user || !["owner", "admin", "trainer"].includes(userRole)) {
@@ -203,6 +204,7 @@ export default function AdminDashboard() {
           id,
           check_in_time,
           check_out_time,
+          membership_status,
           members (full_name)
         `)
         .eq("gym_id", gymId)
@@ -267,6 +269,7 @@ export default function AdminDashboard() {
             hour12: true,
           }),
           status: att.check_out_time ? "left" : "active",
+          membershipStatus: att.membership_status || "ACTIVE",
         }));
         setAllTodayAttendance(formattedAttendance);
         setTodayAttendanceList(formattedAttendance.slice(0, 5));
@@ -627,11 +630,24 @@ export default function AdminDashboard() {
                         <span className="text-xs font-bold">{member.name.charAt(0)}</span>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{member.name}</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-sm font-medium text-gray-900 truncate">{member.name}</p>
+                          {member.membershipStatus === "EXPIRED" && (
+                            <span className="px-1.5 py-0.5 text-[9px] font-semibold bg-red-100 text-red-700 rounded border border-red-300 flex-shrink-0">
+                              EXPIRED
+                            </span>
+                          )}
+                        </div>
                         <div className="flex items-center gap-1">
                           <Clock className="w-3 h-3 text-gray-400" />
                           <p className="text-xs text-gray-500">{member.checkIn}</p>
                         </div>
+                        {member.membershipStatus === "EXPIRED" && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <XCircle className="w-3 h-3 text-red-500" />
+                            <p className="text-[10px] text-red-600 font-medium">Membership expired</p>
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">

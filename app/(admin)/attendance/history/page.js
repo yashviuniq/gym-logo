@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Header from "@/components/layout/Header";
 import { supabase } from "@/lib/supabaseClient";
+import { XCircle } from "lucide-react";
 
 function AttendanceHistoryContent() {
   const searchParams = useSearchParams();
@@ -48,6 +49,7 @@ function AttendanceHistoryContent() {
             member_id,
             check_in_time,
             check_out_time,
+            membership_status,
             members (
               id,
               full_name,
@@ -93,6 +95,7 @@ function AttendanceHistoryContent() {
                 : "N/A",
               duration: duration,
               checkInHour: checkInTime.getHours(),
+              membershipStatus: record.membership_status || "ACTIVE",
             };
           });
           
@@ -113,7 +116,8 @@ function AttendanceHistoryContent() {
   const stats = {
     total: attendanceData.length,
     peakTime: "N/A",
-    avgDuration: "N/A"
+    avgDuration: "N/A",
+    expired: attendanceData.filter(r => r.membershipStatus === "EXPIRED").length,
   };
 
   if (attendanceData.length > 0) {
@@ -194,6 +198,27 @@ function AttendanceHistoryContent() {
       <Header title={`Attendance - ${displayDate}`} />
 
       <main className="px-4 py-4">
+        {/* Expired Membership Alert */}
+        {stats.expired > 0 && (
+          <div className="bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-300 rounded-xl p-4 mb-4 shadow-sm">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center">
+                <XCircle className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-bold text-red-900 mb-1">
+                  ⚠️ {stats.expired} Expired {stats.expired === 1 ? 'Membership' : 'Memberships'}
+                </h3>
+                <p className="text-xs text-red-700 leading-relaxed">
+                  {stats.expired === 1 
+                    ? 'A member with expired membership checked in on this date.'
+                    : `${stats.expired} members with expired memberships checked in on this date.`}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Summary */}
         <div className="bg-gradient-to-br from-gray-900 to-gray-700 rounded-2xl p-6 text-white mb-4">
           <div className="grid grid-cols-3 gap-4 text-center">
@@ -249,8 +274,21 @@ function AttendanceHistoryContent() {
                       <div className="w-10 h-10 bg-gradient-to-br from-gray-800 to-gray-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
                         {record.name.charAt(0)}
                       </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{record.name}</p>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-gray-900">{record.name}</p>
+                          {record.membershipStatus === "EXPIRED" && (
+                            <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-red-100 text-red-700 rounded border border-red-300">
+                              EXPIRED
+                            </span>
+                          )}
+                        </div>
+                        {record.membershipStatus === "EXPIRED" && (
+                          <div className="flex items-center gap-1 text-xs text-red-600 bg-red-50 px-2 py-1 rounded mt-1 mb-1">
+                            <XCircle className="w-3 h-3" />
+                            <span className="font-medium">Membership expired</span>
+                          </div>
+                        )}
                         <div className="flex items-center gap-2 text-sm text-gray-500">
                           <span className="text-green-500">
                             ↓ {record.checkIn}

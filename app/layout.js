@@ -2,6 +2,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import PWASetup from "@/components/PWASetup";
 import { ToastProvider } from "@/contexts/ToastContext";
+import { NotificationProvider } from "@/contexts/NotificationContext";
+import NotificationManager from "@/components/shared/NotificationManager";
+import SessionRestoration from "@/components/shared/SessionRestoration";
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -53,8 +56,12 @@ export default function RootLayout({ children }) {
 				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
 			>
 				<ToastProvider>
-					<PWASetup />
-					{children}
+					<NotificationProvider>
+						<SessionRestoration />
+						<PWASetup />
+						<NotificationManager />
+						{children}
+					</NotificationProvider>
 				</ToastProvider>
 			</body>
 		</html>

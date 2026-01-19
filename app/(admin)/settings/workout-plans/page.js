@@ -24,7 +24,6 @@ import {
   AlertTriangle,
   RefreshCw,
   MoreVertical,
-  User,
   Users,
   Phone,
   Mail,

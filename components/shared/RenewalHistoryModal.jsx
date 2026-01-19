@@ -66,20 +66,32 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose })
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-3 text-sm">
-                                        <div className="bg-gray-50 rounded-lg p-2">
-                                            <p className="text-xs text-gray-600">Amount Paid</p>
-                                            <p className="font-medium text-gray-900">
-                                                ₹{renewal.paymentAmount}
+                                    {renewal.paymentAmount > 0 ? (
+                                        <div className="grid grid-cols-2 gap-3 text-sm">
+                                            <div className="bg-gray-50 rounded-lg p-2">
+                                                <p className="text-xs text-gray-600">Amount Paid</p>
+                                                <p className="font-medium text-gray-900">
+                                                    ₹{renewal.paymentAmount}
+                                                </p>
+                                            </div>
+                                            <div className="bg-gray-50 rounded-lg p-2">
+                                                <p className="text-xs text-gray-600">Payment Mode</p>
+                                                <p className="font-medium text-gray-900 capitalize">
+                                                    {renewal.paymentMode}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-sm">
+                                            <p className="text-orange-800 font-medium flex items-center gap-2">
+                                                <span>⚠️</span>
+                                                <span>No payment recorded for this renewal</span>
+                                            </p>
+                                            <p className="text-orange-600 text-xs mt-1">
+                                                Full amount of ₹{renewal.price} is pending
                                             </p>
                                         </div>
-                                        <div className="bg-gray-50 rounded-lg p-2">
-                                            <p className="text-xs text-gray-600">Payment Mode</p>
-                                            <p className="font-medium text-gray-900 capitalize">
-                                                {renewal.paymentMode}
-                                            </p>
-                                        </div>
-                                    </div>
+                                    )}
 
                                     {renewal.newEndDate && (
                                         <div className="mt-3 pt-3 border-t border-gray-100">

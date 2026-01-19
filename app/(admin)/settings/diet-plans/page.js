@@ -18,6 +18,7 @@ import {
   ChefHat,
   Tag,
   Clock,
+  User,
   Users,
   Flame,
   X,
@@ -126,7 +127,7 @@ function DietPlansContent() {
         .from("diet_plans")
         .select(`
           *,
-          creator:created_by(id, role)
+          creator:created_by(id, role, first_name, last_name)
         `)
         .eq("gym_id", gymId)
         .is("member_id", null)
@@ -134,13 +135,8 @@ function DietPlansContent() {
 
       if (error) throw error;
       
-      // Filter out plans created by trainers (only show admin/owner created plans)
-      const adminPlans = (data || []).filter(plan => {
-        // If no creator info or creator role is not trainer, include it
-        return !plan.creator || plan.creator.role !== 'trainer';
-      });
-      
-      setDietPlans(adminPlans);
+      // Include all plans (admin can see trainer-created plans)
+      setDietPlans(data || []);
     } catch (error) {
       console.error("Error fetching diet plans:", error);
       showError("Failed to load diet plans");
@@ -424,6 +420,29 @@ function DietPlansContent() {
 
                     {/* Plan Details */}
                     <div className="mt-3 space-y-2">
+                      {/* Creator Info */}
+                      {plan.creator && (
+                        <div className="flex items-center gap-2">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                            plan.creator.role === 'trainer'
+                              ? 'bg-purple-50'
+                              : 'bg-indigo-50'
+                          }`}>
+                            <User className={`w-3.5 h-3.5 ${
+                              plan.creator.role === 'trainer'
+                                ? 'text-purple-600'
+                                : 'text-indigo-600'
+                            }`} />
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500">Created by</p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {plan.creator.role === 'trainer' ? 'Trainer' : 'Admin'} {plan.creator.first_name} {plan.creator.last_name}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
                       <div className="flex items-center gap-2">
                         <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
                           <Calendar className="w-3.5 h-3.5 text-blue-600" />

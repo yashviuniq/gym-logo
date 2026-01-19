@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+
 import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
 import {
@@ -15,8 +16,10 @@ import {
   Apple,
   CheckCircle,
   AlertCircle,
-  Clock
+  Clock,
+  UserCheck
 } from "lucide-react";
+import Link from "next/link";
 
 export default function TrainerMembersPage() {
   const router = useRouter();
@@ -97,23 +100,21 @@ export default function TrainerMembersPage() {
       let attendanceCounts = {};
 
       if (memberIds.length > 0) {
-        // Diet plans assigned by this trainer
+        // Diet plans assigned to members (show all, not just by this trainer)
         const { data: dietData } = await supabase
           .from("member_diets")
           .select("member_id")
-          .in("member_id", memberIds)
-          .eq("assigned_by_trainer_id", trainerId);
+          .in("member_id", memberIds);
 
         dietData?.forEach(d => {
           dietCounts[d.member_id] = (dietCounts[d.member_id] || 0) + 1;
         });
 
-        // Workout plans assigned by this trainer
+        // Workout plans assigned to members (show all, not just by this trainer)
         const { data: workoutData } = await supabase
           .from("member_workouts")
           .select("member_id")
-          .in("member_id", memberIds)
-          .eq("assigned_by_trainer_id", trainerId);
+          .in("member_id", memberIds);
 
         workoutData?.forEach(w => {
           workoutCounts[w.member_id] = (workoutCounts[w.member_id] || 0) + 1;
@@ -201,9 +202,24 @@ export default function TrainerMembersPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      <Header title="My Members" />
+      <Header title="Members" />
 
       <main className="px-4 py-4 space-y-4">
+        {/* Tab Navigation */}
+        <div className="flex gap-2 bg-white rounded-xl p-1 shadow-sm">
+          <Link 
+            href="/trainer/all-members" 
+            className="flex-1 py-2.5 text-center text-gray-600 hover:bg-gray-100 rounded-lg font-medium text-sm flex items-center justify-center gap-1"
+          >
+            <Users className="w-4 h-4" />
+            All Members
+          </Link>
+          <div className="flex-1 py-2.5 text-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-medium text-sm flex items-center justify-center gap-1">
+            <UserCheck className="w-4 h-4" />
+            Assigned
+          </div>
+        </div>
+
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-white rounded-xl p-3 shadow-sm text-center">

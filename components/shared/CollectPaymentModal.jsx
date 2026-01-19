@@ -13,6 +13,12 @@ import {
   CheckCircle,
 } from "lucide-react";
 
+const preventScrollChange = (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  e.currentTarget.blur();
+};
+
 const PAYMENT_MODES = [
   { value: "cash", label: "Cash", icon: Wallet },
   { value: "upi", label: "UPI", icon: Smartphone },
@@ -160,12 +166,18 @@ export default function CollectPaymentModal({
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">₹</span>
               <input
-                type="number"
+                type="text"
+                inputMode="decimal"
+                pattern="[0-9]*\.?[0-9]*"
                 value={formData.amount}
-                onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                    setFormData(prev => ({ ...prev, amount: value }));
+                  }
+                }}
                 className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent text-lg font-semibold"
                 placeholder="0.00"
-                min="1"
                 required
               />
             </div>

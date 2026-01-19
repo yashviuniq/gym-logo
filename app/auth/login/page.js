@@ -115,6 +115,9 @@ export default function LoginPage() {
         const expiryTime = Date.now() + (30 * 24 * 60 * 60 * 1000);
         await saveSession(SESSION_KEYS.EXPIRY, expiryTime.toString());
         
+        // Save trainer login timestamp (used to detect credential changes by admin)
+        localStorage.setItem("trainer_login_at", Date.now().toString());
+        
         router.push("/trainer/dashboard");
       } else {
         // Member login through member_credentials table

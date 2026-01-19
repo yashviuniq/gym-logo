@@ -5,6 +5,7 @@ import { ToastProvider } from "@/contexts/ToastContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import NotificationManager from "@/components/shared/NotificationManager";
 import SessionRestoration from "@/components/shared/SessionRestoration";
+import NumberScrollPrevention from "@/components/shared/NumberScrollPrevention";
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -58,6 +59,7 @@ export default function RootLayout({ children }) {
 				<ToastProvider>
 					<NotificationProvider>
 						<SessionRestoration />
+						<NumberScrollPrevention />
 						<PWASetup />
 						<NotificationManager />
 						{children}

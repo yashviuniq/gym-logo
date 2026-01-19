@@ -1,12 +1,40 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
-export default function ResolvePendingPaymentModal({ payment, member, onClose, onResolved }) {
+export default function ResolvePendingPaymentModal({ payment, member, onClose, onResolved, onResolve }) {
     const [paymentMode, setPaymentMode] = useState("cash");
     const [receivedAmount, setReceivedAmount] = useState(payment.amount);
     const [loading, setLoading] = useState(false);
+    const [collectorInfo, setCollectorInfo] = useState(null);
+
+    // Get current user info to track who collected the payment
+    useEffect(() => {
+        const fetchCollectorInfo = async () => {
+            try {
+                const { data: authData } = await supabase.auth.getUser();
+                if (authData?.user) {
+                    const { data: profile } = await supabase
+                        .from("profiles")
+                        .select("id, first_name, last_name, role")
+                        .eq("id", authData.user.id)
+                        .single();
+                    
+                    if (profile) {
+                        setCollectorInfo({
+                            id: profile.id,
+                            name: `${profile.first_name} ${profile.last_name}`.trim(),
+                            role: profile.role
+                        });
+                    }
+                }
+            } catch (err) {
+                console.error("Error fetching collector info:", err);
+            }
+        };
+        fetchCollectorInfo();
+    }, []);
 
     const handleResolvePayment = async (e) => {
         e.preventDefault();
@@ -27,15 +55,23 @@ export default function ResolvePendingPaymentModal({ payment, member, onClose, o
                 return;
             }
 
-            // Update payment to paid status
+            // Update payment to paid status with collector info
+            const updateData = {
+                status: "paid",
+                payment_mode: paymentMode,
+                paid_at: new Date().toISOString(),
+                amount: amount
+            };
+
+            // Add collector info if available (for trainer tracking)
+            if (collectorInfo && collectorInfo.role === "trainer") {
+                updateData.collected_by = collectorInfo.id;
+                updateData.collected_by_name = collectorInfo.name;
+            }
+
             const { error: paymentError } = await supabase
                 .from("payments")
-                .update({
-                    status: "paid",
-                    payment_mode: paymentMode,
-                    paid_at: new Date().toISOString(),
-                    amount: amount
-                })
+                .update(updateData)
                 .eq("id", payment.id);
 
             if (paymentError) throw paymentError;
@@ -64,7 +100,8 @@ export default function ResolvePendingPaymentModal({ payment, member, onClose, o
             }
 
             alert("Payment resolved successfully!");
-            onResolved();
+            if (onResolved) onResolved();
+            if (onResolve) onResolve();
             onClose();
         } catch (error) {
             console.error("Error resolving payment:", error);
@@ -123,12 +160,16 @@ export default function ResolvePendingPaymentModal({ payment, member, onClose, o
                             Received Amount <span className="text-red-500">*</span>
                         </label>
                         <input
-                            type="number"
+                            type="text"
+                            inputMode="decimal"
+                            pattern="[0-9]*\.?[0-9]*"
                             value={receivedAmount}
-                            onChange={(e) => setReceivedAmount(e.target.value)}
-                            min="0"
-                            max={payment.amount}
-                            step="0.01"
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                                    setReceivedAmount(value);
+                                }
+                            }}
                             required
                             className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
                             placeholder="Enter received amount"

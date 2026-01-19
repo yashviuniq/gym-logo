@@ -4,6 +4,12 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { createPaymentReceipt } from "@/lib/receiptGenerator";
 
+const preventScrollChange = (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  e.currentTarget.blur();
+};
+
 export default function RenewMembershipModal({ member, gymId, gymData, onClose, onRenew }) {
     const [membershipPlans, setMembershipPlans] = useState([]);
     const [selectedPlan, setSelectedPlan] = useState(null);
@@ -429,11 +435,18 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
                             </div>
                             {useCustomPrice && (
                                 <input
-                                    type="number"
+                                    type="text"
+                                    inputMode="decimal"
+                                    pattern="[0-9]*\.?[0-9]*"
                                     className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] outline-none text-sm"
                                     placeholder="Enter custom price"
                                     value={customPrice}
-                                    onChange={(e) => setCustomPrice(e.target.value)}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                                            setCustomPrice(value);
+                                        }
+                                    }}
                                 />
                             )}
                         </div>
@@ -449,14 +462,15 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
 </label>
 
 <input
-    type="number"
-    min="0"
+    type="text"
+    inputMode="decimal"
+    pattern="[0-9]*\.?[0-9]*"
     className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] outline-none text-lg font-semibold"
     placeholder="₹ 0"
     value={paymentAmount}
     onChange={(e) => {
         const value = e.target.value;
-        if (value >= 0) {
+        if (value === '' || /^\d*\.?\d*$/.test(value)) {
             setPaymentAmount(value);
         }
     }}

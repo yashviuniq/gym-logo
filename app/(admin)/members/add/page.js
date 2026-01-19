@@ -23,8 +23,18 @@ import {
   Shield,
   Key,
   AlertTriangle,
-  Info
+  Info,
+  X
 } from "lucide-react";
+
+// Prevent scroll from changing number input values
+const preventScrollChange = (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  e.currentTarget.blur();
+  // Immediately prevent any value change
+  return false;
+};
 
 export default function AddMemberPage() {
   const router = useRouter();
@@ -88,6 +98,7 @@ export default function AddMemberPage() {
     customPrice: "",
     selfPlanEditAccess: false,
     nextPaymentDate: "",
+    profileImage: null,
   });
 
   useEffect(() => {
@@ -241,7 +252,43 @@ export default function AddMemberPage() {
       const currentUser = storedUser ? JSON.parse(storedUser) : null;
       const createdBy = currentUser?.id;
 
-      // 1. Create member
+      // 1. Upload profile image if provided
+      let profileImageUrl = null;
+      if (formData.profileImage && formData.profileImage.startsWith('data:')) {
+        try {
+          // Convert base64 to blob
+          const response = await fetch(formData.profileImage);
+          const blob = await response.blob();
+          
+          // Generate unique filename
+          const fileExt = blob.type.split('/')[1];
+          const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+          const filePath = `profiles/${fileName}`;
+
+          // Upload to Supabase Storage
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from("member-images")
+            .upload(filePath, blob, {
+              cacheControl: "3600",
+              upsert: false,
+            });
+
+          if (uploadError) {
+            console.error("Image upload error:", uploadError);
+            showError("Failed to upload profile image, but member will be created without photo");
+          } else {
+            // Get public URL
+            const { data: urlData } = supabase.storage
+              .from("member-images")
+              .getPublicUrl(filePath);
+            profileImageUrl = urlData.publicUrl;
+          }
+        } catch (imgError) {
+          console.error("Error processing image:", imgError);
+        }
+      }
+
+      // 2. Create member
       const { data: member, error: memberError } = await supabase
         .from("members")
         .insert({
@@ -252,6 +299,7 @@ export default function AddMemberPage() {
           balance: Math.max(0, balanceOwed),
           created_by: createdBy,
           self_plan_edit_access: formData.selfPlanEditAccess,
+          profile_image: profileImageUrl,
         })
         .select()
         .single();
@@ -334,7 +382,7 @@ export default function AddMemberPage() {
         }
       }
 
-      // 5. Create member credentials for app login using phone number only
+      // 6. Create member credentials for app login using phone number only
       const defaultPassword = formData.phone.slice(1,2)+formData.phone.slice(3,5)+formData.phone.slice(-2) + "213";
       try {
         await supabase
@@ -449,6 +497,65 @@ export default function AddMemberPage() {
               </div>
 
               <div className="space-y-3">
+                {/* Profile Photo Upload */}
+                <div className="flex flex-col items-center py-4 border-b border-gray-100">
+                  <div className="mb-3">
+                    <div className="relative group">
+                      <div className="w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold shadow-lg">
+                        {formData.profileImage ? (
+                          <img
+                            src={formData.profileImage}
+                            alt="Profile preview"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <User className="w-10 h-10" />
+                        )}
+                      </div>
+                      <label htmlFor="profile-upload" className="absolute -bottom-1 -right-1 w-8 h-8 bg-white rounded-full shadow-lg border border-gray-200 flex items-center justify-center cursor-pointer hover:bg-gray-50 active:scale-95 transition-all group">
+                        <Plus className="w-4 h-4 text-blue-600" />
+                        <input
+                          id="profile-upload"
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              // Validate file size (3MB max)
+                              if (file.size > 3 * 1024 * 1024) {
+                                alert("Image must be less than 3MB");
+                                return;
+                              }
+                              // Create preview URL
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                updateForm("profileImage", reader.result);
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                      </label>
+                      {formData.profileImage && (
+                        <button
+                          type="button"
+                          onClick={() => updateForm("profileImage", null)}
+                          className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 rounded-full shadow-lg flex items-center justify-center hover:bg-red-600 active:scale-95 transition-all"
+                        >
+                          <X className="w-3 h-3 text-white" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 text-center">
+                    Upload member photo (Optional)
+                  </p>
+                  <p className="text-xs text-gray-400 text-center">
+                    JPG, PNG or WebP • Max 3MB
+                  </p>
+                </div>
+
                 {/* Full Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -553,6 +660,7 @@ export default function AddMemberPage() {
                           updateForm("age", value);
                         }
                       }}
+                      onWheel={preventScrollChange}
                       min="1"
                       max="120"
                     />
@@ -733,18 +841,19 @@ export default function AddMemberPage() {
                       <div className="relative">
                         <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                         <input
-                          type="number"
+                          type="text"
+                          inputMode="decimal"
+                          pattern="[0-9]*\.?[0-9]*"
                           className="w-full pl-10 pr-4 py-2 bg-white border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm font-medium transition-all"
                           placeholder="Enter custom price"
                           value={formData.customPrice}
                           onChange={(e) => {
                             const value = e.target.value;
-                            if (value === '' || (!isNaN(value) && parseFloat(value) >= 0)) {
+                            if (value === '' || /^\d*\.?\d*$/.test(value)) {
                               updateForm("customPrice", value);
                             }
                           }}
-                          min="0.01"
-                          step="0.01"
+                          onFocus={(e) => e.target.select()}
                         />
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
@@ -913,16 +1022,16 @@ export default function AddMemberPage() {
 </span>
 
                   <input
-                    type="number"
-                    min="0"
-                    step="0.01"
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*\.?[0-9]*"
                     className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-medium transition-all text-sm"
                     placeholder="Enter amount"
                     value={formData.paymentAmount}
                     onChange={(e) => {
-                      const value = parseFloat(e.target.value);
-                      if (value >= 0 || e.target.value === '') {
-                        updateForm("paymentAmount", e.target.value);
+                      const value = e.target.value;
+                      if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                        updateForm("paymentAmount", value);
                       }
                     }}
                   />

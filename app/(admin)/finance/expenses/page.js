@@ -73,11 +73,18 @@ export default function AddExpensePage() {
               Amount *
             </label>
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
+              pattern="[0-9]*\.?[0-9]*"
               className="w-full px-4 py-3 border border-gray-200 rounded-xl text-xl font-semibold outline-none"
               placeholder="₹ 0"
               value={formData.amount}
-              onChange={(e) => updateForm("amount", e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                  updateForm("amount", value);
+                }
+              }}
               required
             />
           </div>

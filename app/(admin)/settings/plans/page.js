@@ -631,13 +631,19 @@ function PlanModal({ plan, gymId, onClose, onSave }) {
                 </label>
                 <div className="flex gap-2">
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     className="flex-1 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
                     placeholder="30"
                     value={formData.duration}
-                    onChange={(e) => updateForm("duration", parseInt(e.target.value))}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === '' || /^\d+$/.test(value)) {
+                        updateForm("duration", value === '' ? '' : parseInt(value));
+                      }
+                    }}
                     required
-                    min="1"
                   />
                   <select
                     value={durationUnit}
@@ -665,14 +671,19 @@ function PlanModal({ plan, gymId, onClose, onSave }) {
                     <IndianRupee className="w-4 h-4 text-gray-400" />
                   </div>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*\.?[0-9]*"
                     className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
                     placeholder="1500"
                     value={formData.price}
-                    onChange={(e) => updateForm("price", parseFloat(e.target.value))}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                        updateForm("price", value === '' ? '' : parseFloat(value));
+                      }
+                    }}
                     required
-                    min="0"
-                    step="0.01"
                   />
                 </div>
               </div>

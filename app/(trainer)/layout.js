@@ -34,6 +34,28 @@ export default function TrainerLayout({ children }) {
           return;
         }
 
+        // Check if credentials were updated by admin (force re-login)
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("credentials_updated_at")
+          .eq("id", data.user.id)
+          .single();
+
+        if (profileData?.credentials_updated_at) {
+          const lastLoginStr = localStorage.getItem("trainer_login_at");
+          const credentialsUpdatedAt = new Date(profileData.credentials_updated_at).getTime();
+          const lastLoginAt = lastLoginStr ? parseInt(lastLoginStr, 10) : 0;
+
+          // If credentials were updated after the trainer's last login, force logout
+          if (credentialsUpdatedAt > lastLoginAt) {
+            localStorage.removeItem("gymUser");
+            localStorage.removeItem("trainer_login_at");
+            await supabase.auth.signOut();
+            router.push("/auth/login?message=credentials_changed");
+            return;
+          }
+        }
+
         setAuthorized(true);
       } catch (err) {
         console.error("Auth error:", err);

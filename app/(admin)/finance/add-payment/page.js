@@ -318,18 +318,18 @@ export default function AddPaymentPage() {
                     <span className="text-2xl font-bold text-gray-400">₹</span>
                   </div>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*\.?[0-9]*"
                     className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl text-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="0.00"
                     value={formData.amount}
                     onChange={(e) => {
                       const value = e.target.value;
-                      if (value === '' || (!isNaN(value) && parseFloat(value) >= 0)) {
+                      if (value === '' || /^\d*\.?\d*$/.test(value)) {
                         updateForm("amount", value);
                       }
                     }}
-                    min="0.01"
-                    step="0.01"
                     required
                   />
                 </div>

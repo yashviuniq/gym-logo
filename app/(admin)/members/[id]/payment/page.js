@@ -214,6 +214,7 @@ export default function AddPaymentPage() {
               className="w-full px-4 py-3.5 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-[#F97316] focus:border-[#F97316] outline-none transition-all duration-200 text-gray-900 bg-white"
               value={formData.date}
               onChange={(e) => updateForm("date", e.target.value)}
+              max={new Date().toISOString().split("T")[0]}
             />
           </div>
 

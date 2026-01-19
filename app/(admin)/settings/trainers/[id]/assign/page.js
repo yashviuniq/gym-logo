@@ -173,6 +173,34 @@ export default function AssignMembersPage({ params }) {
 
   const handleSave = async () => {
     if (!trainer?.profileId || !selectedGym?.id) return;
+
+    // Find newly added and removed members
+    const newAssignments = [...selectedMembers].filter(id => !assignedMemberIds.has(id));
+    const removedAssignments = [...assignedMemberIds].filter(id => !selectedMembers.has(id));
+
+    // Check if any of the new assignments are already assigned to other trainers
+    const membersWithOtherTrainers = newAssignments.filter(memberId => 
+      memberTrainerMap[memberId] && memberTrainerMap[memberId].length > 0
+    );
+
+    if (membersWithOtherTrainers.length > 0) {
+      const memberNames = membersWithOtherTrainers
+        .map(id => {
+          const member = allMembers.find(m => m.id === id);
+          const trainers = memberTrainerMap[id];
+          return `• ${member?.name} (currently assigned to ${trainers.join(', ')})`;
+        })
+        .join('\n');
+
+      const confirmed = window.confirm(
+        `⚠️ Warning: The following members are already assigned to other trainers:\n\n${memberNames}\n\n` +
+        `Proceeding will remove them from their current trainers and assign them to ${trainer.name}.\n\n` +
+        `Do you want to continue?`
+      );
+
+      if (!confirmed) return;
+    }
+
     setSaving(true);
     setError("");
 
@@ -180,12 +208,17 @@ export default function AssignMembersPage({ params }) {
       const { data: authData } = await supabase.auth.getUser();
       const assignedBy = authData?.user?.id;
 
-      // Find newly added and removed members
-      const newAssignments = [...selectedMembers].filter(id => !assignedMemberIds.has(id));
-      const removedAssignments = [...assignedMemberIds].filter(id => !selectedMembers.has(id));
-
-      // Add new assignments
+      // CRITICAL: For new assignments, first deactivate ALL existing assignments for those members
       if (newAssignments.length > 0) {
+        // Deactivate all existing active assignments for these members
+        await supabase
+          .from("trainer_member_assignments")
+          .update({ is_active: false })
+          .eq("gym_id", selectedGym.id)
+          .in("member_id", newAssignments)
+          .eq("is_active", true);
+
+        // Then create new assignments
         const assignmentsToInsert = newAssignments.map(memberId => ({
           gym_id: selectedGym.id,
           trainer_id: trainer.profileId,
@@ -268,7 +301,7 @@ export default function AssignMembersPage({ params }) {
     <div className="min-h-screen bg-gray-50 pb-32">
       <Header title={`Assign to ${trainer?.name || "Trainer"}`} />
 
-      <main className="px-4 py-4 space-y-4">
+      <main className={`px-4 py-4 space-y-4 ${hasChanges ? 'pb-40' : 'pb-4'}`}>
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
@@ -335,7 +368,10 @@ export default function AssignMembersPage({ params }) {
               return (
                 <div
                   key={member.id}
-                  onClick={() => toggleMember(member.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleMember(member.id);
+                  }}
                   className={`bg-white rounded-xl p-4 shadow-sm cursor-pointer transition-all ${
                     isSelected 
                       ? "ring-2 ring-blue-500 bg-blue-50" 
@@ -399,9 +435,9 @@ export default function AssignMembersPage({ params }) {
 
       {/* Fixed Bottom Save Button */}
       {hasChanges && (
-        <div className="fixed bottom-20 left-0 right-0 px-4 pb-4 bg-gradient-to-t from-gray-50 to-transparent pt-4">
+        <div className="fixed bottom-20 left-0 right-0 px-4 pb-4 bg-gradient-to-t from-gray-50 via-gray-50 to-transparent pt-8 pointer-events-none">
           <div className="max-w-screen-md mx-auto">
-            <div className="bg-white rounded-xl p-4 shadow-lg border border-gray-200">
+            <div className="bg-white rounded-xl p-4 shadow-lg border border-gray-200 pointer-events-auto">
               <div className="flex items-center justify-between mb-3">
                 <div className="text-sm text-gray-600">
                   {newAssignmentsCount > 0 && (

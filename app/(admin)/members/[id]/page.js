@@ -9,6 +9,7 @@ import RenewalHistoryModal from "@/components/shared/RenewalHistoryModal";
 import ResolvePendingPaymentModal from "@/components/shared/ResolvePendingPaymentModal";
 import AssignDietPlanModal from "@/components/shared/AssignDietPlanModal";
 import AssignWorkoutPlanModal from "@/components/shared/AssignWorkoutPlanModal";
+import AssignTrainerModal from "@/components/shared/AssignTrainerModal";
 import {
   Phone,
   Mail,
@@ -54,6 +55,7 @@ export default function MemberDetailPage() {
   const [showResolvePaymentModal, setShowResolvePaymentModal] = useState(false);
   const [showAssignDietModal, setShowAssignDietModal] = useState(false);
   const [showAssignWorkoutModal, setShowAssignWorkoutModal] = useState(false);
+  const [showAssignTrainerModal, setShowAssignTrainerModal] = useState(false);
   const [selectedPendingPayment, setSelectedPendingPayment] = useState(null);
   const [member, setMember] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -63,6 +65,7 @@ export default function MemberDetailPage() {
   const [pendingPayments, setPendingPayments] = useState([]);
   const [assignedDietPlans, setAssignedDietPlans] = useState([]);
   const [assignedWorkoutPlans, setAssignedWorkoutPlans] = useState([]);
+  const [assignedTrainer, setAssignedTrainer] = useState(null);
   const [editingDietPlan, setEditingDietPlan] = useState(null);
   const { showSuccess, showError } = useToast();
 
@@ -225,6 +228,9 @@ export default function MemberDetailPage() {
       // Fetch assigned workout plans
       await fetchAssignedWorkoutPlans(memberId);
 
+      // Fetch assigned trainer
+      await fetchAssignedTrainer(memberId);
+
       // Fetch next payment info for partial payments
       await fetchNextPaymentInfo(memberId);
 
@@ -320,6 +326,37 @@ export default function MemberDetailPage() {
       }
     } catch (err) {
       console.error("Error fetching workout plans:", err);
+    }
+  };
+
+  const fetchAssignedTrainer = async (memberId) => {
+    try {
+      const { data, error } = await supabase
+        .from("trainer_member_assignments")
+        .select(`
+          trainer_id,
+          profiles:trainer_id (
+            id,
+            first_name,
+            last_name,
+            phone
+          )
+        `)
+        .eq("member_id", memberId)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (!error && data) {
+        setAssignedTrainer({
+          trainerId: data.trainer_id,
+          name: `${data.profiles?.first_name || ""} ${data.profiles?.last_name || ""}`.trim(),
+          phone: data.profiles?.phone
+        });
+      } else {
+        setAssignedTrainer(null);
+      }
+    } catch (err) {
+      console.error("Error fetching assigned trainer:", err);
     }
   };
 
@@ -712,6 +749,15 @@ export default function MemberDetailPage() {
           </button>
         </div>
 
+        {/* Trainer Assignment Button */}
+        <button
+          onClick={() => setShowAssignTrainerModal(true)}
+          className="w-full p-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 active:scale-95"
+        >
+          <Users className="w-4 h-4" />
+          <span>{assignedTrainer ? "Change Trainer" : "Assign Trainer"}</span>
+        </button>
+
         {/* Edit and Delete Buttons */}
         <div className="grid grid-cols-2 gap-3">
           <button
@@ -980,6 +1026,59 @@ export default function MemberDetailPage() {
                 </div>
               )}
             </div>
+
+            {/* Assigned Trainer Section */}
+            <div className="pt-3 border-t border-gray-100">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                  <Users className="w-4 h-4 text-purple-600" />
+                  Assigned Trainer
+                </h4>
+                <button
+                  onClick={() => setShowAssignTrainerModal(true)}
+                  className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  {assignedTrainer ? "Change" : "Assign"}
+                </button>
+              </div>
+              {!assignedTrainer ? (
+                <div className="text-center py-4 bg-gray-50 rounded-lg">
+                  <Users className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                  <p className="text-sm text-gray-500">No trainer assigned</p>
+                  <button
+                    onClick={() => setShowAssignTrainerModal(true)}
+                    className="mt-2 text-xs text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Assign a trainer
+                  </button>
+                </div>
+              ) : (
+                <div className="p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+                      {assignedTrainer.name.charAt(0)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900">{assignedTrainer.name}</p>
+                      {assignedTrainer.phone && (
+                        <p className="text-xs text-gray-500 flex items-center gap-1">
+                          <Phone className="w-3 h-3" />
+                          {assignedTrainer.phone}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setShowAssignTrainerModal(true)}
+                      className="p-1.5 text-purple-600 hover:bg-purple-100 rounded-lg transition-colors"
+                      title="Change Trainer"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -1148,6 +1247,19 @@ export default function MemberDetailPage() {
           onClose={() => setShowAssignWorkoutModal(false)}
           onAssign={() => {
             fetchAssignedWorkoutPlans(member.id);
+          }}
+        />
+      )}
+
+      {showAssignTrainerModal && (
+        <AssignTrainerModal
+          isOpen={showAssignTrainerModal}
+          onClose={() => setShowAssignTrainerModal(false)}
+          memberId={member?.id}
+          selectedGym={selectedGym}
+          currentTrainerId={assignedTrainer?.trainerId}
+          onSuccess={() => {
+            fetchAssignedTrainer(member.id);
           }}
         />
       )}

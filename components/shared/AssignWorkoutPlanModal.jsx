@@ -119,6 +119,13 @@ export default function AssignWorkoutPlanModal({ member, memberId, memberName, g
                 return;
             }
 
+            // Remove any existing workout plan assignments for this member
+            // (A member should only have one active workout plan at a time)
+            await supabase
+                .from("member_workouts")
+                .delete()
+                .eq("member_id", actualMemberId);
+
             // Assign workout plan to member
             const { error } = await supabase
                 .from("member_workouts")
@@ -161,9 +168,14 @@ export default function AssignWorkoutPlanModal({ member, memberId, memberName, g
 
         setLoading(true);
         try {
+            // Get current user info for created_by and trainer_id
             const storedUser = localStorage.getItem("gymUser");
             const currentUser = storedUser ? JSON.parse(storedUser) : null;
             const createdBy = currentUser?.id;
+            
+            // Use trainerId prop if available, otherwise use current user's ID
+            // This handles both trainer (has trainerId prop) and admin (uses their own ID) cases
+            const actualTrainerId = trainerId || createdBy;
 
             // Create the workout plan with member_id to make it member-specific
             const { data: newPlan, error: insertError } = await supabase
@@ -177,7 +189,7 @@ export default function AssignWorkoutPlanModal({ member, memberId, memberName, g
                     is_template: false,
                     created_by: createdBy,
                     member_id: actualMemberId, // This makes it member-specific
-                    trainer_id: trainerId || null,
+                    trainer_id: actualTrainerId, // Now properly set for both admin and trainer
                 })
                 .select()
                 .single();
@@ -227,13 +239,20 @@ export default function AssignWorkoutPlanModal({ member, memberId, memberName, g
                 }
             }
 
+            // Remove any existing workout plan assignments for this member
+            // (A member should only have one active workout plan at a time)
+            await supabase
+                .from("member_workouts")
+                .delete()
+                .eq("member_id", actualMemberId);
+
             // Assign the newly created plan to the member
             const { error: assignError } = await supabase
                 .from("member_workouts")
                 .insert({
                     member_id: actualMemberId,
                     workout_plan_id: planId,
-                    assigned_by_trainer_id: trainerId || null,
+                    assigned_by_trainer_id: actualTrainerId, // Use the same resolved trainer ID
                 });
 
             if (assignError) throw assignError;

@@ -18,6 +18,7 @@ import {
   TrendingUp,
   Calendar,
   Clock,
+  User,
   Plus,
   CheckCircle,
   AlertTriangle,
@@ -119,7 +120,7 @@ function WorkoutPlansContent() {
         .from("workout_plans")
         .select(`
           *,
-          creator:created_by(id, role)
+          creator:created_by(id, role, first_name, last_name)
         `)
         .eq("gym_id", gym.id)
         .is("member_id", null)
@@ -127,13 +128,8 @@ function WorkoutPlansContent() {
 
       if (error) throw error;
       
-      // Filter out plans created by trainers (only show admin/owner created plans)
-      const adminPlans = (data || []).filter(plan => {
-        // If no creator info or creator role is not trainer, include it
-        return !plan.creator || plan.creator.role !== 'trainer';
-      });
-      
-      setWorkoutPlans(adminPlans);
+      // Include all plans (admin can see trainer-created plans)
+      setWorkoutPlans(data || []);
     } catch (error) {
       console.error("Error fetching workout plans:", error);
       showError("Failed to load workout plans");
@@ -355,6 +351,26 @@ function WorkoutPlansContent() {
                         {plan.description && (
                           <div className="text-sm text-gray-600 line-clamp-2">
                             {plan.description}
+                          </div>
+                        )}
+
+                        {/* Creator Info */}
+                        {plan.creator && (
+                          <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-100">
+                            <div className={`w-6 h-6 rounded flex items-center justify-center ${
+                              plan.creator.role === 'trainer'
+                                ? 'bg-purple-50'
+                                : 'bg-indigo-50'
+                            }`}>
+                              <User className={`w-3 h-3 ${
+                                plan.creator.role === 'trainer'
+                                  ? 'text-purple-600'
+                                  : 'text-indigo-600'
+                              }`} />
+                            </div>
+                            <span className="text-gray-600 text-xs">
+                              Created by {plan.creator.role === 'trainer' ? 'Trainer' : 'Admin'} {plan.creator.first_name} {plan.creator.last_name}
+                            </span>
                           </div>
                         )}
 

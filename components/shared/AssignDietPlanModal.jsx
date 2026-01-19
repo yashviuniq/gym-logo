@@ -128,6 +128,13 @@ export default function AssignDietPlanModal({ member, memberId, memberName, gymI
                 return;
             }
 
+            // Remove any existing diet plan assignments for this member
+            // (A member should only have one active diet plan at a time)
+            await supabase
+                .from("member_diets")
+                .delete()
+                .eq("member_id", actualMemberId);
+
             // Assign diet plan to member
             const { error } = await supabase
                 .from("member_diets")
@@ -246,6 +253,13 @@ export default function AssignDietPlanModal({ member, memberId, memberName, gymI
                     }
                 }
             }
+
+            // Remove any existing diet plan assignments for this member
+            // (A member should only have one active diet plan at a time)
+            await supabase
+                .from("member_diets")
+                .delete()
+                .eq("member_id", actualMemberId);
 
             // Assign the newly created plan to the member
             const { error: assignError } = await supabase

@@ -166,7 +166,7 @@ export default function EditTrainerPage({ params }) {
         throw new Error("Password is required");
       }
 
-      // Update profile
+      // Update profile with credentials_updated_at to force trainer logout
       const { error: profileError } = await supabase
         .from("profiles")
         .update({
@@ -174,7 +174,8 @@ export default function EditTrainerPage({ params }) {
           last_name: formData.lastName.trim(),
           email: formData.email.trim() || null,
           phone: formData.phone.trim() || null,
-          password: formData.password.trim()
+          password: formData.password.trim(),
+          credentials_updated_at: new Date().toISOString() // Force trainer to re-login
         })
         .eq("id", formData.profileId);
 

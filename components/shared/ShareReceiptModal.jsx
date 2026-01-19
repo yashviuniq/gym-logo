@@ -109,7 +109,7 @@ export default function ShareReceiptModal({ member, gymData, onClose }) {
         planName: plan?.name || member.plan || "Membership",
         planDuration: plan?.duration_days || 30,
         validityStart: membership?.start_date,
-        validityEnd: membership?.end_date || member.validTill,
+        validityEnd: membership?.end_date, // Use only database date, not formatted display date
         amount: latestPayment.amount,
         paymentMode: latestPayment.payment_mode,
         paymentId: latestPayment.id,

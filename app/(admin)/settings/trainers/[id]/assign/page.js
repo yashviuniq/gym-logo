@@ -31,6 +31,7 @@ export default function AssignMembersPage({ params }) {
   const [selectedGym, setSelectedGym] = useState(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [memberTrainerMap, setMemberTrainerMap] = useState({}); // Maps member_id to trainer name
 
   useEffect(() => {
     const storedGym = localStorage.getItem("selectedGym");
@@ -110,6 +111,32 @@ export default function AssignMembersPage({ params }) {
       const assigned = new Set(assignmentsData?.map(a => a.member_id) || []);
       setAssignedMemberIds(assigned);
       setSelectedMembers(new Set(assigned));
+
+      // Fetch ALL active trainer assignments to show which members are assigned to which trainers
+      const { data: allAssignments } = await supabase
+        .from("trainer_member_assignments")
+        .select(`
+          member_id,
+          trainer_id,
+          profiles:trainer_id (first_name, last_name)
+        `)
+        .eq("gym_id", selectedGym.id)
+        .eq("is_active", true);
+
+      // Create a map of member_id -> trainer name (for trainers OTHER than current one)
+      const trainerMap = {};
+      if (allAssignments) {
+        allAssignments.forEach(a => {
+          if (a.trainer_id !== trainerData.profile_id) {
+            const trainerName = `${a.profiles?.first_name || ''} ${a.profiles?.last_name || ''}`.trim() || 'Unknown Trainer';
+            if (!trainerMap[a.member_id]) {
+              trainerMap[a.member_id] = [];
+            }
+            trainerMap[a.member_id].push(trainerName);
+          }
+        });
+      }
+      setMemberTrainerMap(trainerMap);
     } catch (err) {
       console.error("Error fetching data:", err);
       setError("Failed to load data");
@@ -303,6 +330,7 @@ export default function AssignMembersPage({ params }) {
             filteredMembers.map((member) => {
               const isSelected = selectedMembers.has(member.id);
               const wasAlreadyAssigned = assignedMemberIds.has(member.id);
+              const assignedToOtherTrainers = memberTrainerMap[member.id];
 
               return (
                 <div
@@ -335,11 +363,17 @@ export default function AssignMembersPage({ params }) {
 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <h4 className="font-medium text-gray-900 truncate">{member.name}</h4>
                         {wasAlreadyAssigned && (
                           <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
                             Assigned
+                          </span>
+                        )}
+                        {assignedToOtherTrainers && assignedToOtherTrainers.length > 0 && (
+                          <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-xs rounded-full flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" />
+                            Assigned to {assignedToOtherTrainers.join(", ")}
                           </span>
                         )}
                       </div>

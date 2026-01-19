@@ -14,7 +14,8 @@ import {
   User,
   Clock,
   Activity,
-  Bell
+  Bell,
+  IndianRupee
 } from "lucide-react";
 
 export default function TrainerDashboard() {
@@ -31,6 +32,8 @@ export default function TrainerDashboard() {
   });
   const [recentMembers, setRecentMembers] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
+  const [recentCollections, setRecentCollections] = useState([]);
+  const [collectionsStats, setCollectionsStats] = useState({ totalCollected: 0, collectionsCount: 0 });
 
   useEffect(() => {
     const init = async () => {
@@ -186,6 +189,24 @@ export default function TrainerDashboard() {
       ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
 
       setRecentActivity(activity);
+
+      // Fetch trainer's payment collections
+      const { data: collections } = await supabase
+        .from("payments")
+        .select("id, amount, created_at, payment_mode, members:member_id(full_name)")
+        .eq("gym_id", gymId)
+        .eq("collected_by", trainerId)
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      if (collections) {
+        setRecentCollections(collections);
+        const totalCollected = collections.reduce((sum, c) => sum + (c.amount || 0), 0);
+        setCollectionsStats({
+          totalCollected,
+          collectionsCount: collections.length
+        });
+      }
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
     }
@@ -290,6 +311,25 @@ export default function TrainerDashboard() {
             <p className="text-2xl font-bold text-gray-900">{stats.workoutPlans}</p>
             <p className="text-sm text-gray-500">Workout Plans</p>
           </div>
+
+          {/* Collections Stats Card */}
+          <div className="bg-white rounded-xl p-4 shadow-sm col-span-2">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+                <IndianRupee className="w-5 h-5 text-emerald-600" />
+              </div>
+            </div>
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-2xl font-bold text-gray-900">₹{collectionsStats.totalCollected.toLocaleString("en-IN")}</p>
+                <p className="text-sm text-gray-500">Total Collected</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xl font-bold text-gray-900">{collectionsStats.collectionsCount}</p>
+                <p className="text-sm text-gray-500">Collections</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Quick Actions */}
@@ -380,6 +420,33 @@ export default function TrainerDashboard() {
                       <span className="font-medium">{activity.memberName}</span>
                     </p>
                     <p className="text-xs text-gray-500">{formatTimeAgo(activity.date)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* My Collections */}
+        {recentCollections.length > 0 && (
+          <div className="bg-white rounded-xl p-4 shadow-sm">
+            <h2 className="font-semibold text-gray-900 mb-3">My Collections</h2>
+            <div className="space-y-3">
+              {recentCollections.map((collection) => (
+                <div key={collection.id} className="flex items-center gap-3 p-2 -mx-2 rounded-lg bg-gray-50">
+                  <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+                    <IndianRupee className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-gray-900">
+                      ₹{collection.amount?.toLocaleString("en-IN")}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      From {collection.members?.full_name || "Unknown"} • {collection.payment_mode || "Cash"}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-gray-500">{formatTimeAgo(collection.created_at)}</p>
                   </div>
                 </div>
               ))}

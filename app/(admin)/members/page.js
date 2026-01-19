@@ -27,7 +27,8 @@ import {
   Phone,
   Mail,
   MoreVertical,
-  Share2
+  Share2,
+  UserCheck
 } from "lucide-react";
 
 export default function MembersPage() {
@@ -74,6 +75,7 @@ export default function MembersPage() {
           balance,
           profile_image,
           created_at,
+          created_by,
           memberships (
             id,
             plan_id,
@@ -94,9 +96,80 @@ export default function MembersPage() {
       if (error) {
         console.error("Error fetching members:", error);
         setRawMembers([]);
-      } else {
-        setRawMembers(data || []);
+        setLoading(false);
+        return;
       }
+
+      // Fetch trainer names for members created by trainers
+      const memberData = data || [];
+      const creatorIds = [...new Set(memberData.map(m => m.created_by).filter(Boolean))];
+      
+      let trainerNamesMap = {};
+      if (creatorIds.length > 0) {
+        // First try to get from gym_trainers table
+        const { data: trainersData, error: trainersError } = await supabase
+          .from("gym_trainers")
+          .select("profile_id, profiles(first_name, last_name)")
+          .in("profile_id", creatorIds)
+          .eq("gym_id", gymId);
+
+        console.log("Gym trainers query error:", trainersError);
+        console.log("Gym trainers data:", trainersData);
+
+        if (trainersData && trainersData.length > 0) {
+          trainerNamesMap = trainersData.reduce((acc, trainer) => {
+            const firstName = trainer.profiles?.first_name || "";
+            const lastName = trainer.profiles?.last_name || "";
+            acc[trainer.profile_id] = `${firstName} ${lastName}`.trim() || "Trainer";
+            return acc;
+          }, {});
+        }
+
+        // If not found in gym_trainers, try to fetch directly from profiles table for trainers
+        if (Object.keys(trainerNamesMap).length === 0) {
+          console.log("No trainers found in gym_trainers, trying profiles table...");
+          const { data: profilesData, error: profilesError } = await supabase
+            .from("profiles")
+            .select("id, first_name, last_name")
+            .in("id", creatorIds)
+            .eq("role", "trainer");
+
+          console.log("Profiles query error:", profilesError);
+          console.log("Profiles data:", profilesData);
+
+          if (profilesData) {
+            trainerNamesMap = profilesData.reduce((acc, profile) => {
+              const firstName = profile.first_name || "";
+              const lastName = profile.last_name || "";
+              acc[profile.id] = `${firstName} ${lastName}`.trim() || "Trainer";
+              return acc;
+            }, {});
+          }
+        }
+      }
+
+      // Add creator info to members
+      const enrichedMembers = memberData.map(member => {
+        // Only set createdByTrainerName if member was created by someone AND they are a trainer
+        const trainerName = member.created_by ? trainerNamesMap[member.created_by] : null;
+        return {
+          ...member,
+          createdByTrainerName: trainerName && trainerName.trim() ? trainerName : null
+        };
+      });
+
+      setRawMembers(enrichedMembers);
+
+      // Debug log to see what's happening
+      console.log("Creator IDs found:", creatorIds);
+      console.log("Trainer names map:", trainerNamesMap);
+      console.log("Members with trainer info:", enrichedMembers.filter(m => m.created_by).map(m => ({
+        name: m.full_name,
+        created_by: m.created_by,
+        trainerName: m.createdByTrainerName
+      })));
+
+
     } catch (err) {
       console.error("Error:", err);
       setRawMembers([]);
@@ -175,6 +248,7 @@ export default function MembersPage() {
         balance: member.balance || 0,
         hasCredentials: membersWithCredentials.has(member.id),
         daysRemaining: daysRemaining,
+        createdByTrainerName: member.createdByTrainerName || null,
       };
     });
   }, [rawMembers, membersWithCredentials]);
@@ -492,6 +566,16 @@ export default function MembersPage() {
 
                     {/* Plan and Status Info */}
                     <div className="mt-3 space-y-2">
+                      {/* Show if created by trainer */}
+                      {member.createdByTrainerName && (
+                        <div className="flex items-center gap-2 bg-purple-50 rounded-lg px-2 py-1.5">
+                          <UserCheck className="w-3.5 h-3.5 text-purple-600" />
+                          <span className="text-xs text-purple-700">
+                            Created by Trainer ({member.createdByTrainerName})
+                          </span>
+                        </div>
+                      )}
+                      
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">

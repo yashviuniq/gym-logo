@@ -28,7 +28,7 @@ const allAdminNavItems = [
 
 const trainerNavItems = [
   { href: "/trainer/dashboard", label: "Home", icon: <Home className="w-5 h-5" /> },
-  { href: "/trainer/members", label: "Members", icon: <Users className="w-5 h-5" /> },
+  { href: "/trainer/all-members", label: "Members", icon: <Users className="w-5 h-5" /> },
   { href: "/trainer/diet-plans", label: "Diet", icon: <Apple className="w-5 h-5" /> },
   { href: "/trainer/workout-plans", label: "Workout", icon: <Dumbbell className="w-5 h-5" /> },
   { href: "/trainer/profile", label: "Profile", icon: <User className="w-5 h-5" /> },

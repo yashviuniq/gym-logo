@@ -173,6 +173,34 @@ export default function AssignMembersPage({ params }) {
 
   const handleSave = async () => {
     if (!trainer?.profileId || !selectedGym?.id) return;
+
+    // Find newly added and removed members
+    const newAssignments = [...selectedMembers].filter(id => !assignedMemberIds.has(id));
+    const removedAssignments = [...assignedMemberIds].filter(id => !selectedMembers.has(id));
+
+    // Check if any of the new assignments are already assigned to other trainers
+    const membersWithOtherTrainers = newAssignments.filter(memberId => 
+      memberTrainerMap[memberId] && memberTrainerMap[memberId].length > 0
+    );
+
+    if (membersWithOtherTrainers.length > 0) {
+      const memberNames = membersWithOtherTrainers
+        .map(id => {
+          const member = allMembers.find(m => m.id === id);
+          const trainers = memberTrainerMap[id];
+          return `• ${member?.name} (currently assigned to ${trainers.join(', ')})`;
+        })
+        .join('\n');
+
+      const confirmed = window.confirm(
+        `⚠️ Warning: The following members are already assigned to other trainers:\n\n${memberNames}\n\n` +
+        `Proceeding will remove them from their current trainers and assign them to ${trainer.name}.\n\n` +
+        `Do you want to continue?`
+      );
+
+      if (!confirmed) return;
+    }
+
     setSaving(true);
     setError("");
 
@@ -180,12 +208,17 @@ export default function AssignMembersPage({ params }) {
       const { data: authData } = await supabase.auth.getUser();
       const assignedBy = authData?.user?.id;
 
-      // Find newly added and removed members
-      const newAssignments = [...selectedMembers].filter(id => !assignedMemberIds.has(id));
-      const removedAssignments = [...assignedMemberIds].filter(id => !selectedMembers.has(id));
-
-      // Add new assignments
+      // CRITICAL: For new assignments, first deactivate ALL existing assignments for those members
       if (newAssignments.length > 0) {
+        // Deactivate all existing active assignments for these members
+        await supabase
+          .from("trainer_member_assignments")
+          .update({ is_active: false })
+          .eq("gym_id", selectedGym.id)
+          .in("member_id", newAssignments)
+          .eq("is_active", true);
+
+        // Then create new assignments
         const assignmentsToInsert = newAssignments.map(memberId => ({
           gym_id: selectedGym.id,
           trainer_id: trainer.profileId,

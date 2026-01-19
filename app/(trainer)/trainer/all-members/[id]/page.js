@@ -8,8 +8,6 @@ import RenewMembershipModal from "@/components/shared/RenewMembershipModal";
 import RenewalHistoryModal from "@/components/shared/RenewalHistoryModal";
 import ResolvePendingPaymentModal from "@/components/shared/ResolvePendingPaymentModal";
 import CollectPaymentModal from "@/components/shared/CollectPaymentModal";
-import AssignDietPlanModal from "@/components/shared/AssignDietPlanModal";
-import AssignWorkoutPlanModal from "@/components/shared/AssignWorkoutPlanModal";
 import {
   Phone,
   Mail,
@@ -39,8 +37,6 @@ export default function TrainerMemberDetailPage() {
   const [showRenewModal, setShowRenewModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showResolvePaymentModal, setShowResolvePaymentModal] = useState(false);
-  const [showAssignDietModal, setShowAssignDietModal] = useState(false);
-  const [showAssignWorkoutModal, setShowAssignWorkoutModal] = useState(false);
   const [showCollectPaymentModal, setShowCollectPaymentModal] = useState(false);
   const [selectedPendingPayment, setSelectedPendingPayment] = useState(null);
   const [member, setMember] = useState(null);
@@ -747,13 +743,9 @@ export default function TrainerMemberDetailPage() {
                       <Utensils className="w-4 h-4 text-green-600" />
                       Diet Plans
                     </h4>
-                    <button
-                      onClick={() => setShowAssignDietModal(true)}
-                      className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 transition flex items-center gap-1"
-                    >
-                      <Plus className="w-3 h-3" />
-                      Assign
-                    </button>
+                    <div className="px-3 py-1.5 bg-gray-100 text-gray-500 text-xs font-medium rounded-lg">
+                      Only for Assigned Members
+                    </div>
                   </div>
                   {assignedDietPlans.length > 0 ? (
                     <div className="space-y-2">
@@ -769,12 +761,6 @@ export default function TrainerMemberDetailPage() {
                                 Assigned: {new Date(plan.assignedAt).toLocaleDateString("en-IN")}
                               </p>
                             </div>
-                            <button
-                              onClick={() => handleRemoveDietPlan(plan.id)}
-                              className="p-1 text-red-600 hover:bg-red-100 rounded transition"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
                           </div>
                         </div>
                       ))}
@@ -793,13 +779,9 @@ export default function TrainerMemberDetailPage() {
                       <Dumbbell className="w-4 h-4 text-blue-600" />
                       Workout Plans
                     </h4>
-                    <button
-                      onClick={() => setShowAssignWorkoutModal(true)}
-                      className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition flex items-center gap-1"
-                    >
-                      <Plus className="w-3 h-3" />
-                      Assign
-                    </button>
+                    <div className="px-3 py-1.5 bg-gray-100 text-gray-500 text-xs font-medium rounded-lg">
+                      Only for Assigned Members
+                    </div>
                   </div>
                   {assignedWorkoutPlans.length > 0 ? (
                     <div className="space-y-2">
@@ -815,12 +797,6 @@ export default function TrainerMemberDetailPage() {
                                 Assigned: {new Date(plan.assignedAt).toLocaleDateString("en-IN")}
                               </p>
                             </div>
-                            <button
-                              onClick={() => handleRemoveWorkoutPlan(plan.id)}
-                              className="p-1 text-red-600 hover:bg-red-100 rounded transition"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
                           </div>
                         </div>
                       ))}
@@ -902,32 +878,6 @@ export default function TrainerMemberDetailPage() {
             setSelectedPendingPayment(null);
           }}
           onResolve={handlePaymentResolved}
-        />
-      )}
-
-      {showAssignDietModal && (
-        <AssignDietPlanModal
-          member={member}
-          onClose={() => setShowAssignDietModal(false)}
-          onAssign={() => {
-            setShowAssignDietModal(false);
-            fetchAssignedDietPlans(member.id);
-            showSuccess("Diet plan assigned successfully!");
-          }}
-        />
-      )}
-
-      {showAssignWorkoutModal && (
-        <AssignWorkoutPlanModal
-          member={member}
-          gymId={gymId}
-          trainerId={trainerId}
-          onClose={() => setShowAssignWorkoutModal(false)}
-          onAssign={() => {
-            setShowAssignWorkoutModal(false);
-            fetchAssignedWorkoutPlans(member.id);
-            showSuccess("Workout plan assigned successfully!");
-          }}
         />
       )}
 

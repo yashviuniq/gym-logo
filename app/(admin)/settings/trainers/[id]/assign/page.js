@@ -268,7 +268,7 @@ export default function AssignMembersPage({ params }) {
     <div className="min-h-screen bg-gray-50 pb-32">
       <Header title={`Assign to ${trainer?.name || "Trainer"}`} />
 
-      <main className="px-4 py-4 space-y-4">
+      <main className={`px-4 py-4 space-y-4 ${hasChanges ? 'pb-40' : 'pb-4'}`}>
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
@@ -335,7 +335,10 @@ export default function AssignMembersPage({ params }) {
               return (
                 <div
                   key={member.id}
-                  onClick={() => toggleMember(member.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleMember(member.id);
+                  }}
                   className={`bg-white rounded-xl p-4 shadow-sm cursor-pointer transition-all ${
                     isSelected 
                       ? "ring-2 ring-blue-500 bg-blue-50" 
@@ -399,9 +402,9 @@ export default function AssignMembersPage({ params }) {
 
       {/* Fixed Bottom Save Button */}
       {hasChanges && (
-        <div className="fixed bottom-20 left-0 right-0 px-4 pb-4 bg-gradient-to-t from-gray-50 to-transparent pt-4">
+        <div className="fixed bottom-20 left-0 right-0 px-4 pb-4 bg-gradient-to-t from-gray-50 via-gray-50 to-transparent pt-8 pointer-events-none">
           <div className="max-w-screen-md mx-auto">
-            <div className="bg-white rounded-xl p-4 shadow-lg border border-gray-200">
+            <div className="bg-white rounded-xl p-4 shadow-lg border border-gray-200 pointer-events-auto">
               <div className="flex items-center justify-between mb-3">
                 <div className="text-sm text-gray-600">
                   {newAssignmentsCount > 0 && (

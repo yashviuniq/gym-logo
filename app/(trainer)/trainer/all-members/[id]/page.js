@@ -137,7 +137,8 @@ export default function TrainerMemberDetailPage() {
             payment_mode,
             status,
             paid_at,
-            created_at
+            created_at,
+            membership_id
           )
         `)
         .eq("id", memberId)
@@ -216,13 +217,41 @@ export default function TrainerMemberDetailPage() {
       })) || [];
       setPendingPayments(pending);
 
-      const history = memberData.memberships?.map(m => ({
-        planName: m.membership_plans?.name || "Unknown",
-        duration: m.membership_plans?.duration_days || 0,
-        price: m.membership_plans?.price || 0,
-        newEndDate: m.end_date,
-        renewedAt: m.created_at
-      })) || [];
+      const history = memberData.memberships?.map(m => {
+        // Try to find payment by membership_id first
+        let membershipPayment = memberData.payments?.find(p => p.membership_id === m.id);
+        
+        // If not found by membership_id, try to match by created_at proximity and amount
+        if (!membershipPayment) {
+          const membershipDate = new Date(m.created_at);
+          const planPrice = m.membership_plans?.price || 0;
+          
+          // Find payments created within 5 minutes of membership creation
+          // and matching the plan price
+          membershipPayment = memberData.payments?.find(p => {
+            if (p.membership_id && p.membership_id !== m.id) return false; // Skip if linked to another membership
+            
+            const paymentDate = new Date(p.created_at);
+            const timeDiff = Math.abs(paymentDate - membershipDate);
+            const withinTimeWindow = timeDiff < 5 * 60 * 1000; // 5 minutes in milliseconds
+            
+            // Check if amount is close to plan price (within ₹1 to account for decimals)
+            const amountMatch = Math.abs((p.amount || 0) - planPrice) < 1;
+            
+            return withinTimeWindow && amountMatch;
+          });
+        }
+        
+        return {
+          planName: m.membership_plans?.name || "Unknown",
+          duration: m.membership_plans?.duration_days || 0,
+          price: m.membership_plans?.price || 0,
+          paymentAmount: membershipPayment?.amount || 0,
+          paymentMode: membershipPayment?.payment_mode || "N/A",
+          newEndDate: m.end_date,
+          renewedAt: m.created_at
+        };
+      }) || [];
 
       setRenewalHistory(history);
 

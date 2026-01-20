@@ -45,10 +45,12 @@ import {
   Eye as EyeIcon
 } from "lucide-react";
 import { useToast } from "@/contexts/ToastContext";
+import { useUserRole } from "@/lib/hooks/useUserRole";
 
 export default function MemberDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const { isTrainer } = useUserRole();
   const [activeTab, setActiveTab] = useState("overview");
   const [showRenewModal, setShowRenewModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
@@ -67,6 +69,7 @@ export default function MemberDetailPage() {
   const [assignedWorkoutPlans, setAssignedWorkoutPlans] = useState([]);
   const [assignedTrainer, setAssignedTrainer] = useState(null);
   const [editingDietPlan, setEditingDietPlan] = useState(null);
+  const [isMemberAssignedToMe, setIsMemberAssignedToMe] = useState(false);
   const { showSuccess, showError } = useToast();
 
   useEffect(() => {
@@ -79,6 +82,37 @@ export default function MemberDetailPage() {
       setLoading(false);
     }
   }, [params.id]);
+
+  // Check if member is assigned to current trainer
+  useEffect(() => {
+    const checkAssignment = async () => {
+      if (!isTrainer || !selectedGym?.id || !params.id) {
+        setIsMemberAssignedToMe(!isTrainer); // Non-trainers can always assign
+        return;
+      }
+      
+      try {
+        const storedUser = localStorage.getItem("gymUser");
+        const currentUser = storedUser ? JSON.parse(storedUser) : null;
+        if (!currentUser?.id) return;
+
+        const { data, error } = await supabase
+          .from("trainer_member_assignments")
+          .select("id")
+          .eq("trainer_id", currentUser.id)
+          .eq("member_id", params.id)
+          .eq("gym_id", selectedGym.id)
+          .eq("is_active", true)
+          .single();
+
+        setIsMemberAssignedToMe(!!data && !error);
+      } catch (err) {
+        setIsMemberAssignedToMe(false);
+      }
+    };
+
+    checkAssignment();
+  }, [isTrainer, selectedGym?.id, params.id]);
 
   const fetchMemberDetails = async (memberId, gymId) => {
     setLoading(true);
@@ -93,6 +127,7 @@ export default function MemberDetailPage() {
           balance,
           profile_image,
           created_at,
+          created_by_name,
           gym_id,
           memberships (
             id,
@@ -162,6 +197,7 @@ export default function MemberDetailPage() {
         phone: memberData.phone,
         profileImage: memberData.profile_image || null,
         joinDate: new Date(memberData.created_at).toLocaleDateString("en-IN"),
+        createdByName: memberData.created_by_name || null,
         plan: activeMembership?.membership_plans?.name || "No Plan",
         planPrice: activeMembership?.membership_plans?.price || 0,
         status: memberStatus,
@@ -732,31 +768,47 @@ export default function MemberDetailPage() {
         </div>
 
         {/* Diet & Workout Plan Assignment */}
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            onClick={() => setShowAssignDietModal(true)}
-            className="p-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 active:scale-95"
-          >
-            <Utensils className="w-4 h-4" />
-            <span>Assign Diet</span>
-          </button>
-          <button
-            onClick={() => setShowAssignWorkoutModal(true)}
-            className="p-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 active:scale-95"
-          >
-            <Dumbbell className="w-4 h-4" />
-            <span>Assign Workout</span>
-          </button>
-        </div>
+        {isTrainer && !isMemberAssignedToMe ? (
+          <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="font-medium text-amber-800">Member Not Assigned</p>
+                <p className="text-sm text-amber-600">This member is not assigned to you. You can only assign diet and workout plans to your assigned members.</p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => setShowAssignDietModal(true)}
+              className="p-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 active:scale-95"
+            >
+              <Utensils className="w-4 h-4" />
+              <span>Assign Diet</span>
+            </button>
+            <button
+              onClick={() => setShowAssignWorkoutModal(true)}
+              className="p-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 active:scale-95"
+            >
+              <Dumbbell className="w-4 h-4" />
+              <span>Assign Workout</span>
+            </button>
+          </div>
+        )}
 
-        {/* Trainer Assignment Button */}
-        <button
-          onClick={() => setShowAssignTrainerModal(true)}
-          className="w-full p-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 active:scale-95"
-        >
-          <Users className="w-4 h-4" />
-          <span>{assignedTrainer ? "Change Trainer" : "Assign Trainer"}</span>
-        </button>
+        {/* Trainer Assignment Button - Only show for admins */}
+        {!isTrainer && (
+          <button
+            onClick={() => setShowAssignTrainerModal(true)}
+            className="w-full p-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 active:scale-95"
+          >
+            <Users className="w-4 h-4" />
+            <span>{assignedTrainer ? "Change Trainer" : "Assign Trainer"}</span>
+          </button>
+        )}
 
         {/* Edit and Delete Buttons */}
         <div className="grid grid-cols-2 gap-3">
@@ -843,6 +895,12 @@ export default function MemberDetailPage() {
                   ₹{member.balance}
                 </p>
               </div>
+              {member.createdByName && (
+                <div className="col-span-2">
+                  <p className="text-xs text-gray-500">Created By</p>
+                  <p className="text-sm font-medium text-blue-600">{member.createdByName}</p>
+                </div>
+              )}
             </div>
             <div className="pt-3 border-t border-gray-100">
               <h4 className="font-semibold text-gray-900 mb-3">Recent Activity</h4>
@@ -869,24 +927,28 @@ export default function MemberDetailPage() {
                   <Apple className="w-4 h-4 text-emerald-600" />
                   Assigned Diet Plans
                 </h4>
-                <button
-                  onClick={() => setShowAssignDietModal(true)}
-                  className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  Add
-                </button>
+                {(!isTrainer || isMemberAssignedToMe) && (
+                  <button
+                    onClick={() => setShowAssignDietModal(true)}
+                    className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Add
+                  </button>
+                )}
               </div>
               {assignedDietPlans.length === 0 ? (
                 <div className="text-center py-4 bg-gray-50 rounded-lg">
                   <Apple className="w-8 h-8 text-gray-300 mx-auto mb-2" />
                   <p className="text-sm text-gray-500">No diet plans assigned</p>
-                  <button
-                    onClick={() => setShowAssignDietModal(true)}
-                    className="mt-2 text-xs text-blue-600 hover:text-blue-700 font-medium"
-                  >
-                    Assign a diet plan
-                  </button>
+                  {(!isTrainer || isMemberAssignedToMe) && (
+                    <button
+                      onClick={() => setShowAssignDietModal(true)}
+                      className="mt-2 text-xs text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      Assign a diet plan
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -954,24 +1016,28 @@ export default function MemberDetailPage() {
                   <Dumbbell className="w-4 h-4 text-blue-600" />
                   Assigned Workout Plans
                 </h4>
-                <button
-                  onClick={() => setShowAssignWorkoutModal(true)}
-                  className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  Add
-                </button>
+                {(!isTrainer || isMemberAssignedToMe) && (
+                  <button
+                    onClick={() => setShowAssignWorkoutModal(true)}
+                    className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Add
+                  </button>
+                )}
               </div>
               {assignedWorkoutPlans.length === 0 ? (
                 <div className="text-center py-4 bg-gray-50 rounded-lg">
                   <Dumbbell className="w-8 h-8 text-gray-300 mx-auto mb-2" />
                   <p className="text-sm text-gray-500">No workout plans assigned</p>
-                  <button
-                    onClick={() => setShowAssignWorkoutModal(true)}
-                    className="mt-2 text-xs text-blue-600 hover:text-blue-700 font-medium"
-                  >
-                    Assign a workout plan
-                  </button>
+                  {(!isTrainer || isMemberAssignedToMe) && (
+                    <button
+                      onClick={() => setShowAssignWorkoutModal(true)}
+                      className="mt-2 text-xs text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      Assign a workout plan
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-2">

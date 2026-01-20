@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
 import { supabase } from "@/lib/supabaseClient";
 import { usePermissions } from "@/lib/hooks/usePermissions";
+import { useUserRole } from "@/lib/hooks/useUserRole";
 import { hasPermission, PERMISSIONS } from "@/lib/constants/permissions";
 import {
   Settings as SettingsIcon,
@@ -118,6 +119,7 @@ const quickActions = [
 export default function SettingsPage() {
   const router = useRouter();
   const { permissions } = usePermissions();
+  const { canViewFinance, canCreateTrainer } = useUserRole();
   const [gymName, setGymName] = useState("Loading...");
   const [totalMembers, setTotalMembers] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -126,6 +128,14 @@ export default function SettingsPage() {
     version: "1.2.5",
     lastUpdated: "Jan 15, 2025",
     databaseSize: "2.4 GB"
+  });
+
+  // Filter quick actions based on role - hide export for trainers
+  const filteredQuickActions = quickActions.filter(action => {
+    if (action.action === "export" && !canViewFinance) {
+      return false;
+    }
+    return true;
   });
 
   useEffect(() => {
@@ -505,6 +515,10 @@ export default function SettingsPage() {
                 if (!hasPermission(permissions, PERMISSIONS.MEMBERS)) {
                   return !['plans', 'diet-plans', 'workout-plans'].includes(section.id);
                 }
+                // Hide gym settings, membership plans and trainers section for trainers
+                if (!canCreateTrainer) {
+                  return !['gym', 'plans', 'trainers'].includes(section.id);
+                }
                 return true;
               })
               .map((section) => {
@@ -557,8 +571,8 @@ export default function SettingsPage() {
           <div className="grid grid-cols-3 gap-2">
             {quickActions
               .filter((action) => {
-                // Hide export action if members permission is false
-                if (!hasPermission(permissions, PERMISSIONS.MEMBERS)) {
+                // Hide export action if members permission is false or user is trainer
+                if (!hasPermission(permissions, PERMISSIONS.MEMBERS) || !canViewFinance) {
                   return action.action !== 'export';
                 }
                 return true;

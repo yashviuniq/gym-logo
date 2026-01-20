@@ -33,7 +33,8 @@ export default function HomePage() {
             if (user.role === 'member') {
               router.replace('/user/dashboard');
             } else if (user.role === 'trainer') {
-              router.replace('/trainer/dashboard');
+              // Trainers now use the same admin dashboard
+              router.replace('/admin/dashboard');
             } else {
               router.replace('/admin/dashboard');
             }

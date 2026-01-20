@@ -26,7 +26,9 @@ import {
   Key,
   Eye,
   EyeOff,
-  Copy
+  Copy,
+  Wallet,
+  UserCheck
 } from "lucide-react";
 
 export default function TrainerDetailsPage({ params }) {
@@ -144,10 +146,10 @@ export default function TrainerDetailsPage({ params }) {
         setAssignedMembers(members);
       }
 
-      // Fetch activity log (diet/workout assignments)
+      // Fetch activity log (diet/workout assignments, member assignments, payments collected)
       const trainerId = trainerData.profile_id;
       
-      // Get diet assignments
+      // Get diet assignments by trainer
       const { data: dietAssignments } = await supabase
         .from("member_diets")
         .select(`
@@ -158,9 +160,9 @@ export default function TrainerDetailsPage({ params }) {
         `)
         .eq("assigned_by_trainer_id", trainerId)
         .order("assigned_at", { ascending: false })
-        .limit(10);
+        .limit(15);
 
-      // Get workout assignments
+      // Get workout assignments by trainer
       const { data: workoutAssignments } = await supabase
         .from("member_workouts")
         .select(`
@@ -171,27 +173,73 @@ export default function TrainerDetailsPage({ params }) {
         `)
         .eq("assigned_by_trainer_id", trainerId)
         .order("assigned_at", { ascending: false })
-        .limit(10);
+        .limit(15);
+
+      // Get member assignments to this trainer
+      const { data: memberAssignments } = await supabase
+        .from("trainer_member_assignments")
+        .select(`
+          id,
+          assigned_at,
+          is_active,
+          members:member_id (full_name)
+        `)
+        .eq("trainer_id", trainerId)
+        .eq("gym_id", selectedGym.id)
+        .order("assigned_at", { ascending: false })
+        .limit(15);
+
+      // Get payments collected by this trainer
+      const { data: paymentsCollected } = await supabase
+        .from("payments")
+        .select(`
+          id,
+          amount,
+          created_at,
+          members:member_id (full_name)
+        `)
+        .eq("gym_id", selectedGym.id)
+        .eq("collected_by", trainerId)
+        .order("created_at", { ascending: false })
+        .limit(15);
 
       // Combine and sort activity
       const activity = [
         ...(dietAssignments?.map(d => ({
-          id: d.id,
+          id: `diet-${d.id}`,
           type: "diet",
+          action: "Assigned diet plan",
           memberName: d.members?.full_name,
-          planTitle: d.diet_plans?.title,
+          details: d.diet_plans?.title,
           date: d.assigned_at
         })) || []),
         ...(workoutAssignments?.map(w => ({
-          id: w.id,
+          id: `workout-${w.id}`,
           type: "workout",
+          action: "Assigned workout plan",
           memberName: w.members?.full_name,
-          planTitle: w.workout_plans?.title,
+          details: w.workout_plans?.title,
           date: w.assigned_at
+        })) || []),
+        ...(memberAssignments?.map(m => ({
+          id: `member-${m.id}`,
+          type: "member_assignment",
+          action: m.is_active ? "Member assigned" : "Member unassigned",
+          memberName: m.members?.full_name,
+          details: null,
+          date: m.assigned_at
+        })) || []),
+        ...(paymentsCollected?.map(p => ({
+          id: `payment-${p.id}`,
+          type: "payment",
+          action: "Collected payment",
+          memberName: p.members?.full_name,
+          details: `₹${parseFloat(p.amount).toLocaleString("en-IN")}`,
+          date: p.created_at
         })) || [])
       ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-      setActivityLog(activity.slice(0, 15));
+      setActivityLog(activity.slice(0, 20));
     } catch (err) {
       console.error("Error fetching trainer details:", err);
     } finally {
@@ -615,37 +663,53 @@ export default function TrainerDetailsPage({ params }) {
                 <Activity className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                 <h3 className="font-semibold text-gray-900 mb-1">No Activity Yet</h3>
                 <p className="text-gray-500 text-sm">
-                  Activity will appear here when the trainer assigns plans to members
+                  Activity will appear here when the trainer assigns plans, collects payments, or gets members assigned
                 </p>
               </div>
             ) : (
-              activityLog.map((activity) => (
-                <div key={`${activity.type}-${activity.id}`} className="bg-white rounded-xl p-4 shadow-sm">
-                  <div className="flex items-start gap-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      activity.type === "diet" 
-                        ? "bg-green-100" 
-                        : "bg-orange-100"
-                    }`}>
-                      {activity.type === "diet" ? (
-                        <Apple className="w-5 h-5 text-green-600" />
-                      ) : (
-                        <Dumbbell className="w-5 h-5 text-orange-600" />
-                      )}
-                    </div>
-                    
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-900">
-                        Assigned <strong>{activity.planTitle}</strong> to{" "}
-                        <strong>{activity.memberName}</strong>
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {formatTimeAgo(activity.date)}
-                      </p>
+              activityLog.map((activity) => {
+                const getActivityIcon = () => {
+                  switch (activity.type) {
+                    case "diet":
+                      return { bg: "bg-green-100", icon: <Apple className="w-5 h-5 text-green-600" /> };
+                    case "workout":
+                      return { bg: "bg-orange-100", icon: <Dumbbell className="w-5 h-5 text-orange-600" /> };
+                    case "payment":
+                      return { bg: "bg-blue-100", icon: <Wallet className="w-5 h-5 text-blue-600" /> };
+                    case "member_assignment":
+                      return { bg: "bg-purple-100", icon: <UserCheck className="w-5 h-5 text-purple-600" /> };
+                    default:
+                      return { bg: "bg-gray-100", icon: <Activity className="w-5 h-5 text-gray-600" /> };
+                  }
+                };
+
+                const { bg, icon } = getActivityIcon();
+
+                return (
+                  <div key={activity.id} className="bg-white rounded-xl p-4 shadow-sm">
+                    <div className="flex items-start gap-3">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${bg}`}>
+                        {icon}
+                      </div>
+                      
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-900">
+                          <span className="font-medium">{activity.action}</span>
+                          {activity.details && (
+                            <> - <strong>{activity.details}</strong></>
+                          )}
+                        </p>
+                        <p className="text-xs text-gray-600 mt-0.5">
+                          Member: <strong>{activity.memberName}</strong>
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {formatTimeAgo(activity.date)}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}

@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
+import { useUserRole } from "@/lib/hooks/useUserRole";
 
 export default function AnalyticsPage() {
+  const { canViewFinance } = useUserRole();
   const [dateRange, setDateRange] = useState("month");
   const [activeSection, setActiveSection] = useState("overview");
   const [loading, setLoading] = useState(true);
@@ -295,6 +297,12 @@ export default function AnalyticsPage() {
     } catch (error) {
       console.error("Error fetching revenue data:", error);
     }
+  };
+
+  // Helper function to format currency with masking for trainers
+  const formatRevenue = (amount) => {
+    if (!canViewFinance) return '*****';
+    return `₹${amount.toLocaleString()}`;
   };
 
   const maxAttendance = Math.max(...attendanceData.map((d) => d.value), 1);
@@ -660,14 +668,14 @@ export default function AnalyticsPage() {
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">{month.month}</span>
                           <span className="font-medium text-gray-900">
-                            ₹{month.revenue.toLocaleString()}
+                            {formatRevenue(month.revenue)}
                           </span>
                         </div>
                         <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
                           <div
                             className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
                             style={{
-                              width: `${(month.revenue / maxRevenue) * 100}%`,
+                              width: canViewFinance ? `${(month.revenue / maxRevenue) * 100}%` : '0%',
                             }}
                           ></div>
                         </div>
@@ -681,13 +689,13 @@ export default function AnalyticsPage() {
                   <div className="bg-blue-50 rounded-xl p-4">
                     <p className="text-blue-600 text-sm">Total Revenue</p>
                     <p className="text-2xl font-bold text-blue-700">
-                      ₹{revenueData.reduce((sum, d) => sum + d.revenue, 0).toLocaleString()}
+                      {formatRevenue(revenueData.reduce((sum, d) => sum + d.revenue, 0))}
                     </p>
                   </div>
                   <div className="bg-purple-50 rounded-xl p-4">
                     <p className="text-purple-600 text-sm">Avg Monthly</p>
                     <p className="text-2xl font-bold text-purple-700">
-                      ₹{Math.round(revenueData.reduce((sum, d) => sum + d.revenue, 0) / revenueData.length).toLocaleString()}
+                      {formatRevenue(Math.round(revenueData.reduce((sum, d) => sum + d.revenue, 0) / revenueData.length))}
                     </p>
                   </div>
                 </div>

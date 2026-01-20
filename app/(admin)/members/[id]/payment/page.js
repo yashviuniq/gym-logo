@@ -73,6 +73,25 @@ export default function AddPaymentPage() {
         return;
       }
 
+      // Get current user for collector info (localStorage fallback + auth)
+      const storedUser = localStorage.getItem("gymUser");
+      const currentUser = storedUser ? JSON.parse(storedUser) : null;
+      const buildName = (user) => {
+        const name = `${user?.first_name || user?.user_metadata?.first_name || ''} ${user?.last_name || user?.user_metadata?.last_name || ''}`.trim();
+        return name || user?.email || null;
+      };
+      let collectedBy = currentUser?.id || null;
+      let collectedByName = currentUser ? buildName(currentUser) : null;
+
+      if (!collectedBy || !collectedByName) {
+        const { data: authData } = await supabase.auth.getUser();
+        const authUser = authData?.user;
+        if (authUser?.id) {
+          collectedBy = collectedBy || authUser.id;
+          collectedByName = collectedByName || buildName(authUser);
+        }
+      }
+
       // Record payment in database
       const { error: paymentError } = await supabase
         .from("payments")
@@ -83,10 +102,18 @@ export default function AddPaymentPage() {
           payment_mode: formData.mode,
           status: "paid",
           paid_at: new Date(formData.date).toISOString(),
-          created_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
+            collected_by: collectedBy,
+            collected_by_name: collectedByName
         });
 
       if (paymentError) throw paymentError;
+      console.log("Payment recorded with collector:", {
+        amount,
+        mode: formData.mode,
+        collected_by: collectedBy,
+        collected_by_name: collectedByName,
+      });
 
       // Update member balance (reduce the due amount)
       const newBalance = Math.max(0, member.balance - amount);

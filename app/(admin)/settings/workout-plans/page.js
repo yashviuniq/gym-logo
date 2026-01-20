@@ -127,8 +127,15 @@ function WorkoutPlansContent() {
 
       if (error) throw error;
       
+      // Format creator name for display
+      const plansWithCreator = (data || []).map(plan => ({
+        ...plan,
+        creatorName: plan.created_by_name || 
+          (plan.creator ? `${plan.creator.first_name || ''} ${plan.creator.last_name || ''}`.trim() : null)
+      }));
+      
       // Include all plans (admin can see trainer-created plans)
-      setWorkoutPlans(data || []);
+      setWorkoutPlans(plansWithCreator);
     } catch (error) {
       console.error("Error fetching workout plans:", error);
       showError("Failed to load workout plans");
@@ -559,6 +566,7 @@ function WorkoutPlanModal({ plan, gymId, onClose, onSave }) {
       const storedUser = localStorage.getItem("gymUser");
       const currentUser = storedUser ? JSON.parse(storedUser) : null;
       const createdBy = currentUser?.id;
+      const createdByName = currentUser ? `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() : null;
 
       let planId;
 
@@ -598,6 +606,7 @@ function WorkoutPlanModal({ plan, gymId, onClose, onSave }) {
             level: formData.level || null,
             is_template: formData.is_template,
             created_by: createdBy,
+            created_by_name: createdByName,
           })
           .select()
           .single();

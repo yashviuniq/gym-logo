@@ -107,6 +107,7 @@ export default function CollectPaymentModal({
           validityStart: null,
           validityEnd: member.validTill,
           amount: amount,
+          balanceAmount: newBalance,
           paymentMode: formData.mode,
           paymentId: paymentData?.id,
           paymentDate: new Date()

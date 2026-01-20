@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
 import { FinancePageSkeleton } from "@/components/shared/Skeleton";
+import { useUserRole } from "@/lib/hooks/useUserRole";
 import { 
   DollarSign, 
   TrendingUp, 
@@ -36,6 +37,7 @@ import {
 
 export default function FinancePage() {
   const router = useRouter();
+  const { canViewFinance } = useUserRole();
   const [activeTab, setActiveTab] = useState("overview");
   const [dateFilter, setDateFilter] = useState("month");
   const [customStartDate, setCustomStartDate] = useState("");
@@ -203,6 +205,7 @@ export default function FinancePage() {
           date: formatDate(payment.created_at),
           status: payment.status,
           collectedBy: payment.collected_by_name || null,
+          collectedByFallback: payment.collected_by || null,
         }));
         setRecentTransactions(transformedTransactions);
 
@@ -289,6 +292,10 @@ export default function FinancePage() {
   };
 
   const formatCurrency = (amount) => {
+    // If user can't view finance, mask the values
+    if (!canViewFinance) {
+      return '*****';
+    }
     // Round to 2 decimal places before formatting
     const roundedAmount = Math.round(parseFloat(amount || 0) * 100) / 100;
     return new Intl.NumberFormat('en-IN', {
@@ -577,21 +584,21 @@ export default function FinancePage() {
                           <DollarSign className={`w-4 h-4 ${txn.collectedBy ? "text-purple-600" : "text-emerald-600"}`} />
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900 text-sm">{txn.name}</p>
+                          <p className="font-medium text-gray-900 text-sm">
+                            {txn.name}
+                            {(txn.collectedBy || txn.collectedByFallback) && (
+                              <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold text-purple-700 bg-purple-50 rounded-full border border-purple-100">
+                                <span>Trainer:</span>
+                                <span>{txn.collectedBy || "Trainer"}</span>
+                              </span>
+                            )}
+                          </p>
                           <div className="flex items-center gap-2 mt-0.5">
                             <span className="text-xs text-gray-500 capitalize">
                               {txn.type.replace("_", " ")}
                             </span>
                             <span className="text-xs text-gray-400">•</span>
                             <span className="text-xs text-gray-500">{txn.mode}</span>
-                            {txn.collectedBy && (
-                              <>
-                                <span className="text-xs text-gray-400">•</span>
-                                <span className="text-xs text-purple-600 font-medium">
-                                  by {txn.collectedBy}
-                                </span>
-                              </>
-                            )}
                           </div>
                         </div>
                       </div>
@@ -771,6 +778,7 @@ Best regards,
 
 // Expenses Section Component
 function ExpensesSection({ router, selectedGym, dateFilter }) {
+  const { canViewFinance } = useUserRole();
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [totalExpenses, setTotalExpenses] = useState(0);
@@ -849,6 +857,10 @@ function ExpensesSection({ router, selectedGym, dateFilter }) {
   };
 
   const formatCurrency = (amount) => {
+    // If user can't view finance, mask the values
+    if (!canViewFinance) {
+      return '*****';
+    }
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',

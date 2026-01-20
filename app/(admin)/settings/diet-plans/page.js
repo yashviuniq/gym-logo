@@ -135,8 +135,15 @@ function DietPlansContent() {
 
       if (error) throw error;
       
+      // Format creator name for display
+      const plansWithCreator = (data || []).map(plan => ({
+        ...plan,
+        creatorName: plan.created_by_name || 
+          (plan.creator ? `${plan.creator.first_name || ''} ${plan.creator.last_name || ''}`.trim() : null)
+      }));
+      
       // Include all plans (admin can see trainer-created plans)
-      setDietPlans(data || []);
+      setDietPlans(plansWithCreator);
     } catch (error) {
       console.error("Error fetching diet plans:", error);
       showError("Failed to load diet plans");
@@ -654,6 +661,7 @@ function DietPlanModal({ plan, gymId, onClose, onSave }) {
       const storedUser = localStorage.getItem("gymUser");
       const currentUser = storedUser ? JSON.parse(storedUser) : null;
       const createdBy = currentUser?.id;
+      const createdByName = currentUser ? `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() : null;
 
       let planId;
 
@@ -686,6 +694,7 @@ function DietPlanModal({ plan, gymId, onClose, onSave }) {
             description: formData.description || null,
             is_template: formData.is_template,
             created_by: createdBy,
+            created_by_name: createdByName,
           })
           .select()
           .single();

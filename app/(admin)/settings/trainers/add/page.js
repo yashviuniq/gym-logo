@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
 import { supabase } from "@/lib/supabaseClient";
+import { useUserRole } from "@/lib/hooks/useUserRole";
 import {
   User,
   Mail,
@@ -21,6 +22,7 @@ import {
 
 export default function AddTrainerPage() {
   const router = useRouter();
+  const { canCreateTrainer, loading: roleLoading } = useUserRole();
   const [selectedGym, setSelectedGym] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -41,13 +43,19 @@ export default function AddTrainerPage() {
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
+    // Redirect trainers who try to access this page directly
+    if (!roleLoading && !canCreateTrainer) {
+      router.push("/settings/trainers");
+      return;
+    }
+    
     const storedGym = localStorage.getItem("selectedGym");
     if (storedGym) {
       setSelectedGym(JSON.parse(storedGym));
     } else {
       router.push("/settings/trainers");
     }
-  }, [router]);
+  }, [router, canCreateTrainer, roleLoading]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -115,7 +123,8 @@ export default function AddTrainerPage() {
           email: formData.email.trim().toLowerCase(),
           phone: formData.phone.trim(),
           password: formData.password,
-          role: "trainer"
+          role: "trainer",
+          gym_id: selectedGym.id
         })
         .select()
         .single();
@@ -275,19 +284,32 @@ export default function AddTrainerPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Phone Number *
+                Phone Number * <span className="text-gray-500 text-xs">(10 digits)</span>
               </label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="tel"
                   value={formData.phone}
-                  onChange={(e) => handleChange("phone", e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, "").slice(0, 10);
+                    handleChange("phone", value);
+                  }}
+                  maxLength="10"
+                  inputMode="numeric"
                   className={`w-full pl-10 pr-4 py-3 rounded-xl border ${
                     errors.phone ? "border-red-300 bg-red-50" : "border-gray-200"
                   } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
-                  placeholder="+91 98765 43210"
+                  placeholder="9876543210"
                 />
+              </div>
+              <div className="flex items-center justify-between mt-1">
+                <p className="text-gray-500 text-xs">Enter 10 digit mobile number</p>
+                {formData.phone && (
+                  <p className={`text-xs ${formData.phone.length === 10 ? "text-green-600" : "text-orange-600"}`}>
+                    {formData.phone.length}/10 digits
+                  </p>
+                )}
               </div>
               {errors.phone && (
                 <p className="text-red-500 text-xs mt-1">{errors.phone}</p>

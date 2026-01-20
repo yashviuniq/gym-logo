@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
 import { supabase } from "@/lib/supabaseClient";
+import { useUserRole } from "@/lib/hooks/useUserRole";
 import {
   Users,
   Plus,
@@ -25,6 +26,7 @@ import {
 
 export default function TrainersPage() {
   const router = useRouter();
+  const { canCreateTrainer } = useUserRole();
   const [trainers, setTrainers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -161,13 +163,42 @@ export default function TrainersPage() {
     }
   };
 
-  const handleDeleteTrainer = async (trainerId) => {
+  const handleDeleteTrainer = async (trainer) => {
     setDeleting(true);
     try {
+      // 0) Revoke all sessions for this trainer (forces logout on their devices)
+      try {
+        await fetch("/api/trainers/revoke", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ trainerProfileId: trainer.profileId }),
+        });
+      } catch (err) {
+        console.warn("Session revoke request failed", err);
+      }
+
+      // 1) Remove member assignments for this trainer
+      await supabase
+        .from("trainer_member_assignments")
+        .delete()
+        .eq("trainer_id", trainer.profileId);
+
+      // 2) Clear trainer references on diet/workout plans
+      await supabase
+        .from("diet_plans")
+        .update({ trainer_id: null })
+        .eq("trainer_id", trainer.profileId);
+
+      await supabase
+        .from("workout_plans")
+        .update({ trainer_id: null })
+        .eq("trainer_id", trainer.profileId);
+
+      // 3) Delete trainer record
       const { error } = await supabase
         .from("gym_trainers")
         .delete()
-        .eq("id", trainerId);
+        .eq("id", trainer.id);
 
       if (error) throw error;
       
@@ -230,13 +261,15 @@ export default function TrainersPage() {
               className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
-          <button
-            onClick={() => router.push("/settings/trainers/add")}
-            className="px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl flex items-center gap-2 font-medium shadow-md hover:shadow-lg transition-shadow"
-          >
-            <Plus className="w-5 h-5" />
-            <span className="hidden sm:inline">Add</span>
-          </button>
+          {canCreateTrainer && (
+            <button
+              onClick={() => router.push("/settings/trainers/add")}
+              className="px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl flex items-center gap-2 font-medium shadow-md hover:shadow-lg transition-shadow"
+            >
+              <Plus className="w-5 h-5" />
+              <span className="hidden sm:inline">Add</span>
+            </button>
+          )}
         </div>
 
         {/* Trainers List */}
@@ -265,9 +298,9 @@ export default function TrainersPage() {
             <p className="text-gray-500 mb-4">
               {searchQuery 
                 ? "Try a different search term" 
-                : "Add your first trainer to get started"}
+                : canCreateTrainer ? "Add your first trainer to get started" : "No trainers have been added yet"}
             </p>
-            {!searchQuery && (
+            {!searchQuery && canCreateTrainer && (
               <button
                 onClick={() => router.push("/settings/trainers/add")}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium"
@@ -381,12 +414,14 @@ export default function TrainersPage() {
                   >
                     Assign Members
                   </button>
-                  <button
-                    onClick={() => setDeleteConfirm(trainer)}
-                    className="py-2 px-3 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {canCreateTrainer && (
+                    <button
+                      onClick={() => setDeleteConfirm(trainer)}
+                      className="py-2 px-3 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -425,7 +460,7 @@ export default function TrainersPage() {
                   Cancel
                 </button>
                 <button
-                  onClick={() => handleDeleteTrainer(deleteConfirm.id)}
+                  onClick={() => handleDeleteTrainer(deleteConfirm)}
                   className="flex-1 py-2 px-4 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 disabled:opacity-50"
                   disabled={deleting}
                 >

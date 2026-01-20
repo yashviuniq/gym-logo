@@ -61,6 +61,7 @@ export default function TransactionsPage() {
           date: payment.paid_at || payment.created_at,
           status: payment.status || "paid",
           collectedBy: payment.collected_by_name || null,
+          collectedByFallback: payment.collected_by || null,
         }));
         setTransactions(transformedTransactions);
       }
@@ -155,9 +156,6 @@ export default function TransactionsPage() {
               ₹{totalAmount.toLocaleString()}
             </p>
           </div>
-          <button className="px-4 py-2 bg-gray-100 rounded-lg text-sm">
-            Export
-          </button>
         </div>
 
         {/* Filters */}
@@ -211,13 +209,18 @@ export default function TransactionsPage() {
                     <span className={`font-bold ${txn.collectedBy ? "text-purple-600" : "text-green-600"}`}>₹</span>
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">{txn.name}</p>
+                    <p className="font-medium text-gray-900">
+                      {txn.name}
+                      {(txn.collectedBy || txn.collectedByFallback) && (
+                        <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold text-purple-700 bg-purple-50 rounded-full border border-purple-100">
+                          <span>Trainer:</span>
+                          <span>{txn.collectedBy || "Trainer"}</span>
+                        </span>
+                      )}
+                    </p>
                     <p className="text-xs text-gray-500 capitalize">
                       {txn.type.replace("_", " ")} • {txn.mode} •{" "}
                       {formatDate(txn.date)}
-                      {txn.collectedBy && (
-                        <span className="text-purple-600 font-medium"> • by {txn.collectedBy}</span>
-                      )}
                     </p>
                   </div>
                 </div>

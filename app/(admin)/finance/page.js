@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
 import { FinancePageSkeleton } from "@/components/shared/Skeleton";
+import { useUserRole } from "@/lib/hooks/useUserRole";
 import { 
   DollarSign, 
   TrendingUp, 
@@ -36,6 +37,7 @@ import {
 
 export default function FinancePage() {
   const router = useRouter();
+  const { canViewFinance } = useUserRole();
   const [activeTab, setActiveTab] = useState("overview");
   const [dateFilter, setDateFilter] = useState("month");
   const [customStartDate, setCustomStartDate] = useState("");
@@ -194,16 +196,64 @@ export default function FinancePage() {
           monthlyExpenses: monthlyExpenses,
         }));
 
-        const transformedTransactions = payments.slice(0, 10).map((payment) => ({
-          id: payment.id,
-          name: payment.members?.full_name || "Unknown",
-          type: "membership",
-          amount: payment.amount,
-          mode: payment.payment_mode,
-          date: formatDate(payment.created_at),
-          status: payment.status,
-          collectedBy: payment.collected_by_name || null,
-        }));
+        // Fetch trainer names for payments collected by trainers
+        const collectorIds = [...new Set(payments.filter(p => p.collected_by).map(p => p.collected_by))];
+        let trainerNamesMap = {};
+        
+        if (collectorIds.length > 0) {
+          // First try to get from gym_trainers table
+          const { data: trainersData } = await supabase
+            .from("gym_trainers")
+            .select("profile_id, profiles(first_name, last_name)")
+            .in("profile_id", collectorIds)
+            .eq("gym_id", gymId);
+
+          if (trainersData && trainersData.length > 0) {
+            trainerNamesMap = trainersData.reduce((acc, trainer) => {
+              const firstName = trainer.profiles?.first_name || "";
+              const lastName = trainer.profiles?.last_name || "";
+              acc[trainer.profile_id] = `${firstName} ${lastName}`.trim() || "Trainer";
+              return acc;
+            }, {});
+          }
+
+          // If not found in gym_trainers, try profiles table
+          const missingIds = collectorIds.filter(id => !trainerNamesMap[id]);
+          if (missingIds.length > 0) {
+            const { data: profilesData } = await supabase
+              .from("profiles")
+              .select("id, first_name, last_name")
+              .in("id", missingIds);
+
+            if (profilesData) {
+              profilesData.forEach((profile) => {
+                const firstName = profile.first_name || "";
+                const lastName = profile.last_name || "";
+                trainerNamesMap[profile.id] = `${firstName} ${lastName}`.trim() || "Trainer";
+              });
+            }
+          }
+        }
+
+        const transformedTransactions = payments.slice(0, 10).map((payment) => {
+          // Get trainer name from our map, fallback to collected_by_name if not an email
+          let collectorName = trainerNamesMap[payment.collected_by] || null;
+          if (!collectorName && payment.collected_by_name && !payment.collected_by_name.includes('@')) {
+            collectorName = payment.collected_by_name;
+          }
+          
+          return {
+            id: payment.id,
+            name: payment.members?.full_name || "Unknown",
+            type: "membership",
+            amount: payment.amount,
+            mode: payment.payment_mode,
+            date: formatDate(payment.created_at),
+            status: payment.status,
+            collectedBy: collectorName || null,
+            collectedByFallback: payment.collected_by || null,
+          };
+        });
         setRecentTransactions(transformedTransactions);
 
         const modeStats = payments.reduce((acc, payment) => {
@@ -289,6 +339,10 @@ export default function FinancePage() {
   };
 
   const formatCurrency = (amount) => {
+    // If user can't view finance, mask the values
+    if (!canViewFinance) {
+      return '*****';
+    }
     // Round to 2 decimal places before formatting
     const roundedAmount = Math.round(parseFloat(amount || 0) * 100) / 100;
     return new Intl.NumberFormat('en-IN', {
@@ -547,7 +601,7 @@ export default function FinancePage() {
                 <h3 className="font-semibold text-gray-900 text-sm">Recent Transactions</h3>
                 <button
                   onClick={() => router.push("/finance/transactions")}
-                  className="text-xs text-blue-600 font-medium active:scale-95 transition-transform"
+                  className="text-xs text-blue-600 font-medium active:scale-95 transition-transform flex-shrink-0"
                 >
                   View All
                 </button>
@@ -565,41 +619,44 @@ export default function FinancePage() {
                   recentTransactions.map((txn) => (
                     <div
                       key={txn.id}
-                      className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-all active:scale-95 "
-      
+                      className="p-3 hover:bg-gray-50 rounded-lg transition-all active:scale-95"
                     >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                      <div className="flex items-start gap-3">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
                           txn.collectedBy 
                             ? "bg-gradient-to-br from-purple-50 to-purple-100"
                             : "bg-gradient-to-br from-emerald-50 to-emerald-100"
                         }`}>
-                          <DollarSign className={`w-4 h-4 ${txn.collectedBy ? "text-purple-600" : "text-emerald-600"}`} />
+                          <DollarSign className={`w-5 h-5 ${txn.collectedBy ? "text-purple-600" : "text-emerald-600"}`} />
                         </div>
-                        <div>
-                          <p className="font-medium text-gray-900 text-sm">{txn.name}</p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-xs text-gray-500 capitalize">
-                              {txn.type.replace("_", " ")}
-                            </span>
-                            <span className="text-xs text-gray-400">•</span>
-                            <span className="text-xs text-gray-500">{txn.mode}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2 mb-1.5">
+                            <p className="font-medium text-gray-900 text-sm leading-tight">
+                              {txn.name}
+                            </p>
+                            <p className="font-bold text-emerald-600 text-base flex-shrink-0">
+                              +{formatCurrency(txn.amount)}
+                            </p>
+                          </div>
+                          
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                              <span className="capitalize">
+                                {txn.type.replace("_", " ")}
+                              </span>
+                              <span className="text-gray-400">•</span>
+                              <span className="lowercase">{txn.mode}</span>
+                            </div>
+                            
                             {txn.collectedBy && (
-                              <>
-                                <span className="text-xs text-gray-400">•</span>
-                                <span className="text-xs text-purple-600 font-medium">
-                                  by {txn.collectedBy}
-                                </span>
-                              </>
+                              <p className="text-xs text-purple-600 font-medium">
+                                by {txn.collectedBy}
+                              </p>
                             )}
+                            
+                            <p className="text-xs text-gray-500">{txn.date}</p>
                           </div>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-emerald-600 text-sm">
-                          +{formatCurrency(txn.amount)}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-0.5">{txn.date}</p>
                       </div>
                     </div>
                   ))
@@ -771,6 +828,7 @@ Best regards,
 
 // Expenses Section Component
 function ExpensesSection({ router, selectedGym, dateFilter }) {
+  const { canViewFinance } = useUserRole();
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [totalExpenses, setTotalExpenses] = useState(0);
@@ -849,6 +907,10 @@ function ExpensesSection({ router, selectedGym, dateFilter }) {
   };
 
   const formatCurrency = (amount) => {
+    // If user can't view finance, mask the values
+    if (!canViewFinance) {
+      return '*****';
+    }
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',

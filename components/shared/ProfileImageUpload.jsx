@@ -5,7 +5,57 @@ import { supabase } from "@/lib/supabaseClient";
 import { Camera, Upload, X, User, Loader2 } from "lucide-react";
 
 const MAX_FILE_SIZE = 3 * 1024 * 1024; // 3MB in bytes
+const COMPRESSION_THRESHOLD = 1 * 1024 * 1024; // 1MB
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+// Compress images >= 1MB to reduce upload size without sacrificing too much quality
+const compressImage = async (file, maxSizeBytes = COMPRESSION_THRESHOLD) => {
+  const loadImage = (f) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = reader.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(f);
+    });
+
+  const toBlob = (canvas, quality) =>
+    new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+
+  const img = await loadImage(file);
+
+  // Limit max dimensions to avoid huge uploads while preserving aspect ratio
+  const maxDimension = 1600;
+  const scale = Math.min(1, maxDimension / Math.max(img.width, img.height));
+  const width = Math.max(1, Math.round(img.width * scale));
+  const height = Math.max(1, Math.round(img.height * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(img, 0, 0, width, height);
+
+  let quality = 0.85;
+  let blob = await toBlob(canvas, quality);
+
+  // Iteratively reduce quality until under threshold or quality floor reached
+  while (blob && blob.size > maxSizeBytes && quality > 0.45) {
+    quality -= 0.1;
+    blob = await toBlob(canvas, quality);
+  }
+
+  if (!blob) {
+    throw new Error("Failed to compress image");
+  }
+
+  const compressedFileName = `${file.name.replace(/\.[^.]+$/, "")}.jpg`;
+  return new File([blob], compressedFileName, { type: "image/jpeg" });
+};
 
 export default function ProfileImageUpload({ 
   currentImage, 
@@ -49,12 +99,23 @@ export default function ProfileImageUpload({
       return;
     }
 
+    let processedFile = file;
+    if (file.size >= COMPRESSION_THRESHOLD) {
+      try {
+        processedFile = await compressImage(file);
+      } catch (err) {
+        console.error("Compression failed", err);
+        setError("Could not compress image. Please try another photo.");
+        return;
+      }
+    }
+
     // Show preview immediately
-    const objectUrl = URL.createObjectURL(file);
+    const objectUrl = URL.createObjectURL(processedFile);
     setPreviewUrl(objectUrl);
 
     // Upload to Supabase Storage
-    await uploadImage(file);
+    await uploadImage(processedFile);
 
     // Cleanup preview URL
     URL.revokeObjectURL(objectUrl);

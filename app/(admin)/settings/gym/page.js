@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
 import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/contexts/ToastContext";
+import { useUserRole } from "@/lib/hooks/useUserRole";
 
 export default function GymSettingsPage() {
   const router = useRouter();
   const { showSuccess, showError } = useToast();
+  const { canCreateTrainer, isLoading: roleLoading } = useUserRole();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [gymId, setGymId] = useState(null);
@@ -30,6 +32,13 @@ export default function GymSettingsPage() {
     qrEnabled: true,
     qrType: "dynamic",
   });
+
+  // Redirect trainers away from this page
+  useEffect(() => {
+    if (!roleLoading && !canCreateTrainer) {
+      router.push("/admin/dashboard");
+    }
+  }, [roleLoading, canCreateTrainer, router]);
 
   useEffect(() => {
     fetchGymData();

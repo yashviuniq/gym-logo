@@ -111,6 +111,7 @@ export default function ShareReceiptModal({ member, gymData, onClose }) {
         validityStart: membership?.start_date,
         validityEnd: membership?.end_date, // Use only database date, not formatted display date
         amount: latestPayment.amount,
+        balanceAmount: member.balance || 0,
         paymentMode: latestPayment.payment_mode,
         paymentId: latestPayment.id,
         paymentDate: latestPayment.paid_at || latestPayment.created_at

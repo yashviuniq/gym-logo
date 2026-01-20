@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
 import { supabase } from "@/lib/supabaseClient";
+import { useUserRole } from "@/lib/hooks/useUserRole";
 import { 
   PlusCircle, 
   Users, 
@@ -28,6 +29,7 @@ import {
 
 export default function PlansSettingsPage() {
   const router = useRouter();
+  const { canCreateTrainer, isLoading: roleLoading } = useUserRole();
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -264,14 +266,16 @@ export default function PlansSettingsPage() {
 
         {/* Add Plan Button */}
         <div className="bg-white rounded-xl p-3 mx-1 border border-gray-200 shadow-sm">
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2"
-            style={{ minHeight: '44px' }}
-          >
-            <Plus className="w-5 h-5" />
-            Add New Plan
-          </button>
+          {canCreateTrainer && (
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2"
+              style={{ minHeight: '44px' }}
+            >
+              <Plus className="w-5 h-5" />
+              Add New Plan
+            </button>
+          )}
         </div>
 
         {/* Filter Tabs - Horizontal Scroll on Mobile */}
@@ -333,14 +337,16 @@ export default function PlansSettingsPage() {
                   ? "Create your first membership plan to get started" 
                   : `Try changing the filter to see other plans`}
               </p>
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 mx-auto"
-                style={{ minHeight: '44px' }}
-              >
-                <Plus className="w-5 h-5" />
-                Create First Plan
-              </button>
+              {canCreateTrainer && (
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 mx-auto"
+                  style={{ minHeight: '44px' }}
+                >
+                  <Plus className="w-5 h-5" />
+                  Create First Plan
+                </button>
+              )}
             </div>
           ) : (
             filteredPlans.map((plan) => (
@@ -422,51 +428,55 @@ export default function PlansSettingsPage() {
 
                     {/* Action Buttons - Horizontal Scroll on Mobile */}
                     <div className="flex space-x-2 overflow-x-auto mt-3 pt-3 border-t border-gray-100 pb-1 -mx-1 px-1 no-scrollbar">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingPlan(plan);
-                        }}
-                        className="flex-shrink-0 px-3 py-2 bg-blue-50 text-blue-700 cursor-pointer text-xs font-medium rounded-lg active:bg-blue-100 transition-all flex items-center gap-2"
-                        style={{ minHeight: '36px' }}
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                        Edit
-                      </button>
-                      
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          togglePlanStatus(plan.id);
-                        }}
-                        className={`flex-shrink-0 px-3 py-2 text-xs font-medium rounded-lg active:scale-95 transition-all flex items-center gap-2 ${
-                          plan.active
-                            ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white"
-                            : "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white"
-                        }`}
-                        style={{ minHeight: '36px' }}
-                      >
-                        {plan.active ? <XCircle className="w-3.5 h-3.5" /> : <CheckCircle className="w-3.5 h-3.5" />}
-                        {plan.active ? "Deactivate" : "Activate"}
-                      </button>
-                      
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeletePlan(plan.id);
-                        }}
-                        disabled={plan.members > 0}
-                        className={`flex-shrink-0 px-3 py-2 text-xs font-medium rounded-lg flex items-center gap-2 ${
-                          plan.members > 0
-                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                            : "bg-red-50 text-red-700 hover:bg-red-100 active:bg-red-200 transition-all"
-                        }`}
-                        style={{ minHeight: '36px' }}
-                        title={plan.members > 0 ? "Cannot delete plan with active members" : "Delete plan"}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        Delete
-                      </button>
+                      {canCreateTrainer && (
+                        <>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingPlan(plan);
+                            }}
+                            className="flex-shrink-0 px-3 py-2 bg-blue-50 text-blue-700 cursor-pointer text-xs font-medium rounded-lg active:bg-blue-100 transition-all flex items-center gap-2"
+                            style={{ minHeight: '36px' }}
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                            Edit
+                          </button>
+                          
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              togglePlanStatus(plan.id);
+                            }}
+                            className={`flex-shrink-0 px-3 py-2 text-xs font-medium rounded-lg active:scale-95 transition-all flex items-center gap-2 ${
+                              plan.active
+                                ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white"
+                                : "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white"
+                            }`}
+                            style={{ minHeight: '36px' }}
+                          >
+                            {plan.active ? <XCircle className="w-3.5 h-3.5" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                            {plan.active ? "Deactivate" : "Activate"}
+                          </button>
+                          
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeletePlan(plan.id);
+                            }}
+                            disabled={plan.members > 0}
+                            className={`flex-shrink-0 px-3 py-2 text-xs font-medium rounded-lg flex items-center gap-2 ${
+                              plan.members > 0
+                                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                : "bg-red-50 text-red-700 hover:bg-red-100 active:bg-red-200 transition-all"
+                            }`}
+                            style={{ minHeight: '36px' }}
+                            title={plan.members > 0 ? "Cannot delete plan with active members" : "Delete plan"}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            Delete
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -232,6 +232,7 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
                             validityStart: startDate,
                             validityEnd: newEndDate,
                             amount: paymentAmountNum,
+                            balanceAmount: Math.max(0, finalPrice - paymentAmountNum),
                             paymentMode: paymentMode,
                             paymentId: paymentId,
                             paymentDate: new Date()

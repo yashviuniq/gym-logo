@@ -86,26 +86,37 @@ export default function LoginPage() {
         router.push("/admin/dashboard");
         
       } else if (userType === "trainer") {
-        // Trainer login through profiles table
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: emailOrPhone,
-          password,
-        });
+        // Trainer login - fetch profile data from profiles table
+        const searchField = isEmailLogin ? "email" : "phone";
+        
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq(searchField, emailOrPhone)
+          .eq("role", "trainer")
+          .maybeSingle();
 
-        if (error) {
+        if (profileError || !profile) {
           setError("Invalid email/phone or password");
           setLoading(false);
           return;
         }
 
-        // Store trainer info
-        const user = data.user;
+        // Verify password
+        if (profile.password !== password) {
+          setError("Invalid email/phone or password");
+          setLoading(false);
+          return;
+        }
+
+        // Store trainer info with gym_id
         const trainerData = {
-          id: user.id,
-          name: user.user_metadata?.name || user.email,
-          email: user.email,
-          phone: user.user_metadata?.phone,
+          id: profile.id,
+          name: `${profile.first_name} ${profile.last_name}`,
+          email: profile.email,
+          phone: profile.phone,
           role: "trainer",
+          gym_id: profile.gym_id,
           userType: "trainer"
         };
         
@@ -118,7 +129,8 @@ export default function LoginPage() {
         // Save trainer login timestamp (used to detect credential changes by admin)
         localStorage.setItem("trainer_login_at", Date.now().toString());
         
-        router.push("/trainer/dashboard");
+        // Trainers now use the same admin dashboard
+        router.push("/admin/dashboard");
       } else {
         // Member login through member_credentials table
         const loginType = isEmailLogin ? "email" : "phone";

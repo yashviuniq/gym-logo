@@ -251,6 +251,23 @@ export default function AddMemberPage() {
       const storedUser = localStorage.getItem("gymUser");
       const currentUser = storedUser ? JSON.parse(storedUser) : null;
       const createdBy = currentUser?.id;
+      const createdByName = currentUser ? `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() : null;
+
+      // Collector fallback if localStorage missing details
+      let collectedBy = createdBy;
+      let collectedByName = createdByName;
+      if (!collectedBy || !collectedByName) {
+        const buildName = (user) => {
+          const name = `${user?.first_name || user?.user_metadata?.first_name || ''} ${user?.last_name || user?.user_metadata?.last_name || ''}`.trim();
+          return name || null;
+        };
+        const { data: authData } = await supabase.auth.getUser();
+        const authUser = authData?.user;
+        if (authUser?.id) {
+          collectedBy = collectedBy || authUser.id;
+          collectedByName = collectedByName || buildName(authUser);
+        }
+      }
 
       // 1. Upload profile image if provided
       let profileImageUrl = null;
@@ -298,6 +315,7 @@ export default function AddMemberPage() {
           email: formData.email || null,
           balance: Math.max(0, balanceOwed),
           created_by: createdBy,
+          created_by_name: createdByName,
           self_plan_edit_access: formData.selfPlanEditAccess,
           profile_image: profileImageUrl,
         })
@@ -365,6 +383,8 @@ export default function AddMemberPage() {
           status: "paid",
           notes: formData.notes || null,
           updated_by: createdBy,
+          collected_by: collectedBy,
+          collected_by_name: collectedByName,
         };
 
         // Add next payment date and remaining amount for partial payments
@@ -379,6 +399,13 @@ export default function AddMemberPage() {
 
         if (paymentError) {
           console.error("Payment error:", paymentError);
+        } else {
+          console.log("Payment recorded with collector:", {
+            amount: paymentAmount,
+            mode: formData.paymentMode,
+            collected_by: paymentData.collected_by,
+            collected_by_name: paymentData.collected_by_name,
+          });
         }
       }
 

@@ -34,7 +34,7 @@ import {
 
 export default function MembersPage() {
   const router = useRouter();
-  const { canViewFinance, isTrainer } = useUserRole();
+  const { canViewFinance, isTrainer, canViewMemberDues } = useUserRole();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [memberViewMode, setMemberViewMode] = useState("all"); // "all" or "assigned" for trainers
@@ -709,7 +709,7 @@ export default function MembersPage() {
                           <div className="flex-1">
                             <p className="text-xs text-gray-500">Pending Payment</p>
                             <p className="text-sm font-semibold text-amber-600">
-                              {canViewFinance ? `₹${member.dueAmount}` : '*****'}
+                              {canViewMemberDues ? `₹${member.dueAmount}` : '*****'}
                             </p>
                           </div>
                         </div>

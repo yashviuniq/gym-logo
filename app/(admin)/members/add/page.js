@@ -259,7 +259,7 @@ export default function AddMemberPage() {
       if (!collectedBy || !collectedByName) {
         const buildName = (user) => {
           const name = `${user?.first_name || user?.user_metadata?.first_name || ''} ${user?.last_name || user?.user_metadata?.last_name || ''}`.trim();
-          return name || user?.email || null;
+          return name || null;
         };
         const { data: authData } = await supabase.auth.getUser();
         const authUser = authData?.user;

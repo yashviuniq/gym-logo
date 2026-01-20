@@ -78,7 +78,7 @@ export default function AddPaymentPage() {
       const currentUser = storedUser ? JSON.parse(storedUser) : null;
       const buildName = (user) => {
         const name = `${user?.first_name || user?.user_metadata?.first_name || ''} ${user?.last_name || user?.user_metadata?.last_name || ''}`.trim();
-        return name || user?.email || null;
+        return name || null;
       };
       let collectedBy = currentUser?.id || null;
       let collectedByName = currentUser ? buildName(currentUser) : null;

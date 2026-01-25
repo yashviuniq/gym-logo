@@ -1,13 +1,14 @@
 {
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
   "crons": [
     {
       "path": "/api/notifications/check-expiring",
       "schedule": "30 2 * * *"
-    },
-    {
-    "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
-}
+    }
   ]
 }
-  
- 

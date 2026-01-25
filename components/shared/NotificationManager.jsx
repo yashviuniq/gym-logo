@@ -184,10 +184,10 @@ export default function NotificationManager() {
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
               Stay updated with announcements, membership expiry alerts, and important updates.
             </p>
-            <div className="flex gap-2">
+            <div className="flex flex-row gap-2">
               <button
                 onClick={requestPermission}
-                className="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
+                className="flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Enable
               </button>
@@ -196,7 +196,7 @@ export default function NotificationManager() {
                   setShowPrompt(false);
                   setDismissed(true);
                 }}
-                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
               >
                 Not Now
               </button>

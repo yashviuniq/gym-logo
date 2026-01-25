@@ -11,6 +11,9 @@ export default function HomePage() {
   useEffect(() => {
     const checkSession = async () => {
       try {
+        // Only run in browser
+        if (typeof window === 'undefined') return;
+        
         // Wait for SessionRestoration to complete
         let attempts = 0;
         while (!sessionStorage.getItem('sessionRestorationComplete') && attempts < 50) {

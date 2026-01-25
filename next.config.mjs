@@ -1,5 +1,3 @@
-import withPWA from "next-pwa";
-
 const nextConfig = {
   reactStrictMode: true,
   async headers() {
@@ -21,9 +19,4 @@ const nextConfig = {
   }
 };
 
-export default withPWA({
-  dest: "public",
-  register: true,
-  skipWaiting: true,
-  disable: process.env.NODE_ENV === "development" || process.env.VERCEL === "1",
-})(nextConfig);
+export default nextConfig;

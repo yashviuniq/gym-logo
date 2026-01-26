@@ -35,10 +35,13 @@ export default function GymSettingsPage() {
 
   // Redirect trainers away from this page
   useEffect(() => {
-    if (!roleLoading && !canCreateTrainer) {
+    const role=JSON.parse(localStorage.getItem("gymUser")).role;
+    console.log(role)
+    if (role!="admin") {
+      console.log("idar probelm haiiii")
       router.push("/admin/dashboard");
     }
-  }, [roleLoading, canCreateTrainer, router]);
+  }, []);
 
   useEffect(() => {
     fetchGymData();
@@ -47,16 +50,20 @@ export default function GymSettingsPage() {
   const fetchGymData = async () => {
     try {
       setFetching(true);
+      console.log("[GymSettings] fetchGymData: start");
       
       // Get gym ID from localStorage
       const storedGym = localStorage.getItem("selectedGym");
+      console.log("[GymSettings] localStorage.selectedGym:", storedGym);
       if (!storedGym) {
+        console.log("[GymSettings] No gym selected in localStorage");
         console.error("No gym selected");
         router.push("/admin/dashboard");
         return;
       }
 
       const gym = JSON.parse(storedGym);
+      console.log("[GymSettings] Parsed gym:", gym);
       setGymId(gym.id);
 
       // Fetch gym data from database
@@ -66,9 +73,13 @@ export default function GymSettingsPage() {
         .eq("id", gym.id)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("[GymSettings] supabase fetch error:", error);
+        throw error;
+      }
 
       if (gymData) {
+        console.log("[GymSettings] Fetched gymData:", gymData);
         setFormData({
           name: gymData.name || "",
           address: gymData.address || "",
@@ -89,9 +100,10 @@ export default function GymSettingsPage() {
         });
       }
     } catch (error) {
-      console.error("Error fetching gym data:", error);
+      console.error("[GymSettings] Error fetching gym data:", error);
       showError("Failed to load gym settings");
     } finally {
+      console.log("[GymSettings] fetchGymData: end");
       setFetching(false);
     }
   };
@@ -103,6 +115,7 @@ export default function GymSettingsPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!gymId) return;
+    console.log("[GymSettings] handleSubmit: start", { gymId, formData });
 
     // Validate phone number if provided
     if (formData.phone && formData.phone.trim() !== '') {
@@ -145,34 +158,43 @@ export default function GymSettingsPage() {
       // Get current user for updated_by
       const storedUser = localStorage.getItem("gymUser");
       const user = storedUser ? JSON.parse(storedUser) : null;
+      console.log("[GymSettings] current user:", user);
 
       // Clean phone number (remove non-digits)
       const cleanPhone = formData.phone ? formData.phone.replace(/\D/g, '') : null;
+      console.log("[GymSettings] cleanPhone:", cleanPhone);
+
+      const updatePayload = {
+        name: formData.name,
+        address: formData.address,
+        phone: cleanPhone || null,
+        email: formData.email?.trim() || null,
+        website: formData.website?.trim() || null,
+        weekday_morning_start: formData.weekdayMorningStart,
+        weekday_morning_end: formData.weekdayMorningEnd,
+        weekday_evening_start: formData.weekdayEveningStart,
+        weekday_evening_end: formData.weekdayEveningEnd,
+        weekend_morning_start: formData.weekendMorningStart,
+        weekend_morning_end: formData.weekendMorningEnd,
+        weekend_evening_start: formData.weekendEveningStart,
+        weekend_evening_end: formData.weekendEveningEnd,
+        sunday_off: formData.sundayOff,
+        qr_enabled: formData.qrEnabled,
+        qr_type: formData.qrType,
+        updated_by: user?.id || null,
+      };
+      console.log("[GymSettings] update payload:", updatePayload);
 
       const { error } = await supabase
         .from("gyms")
-        .update({
-          name: formData.name,
-          address: formData.address,
-          phone: cleanPhone || null,
-          email: formData.email?.trim() || null,
-          website: formData.website?.trim() || null,
-          weekday_morning_start: formData.weekdayMorningStart,
-          weekday_morning_end: formData.weekdayMorningEnd,
-          weekday_evening_start: formData.weekdayEveningStart,
-          weekday_evening_end: formData.weekdayEveningEnd,
-          weekend_morning_start: formData.weekendMorningStart,
-          weekend_morning_end: formData.weekendMorningEnd,
-          weekend_evening_start: formData.weekendEveningStart,
-          weekend_evening_end: formData.weekendEveningEnd,
-          sunday_off: formData.sundayOff,
-          qr_enabled: formData.qrEnabled,
-          qr_type: formData.qrType,
-          updated_by: user?.id || null,
-        })
+        .update(updatePayload)
         .eq("id", gymId);
 
-      if (error) throw error;
+      if (error) {
+        console.error("[GymSettings] supabase update error:", error);
+        throw error;
+      }
+      console.log("[GymSettings] update success for gym:", gymId);
 
       // Update localStorage with new gym name
       const storedGym = localStorage.getItem("selectedGym");
@@ -180,13 +202,15 @@ export default function GymSettingsPage() {
         const gym = JSON.parse(storedGym);
         gym.name = formData.name;
         localStorage.setItem("selectedGym", JSON.stringify(gym));
+        console.log("[GymSettings] localStorage.selectedGym updated:", gym);
       }
 
       showSuccess("Settings saved successfully!");
     } catch (error) {
-      console.error("Error saving gym settings:", error);
+      console.error("[GymSettings] Error saving gym settings:", error);
       showError("Failed to save settings. Please try again.");
     } finally {
+      console.log("[GymSettings] handleSubmit: end");
       setLoading(false);
     }
   };

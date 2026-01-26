@@ -280,18 +280,25 @@ export default function MemberDetailPage() {
     try {
       const { data, error } = await supabase
         .from("payments")
-        .select("next_payment_date, remaining_amount")
+        .select("next_payment_date")
         .eq("member_id", memberId)
         .not("next_payment_date", "is", null)
-        .gt("remaining_amount", 0)
+        .eq("status", "pending")
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
       if (!error && data) {
+        // Get the current member balance from the members table
+        const { data: memberData } = await supabase
+          .from("members")
+          .select("balance")
+          .eq("id", memberId)
+          .single();
+
         setNextPaymentInfo({
           nextPaymentDate: data.next_payment_date,
-          remainingAmount: data.remaining_amount
+          remainingAmount: Math.max(0, memberData?.balance || 0)
         });
       }
     } catch (err) {
@@ -811,7 +818,7 @@ export default function MemberDetailPage() {
         )}
 
         {/* Edit and Delete Buttons */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className={`grid ${isTrainer ? 'grid-cols-1' : 'grid-cols-2'} gap-3`}>
           <button
             onClick={() => router.push(`/members/edit?id=${member.id}`)}
             className="p-3 bg-white border-2 border-gray-200 text-gray-700 rounded-xl font-semibold hover:border-gray-300 hover:shadow-sm transition-all duration-200 flex items-center justify-center gap-2 active:scale-95"
@@ -819,13 +826,15 @@ export default function MemberDetailPage() {
             <Edit className="w-4 h-4" />
             Edit Member
           </button>
-          <button
-            onClick={handleDeleteMember}
-            className="p-3 bg-gradient-to-r from-red-50 to-pink-50 border-2 border-red-200 text-red-600 rounded-xl font-semibold hover:border-red-300 hover:shadow-sm transition-all duration-200 flex items-center justify-center gap-2 active:scale-95"
-          >
-            <Trash2 className="w-4 h-4" />
-            Delete Member
-          </button>
+          {!isTrainer && (
+            <button
+              onClick={handleDeleteMember}
+              className="p-3 bg-gradient-to-r from-red-50 to-pink-50 border-2 border-red-200 text-red-600 rounded-xl font-semibold hover:border-red-300 hover:shadow-sm transition-all duration-200 flex items-center justify-center gap-2 active:scale-95"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete Member
+            </button>
+          )}
         </div>
 
         {/* Membership Actions */}
@@ -1100,24 +1109,28 @@ export default function MemberDetailPage() {
                   <Users className="w-4 h-4 text-purple-600" />
                   Assigned Trainer
                 </h4>
-                <button
-                  onClick={() => setShowAssignTrainerModal(true)}
-                  className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  {assignedTrainer ? "Change" : "Assign"}
-                </button>
+                {!isTrainer && (
+                  <button
+                    onClick={() => setShowAssignTrainerModal(true)}
+                    className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    {assignedTrainer ? "Change" : "Assign"}
+                  </button>
+                )}
               </div>
               {!assignedTrainer ? (
                 <div className="text-center py-4 bg-gray-50 rounded-lg">
                   <Users className="w-8 h-8 text-gray-300 mx-auto mb-2" />
                   <p className="text-sm text-gray-500">No trainer assigned</p>
-                  <button
-                    onClick={() => setShowAssignTrainerModal(true)}
-                    className="mt-2 text-xs text-blue-600 hover:text-blue-700 font-medium"
-                  >
-                    Assign a trainer
-                  </button>
+                  {!isTrainer && (
+                    <button
+                      onClick={() => setShowAssignTrainerModal(true)}
+                      className="mt-2 text-xs text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      Assign a trainer
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
@@ -1134,13 +1147,15 @@ export default function MemberDetailPage() {
                         </p>
                       )}
                     </div>
-                    <button
-                      onClick={() => setShowAssignTrainerModal(true)}
-                      className="p-1.5 text-purple-600 hover:bg-purple-100 rounded-lg transition-colors"
-                      title="Change Trainer"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
+                    {!isTrainer && (
+                      <button
+                        onClick={() => setShowAssignTrainerModal(true)}
+                        className="p-1.5 text-purple-600 hover:bg-purple-100 rounded-lg transition-colors"
+                        title="Change Trainer"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
               )}

@@ -755,14 +755,16 @@ export default function MembersPage() {
                         </button>
                       )}
                       
-                      <button
-                        onClick={(e) => handleDeleteMember(e, member)}
-                        className="flex-shrink-0 px-3 py-2 bg-red-50 cursor-pointer text-red-700 text-xs font-medium rounded-lg active:bg-red-100 transition-all flex items-center gap-2"
-                        style={{ minHeight: '36px' }}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        Delete
-                      </button>
+                      {!isTrainer && (
+                        <button
+                          onClick={(e) => handleDeleteMember(e, member)}
+                          className="flex-shrink-0 px-3 py-2 bg-red-50 cursor-pointer text-red-700 text-xs font-medium rounded-lg active:bg-red-100 transition-all flex items-center gap-2"
+                          style={{ minHeight: '36px' }}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Delete
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

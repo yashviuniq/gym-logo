@@ -42,6 +42,7 @@ export default function AdminDashboard() {
   const [loadingGyms, setLoadingGyms] = useState(true);
   const { permissions } = usePermissions();
   const { canViewFinance } = useUserRole();
+  const [dataLoading, setDataLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState({
     totalMembers: 0,
     activeMembers: 0,
@@ -98,6 +99,7 @@ export default function AdminDashboard() {
           } else {
             // Admin without gym_id and no stored gym
             setLoadingGyms(false);
+            setDataLoading(false);
           }
           return;
         }
@@ -112,6 +114,7 @@ export default function AdminDashboard() {
       }
       setUser(data.user);
       setLoading(false);
+      setDataLoading(false);
       await fetchGyms(data.user.id);
     };
     checkAuth();
@@ -129,15 +132,19 @@ export default function AdminDashboard() {
       if (error) {
         console.error("Error fetching gym:", error);
         setGyms([]);
+        setDataLoading(false);
       } else if (gymData) {
         setGyms([gymData]);
         setSelectedGym(gymData);
         localStorage.setItem("selectedGym", JSON.stringify(gymData));
         fetchDashboardData(gymData.id);
+      } else {
+        setDataLoading(false);
       }
     } catch (err) {
       console.error("Error:", err);
       setGyms([]);
+      setDataLoading(false);
     }
     setLoadingGyms(false);
   };
@@ -164,16 +171,20 @@ export default function AdminDashboard() {
       if (error) {
         console.error("Error fetching trainer's gym:", error);
         setGyms([]);
+        setDataLoading(false);
       } else if (trainerData?.gyms) {
         const gymData = trainerData.gyms;
         setGyms([gymData]);
         setSelectedGym(gymData);
         localStorage.setItem("selectedGym", JSON.stringify(gymData));
         fetchDashboardData(gymData.id);
+      } else {
+        setDataLoading(false);
       }
     } catch (err) {
       console.error("Error:", err);
       setGyms([]);
+      setDataLoading(false);
     }
     setLoadingGyms(false);
   };
@@ -189,6 +200,7 @@ export default function AdminDashboard() {
       if (error) {
         console.error("Error fetching gyms:", error);
         setGyms([]);
+        setDataLoading(false);
       } else {
         setGyms(gymsData || []);
         if (gymsData?.length === 1) {
@@ -203,13 +215,18 @@ export default function AdminDashboard() {
             if (found) {
               setSelectedGym(found);
               fetchDashboardData(found.id);
+            } else {
+              setDataLoading(false);
             }
+          } else {
+            setDataLoading(false);
           }
         }
       }
     } catch (err) {
       console.error("Error:", err);
       setGyms([]);
+      setDataLoading(false);
     }
     setLoadingGyms(false);
   };
@@ -221,6 +238,7 @@ export default function AdminDashboard() {
   };
 
   const fetchDashboardData = async (gymId) => {
+    setDataLoading(true);
     try {
       // Your existing fetch logic remains exactly the same
       const { data: members, error: membersError } = await supabase
@@ -391,10 +409,12 @@ export default function AdminDashboard() {
 
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
+    } finally {
+      setDataLoading(false);
     }
   };
 
-  if (loading || loadingGyms) {
+  if (loading || loadingGyms || dataLoading) {
     return <DashboardPageSkeleton />;
   }
 

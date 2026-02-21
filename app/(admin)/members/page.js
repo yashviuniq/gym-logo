@@ -34,7 +34,7 @@ import {
 
 export default function MembersPage() {
   const router = useRouter();
-  const { canViewFinance } = useUserRole();
+  const { canViewFinance, isTrainer } = useUserRole();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [selectedGym, setSelectedGym] = useState(null);

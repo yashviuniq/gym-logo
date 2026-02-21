@@ -45,10 +45,12 @@ import {
   Eye as EyeIcon
 } from "lucide-react";
 import { useToast } from "@/contexts/ToastContext";
+import { useUserRole } from "@/lib/hooks/useUserRole";
 
 export default function MemberDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const { isTrainer } = useUserRole();
   const [activeTab, setActiveTab] = useState("overview");
   const [showRenewModal, setShowRenewModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);

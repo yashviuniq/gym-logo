@@ -45,8 +45,14 @@ export default function EditAnnouncementPage() {
           title: data.title || "",
           message: data.message || "",
           status: data.status || "active",
+          // Convert UTC from DB to local time for datetime-local input
           expires_at: data.expires_at
-            ? new Date(data.expires_at).toISOString().slice(0, 16)
+            ? (() => {
+                const d = new Date(data.expires_at);
+                return new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+                  .toISOString()
+                  .slice(0, 16);
+              })()
             : "",
         });
       }
@@ -77,13 +83,18 @@ export default function EditAnnouncementPage() {
       const storedUser = localStorage.getItem("gymUser");
       const user = storedUser ? JSON.parse(storedUser) : null;
 
+      // Convert local datetime-local value to proper UTC ISO string
+      const expiresAtUtc = formData.expires_at
+        ? new Date(formData.expires_at).toISOString()
+        : null;
+
       const { error } = await supabase
         .from("announcements")
         .update({
           title: formData.title.trim(),
           message: formData.message.trim(),
           status: formData.status,
-          expires_at: formData.expires_at || null,
+          expires_at: expiresAtUtc,
           updated_by: user?.id || null,
         })
         .eq("id", params.id);

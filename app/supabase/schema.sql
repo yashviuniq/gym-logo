@@ -41,7 +41,7 @@ CREATE TYPE profile_role AS ENUM ('owner', 'admin', 'trainer', 'member');
 CREATE TYPE membership_status AS ENUM ('active', 'expired', 'cancelled');
 
 -- Payment methods accepted
-CREATE TYPE payment_mode AS ENUM ('cash', 'upi', 'card');
+CREATE TYPE payment_mode AS ENUM ('cash', 'upi', 'card', 'bank');
 
 -- Payment completion status
 CREATE TYPE payment_status AS ENUM ('paid', 'pending');

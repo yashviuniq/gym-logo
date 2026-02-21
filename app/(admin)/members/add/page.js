@@ -147,6 +147,14 @@ export default function AddMemberPage() {
   };
 
   const selectedPlan = membershipPlans.find((p) => p.id === formData.planId);
+  const calculatedMembershipEndDate = (() => {
+    if (!selectedPlan?.duration_days || !formData.startDate) return "";
+    const startDate = new Date(formData.startDate + "T00:00:00");
+    if (Number.isNaN(startDate.getTime())) return "";
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + selectedPlan.duration_days);
+    return endDate.toISOString().split("T")[0];
+  })();
 
   if (loadingPlans) {
     return (
@@ -340,6 +348,13 @@ export default function AddMemberPage() {
       const durationDays = selectedPlan.duration_days;
       const endDate = new Date(startDate);
       endDate.setDate(endDate.getDate() + durationDays);
+      const membershipEndDate = endDate.toISOString().split('T')[0];
+
+      if (balanceOwed > 0 && formData.nextPaymentDate && formData.nextPaymentDate > membershipEndDate) {
+        showError("The due payment date cannot be later than the membership end date.");
+        setLoading(false);
+        return;
+      }
 
       // Check if start date is in the past - if so, validate remaining days
       if (isStartDateInPast(formData.startDate)) {
@@ -359,7 +374,7 @@ export default function AddMemberPage() {
           gym_id: selectedGym.id,
           plan_id: formData.planId,
           start_date: formData.startDate,
-          end_date: endDate.toISOString().split('T')[0],
+          end_date: membershipEndDate,
           status: "active",
           updated_by: createdBy,
         });
@@ -1096,12 +1111,22 @@ export default function AddMemberPage() {
                         <input
                           type="date"
                           min={new Date().toISOString().split('T')[0]}
+                          max={calculatedMembershipEndDate || undefined}
                           className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
                           value={formData.nextPaymentDate}
                           onChange={(e) => updateForm("nextPaymentDate", e.target.value)}
                           required
                         />
                       </div>
+                      {calculatedMembershipEndDate && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Due date must be on or before {new Date(calculatedMembershipEndDate + 'T00:00:00').toLocaleDateString('en-IN', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric'
+                          })}
+                        </p>
+                      )}
                       {formData.nextPaymentDate && (
                         <div className="mt-2 p-2 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
                           <p className="text-xs text-blue-700">

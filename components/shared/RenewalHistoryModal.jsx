@@ -3,7 +3,7 @@
 export default function RenewalHistoryModal({ member, renewalHistory, onClose }) {
     return (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end">
-            <div className="bg-white w-full rounded-t-3xl max-h-[80vh] overflow-hidden">
+            <div className="bg-white w-full rounded-t-3xl max-h-[90vh] overflow-hidden flex flex-col">
                 <div className="sticky top-0 bg-white border-b border-gray-100 p-4 z-10">
                     <div className="flex items-center justify-between">
                         <h3 className="text-lg font-semibold text-gray-900">
@@ -18,7 +18,7 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose })
                     </div>
                 </div>
 
-                <div className="p-4">
+                <div className="flex-1 overflow-y-auto p-4" style={{ minHeight: 0 }}>
                     {/* Member Info */}
                     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 mb-4">
                         <div className="flex items-center gap-3">
@@ -35,7 +35,7 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose })
                     </div>
 
                     {/* Renewal Timeline */}
-                    <div className="space-y-3 overflow-y-auto max-h-[50vh]">
+                    <div className="space-y-3">
                         {renewalHistory && renewalHistory.length > 0 ? (
                             renewalHistory.map((renewal, index) => (
                                 <div

@@ -630,7 +630,8 @@ export default function CustomerProfilePage() {
           onClick={() => {
             localStorage.removeItem("gymUser");
             localStorage.removeItem("gymUserExpiry");
-            router.push("/auth/login");
+            window.history.replaceState(null, "", "/auth/login");
+            router.replace("/auth/login");
           }}
           className="w-full py-3 bg-red-50 text-red-600 rounded-xl font-medium"
         >

@@ -28,6 +28,7 @@ import {
   Building,
   TrendingUp,
   Wrench,
+  ClipboardList,
   AlertTriangle,
   Search,
   Filter,
@@ -49,6 +50,14 @@ const settingsSections = [
     icon: Building,
     href: "/settings/gym",
     color: "from-blue-600 to-indigo-600"
+  },
+  {
+    id: "inquiries",
+    title: "Inquiries",
+    description: "Track walk-ins, follow-ups & conversions",
+    icon: ClipboardList,
+    href: "/inquiries",
+    color: "from-purple-600 to-indigo-600"
   },
   {
     id: "plans",
@@ -684,7 +693,8 @@ export default function SettingsPage() {
                 localStorage.removeItem("selectedGym");
                 localStorage.removeItem("gymUser");
                 localStorage.removeItem("gymUserExpiry");
-                router.push("/auth/login");
+                window.history.replaceState(null, "", "/auth/login");
+                router.replace("/auth/login");
               }
             }}
             className="w-full py-3 bg-gradient-to-br from-red-50 to-pink-50 border border-red-200 text-red-600 rounded-xl font-medium hover:shadow-sm active:scale-95 transition-all duration-200 flex items-center justify-center gap-2"

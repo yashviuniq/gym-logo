@@ -14,12 +14,40 @@ export default function RouteProtection({ children }) {
   const { permissions, loading, userRole } = usePermissions();
   const [authorized, setAuthorized] = useState(false);
 
+  // Handle browser back/forward navigation and bfcache restoration after logout
+  useEffect(() => {
+    const checkAuthOnPageShow = (e) => {
+      // persisted = true means page was restored from bfcache (back button)
+      if (e.persisted) {
+        const user = localStorage.getItem("gymUser");
+        if (!user) {
+          window.location.replace("/auth/login");
+        }
+      }
+    };
+
+    const checkAuthOnPopState = () => {
+      const user = localStorage.getItem("gymUser");
+      if (!user) {
+        window.location.replace("/auth/login");
+      }
+    };
+
+    window.addEventListener("pageshow", checkAuthOnPageShow);
+    window.addEventListener("popstate", checkAuthOnPopState);
+
+    return () => {
+      window.removeEventListener("pageshow", checkAuthOnPageShow);
+      window.removeEventListener("popstate", checkAuthOnPopState);
+    };
+  }, []);
+
   useEffect(() => {
     if (loading) return;
 
     // No user logged in
     if (!userRole) {
-      router.push("/auth/login");
+      router.replace("/auth/login");
       return;
     }
 
@@ -28,7 +56,7 @@ export default function RouteProtection({ children }) {
 
     if (!hasAccess) {
       // Redirect to dashboard if no permission
-      router.push("/admin/dashboard");
+      router.replace("/admin/dashboard");
       return;
     }
 

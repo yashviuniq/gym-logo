@@ -29,7 +29,8 @@ import {
   Bell,
   Search,
   X,
-  XCircle
+  XCircle,
+  ClipboardList
 } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -610,7 +611,8 @@ export default function AdminDashboard() {
               { label: "Add Member", icon: <UserPlus className="w-4 h-4" />, href: "/members/add", color: "bg-blue-500", permission: PERMISSIONS.MEMBERS },
               { label: "Attendance", icon: <CheckCircle className="w-4 h-4" />, href: "/attendance", color: "bg-green-500", permission: PERMISSIONS.ATTENDANCE },
               { label: "Payment", icon: <CreditCard className="w-4 h-4" />, href: "/finance", color: "bg-indigo-500", permission: PERMISSIONS.FINANCE },
-              { label: "Members", icon: <Users className="w-4 h-4" />, href: "/members", color: "bg-blue-600", permission: PERMISSIONS.MEMBERS }
+              { label: "Members", icon: <Users className="w-4 h-4" />, href: "/members", color: "bg-blue-600", permission: PERMISSIONS.MEMBERS },
+              { label: "Inquiries", icon: <ClipboardList className="w-4 h-4" />, href: "/inquiries", color: "bg-purple-500", permission: PERMISSIONS.INQUIRIES }
             ].filter(action => hasPermission(permissions, action.permission)).map((action) => (
               <button
                 key={action.label}

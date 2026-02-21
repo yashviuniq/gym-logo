@@ -505,12 +505,24 @@ export default function FinancePage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-medium">Net Profit</p>
-                <p className="text-xl font-bold text-indigo-600 mt-0.5">
+                <p className={`text-xl font-bold mt-0.5 ${
+                  (financialData.monthlyRevenue - financialData.monthlyExpenses) >= 0 
+                    ? 'text-emerald-600' 
+                    : 'text-red-600'
+                }`}>
                   {formatCurrency(financialData.monthlyRevenue - financialData.monthlyExpenses)}
                 </p>
               </div>
-              <div className="w-10 h-10 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg flex items-center justify-center">
-                <DollarSign className="w-5 h-5 text-indigo-600" />
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                (financialData.monthlyRevenue - financialData.monthlyExpenses) >= 0
+                  ? 'bg-gradient-to-br from-emerald-50 to-emerald-100'
+                  : 'bg-gradient-to-br from-red-50 to-red-100'
+              }`}>
+                <DollarSign className={`w-5 h-5 ${
+                  (financialData.monthlyRevenue - financialData.monthlyExpenses) >= 0
+                    ? 'text-emerald-600'
+                    : 'text-red-600'
+                }`} />
               </div>
             </div>
           </div>
@@ -595,74 +607,76 @@ export default function FinancePage() {
               </div>
             </div>
 
-            {/* Recent Transactions */}
-            <div className="bg-white rounded-xl border border-gray-200 p-3 shadow-sm mx-1">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-gray-900 text-sm">Recent Transactions</h3>
-                <button
-                  onClick={() => router.push("/finance/transactions")}
-                  className="text-xs text-blue-600 font-medium active:scale-95 transition-transform flex-shrink-0"
-                >
-                  View All
-                </button>
-              </div>
-              
-              <div className="space-y-2">
-                {recentTransactions.length === 0 ? (
-                  <div className="text-center py-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                      <Receipt className="w-6 h-6 text-gray-400" />
+            {/* Recent Transactions - Hidden for trainers */}
+            {canViewFinance && (
+              <div className="bg-white rounded-xl border border-gray-200 p-3 shadow-sm mx-1">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-gray-900 text-sm">Recent Transactions</h3>
+                  <button
+                    onClick={() => router.push("/finance/transactions")}
+                    className="text-xs text-blue-600 font-medium active:scale-95 transition-transform flex-shrink-0"
+                  >
+                    View All
+                  </button>
+                </div>
+                
+                <div className="space-y-2">
+                  {recentTransactions.length === 0 ? (
+                    <div className="text-center py-4">
+                      <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                        <Receipt className="w-6 h-6 text-gray-400" />
+                      </div>
+                      <p className="text-gray-500 text-sm">No recent transactions</p>
                     </div>
-                    <p className="text-gray-500 text-sm">No recent transactions</p>
-                  </div>
-                ) : (
-                  recentTransactions.map((txn) => (
-                    <div
-                      key={txn.id}
-                      className="p-3 hover:bg-gray-50 rounded-lg transition-all active:scale-95"
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                          txn.collectedBy 
-                            ? "bg-gradient-to-br from-purple-50 to-purple-100"
-                            : "bg-gradient-to-br from-emerald-50 to-emerald-100"
-                        }`}>
-                          <DollarSign className={`w-5 h-5 ${txn.collectedBy ? "text-purple-600" : "text-emerald-600"}`} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2 mb-1.5">
-                            <p className="font-medium text-gray-900 text-sm leading-tight">
-                              {txn.name}
-                            </p>
-                            <p className="font-bold text-emerald-600 text-base flex-shrink-0">
-                              +{formatCurrency(txn.amount)}
-                            </p>
+                  ) : (
+                    recentTransactions.map((txn) => (
+                      <div
+                        key={txn.id}
+                        className="p-3 hover:bg-gray-50 rounded-lg transition-all active:scale-95"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                            txn.collectedBy 
+                              ? "bg-gradient-to-br from-purple-50 to-purple-100"
+                              : "bg-gradient-to-br from-emerald-50 to-emerald-100"
+                          }`}>
+                            <DollarSign className={`w-5 h-5 ${txn.collectedBy ? "text-purple-600" : "text-emerald-600"}`} />
                           </div>
-                          
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                              <span className="capitalize">
-                                {txn.type.replace("_", " ")}
-                              </span>
-                              <span className="text-gray-400">•</span>
-                              <span className="lowercase">{txn.mode}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2 mb-1.5">
+                              <p className="font-medium text-gray-900 text-sm leading-tight">
+                                {txn.name}
+                              </p>
+                              <p className="font-bold text-emerald-600 text-base flex-shrink-0">
+                                +{formatCurrency(txn.amount)}
+                              </p>
                             </div>
                             
-                            {txn.collectedBy && (
-                              <p className="text-xs text-purple-600 font-medium">
-                                by {txn.collectedBy}
-                              </p>
-                            )}
-                            
-                            <p className="text-xs text-gray-500">{txn.date}</p>
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                                <span className="capitalize">
+                                  {txn.type.replace("_", " ")}
+                                </span>
+                                <span className="text-gray-400">•</span>
+                                <span className="lowercase">{txn.mode}</span>
+                              </div>
+                              
+                              {txn.collectedBy && (
+                                <p className="text-xs text-purple-600 font-medium">
+                                  by {txn.collectedBy}
+                                </p>
+                              )}
+                              
+                              <p className="text-xs text-gray-500">{txn.date}</p>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))
-                )}
+                    ))
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 

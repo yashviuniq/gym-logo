@@ -12,7 +12,8 @@ import {
   User,
   Dumbbell,
   Apple,
-  Bell
+  Bell,
+  ClipboardList
 } from "lucide-react";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 import { hasPermission, PERMISSIONS } from "@/lib/constants/permissions";

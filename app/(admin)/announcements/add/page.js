@@ -75,6 +75,13 @@ export default function AddAnnouncementPage() {
       const storedUser = localStorage.getItem("gymUser");
       const user = storedUser ? JSON.parse(storedUser) : null;
 
+      // Convert local datetime-local value to proper UTC ISO string
+      // datetime-local gives "2026-02-16T22:29" which has no timezone;
+      // new Date() parses it as local time, toISOString() converts to UTC.
+      const expiresAtUtc = formData.expires_at
+        ? new Date(formData.expires_at).toISOString()
+        : null;
+
       // Create announcement
       const { data: announcement, error } = await supabase
         .from("announcements")
@@ -83,7 +90,7 @@ export default function AddAnnouncementPage() {
           title: formData.title.trim(),
           message: formData.message.trim(),
           status: "active",
-          expires_at: formData.expires_at || null,
+          expires_at: expiresAtUtc,
           created_by: user?.id || null,
         })
         .select()
@@ -124,7 +131,7 @@ export default function AddAnnouncementPage() {
                   title: `📢 ${formData.title.trim()}`,
                   body: formData.message.trim().substring(0, 100) + (formData.message.length > 100 ? '...' : ''),
                   type: 'announcement',
-                  url: '/user/dashboard',
+                  url: '/announcements',
                   data: {
                     announcement_id: announcement.id,
                     gym_id: selectedGym.id

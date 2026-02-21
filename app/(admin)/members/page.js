@@ -34,17 +34,15 @@ import {
 
 export default function MembersPage() {
   const router = useRouter();
-  const { canViewFinance, isTrainer, canViewMemberDues } = useUserRole();
+  const { canViewFinance, isTrainer } = useUserRole();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [memberViewMode, setMemberViewMode] = useState("all"); // "all" or "assigned" for trainers
   const [selectedGym, setSelectedGym] = useState(null);
   const [showRenewModal, setShowRenewModal] = useState(false);
   const [showShareReceiptModal, setShowShareReceiptModal] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
   const [membersWithCredentials, setMembersWithCredentials] = useState(new Set());
   const [rawMembers, setRawMembers] = useState([]);
-  const [assignedMemberIds, setAssignedMemberIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     total: 0,
@@ -189,37 +187,6 @@ export default function MembersPage() {
     }
   }, [selectedGym?.id]);
 
-  // Fetch assigned members for trainers
-  useEffect(() => {
-    const fetchAssignedMembers = async () => {
-      if (!isTrainer || !selectedGym?.id) return;
-      
-      try {
-        const storedUser = localStorage.getItem("gymUser");
-        const currentUser = storedUser ? JSON.parse(storedUser) : null;
-        if (!currentUser?.id) return;
-
-        const { data: assignments, error } = await supabase
-          .from("trainer_member_assignments")
-          .select("member_id")
-          .eq("trainer_id", currentUser.id)
-          .eq("gym_id", selectedGym.id)
-          .eq("is_active", true);
-
-        if (error) {
-          console.error("Error fetching assigned members:", error);
-          return;
-        }
-
-        setAssignedMemberIds(new Set(assignments?.map(a => a.member_id) || []));
-      } catch (err) {
-        console.error("Error:", err);
-      }
-    };
-
-    fetchAssignedMembers();
-  }, [isTrainer, selectedGym?.id]);
-
   // Fetch credentials for members
   useEffect(() => {
     const fetchCredentials = async () => {
@@ -286,31 +253,9 @@ export default function MembersPage() {
         hasCredentials: membersWithCredentials.has(member.id),
         daysRemaining: daysRemaining,
         createdByTrainerName: member.createdByTrainerName || null,
-        isAssignedToMe: assignedMemberIds.has(member.id),
       };
     });
-  }, [rawMembers, membersWithCredentials, assignedMemberIds]);
-
-  // Get members to display based on view mode
-  const displayMembers = useMemo(() => {
-    if (isTrainer && memberViewMode === "assigned") {
-      return members.filter(m => m.isAssignedToMe);
-    }
-    return members;
-  }, [members, isTrainer, memberViewMode]);
-
-  // Calculate stats for current view
-  const displayStats = useMemo(() => {
-    const activeCount = displayMembers.filter(m => m.status === "active").length;
-    const expiredCount = displayMembers.filter(m => m.status === "expired").length;
-    const duesCount = displayMembers.filter(m => m.dueAmount > 0).length;
-    return {
-      total: displayMembers.length,
-      active: activeCount,
-      expired: expiredCount,
-      dues: duesCount
-    };
-  }, [displayMembers]);
+  }, [rawMembers, membersWithCredentials]);
 
   // Calculate stats whenever members change
   useEffect(() => {
@@ -326,12 +271,7 @@ export default function MembersPage() {
     });
   }, [members]);
 
-  // Count of assigned members for trainer
-  const assignedMembersCount = useMemo(() => {
-    return members.filter(m => m.isAssignedToMe).length;
-  }, [members]);
-
-  const filteredMembers = displayMembers.filter((member) => {
+  const filteredMembers = members.filter((member) => {
     const matchesSearch =
       member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       member.phone.includes(searchQuery) ||
@@ -462,45 +402,13 @@ export default function MembersPage() {
       <Header title="Members" showBack={false} />
 
       <main className="px-3 py-3 space-y-4">
-        {/* Trainer View Mode Toggle */}
-        {isTrainer && (
-          <div className="bg-white rounded-xl p-3 mx-1">
-            <div className="flex items-center gap-2 mb-2">
-              <UserCheck className="w-4 h-4 text-gray-500" />
-              <span className="text-xs font-medium text-gray-700">View Members</span>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setMemberViewMode("all")}
-                className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  memberViewMode === "all"
-                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }`}
-              >
-                All Members ({stats.total})
-              </button>
-              <button
-                onClick={() => setMemberViewMode("assigned")}
-                className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  memberViewMode === "assigned"
-                    ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }`}
-              >
-                My Members ({assignedMembersCount})
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Stats Cards - Mobile Optimized */}
         <div className="grid grid-cols-2 gap-2 px-1">
           <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-medium">Total</p>
-                <p className="text-xl font-bold text-gray-900 mt-0.5">{displayStats.total}</p>
+                <p className="text-xl font-bold text-gray-900 mt-0.5">{stats.total}</p>
               </div>
               <div className="w-10 h-10 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg flex items-center justify-center">
                 <Users className="w-5 h-5 text-blue-600" />
@@ -512,7 +420,7 @@ export default function MembersPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-medium">Active</p>
-                <p className="text-xl font-bold text-emerald-600 mt-0.5">{displayStats.active}</p>
+                <p className="text-xl font-bold text-emerald-600 mt-0.5">{stats.active}</p>
               </div>
               <div className="w-10 h-10 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-lg flex items-center justify-center">
                 <CheckCircle className="w-5 h-5 text-emerald-600" />
@@ -524,7 +432,7 @@ export default function MembersPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-medium">Dues</p>
-                <p className="text-xl font-bold text-amber-600 mt-0.5">{displayStats.dues}</p>
+                <p className="text-xl font-bold text-amber-600 mt-0.5">{stats.dues}</p>
               </div>
               <div className="w-10 h-10 bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg flex items-center justify-center">
                 <DollarSign className="w-5 h-5 text-amber-600" />
@@ -536,7 +444,7 @@ export default function MembersPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-medium">Expired</p>
-                <p className="text-xl font-bold text-red-600 mt-0.5">{displayStats.expired}</p>
+                <p className="text-xl font-bold text-red-600 mt-0.5">{stats.expired}</p>
               </div>
               <div className="w-10 h-10 bg-gradient-to-br from-red-50 to-red-100 rounded-lg flex items-center justify-center">
                 <AlertTriangle className="w-5 h-5 text-red-600" />
@@ -580,10 +488,10 @@ export default function MembersPage() {
           </div>
           <div className="flex space-x-2 overflow-x-auto pb-1 -mx-1 px-1 no-scrollbar">
             {[
-              { id: "all", label: "All", count: displayStats.total },
-              { id: "active", label: "Active", count: displayStats.active },
-              { id: "expired", label: "Expired", count: displayStats.expired },
-              { id: "inactive", label: "Inactive", count: displayStats.total - displayStats.active - displayStats.expired }
+              { id: "all", label: "All", count: stats.total },
+              { id: "active", label: "Active", count: stats.active },
+              { id: "expired", label: "Expired", count: stats.expired },
+              { id: "inactive", label: "Inactive", count: stats.total - stats.active - stats.expired }
             ].map((filter) => (
               <button
                 key={filter.id}
@@ -709,7 +617,7 @@ export default function MembersPage() {
                           <div className="flex-1">
                             <p className="text-xs text-gray-500">Pending Payment</p>
                             <p className="text-sm font-semibold text-amber-600">
-                              {canViewMemberDues ? `₹${member.dueAmount}` : '*****'}
+                              {canViewFinance ? `₹${member.dueAmount}` : '*****'}
                             </p>
                           </div>
                         </div>
@@ -755,14 +663,16 @@ export default function MembersPage() {
                         </button>
                       )}
                       
-                      <button
-                        onClick={(e) => handleDeleteMember(e, member)}
-                        className="flex-shrink-0 px-3 py-2 bg-red-50 cursor-pointer text-red-700 text-xs font-medium rounded-lg active:bg-red-100 transition-all flex items-center gap-2"
-                        style={{ minHeight: '36px' }}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        Delete
-                      </button>
+                      {!isTrainer && (
+                        <button
+                          onClick={(e) => handleDeleteMember(e, member)}
+                          className="flex-shrink-0 px-3 py-2 bg-red-50 cursor-pointer text-red-700 text-xs font-medium rounded-lg active:bg-red-100 transition-all flex items-center gap-2"
+                          style={{ minHeight: '36px' }}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Delete
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

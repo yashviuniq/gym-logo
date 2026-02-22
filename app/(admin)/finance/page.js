@@ -68,27 +68,42 @@ export default function FinancePage() {
   const fetchFinancialData = async (gymId) => {
     setLoading(true);
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const firstDayOfMonth = new Date();
-      firstDayOfMonth.setDate(1);
+      const now = new Date();
 
-      let startDate = today;
-      let endDate = today;
-      
-      if (dateFilter === "week") {
-        const weekStart = new Date();
-        weekStart.setDate(weekStart.getDate() - 7);
-        startDate = weekStart.toISOString().split('T')[0];
+      // Build proper start/end as full ISO timestamps (start of day → end of day)
+      let periodStart, periodEnd;
+
+      if (dateFilter === "today") {
+        periodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+        periodEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+      } else if (dateFilter === "week") {
+        const weekAgo = new Date(now);
+        weekAgo.setDate(weekAgo.getDate() - 6); // last 7 days including today
+        periodStart = new Date(weekAgo.getFullYear(), weekAgo.getMonth(), weekAgo.getDate(), 0, 0, 0, 0);
+        periodEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
       } else if (dateFilter === "month") {
-        startDate = firstDayOfMonth.toISOString().split('T')[0];
+        periodStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+        periodEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
       } else if (dateFilter === "custom") {
         if (!customStartDate || !customEndDate) {
           setLoading(false);
           return;
         }
-        startDate = customStartDate;
-        endDate = customEndDate;
+        const [sy, sm, sd] = customStartDate.split('-').map(Number);
+        const [ey, em, ed] = customEndDate.split('-').map(Number);
+        periodStart = new Date(sy, sm - 1, sd, 0, 0, 0, 0);
+        periodEnd = new Date(ey, em - 1, ed, 23, 59, 59, 999);
+      } else {
+        // fallback: today
+        periodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+        periodEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
       }
+
+      const startISO = periodStart.toISOString();
+      const endISO = periodEnd.toISOString();
+      // Date-only strings for expense_date column (DATE type, not TIMESTAMPTZ)
+      const startDateStr = periodStart.toISOString().split('T')[0];
+      const endDateStr = periodEnd.toISOString().split('T')[0];
 
       let paymentsQuery = supabase
         .from("payments")
@@ -107,23 +122,9 @@ export default function FinancePage() {
             phone
           )
         `)
-        .eq("gym_id", gymId);
-      
-      // Apply date filtering
-      if (dateFilter === "custom") {
-        // For custom dates, ensure proper start and end of day
-        const startDateTime = new Date(startDate);
-        startDateTime.setHours(0, 0, 0, 0);
-        
-        const endDateTime = new Date(endDate);
-        endDateTime.setHours(23, 59, 59, 999);
-        
-        paymentsQuery = paymentsQuery
-          .gte("created_at", startDateTime.toISOString())
-          .lte("created_at", endDateTime.toISOString());
-      } else {
-        paymentsQuery = paymentsQuery.gte("created_at", startDate);
-      }
+        .eq("gym_id", gymId)
+        .gte("created_at", startISO)
+        .lte("created_at", endISO);
       
       const { data: payments, error: paymentsError } = await paymentsQuery.order("created_at", { ascending: false });
 
@@ -146,16 +147,9 @@ export default function FinancePage() {
       let expensesQuery = supabase
         .from("expenses")
         .select("amount")
-        .eq("gym_id", gymId);
-      
-      // Apply date filtering for expenses
-      if (dateFilter === "custom") {
-        expensesQuery = expensesQuery
-          .gte("expense_date", startDate)
-          .lte("expense_date", endDate);
-      } else {
-        expensesQuery = expensesQuery.gte("expense_date", startDate);
-      }
+        .eq("gym_id", gymId)
+        .gte("expense_date", startDateStr)
+        .lte("expense_date", endDateStr);
       
       const { data: expensesData, error: expensesError } = await expensesQuery;
 
@@ -172,29 +166,31 @@ export default function FinancePage() {
       }
 
       if (!paymentsError && payments) {
-        let todayPayments;
-        if (dateFilter === "custom") {
-          // For custom range, show all payments in the range
-          todayPayments = payments;
-        } else {
-          // For other filters, show actual today's payments
-          todayPayments = payments.filter(p => 
-            new Date(p.created_at).toDateString() === new Date().toDateString()
-          );
-        }
-        
-        const todayCollection = todayPayments.reduce((sum, p) => sum + p.amount, 0);
+        // All payments returned are already filtered by the selected period
         const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
 
-        const monthlyExpenses = expensesData?.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0) || 0;
+        // Today's collection: for "today" filter it equals totalRevenue;
+        // for other filters, compute from today's subset
+        let todayCollection;
+        if (dateFilter === "today") {
+          todayCollection = totalRevenue;
+        } else if (dateFilter === "custom") {
+          todayCollection = totalRevenue; // show full period total in the card
+        } else {
+          const todayStr = new Date().toDateString();
+          todayCollection = payments
+            .filter(p => new Date(p.created_at).toDateString() === todayStr)
+            .reduce((sum, p) => sum + p.amount, 0);
+        }
 
-        setFinancialData(prev => ({
-          ...prev,
+        const totalExpenses = expensesData?.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0) || 0;
+
+        setFinancialData({
           todayCollection,
-          monthlyRevenue: dateFilter === "month" ? totalRevenue : prev.monthlyRevenue,
+          monthlyRevenue: totalRevenue,
           pendingDues: membersData?.reduce((sum, m) => sum + (m.balance || 0), 0) || 0,
-          monthlyExpenses: monthlyExpenses,
-        }));
+          monthlyExpenses: totalExpenses,
+        });
 
         // Fetch trainer names for payments collected by trainers
         const collectorIds = [...new Set(payments.filter(p => p.collected_by).map(p => p.collected_by))];
@@ -862,23 +858,33 @@ function ExpensesSection({ router, selectedGym, dateFilter }) {
     if (selectedGym) {
       fetchExpenses(selectedGym.id);
     }
-  }, [selectedGym, dateFilter]);
+  }, [selectedGym, dateFilter, customStartDate, customEndDate]);
 
   const fetchExpenses = async (gymId) => {
     try {
       setLoading(true);
       
-      const today = new Date();
-      let startDate = today.toISOString().split('T')[0];
+      const now = new Date();
+      let startDate, endDate;
       
-      if (dateFilter === "week") {
-        const weekStart = new Date();
-        weekStart.setDate(weekStart.getDate() - 7);
+      if (dateFilter === "today") {
+        startDate = now.toISOString().split('T')[0];
+        endDate = startDate;
+      } else if (dateFilter === "week") {
+        const weekStart = new Date(now);
+        weekStart.setDate(weekStart.getDate() - 6);
         startDate = weekStart.toISOString().split('T')[0];
+        endDate = now.toISOString().split('T')[0];
       } else if (dateFilter === "month") {
-        const firstDayOfMonth = new Date();
-        firstDayOfMonth.setDate(1);
+        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         startDate = firstDayOfMonth.toISOString().split('T')[0];
+        endDate = now.toISOString().split('T')[0];
+      } else if (dateFilter === "custom") {
+        startDate = customStartDate;
+        endDate = customEndDate;
+      } else {
+        startDate = now.toISOString().split('T')[0];
+        endDate = startDate;
       }
 
       const { data, error } = await supabase
@@ -886,6 +892,7 @@ function ExpensesSection({ router, selectedGym, dateFilter }) {
         .select("*")
         .eq("gym_id", gymId)
         .gte("expense_date", startDate)
+        .lte("expense_date", endDate)
         .order("expense_date", { ascending: false })
         .order("created_at", { ascending: false });
 

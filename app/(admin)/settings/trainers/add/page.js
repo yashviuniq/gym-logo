@@ -17,8 +17,18 @@ import {
   AlertCircle,
   CheckCircle,
   Eye,
-  EyeOff
+  EyeOff,
+  IndianRupee,
+  CalendarDays,
+  Clock,
+  Plus,
+  X as XIcon
 } from "lucide-react";
+import {
+  DAYS_OF_WEEK,
+  ALL_TIME_SLOTS,
+  buildTimeSlotsForDays
+} from "@/lib/constants/trainerSchedule";
 
 export default function AddTrainerPage() {
   const router = useRouter();
@@ -37,7 +47,10 @@ export default function AddTrainerPage() {
     password: "",
     confirmPassword: "",
     specialization: "",
-    bio: ""
+    bio: "",
+    trainerCost: "",
+    availableDays: [],
+    availableTimeSlots: {}
   });
 
   const [errors, setErrors] = useState({});
@@ -136,7 +149,27 @@ export default function AddTrainerPage() {
         throw profileError;
       }
 
-      // 2. Create gym_trainer association
+      // 2. Update trainer-specific fields on profile
+      const trainerCostNum = formData.trainerCost ? parseInt(formData.trainerCost, 10) : null;
+      const availableDays = formData.availableDays.length > 0 ? formData.availableDays : null;
+      const availableTimeSlots = formData.availableDays.length > 0 ? formData.availableTimeSlots : null;
+
+      if (trainerCostNum !== null || availableDays || availableTimeSlots) {
+        const { error: scheduleError } = await supabase
+          .from("profiles")
+          .update({
+            trainer_cost: trainerCostNum,
+            available_days: availableDays,
+            available_time_slots: availableTimeSlots
+          })
+          .eq("id", profileData.id);
+
+        if (scheduleError) {
+          console.error("Error setting trainer schedule:", scheduleError);
+        }
+      }
+
+      // 3. Create gym_trainer association
       const { error: trainerError } = await supabase
         .from("gym_trainers")
         .insert({
@@ -172,6 +205,29 @@ export default function AddTrainerPage() {
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: "" }));
     }
+  };
+
+  const toggleDay = (day) => {
+    setFormData(prev => {
+      const newDays = prev.availableDays.includes(day)
+        ? prev.availableDays.filter(d => d !== day)
+        : [...prev.availableDays, day];
+      const newSlots = buildTimeSlotsForDays(newDays, prev.availableTimeSlots);
+      return { ...prev, availableDays: newDays, availableTimeSlots: newSlots };
+    });
+  };
+
+  const toggleTimeSlot = (day, slot) => {
+    setFormData(prev => {
+      const daySlots = prev.availableTimeSlots[day] || [];
+      const updated = daySlots.includes(slot)
+        ? daySlots.filter(s => s !== slot)
+        : [...daySlots, slot];
+      return {
+        ...prev,
+        availableTimeSlots: { ...prev.availableTimeSlots, [day]: updated }
+      };
+    });
   };
 
   const specializations = [
@@ -409,6 +465,97 @@ export default function AddTrainerPage() {
                 />
               </div>
             </div>
+
+            {/* Trainer Cost */}
+            <div className="mt-3">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Cost Per Hour (₹)
+              </label>
+              <div className="relative">
+                <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="number"
+                  min="0"
+                  step="50"
+                  value={formData.trainerCost}
+                  onChange={(e) => handleChange("trainerCost", e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="e.g. 500"
+                />
+              </div>
+              <p className="text-gray-500 text-xs mt-1">Hourly rate charged to members</p>
+            </div>
+          </div>
+
+          {/* Availability Schedule */}
+          <div className="bg-white rounded-xl p-4 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <CalendarDays className="w-5 h-5 text-green-600" />
+              <h3 className="font-semibold text-gray-900">Availability Schedule</h3>
+            </div>
+
+            {/* Day Selection */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Available Days
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {DAYS_OF_WEEK.map((day) => (
+                  <button
+                    key={day}
+                    type="button"
+                    onClick={() => toggleDay(day)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      formData.availableDays.includes(day)
+                        ? "bg-green-600 text-white shadow-sm"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    {day.slice(0, 3)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Time Slots Per Day */}
+            {formData.availableDays.length > 0 && (
+              <div className="space-y-4">
+                <label className="block text-sm font-medium text-gray-700">
+                  <Clock className="inline w-4 h-4 mr-1 text-gray-400" />
+                  Time Slots (select per day)
+                </label>
+                {formData.availableDays.map((day) => (
+                  <div key={day} className="border border-gray-100 rounded-xl p-3">
+                    <h4 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                      <CalendarDays className="w-4 h-4 text-green-500" />
+                      {day}
+                      <span className="text-xs text-gray-500 font-normal">
+                        ({(formData.availableTimeSlots[day] || []).length} slots)
+                      </span>
+                    </h4>
+                    <div className="flex flex-wrap gap-1.5">
+                      {ALL_TIME_SLOTS.map((slot) => {
+                        const isSelected = (formData.availableTimeSlots[day] || []).includes(slot);
+                        return (
+                          <button
+                            key={slot}
+                            type="button"
+                            onClick={() => toggleTimeSlot(day, slot)}
+                            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                              isSelected
+                                ? "bg-blue-600 text-white"
+                                : "bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200"
+                            }`}
+                          >
+                            {slot}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Submit Button */}

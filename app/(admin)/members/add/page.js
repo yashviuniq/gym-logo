@@ -396,6 +396,7 @@ export default function AddMemberPage() {
           amount: paymentAmount,
           payment_mode: formData.paymentMode,
           status: "paid",
+          paid_at: new Date(formData.startDate + 'T00:00:00').toISOString(),
           notes: formData.notes || null,
           updated_by: createdBy,
           collected_by: collectedBy,

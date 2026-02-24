@@ -10,6 +10,7 @@ import ResolvePendingPaymentModal from "@/components/shared/ResolvePendingPaymen
 import AssignDietPlanModal from "@/components/shared/AssignDietPlanModal";
 import AssignWorkoutPlanModal from "@/components/shared/AssignWorkoutPlanModal";
 import AssignTrainerModal from "@/components/shared/AssignTrainerModal";
+import AssignAmenityModal from "@/components/shared/AssignAmenityModal";
 import {
   Phone,
   Mail,
@@ -42,7 +43,8 @@ import {
   Apple,
   Edit2,
   Trash2 as TrashIcon,
-  Eye as EyeIcon
+  Eye as EyeIcon,
+  Package
 } from "lucide-react";
 import { useToast } from "@/contexts/ToastContext";
 import { useUserRole } from "@/lib/hooks/useUserRole";
@@ -58,6 +60,7 @@ export default function MemberDetailPage() {
   const [showAssignDietModal, setShowAssignDietModal] = useState(false);
   const [showAssignWorkoutModal, setShowAssignWorkoutModal] = useState(false);
   const [showAssignTrainerModal, setShowAssignTrainerModal] = useState(false);
+  const [showAssignAmenityModal, setShowAssignAmenityModal] = useState(false);
   const [selectedPendingPayment, setSelectedPendingPayment] = useState(null);
   const [member, setMember] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -233,7 +236,7 @@ export default function MemberDetailPage() {
       await fetchAssignedWorkoutPlans(memberId);
 
       // Fetch assigned trainer
-      await fetchAssignedTrainer(memberId);
+      await fetchAssignedTrainer(memberId, gymId);
 
       // Fetch next payment info for partial payments
       await fetchNextPaymentInfo(memberId);
@@ -340,12 +343,15 @@ export default function MemberDetailPage() {
     }
   };
 
-  const fetchAssignedTrainer = async (memberId) => {
+  const fetchAssignedTrainer = async (memberId, gymId) => {
     try {
       const { data, error } = await supabase
         .from("trainer_member_assignments")
         .select(`
           trainer_id,
+          plan_end_date,
+          plan_start_date,
+          trainer_plan_id,
           profiles:trainer_id (
             id,
             first_name,
@@ -358,10 +364,51 @@ export default function MemberDetailPage() {
         .maybeSingle();
 
       if (!error && data) {
+        // Calculate trainer plan days remaining
+        let trainerPlanDaysRemaining = null;
+        if (data.plan_end_date) {
+          const endDate = new Date(data.plan_end_date);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          endDate.setHours(0, 0, 0, 0);
+          trainerPlanDaysRemaining = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
+        }
+
+        // Fetch trainer bookings (schedule) for this member
+        let trainerSchedule = [];
+        const resolvedGymId = gymId || selectedGym?.id;
+        if (resolvedGymId) {
+          const { data: bookingsData } = await supabase
+            .from("trainer_bookings")
+            .select("day, time_slot")
+            .eq("member_id", memberId)
+            .eq("gym_id", resolvedGymId)
+            .eq("is_active", true)
+            .order("day");
+
+        if (bookingsData && bookingsData.length > 0) {
+          // Group by day
+          const grouped = {};
+          const dayOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+          bookingsData.forEach((b) => {
+            if (!grouped[b.day]) grouped[b.day] = [];
+            grouped[b.day].push(b.time_slot);
+          });
+          trainerSchedule = dayOrder
+            .filter(d => grouped[d])
+            .map(d => ({ day: d, slots: grouped[d] }));
+        }
+        }
+
         setAssignedTrainer({
           trainerId: data.trainer_id,
           name: `${data.profiles?.first_name || ""} ${data.profiles?.last_name || ""}`.trim(),
-          phone: data.profiles?.phone
+          phone: data.profiles?.phone,
+          planEndDate: data.plan_end_date,
+          planStartDate: data.plan_start_date,
+          trainerPlanId: data.trainer_plan_id,
+          trainerPlanDaysRemaining: trainerPlanDaysRemaining,
+          schedule: trainerSchedule,
         });
       } else {
         setAssignedTrainer(null);
@@ -760,14 +807,27 @@ export default function MemberDetailPage() {
           </button>
         </div>
 
-        {/* Trainer Assignment Button */}
-        <button
-          onClick={() => setShowAssignTrainerModal(true)}
-          className="w-full p-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 active:scale-95"
-        >
-          <Users className="w-4 h-4" />
-          <span>{assignedTrainer ? "Change Trainer" : "Assign Trainer"}</span>
-        </button>
+        {/* Trainer Assignment Button - hidden for trainers */}
+        {!isTrainer && (
+          <button
+            onClick={() => setShowAssignTrainerModal(true)}
+            className="w-full p-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 active:scale-95"
+          >
+            <Users className="w-4 h-4" />
+            <span>{assignedTrainer ? "Change Trainer" : "Assign Trainer"}</span>
+          </button>
+        )}
+
+        {/* Assign Amenity Button - hidden for trainers */}
+        {!isTrainer && (
+          <button
+            onClick={() => setShowAssignAmenityModal(true)}
+            className="w-full p-3 bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 active:scale-95"
+          >
+            <Package className="w-4 h-4" />
+            <span>Assign Amenity</span>
+          </button>
+        )}
 
         {/* Edit and Delete Buttons */}
         <div className={`grid ${isTrainer ? 'grid-cols-1' : 'grid-cols-2'} gap-3`}>
@@ -835,6 +895,35 @@ export default function MemberDetailPage() {
 
         {/* Tab Content */}
         {activeTab === "overview" && (
+          <div className="space-y-4">
+            {/* Training Schedule Card - Prominent for trainers */}
+            {assignedTrainer?.schedule?.length > 0 && (
+              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-200 shadow-sm p-4">
+                <h3 className="font-semibold text-purple-900 flex items-center gap-2 mb-3">
+                  <Clock className="w-4 h-4 text-purple-600" />
+                  Training Schedule
+                  {isTrainer && <span className="text-xs font-normal text-purple-500 ml-1">— your sessions with {member.name}</span>}
+                </h3>
+                <div className="space-y-2">
+                  {assignedTrainer.schedule.map((s) => (
+                    <div key={s.day} className="flex items-center gap-3 bg-white/70 rounded-lg px-3 py-2">
+                      <span className="text-sm font-bold text-purple-700 w-12">{s.day.slice(0, 3)}</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {s.slots.map((slot) => (
+                          <span
+                            key={slot}
+                            className="px-2.5 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full"
+                          >
+                            {slot}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-4">
             <h3 className="font-semibold text-gray-900">Personal Information</h3>
             <div className="grid grid-cols-2 gap-4">
@@ -1101,9 +1190,61 @@ export default function MemberDetailPage() {
                       </button>
                     )}
                   </div>
+                  {/* Trainer Plan Expiry */}
+                  {assignedTrainer.trainerPlanDaysRemaining !== null && (
+                    <div className="mt-2 pt-2 border-t border-purple-200">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-3.5 h-3.5 text-purple-400" />
+                        <span className={`text-xs font-medium ${
+                          assignedTrainer.trainerPlanDaysRemaining <= 0 
+                            ? 'text-red-600' 
+                            : assignedTrainer.trainerPlanDaysRemaining <= 7 
+                              ? 'text-amber-600' 
+                              : 'text-purple-600'
+                        }`}>
+                          {assignedTrainer.trainerPlanDaysRemaining > 0 
+                            ? `Trainer plan expires in ${assignedTrainer.trainerPlanDaysRemaining} days`
+                            : 'Trainer plan expired'}
+                        </span>
+                      </div>
+                      {assignedTrainer.planEndDate && (
+                        <p className="text-[10px] text-gray-400 ml-5.5 mt-0.5">
+                          Valid till: {new Date(assignedTrainer.planEndDate).toLocaleDateString("en-IN")}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Training Schedule */}
+                  {assignedTrainer.schedule && assignedTrainer.schedule.length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-purple-200">
+                      <p className="text-xs font-semibold text-purple-700 mb-2 flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5" />
+                        Training Schedule
+                      </p>
+                      <div className="space-y-1.5">
+                        {assignedTrainer.schedule.map((s) => (
+                          <div key={s.day} className="flex items-start gap-2">
+                            <span className="text-xs font-semibold text-gray-700 w-20 flex-shrink-0">{s.day.slice(0, 3)}</span>
+                            <div className="flex flex-wrap gap-1">
+                              {s.slots.map((slot) => (
+                                <span
+                                  key={slot}
+                                  className="px-2 py-0.5 bg-purple-100 text-purple-700 text-[11px] font-medium rounded-full"
+                                >
+                                  {slot}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
+          </div>
           </div>
         )}
 
@@ -1284,7 +1425,20 @@ export default function MemberDetailPage() {
           selectedGym={selectedGym}
           currentTrainerId={assignedTrainer?.trainerId}
           onSuccess={() => {
-            fetchAssignedTrainer(member.id);
+            fetchAssignedTrainer(member.id, selectedGym?.id);
+          }}
+        />
+      )}
+
+      {showAssignAmenityModal && (
+        <AssignAmenityModal
+          isOpen={showAssignAmenityModal}
+          onClose={() => setShowAssignAmenityModal(false)}
+          memberId={member?.id}
+          memberName={member?.full_name}
+          selectedGym={selectedGym}
+          onSuccess={() => {
+            fetchMemberDetails(member.id, selectedGym.id);
           }}
         />
       )}

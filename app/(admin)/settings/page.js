@@ -39,7 +39,8 @@ import {
   CreditCard,
   Key,
   Trash2,
-  RefreshCw
+  RefreshCw,
+  Package
 } from "lucide-react";
 
 const settingsSections = [
@@ -94,9 +95,17 @@ const settingsSections = [
   {
     id: "trainers",
     title: "Trainers",
-    description: "Manage trainers and member assignments",
+    description: "Manage trainers, plans & member assignments",
     icon: Shield,
     href: "/settings/trainers",
+    color: "from-blue-600 to-indigo-600"
+  },
+  {
+    id: "amenities",
+    title: "Gym Amenities",
+    description: "Locker, towel, parking & other amenities",
+    icon: Package,
+    href: "/settings/amenities",
     color: "from-blue-600 to-indigo-600"
   },
 ];

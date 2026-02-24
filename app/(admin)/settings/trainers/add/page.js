@@ -18,7 +18,6 @@ import {
   CheckCircle,
   Eye,
   EyeOff,
-  IndianRupee,
   CalendarDays,
   Clock,
   Plus,
@@ -48,7 +47,6 @@ export default function AddTrainerPage() {
     confirmPassword: "",
     specialization: "",
     bio: "",
-    trainerCost: "",
     availableDays: [],
     availableTimeSlots: {}
   });
@@ -127,6 +125,30 @@ export default function AddTrainerPage() {
       const { data: authData } = await supabase.auth.getUser();
       const createdBy = authData?.user?.id;
 
+      // Check for duplicate email
+      const { data: existingEmail } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("email", formData.email.trim().toLowerCase())
+        .eq("gym_id", selectedGym.id)
+        .limit(1);
+
+      if (existingEmail && existingEmail.length > 0) {
+        throw new Error("A user with this email already exists in this gym");
+      }
+
+      // Check for duplicate phone
+      const { data: existingPhone } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("phone", formData.phone.trim())
+        .eq("gym_id", selectedGym.id)
+        .limit(1);
+
+      if (existingPhone && existingPhone.length > 0) {
+        throw new Error("A user with this phone number already exists in this gym");
+      }
+
       // 1. Create profile for the trainer
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
@@ -144,21 +166,19 @@ export default function AddTrainerPage() {
 
       if (profileError) {
         if (profileError.message.includes("duplicate")) {
-          throw new Error("A user with this email already exists");
+          throw new Error("A user with this email or phone number already exists");
         }
         throw profileError;
       }
 
       // 2. Update trainer-specific fields on profile
-      const trainerCostNum = formData.trainerCost ? parseInt(formData.trainerCost, 10) : null;
       const availableDays = formData.availableDays.length > 0 ? formData.availableDays : null;
       const availableTimeSlots = formData.availableDays.length > 0 ? formData.availableTimeSlots : null;
 
-      if (trainerCostNum !== null || availableDays || availableTimeSlots) {
+      if (availableDays || availableTimeSlots) {
         const { error: scheduleError } = await supabase
           .from("profiles")
           .update({
-            trainer_cost: trainerCostNum,
             available_days: availableDays,
             available_time_slots: availableTimeSlots
           })
@@ -466,25 +486,7 @@ export default function AddTrainerPage() {
               </div>
             </div>
 
-            {/* Trainer Cost */}
-            <div className="mt-3">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Cost Per Hour (₹)
-              </label>
-              <div className="relative">
-                <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="number"
-                  min="0"
-                  step="50"
-                  value={formData.trainerCost}
-                  onChange={(e) => handleChange("trainerCost", e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="e.g. 500"
-                />
-              </div>
-              <p className="text-gray-500 text-xs mt-1">Hourly rate charged to members</p>
-            </div>
+
           </div>
 
           {/* Availability Schedule */}

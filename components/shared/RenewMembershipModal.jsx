@@ -195,7 +195,7 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
                         amount: paymentAmountNum,
                         payment_mode: paymentMode,
                         status: "paid",
-                        paid_at: new Date().toISOString()
+                        paid_at: new Date(startDate + 'T00:00:00').toISOString()
                     })
                     .select("id")
                     .single();

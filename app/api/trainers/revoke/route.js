@@ -17,6 +17,12 @@ export async function POST(request) {
     });
 
     if (error) {
+      // If the trainer was created directly in profiles (not via Supabase Auth),
+      // there's no auth user to ban — that's fine, no active session to revoke.
+      if (error.status === 404 || error.code === "user_not_found") {
+        console.warn("Trainer has no auth user, skipping session revoke");
+        return NextResponse.json({ success: true, skipped: true });
+      }
       console.error("Failed to revoke trainer sessions", error);
       return NextResponse.json({ error: "Failed to revoke sessions" }, { status: 500 });
     }

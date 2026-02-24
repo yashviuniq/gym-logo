@@ -123,10 +123,10 @@ export default function FinancePage() {
           )
         `)
         .eq("gym_id", gymId)
-        .gte("created_at", startISO)
-        .lte("created_at", endISO);
+        .gte("paid_at", startISO)
+        .lte("paid_at", endISO);
       
-      const { data: payments, error: paymentsError } = await paymentsQuery.order("created_at", { ascending: false });
+      const { data: payments, error: paymentsError } = await paymentsQuery.order("paid_at", { ascending: false });
 
       const { data: membersData, error: membersError } = await supabase
         .from("members")
@@ -179,7 +179,7 @@ export default function FinancePage() {
         } else {
           const todayStr = new Date().toDateString();
           todayCollection = payments
-            .filter(p => new Date(p.created_at).toDateString() === todayStr)
+            .filter(p => new Date(p.paid_at || p.created_at).toDateString() === todayStr)
             .reduce((sum, p) => sum + p.amount, 0);
         }
 
@@ -244,7 +244,7 @@ export default function FinancePage() {
             type: "membership",
             amount: payment.amount,
             mode: payment.payment_mode,
-            date: formatDate(payment.created_at),
+            date: formatDate(payment.paid_at || payment.created_at),
             status: payment.status,
             collectedBy: collectorName || null,
             collectedByFallback: payment.collected_by || null,

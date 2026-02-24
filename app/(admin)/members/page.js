@@ -34,9 +34,12 @@ import {
 
 export default function MembersPage() {
   const router = useRouter();
-  const { canViewFinance, isTrainer } = useUserRole();
+  const { canViewFinance, isTrainer, user } = useUserRole();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [showMyMembers, setShowMyMembers] = useState(false);
+  const [myMemberIds, setMyMemberIds] = useState(new Set());
+  const [myMembersLoading, setMyMembersLoading] = useState(false);
   const [selectedGym, setSelectedGym] = useState(null);
   const [showRenewModal, setShowRenewModal] = useState(false);
   const [showShareReceiptModal, setShowShareReceiptModal] = useState(false);
@@ -162,7 +165,50 @@ export default function MembersPage() {
         };
       });
 
-      setRawMembers(enrichedMembers);
+      // Fetch active trainer assignments with plan_end_date for all members
+      const memberIds = memberData.map(m => m.id);
+      let trainerAssignmentsMap = {};
+      if (memberIds.length > 0) {
+        const { data: assignmentsData } = await supabase
+          .from("trainer_member_assignments")
+          .select(`
+            member_id,
+            plan_end_date,
+            profiles:trainer_id (
+              first_name,
+              last_name
+            )
+          `)
+          .in("member_id", memberIds)
+          .eq("is_active", true);
+
+        if (assignmentsData) {
+          trainerAssignmentsMap = assignmentsData.reduce((acc, a) => {
+            let trainerPlanDaysRemaining = null;
+            if (a.plan_end_date) {
+              const endDate = new Date(a.plan_end_date);
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              endDate.setHours(0, 0, 0, 0);
+              trainerPlanDaysRemaining = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
+            }
+            acc[a.member_id] = {
+              trainerName: `${a.profiles?.first_name || ""} ${a.profiles?.last_name || ""}`.trim(),
+              planEndDate: a.plan_end_date,
+              trainerPlanDaysRemaining
+            };
+            return acc;
+          }, {});
+        }
+      }
+
+      // Merge trainer assignment info into members
+      const finalMembers = enrichedMembers.map(member => ({
+        ...member,
+        trainerAssignment: trainerAssignmentsMap[member.id] || null
+      }));
+
+      setRawMembers(finalMembers);
 
       // Debug log to see what's happening
       console.log("Creator IDs found:", creatorIds);
@@ -186,6 +232,30 @@ export default function MembersPage() {
       fetchMembers(selectedGym.id);
     }
   }, [selectedGym?.id]);
+
+  // Fetch trainer's assigned member IDs
+  useEffect(() => {
+    const fetchMyMembers = async () => {
+      if (!isTrainer || !user?.id || !selectedGym?.id) return;
+      setMyMembersLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("trainer_member_assignments")
+          .select("member_id")
+          .eq("trainer_id", user.id)
+          .eq("gym_id", selectedGym.id)
+          .eq("is_active", true);
+
+        if (!error && data) {
+          setMyMemberIds(new Set(data.map(d => d.member_id)));
+        }
+      } catch (err) {
+        console.error("Error fetching my assigned members:", err);
+      }
+      setMyMembersLoading(false);
+    };
+    fetchMyMembers();
+  }, [isTrainer, user?.id, selectedGym?.id]);
 
   // Fetch credentials for members
   useEffect(() => {
@@ -253,6 +323,7 @@ export default function MembersPage() {
         hasCredentials: membersWithCredentials.has(member.id),
         daysRemaining: daysRemaining,
         createdByTrainerName: member.createdByTrainerName || null,
+        trainerAssignment: member.trainerAssignment || null,
       };
     });
   }, [rawMembers, membersWithCredentials]);
@@ -278,7 +349,9 @@ export default function MembersPage() {
       (member.email && member.email.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesFilter =
       filterStatus === "all" || member.status === filterStatus;
-    return matchesSearch && matchesFilter;
+    const matchesMyMembers =
+      !showMyMembers || myMemberIds.has(member.id);
+    return matchesSearch && matchesFilter && matchesMyMembers;
   });
 
   const getStatusConfig = (status) => {
@@ -480,6 +553,29 @@ export default function MembersPage() {
           </button>
         </div>
 
+        {/* My Members Toggle for Trainers */}
+        {isTrainer && (
+          <div className="bg-white rounded-xl p-3 mx-1">
+            <button
+              onClick={() => setShowMyMembers(!showMyMembers)}
+              className={`w-full py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
+                showMyMembers
+                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+              style={{ minHeight: '40px' }}
+            >
+              <UserCheck className="w-4 h-4" />
+              {showMyMembers ? "Showing My Members" : "My Members"}
+              <span className={`px-2 py-0.5 text-xs rounded-full ${
+                showMyMembers ? "bg-white/20" : "bg-white text-gray-600"
+              }`}>
+                {myMembersLoading ? "..." : myMemberIds.size}
+              </span>
+            </button>
+          </div>
+        )}
+
         {/* Filter Tabs - Horizontal Scroll on Mobile */}
         <div className="bg-white rounded-xl p-3 mx-1">
           <div className="flex items-center gap-2 mb-2">
@@ -605,6 +701,24 @@ export default function MembersPage() {
                             {member.daysRemaining > 0 
                               ? `${member.daysRemaining} days remaining`
                               : 'Membership expired'}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Show trainer plan expiry */}
+                      {member.trainerAssignment && member.trainerAssignment.trainerPlanDaysRemaining !== null && (
+                        <div className="flex items-center gap-2">
+                          <Users className="w-4 h-4 text-purple-400" />
+                          <span className={`text-xs ${
+                            member.trainerAssignment.trainerPlanDaysRemaining <= 0 
+                              ? 'text-red-600 font-semibold' 
+                              : member.trainerAssignment.trainerPlanDaysRemaining <= 7 
+                                ? 'text-amber-600 font-semibold' 
+                                : 'text-purple-600'
+                          }`}>
+                            {member.trainerAssignment.trainerPlanDaysRemaining > 0 
+                              ? `Trainer plan: ${member.trainerAssignment.trainerPlanDaysRemaining} days remaining`
+                              : 'Trainer plan expired'}
                           </span>
                         </div>
                       )}

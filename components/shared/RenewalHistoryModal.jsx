@@ -61,34 +61,42 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose })
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className="font-bold text-gray-900">₹{renewal.price}</p>
+                                            <p className="font-bold text-gray-900">₹{renewal.planPrice || renewal.price}</p>
                                             <p className="text-xs text-gray-500">{renewal.duration} days</p>
                                         </div>
                                     </div>
 
-                                    {renewal.paymentAmount > 0 ? (
-                                        <div className="grid grid-cols-2 gap-3 text-sm">
-                                            <div className="bg-gray-50 rounded-lg p-2">
-                                                <p className="text-xs text-gray-600">Amount Paid</p>
-                                                <p className="font-medium text-gray-900">
-                                                    ₹{renewal.paymentAmount}
-                                                </p>
-                                            </div>
-                                            <div className="bg-gray-50 rounded-lg p-2">
-                                                <p className="text-xs text-gray-600">Payment Mode</p>
-                                                <p className="font-medium text-gray-900 capitalize">
-                                                    {renewal.paymentMode}
-                                                </p>
-                                            </div>
+                                    {/* Price Breakdown */}
+                                    <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-3 space-y-1.5">
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-gray-600">Plan Price</span>
+                                            <span className={`font-medium ${renewal.customPrice ? 'line-through text-gray-400' : 'text-gray-900'}`}>
+                                                ₹{renewal.planPrice || renewal.price}
+                                            </span>
                                         </div>
-                                    ) : (
-                                        <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-sm">
-                                            <p className="text-orange-800 font-medium flex items-center gap-2">
-                                                <span>⚠️</span>
-                                                <span>No payment recorded for this renewal</span>
-                                            </p>
-                                            <p className="text-orange-600 text-xs mt-1">
-                                                Full amount of ₹{renewal.price} is pending
+                                        {renewal.customPrice && (
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-blue-600 font-medium">Custom Price Applied</span>
+                                                <span className="font-semibold text-blue-700">₹{renewal.customPrice}</span>
+                                            </div>
+                                        )}
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-green-600">Paid</span>
+                                            <span className="font-medium text-green-700">₹{renewal.paymentAmount || 0}</span>
+                                        </div>
+                                        <div className="flex justify-between text-sm border-t border-blue-200 pt-1.5">
+                                            <span className={`font-medium ${(renewal.dueAmount || 0) > 0 ? 'text-orange-600' : 'text-green-600'}`}>Due</span>
+                                            <span className={`font-semibold ${(renewal.dueAmount || 0) > 0 ? 'text-orange-700' : 'text-green-700'}`}>
+                                                ₹{renewal.dueAmount || 0}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {renewal.paymentAmount > 0 && (
+                                        <div className="bg-gray-50 rounded-lg p-2 text-sm">
+                                            <p className="text-xs text-gray-600">Payment Mode</p>
+                                            <p className="font-medium text-gray-900 capitalize">
+                                                {renewal.paymentMode}
                                             </p>
                                         </div>
                                     )}
@@ -113,11 +121,11 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose })
                                         </div>
                                     )}
 
-                                    {renewal.price - renewal.paymentAmount > 0 && (
+                                    {(renewal.dueAmount || 0) > 0 && renewal.paymentAmount <= 0 && (
                                         <div className="mt-2 flex items-center gap-1 text-xs text-orange-600 bg-orange-50 rounded-lg p-2">
                                             <span>⚠️</span>
                                             <span>
-                                                Due: ₹{renewal.price - renewal.paymentAmount}
+                                                No payment recorded - Full amount pending
                                             </span>
                                         </div>
                                     )}
@@ -159,7 +167,7 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose })
                                     <p className="text-xl font-bold text-orange-700">
                                         ₹
                                         {renewalHistory.reduce(
-                                            (sum, r) => sum + (r.price - r.paymentAmount),
+                                            (sum, r) => sum + (r.dueAmount || 0),
                                             0
                                         )}
                                     </p>

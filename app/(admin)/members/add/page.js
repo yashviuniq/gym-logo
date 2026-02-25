@@ -89,6 +89,7 @@ export default function AddMemberPage() {
     age: "",
     address: "",
     emergencyContact: "",
+    joinDate: new Date().toISOString().split("T")[0],
     planId: null,
     startDate: new Date().toISOString().split("T")[0],
     paymentAmount: "",
@@ -322,6 +323,7 @@ export default function AddMemberPage() {
           phone: formData.phone,
           email: formData.email || null,
           balance: Math.max(0, balanceOwed),
+          join_date: formData.joinDate,
           created_by: createdBy,
           created_by_name: createdByName,
           self_plan_edit_access: formData.selfPlanEditAccess,
@@ -367,17 +369,30 @@ export default function AddMemberPage() {
       }
 
       // 3. Create membership - always active since we don't allow future dates
-      const { error: membershipError } = await supabase
+      const totalPrice = formData.useCustomPrice && formData.customPrice
+        ? parseFloat(formData.customPrice)
+        : selectedPlan.price;
+      const dueForMembership = Math.max(0, totalPrice - paymentAmount);
+
+      const membershipInsert = {
+        member_id: member.id,
+        gym_id: selectedGym.id,
+        plan_id: formData.planId,
+        start_date: formData.startDate,
+        end_date: membershipEndDate,
+        status: "active",
+        updated_by: createdBy,
+        due_amount: dueForMembership,
+      };
+      if (formData.useCustomPrice && formData.customPrice) {
+        membershipInsert.custom_price = parseFloat(formData.customPrice);
+      }
+
+      const { data: membership, error: membershipError } = await supabase
         .from("memberships")
-        .insert({
-          member_id: member.id,
-          gym_id: selectedGym.id,
-          plan_id: formData.planId,
-          start_date: formData.startDate,
-          end_date: membershipEndDate,
-          status: "active",
-          updated_by: createdBy,
-        });
+        .insert(membershipInsert)
+        .select()
+        .single();
 
       if (membershipError) {
         throw membershipError;
@@ -385,18 +400,15 @@ export default function AddMemberPage() {
 
       // 4. Create payment record if payment was made
       if (paymentAmount > 0) {
-        const totalPrice = formData.useCustomPrice && formData.customPrice
-          ? parseFloat(formData.customPrice)
-          : selectedPlan.price;
         const remainingAmount = totalPrice - paymentAmount;
         
         const paymentData = {
           gym_id: selectedGym.id,
           member_id: member.id,
+          membership_id: membership.id,
           amount: paymentAmount,
           payment_mode: formData.paymentMode,
           status: "paid",
-          paid_at: new Date(formData.startDate + 'T00:00:00').toISOString(),
           notes: formData.notes || null,
           updated_by: createdBy,
           collected_by: collectedBy,
@@ -456,6 +468,7 @@ export default function AddMemberPage() {
           age: "",
           address: "",
           emergencyContact: "",
+          joinDate: new Date().toISOString().split("T")[0],
           planId: null,
           startDate: new Date().toISOString().split("T")[0],
           paymentAmount: "",
@@ -651,6 +664,23 @@ export default function AddMemberPage() {
                     />
                   </div>
                   <p className="text-xs text-gray-500 mt-1">10 digits only - used for login</p>
+                </div>
+
+                {/* Join Date */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Join Date
+                  </label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="date"
+                      className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
+                      value={formData.joinDate}
+                      onChange={(e) => updateForm("joinDate", e.target.value)}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Date when member joined the gym</p>
                 </div>
 
                 {/* Email Address */}

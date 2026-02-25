@@ -234,6 +234,7 @@ export default function SettingsPage() {
           id,
           full_name,
           phone,
+          join_date,
           created_at,
           balance,
           memberships (
@@ -309,8 +310,8 @@ export default function SettingsPage() {
           name: displayName,
           phone: member.phone || "N/A",
           plan: planName,
-          joinDate: member.created_at
-            ? new Date(member.created_at).toLocaleDateString("en-IN", {
+          joinDate: (member.join_date || member.created_at)
+            ? new Date(member.join_date ? member.join_date + 'T00:00:00' : member.created_at).toLocaleDateString("en-IN", {
                 day: "2-digit",
                 month: "short",
                 year: "numeric",

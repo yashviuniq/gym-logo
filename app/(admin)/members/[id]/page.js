@@ -97,6 +97,7 @@ export default function MemberDetailPage() {
           email,
           balance,
           profile_image,
+          join_date,
           created_at,
           created_by_name,
           gym_id,
@@ -106,6 +107,8 @@ export default function MemberDetailPage() {
             start_date,
             end_date,
             status,
+            custom_price,
+            due_amount,
             created_at,
             membership_plans (
               id,
@@ -119,6 +122,7 @@ export default function MemberDetailPage() {
             amount,
             payment_mode,
             status,
+            membership_id,
             paid_at,
             created_at
           )
@@ -167,7 +171,9 @@ export default function MemberDetailPage() {
         email: memberData.email || "",
         phone: memberData.phone,
         profileImage: memberData.profile_image || null,
-        joinDate: new Date(memberData.created_at).toLocaleDateString("en-IN"),
+        joinDate: memberData.join_date
+          ? new Date(memberData.join_date + 'T00:00:00').toLocaleDateString("en-IN")
+          : new Date(memberData.created_at).toLocaleDateString("en-IN"),
         createdByName: memberData.created_by_name || null,
         plan: activeMembership?.membership_plans?.name || "No Plan",
         planPrice: activeMembership?.membership_plans?.price || 0,
@@ -200,16 +206,38 @@ export default function MemberDetailPage() {
       })) || [];
       setPendingPayments(pending);
 
-      const history = memberData.memberships?.map(m => ({
-        planName: m.membership_plans?.name || "Unknown",
-        duration: m.membership_plans?.duration_days || 0,
-        price: m.membership_plans?.price || 0,
-        paymentAmount: memberData.payments?.find(p => p.membership_id === m.id)?.amount || 0,
-        paymentMode: memberData.payments?.find(p => p.membership_id === m.id)?.payment_mode || "cash",
-        notes: "",
-        newEndDate: m.end_date,
-        renewedAt: m.created_at
-      })) || [];
+      const history = memberData.memberships?.map(m => {
+        const planPrice = m.membership_plans?.price || 0;
+        const customPrice = m.custom_price || null;
+        const actualPrice = customPrice || planPrice;
+        
+        // Find payment linked to this membership
+        const linkedPayment = memberData.payments?.find(p => p.membership_id === m.id && p.status === 'paid');
+        // Fallback: find payment created around the same time as this membership
+        const fallbackPayment = !linkedPayment ? memberData.payments?.find(p => {
+          if (p.status !== 'paid') return false;
+          const pTime = new Date(p.created_at).getTime();
+          const mTime = new Date(m.created_at).getTime();
+          return Math.abs(pTime - mTime) < 60000; // within 1 minute
+        }) : null;
+        const payment = linkedPayment || fallbackPayment;
+        const paymentAmount = payment?.amount || 0;
+        const dueAmount = m.due_amount != null ? m.due_amount : Math.max(0, actualPrice - paymentAmount);
+
+        return {
+          planName: m.membership_plans?.name || "Unknown",
+          duration: m.membership_plans?.duration_days || 0,
+          planPrice,
+          customPrice,
+          price: actualPrice,
+          paymentAmount,
+          dueAmount,
+          paymentMode: payment?.payment_mode || "cash",
+          notes: "",
+          newEndDate: m.end_date,
+          renewedAt: m.created_at,
+        };
+      }) || [];
 
       setRenewalHistory(history);
 

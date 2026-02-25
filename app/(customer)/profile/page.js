@@ -44,6 +44,7 @@ export default function CustomerProfilePage() {
           email,
           profile_image,
           gym_id,
+          join_date,
           created_at,
           memberships (
             id,
@@ -69,7 +70,7 @@ export default function CustomerProfilePage() {
         email: memberData.email || "",
         phone: memberData.phone,
         profileImage: memberData.profile_image,
-        joinDate: memberData.created_at,
+        joinDate: memberData.join_date || memberData.created_at,
       });
 
       // Get active membership

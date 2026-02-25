@@ -152,18 +152,26 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
             const targetGymId = gymId || member.gymId;
             const newEndDate = calculateNewEndDate();
             const startDate = getStartDate();
+            const paymentAmountNum = parseFloat(paymentAmount) || 0;
+            const dueForMembership = Math.max(0, finalPrice - paymentAmountNum);
 
             // 1. Create new membership record
-            const { data: membership, error: membershipError } = await supabase
-                .from("memberships")
-                .insert({
+            const membershipInsert = {
                     member_id: member.id,
                     gym_id: targetGymId,
                     plan_id: selectedPlan,
                     start_date: startDate,
                     end_date: newEndDate,
-                    status: "active"
-                })
+                    status: "active",
+                    due_amount: dueForMembership,
+            };
+            if (useCustomPrice && customPrice) {
+                membershipInsert.custom_price = parseFloat(customPrice);
+            }
+
+            const { data: membership, error: membershipError } = await supabase
+                .from("memberships")
+                .insert(membershipInsert)
                 .select()
                 .single();
 
@@ -183,7 +191,6 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
                 .eq("status", "active");
 
             // 3. Create payment record
-            const paymentAmountNum = parseFloat(paymentAmount) || 0;
             let paymentId = null;
             if (paymentAmountNum > 0) {
                 const { data: paymentData, error: paymentError } = await supabase
@@ -195,7 +202,7 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
                         amount: paymentAmountNum,
                         payment_mode: paymentMode,
                         status: "paid",
-                        paid_at: new Date(startDate + 'T00:00:00').toISOString()
+                        paid_at: new Date().toISOString()
                     })
                     .select("id")
                     .single();

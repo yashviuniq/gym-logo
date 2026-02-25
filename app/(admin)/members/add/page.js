@@ -352,23 +352,10 @@ export default function AddMemberPage() {
       endDate.setDate(endDate.getDate() + durationDays);
       const membershipEndDate = endDate.toISOString().split('T')[0];
 
-      if (balanceOwed > 0 && formData.nextPaymentDate && formData.nextPaymentDate > membershipEndDate) {
-        showError("The due payment date cannot be later than the membership end date.");
-        setLoading(false);
-        return;
-      }
+      // Determine membership status based on end date
+      const isExpired = endDate <= new Date(new Date().setHours(0, 0, 0, 0));
 
-      // Check if start date is in the past - if so, validate remaining days
-      if (isStartDateInPast(formData.startDate)) {
-        const remainingDays = calculateRemainingDays(formData.startDate, durationDays);
-        if (remainingDays <= 0) {
-          showError("The selected start date would result in an expired membership. Please choose a more recent date.");
-          setLoading(false);
-          return;
-        }
-      }
-
-      // 3. Create membership - always active since we don't allow future dates
+      // 3. Create membership - set status based on whether end date has passed
       const totalPrice = formData.useCustomPrice && formData.customPrice
         ? parseFloat(formData.customPrice)
         : selectedPlan.price;
@@ -380,7 +367,7 @@ export default function AddMemberPage() {
         plan_id: formData.planId,
         start_date: formData.startDate,
         end_date: membershipEndDate,
-        status: "active",
+        status: isExpired ? "expired" : "active",
         updated_by: createdBy,
         due_amount: dueForMembership,
       };
@@ -409,6 +396,7 @@ export default function AddMemberPage() {
           amount: paymentAmount,
           payment_mode: formData.paymentMode,
           status: "paid",
+          paid_at: new Date(formData.startDate + 'T00:00:00').toISOString(),
           notes: formData.notes || null,
           updated_by: createdBy,
           collected_by: collectedBy,
@@ -964,8 +952,8 @@ export default function AddMemberPage() {
                           Start date is in the past. Member will have <span className="font-bold">{calculateRemainingDays(formData.startDate, selectedPlan?.duration_days || 0)} days</span> remaining from today.
                         </p>
                       ) : (
-                        <p className="text-xs font-medium text-red-600">
-                          ⚠️ This start date would result in an expired membership. Please choose a more recent date.
+                        <p className="text-xs font-medium text-orange-600">
+                          ⚠️ This membership is already expired. It will be saved as an expired record for history.
                         </p>
                       )}
                     </div>
@@ -1141,23 +1129,12 @@ export default function AddMemberPage() {
                         <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                         <input
                           type="date"
-                          min={new Date().toISOString().split('T')[0]}
-                          max={calculatedMembershipEndDate || undefined}
                           className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
                           value={formData.nextPaymentDate}
                           onChange={(e) => updateForm("nextPaymentDate", e.target.value)}
                           required
                         />
                       </div>
-                      {calculatedMembershipEndDate && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          Due date must be on or before {new Date(calculatedMembershipEndDate + 'T00:00:00').toLocaleDateString('en-IN', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric'
-                          })}
-                        </p>
-                      )}
                       {formData.nextPaymentDate && (
                         <div className="mt-2 p-2 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
                           <p className="text-xs text-blue-700">

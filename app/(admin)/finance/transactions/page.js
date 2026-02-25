@@ -45,7 +45,7 @@ export default function TransactionsPage() {
           )
         `)
         .eq("gym_id", gymId)
-        .order("paid_at", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(100);
 
       if (error) {

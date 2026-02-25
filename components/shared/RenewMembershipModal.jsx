@@ -20,8 +20,7 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
     const [notes, setNotes] = useState("");
     const [loading, setLoading] = useState(false);
     const [loadingPlans, setLoadingPlans] = useState(true);
-    const [useCustomStartDate, setUseCustomStartDate] = useState(false);
-    const [customStartDate, setCustomStartDate] = useState(new Date().toISOString().split("T")[0]);
+    const [customStartDate, setCustomStartDate] = useState("");
 
     // Fetch membership plans from database
     useEffect(() => {
@@ -55,68 +54,15 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
         fetchPlans();
     }, [gymId, member.gymId]);
 
-    const plan = membershipPlans.find((p) => p.id === selectedPlan);
-    const finalPrice = useCustomPrice && customPrice ? parseFloat(customPrice) : plan?.price || 0;
-
-    const calculateNewEndDate = () => {
-        if (!plan || !plan.duration_days) return null;
-        
-        let startDate;
-        if (useCustomStartDate && customStartDate) {
-            // Use custom start date
-            startDate = new Date(customStartDate + 'T00:00:00');
-        } else {
-            // For renewal, start date should be the day AFTER current end date (or today if expired)
-            let currentEndDate;
-            if (member.validTill && member.validTill !== "N/A") {
-                // Parse DD/MM/YYYY format
-                const parts = member.validTill.split('/');
-                if (parts.length === 3) {
-                    const day = parseInt(parts[0], 10);
-                    const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
-                    const year = parseInt(parts[2], 10);
-                    currentEndDate = new Date(year, month, day);
-                } else {
-                    currentEndDate = new Date();
-                }
-            } else {
-                currentEndDate = new Date();
-            }
-            
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            currentEndDate.setHours(0, 0, 0, 0);
-            
-            // If membership expired, start from today
-            // Otherwise, start from the day after current end date
-            if (currentEndDate < today) {
-                startDate = today;
-            } else {
-                // Start from the day after current end date
-                startDate = new Date(currentEndDate);
-                startDate.setDate(startDate.getDate() + 1);
-            }
-        }
-        
-        // Calculate end date by adding duration_days
-        const newEndDate = new Date(startDate);
-        newEndDate.setDate(newEndDate.getDate() + plan.duration_days);
-        return newEndDate.toISOString().split("T")[0];
-    };
-
-    const getStartDate = () => {
-        if (useCustomStartDate && customStartDate) {
-            return customStartDate;
-        }
-        
-        // For renewal, start date should be the day AFTER current end date (or today if expired)
+    // Auto-compute default start date based on member's current membership
+    useEffect(() => {
+        if (customStartDate) return; // Don't overwrite if user already set a date
         let currentEndDate;
         if (member.validTill && member.validTill !== "N/A") {
-            // Parse DD/MM/YYYY format
             const parts = member.validTill.split('/');
             if (parts.length === 3) {
                 const day = parseInt(parts[0], 10);
-                const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
+                const month = parseInt(parts[1], 10) - 1;
                 const year = parseInt(parts[2], 10);
                 currentEndDate = new Date(year, month, day);
             } else {
@@ -125,23 +71,32 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
         } else {
             currentEndDate = new Date();
         }
-        
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         currentEndDate.setHours(0, 0, 0, 0);
-        
         let startDate;
-        // If membership expired, start from today
-        // Otherwise, start from the day after current end date
         if (currentEndDate < today) {
             startDate = today;
         } else {
-            // Start from the day after current end date
             startDate = new Date(currentEndDate);
             startDate.setDate(startDate.getDate() + 1);
         }
-        
-        return startDate.toISOString().split("T")[0];
+        setCustomStartDate(startDate.toISOString().split("T")[0]);
+    }, [member.validTill]);
+
+    const plan = membershipPlans.find((p) => p.id === selectedPlan);
+    const finalPrice = useCustomPrice && customPrice ? parseFloat(customPrice) : plan?.price || 0;
+
+    const calculateNewEndDate = () => {
+        if (!plan || !plan.duration_days || !customStartDate) return null;
+        const startDate = new Date(customStartDate + 'T00:00:00');
+        const newEndDate = new Date(startDate);
+        newEndDate.setDate(newEndDate.getDate() + plan.duration_days);
+        return newEndDate.toISOString().split("T")[0];
+    };
+
+    const getStartDate = () => {
+        return customStartDate;
     };
 
     const handleSubmit = async (e) => {
@@ -202,7 +157,7 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
                         amount: paymentAmountNum,
                         payment_mode: paymentMode,
                         status: "paid",
-                        paid_at: new Date().toISOString()
+                        paid_at: new Date(startDate + 'T00:00:00').toISOString()
                     })
                     .select("id")
                     .single();
@@ -403,28 +358,16 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
                         );
                     })()}
 
-                    {/* Manual Date Selection */}
+                    {/* Start Date Selection */}
                     {selectedPlan && (
                         <div className="bg-gray-50 rounded-xl p-3 space-y-2">
-                            <div className="flex items-center justify-between">
-                                <span className="font-medium text-gray-900 text-sm">Custom Start Date</span>
-                                <button
-                                    type="button"
-                                    onClick={() => setUseCustomStartDate(!useCustomStartDate)}
-                                    className={`w-10 h-5 rounded-full transition ${useCustomStartDate ? "bg-[#F97316]" : "bg-gray-300"}`}
-                                >
-                                    <div className={`w-4 h-4 bg-white rounded-full shadow transition transform ${useCustomStartDate ? "translate-x-5" : "translate-x-0.5"}`}></div>
-                                </button>
-                            </div>
-                            {useCustomStartDate && (
-                                <input
-                                    type="date"
-                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] outline-none text-sm"
-                                    value={customStartDate}
-                                    onChange={(e) => setCustomStartDate(e.target.value)}
-                                    max={new Date().toISOString().split("T")[0]}
-                                />
-                            )}
+                            <label className="font-medium text-gray-900 text-sm">Start Date</label>
+                            <input
+                                type="date"
+                                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] outline-none text-sm"
+                                value={customStartDate}
+                                onChange={(e) => setCustomStartDate(e.target.value)}
+                            />
                         </div>
                     )}
 

@@ -814,6 +814,8 @@ Best regards,
             router={router} 
             selectedGym={selectedGym}
             dateFilter={dateFilter}
+            customStartDate={customStartDate}
+            customEndDate={customEndDate}
           />
         )}
       </main>
@@ -836,7 +838,7 @@ Best regards,
 }
 
 // Expenses Section Component
-function ExpensesSection({ router, selectedGym, dateFilter }) {
+function ExpensesSection({ router, selectedGym, dateFilter, customStartDate, customEndDate }) {
   const { canViewFinance } = useUserRole();
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);

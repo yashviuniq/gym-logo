@@ -149,7 +149,7 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose })
                                 <div className="bg-blue-50 rounded-lg p-3 text-center">
                                     <p className="text-xs text-blue-600 mb-1">Total Renewals</p>
                                     <p className="text-xl font-bold text-blue-700">
-                                        {renewalHistory.length}
+                                        {renewalHistory.length-1}
                                     </p>
                                 </div>
                                 <div className="bg-green-50 rounded-lg p-3 text-center">

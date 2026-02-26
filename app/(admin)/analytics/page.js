@@ -271,7 +271,7 @@ export default function AnalyticsPage() {
         .select("amount, paid_at, created_at")
         .eq("gym_id", gymId)
         .eq("status", "paid")
-        .gte("paid_at", fourMonthsAgo.toISOString());
+        .or(`paid_at.gte.${fourMonthsAgo.toISOString()},and(paid_at.is.null,created_at.gte.${fourMonthsAgo.toISOString()})`);
 
       // Group by month
       const monthlyData = {};

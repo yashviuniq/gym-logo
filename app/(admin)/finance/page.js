@@ -123,10 +123,9 @@ export default function FinancePage() {
           )
         `)
         .eq("gym_id", gymId)
-        .gte("paid_at", startISO)
-        .lte("paid_at", endISO);
+        .or(`and(paid_at.gte.${startISO},paid_at.lte.${endISO}),and(paid_at.is.null,created_at.gte.${startISO},created_at.lte.${endISO})`);
       
-      const { data: payments, error: paymentsError } = await paymentsQuery.order("paid_at", { ascending: false });
+      const { data: payments, error: paymentsError } = await paymentsQuery.order("created_at", { ascending: false });
 
       const { data: membersData, error: membersError } = await supabase
         .from("members")

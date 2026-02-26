@@ -225,23 +225,6 @@ export default function AddMemberPage() {
 
     setLoading(true);
     try {
-      const { data: existingMember, error: checkError } = await supabase
-        .from("members")
-        .select("id, full_name")
-        .eq("gym_id", selectedGym.id)
-        .eq("phone", formData.phone)
-        .maybeSingle();
-
-      if (checkError) {
-        console.error("Error checking existing member:", checkError);
-      }
-
-      if (existingMember) {
-        showError(`A member with phone number ${formData.phone} already exists: ${existingMember.full_name}. Please use a different phone number or edit the existing member.`);
-        setLoading(false);
-        return;
-      }
-
       const selectedPlan = membershipPlans.find((p) => p.id === formData.planId);
       const finalPrice = formData.useCustomPrice && formData.customPrice 
         ? parseFloat(formData.customPrice) 
@@ -257,88 +240,6 @@ export default function AddMemberPage() {
         return;
       }
 
-      const storedUser = localStorage.getItem("gymUser");
-      const currentUser = storedUser ? JSON.parse(storedUser) : null;
-      const createdBy = currentUser?.id;
-      const createdByName = currentUser ? `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() : null;
-
-      // Collector fallback if localStorage missing details
-      let collectedBy = createdBy;
-      let collectedByName = createdByName;
-      if (!collectedBy || !collectedByName) {
-        const buildName = (user) => {
-          const name = `${user?.first_name || user?.user_metadata?.first_name || ''} ${user?.last_name || user?.user_metadata?.last_name || ''}`.trim();
-          return name || null;
-        };
-        const { data: authData } = await supabase.auth.getUser();
-        const authUser = authData?.user;
-        if (authUser?.id) {
-          collectedBy = collectedBy || authUser.id;
-          collectedByName = collectedByName || buildName(authUser);
-        }
-      }
-
-      // 1. Upload profile image if provided
-      let profileImageUrl = null;
-      if (formData.profileImage && formData.profileImage.startsWith('data:')) {
-        try {
-          // Convert base64 to blob
-          const response = await fetch(formData.profileImage);
-          const blob = await response.blob();
-          
-          // Generate unique filename
-          const fileExt = blob.type.split('/')[1];
-          const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-          const filePath = `profiles/${fileName}`;
-
-          // Upload to Supabase Storage
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from("member-images")
-            .upload(filePath, blob, {
-              cacheControl: "3600",
-              upsert: false,
-            });
-
-          if (uploadError) {
-            console.error("Image upload error:", uploadError);
-            showError("Failed to upload profile image, but member will be created without photo");
-          } else {
-            // Get public URL
-            const { data: urlData } = supabase.storage
-              .from("member-images")
-              .getPublicUrl(filePath);
-            profileImageUrl = urlData.publicUrl;
-          }
-        } catch (imgError) {
-          console.error("Error processing image:", imgError);
-        }
-      }
-
-      // 2. Create member
-      const { data: member, error: memberError } = await supabase
-        .from("members")
-        .insert({
-          gym_id: selectedGym.id,
-          full_name: formData.name,
-          phone: formData.phone,
-          email: formData.email || null,
-          balance: Math.max(0, balanceOwed),
-          join_date: formData.joinDate,
-          created_by: createdBy,
-          created_by_name: createdByName,
-          self_plan_edit_access: formData.selfPlanEditAccess,
-          profile_image: profileImageUrl,
-        })
-        .select()
-        .single();
-
-      if (memberError) {
-        throw memberError;
-      }
-
-      // 2. Calculate membership end date using duration_days from the plan
-      const startDate = new Date(formData.startDate + 'T00:00:00');
-      
       if (!selectedPlan) {
         throw new Error("Selected plan not found");
       }
@@ -346,100 +247,142 @@ export default function AddMemberPage() {
       if (!selectedPlan.duration_days || selectedPlan.duration_days <= 0) {
         throw new Error(`Invalid duration for plan "${selectedPlan.name}". Please ensure the plan has a valid duration_days value in the database.`);
       }
-      
+
+      // Prepare user/collector info from localStorage (sync, no await needed)
+      const storedUser = localStorage.getItem("gymUser");
+      const currentUser = storedUser ? JSON.parse(storedUser) : null;
+      const createdBy = currentUser?.id;
+      const createdByName = currentUser ? `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() : null;
+
+      let collectedBy = createdBy;
+      let collectedByName = createdByName;
+
+      // ── Step 1: Run independent async operations in parallel ──
+      // - Upload profile image (if any)
+      // - Resolve collector fallback from auth (if needed)
+      let imageUploadFailed = false;
+      const uploadImagePromise = (async () => {
+        if (!formData.profileImage || !formData.profileImage.startsWith('data:')) return null;
+        try {
+          const response = await fetch(formData.profileImage);
+          const blob = await response.blob();
+          const fileExt = blob.type.split('/')[1];
+          const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+          const filePath = `profiles/${fileName}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from("member-images")
+            .upload(filePath, blob, { cacheControl: "3600", upsert: false });
+
+          if (uploadError) {
+            console.error("Image upload error:", uploadError);
+            imageUploadFailed = true;
+            return null;
+          }
+          const { data: urlData } = supabase.storage
+            .from("member-images")
+            .getPublicUrl(filePath);
+          return urlData.publicUrl;
+        } catch (imgError) {
+          console.error("Error processing image:", imgError);
+          imageUploadFailed = true;
+          return null;
+        }
+      })();
+
+      const resolveCollectorPromise = (async () => {
+        if (collectedBy && collectedByName) return { collectedBy, collectedByName };
+        try {
+          const buildName = (user) => {
+            const name = `${user?.first_name || user?.user_metadata?.first_name || ''} ${user?.last_name || user?.user_metadata?.last_name || ''}`.trim();
+            return name || null;
+          };
+          const { data: authData } = await supabase.auth.getUser();
+          const authUser = authData?.user;
+          if (authUser?.id) {
+            return {
+              collectedBy: collectedBy || authUser.id,
+              collectedByName: collectedByName || buildName(authUser),
+            };
+          }
+        } catch {}
+        return { collectedBy, collectedByName };
+      })();
+
+      // Wait for both in parallel
+      const [profileImageUrl, collectorInfo] = await Promise.all([
+        uploadImagePromise,
+        resolveCollectorPromise,
+      ]);
+
+      collectedBy = collectorInfo.collectedBy;
+      collectedByName = collectorInfo.collectedByName;
+
+      if (imageUploadFailed) {
+        showError("Failed to upload profile image, but member will be created without photo");
+      }
+
+      // ── Step 2: Calculate membership dates ──
+      const startDate = new Date(formData.startDate + 'T00:00:00');
       const durationDays = selectedPlan.duration_days;
       const endDate = new Date(startDate);
       endDate.setDate(endDate.getDate() + durationDays);
       const membershipEndDate = endDate.toISOString().split('T')[0];
-
-      // Determine membership status based on end date
       const isExpired = endDate <= new Date(new Date().setHours(0, 0, 0, 0));
 
-      // 3. Create membership - set status based on whether end date has passed
       const totalPrice = formData.useCustomPrice && formData.customPrice
         ? parseFloat(formData.customPrice)
         : selectedPlan.price;
       const dueForMembership = Math.max(0, totalPrice - paymentAmount);
+      const remainingAmount = totalPrice - paymentAmount;
 
-      const membershipInsert = {
-        member_id: member.id,
-        gym_id: selectedGym.id,
-        plan_id: formData.planId,
-        start_date: formData.startDate,
-        end_date: membershipEndDate,
-        status: isExpired ? "expired" : "active",
-        updated_by: createdBy,
-        due_amount: dueForMembership,
-      };
-      if (formData.useCustomPrice && formData.customPrice) {
-        membershipInsert.custom_price = parseFloat(formData.customPrice);
-      }
-
-      const { data: membership, error: membershipError } = await supabase
-        .from("memberships")
-        .insert(membershipInsert)
-        .select()
-        .single();
-
-      if (membershipError) {
-        throw membershipError;
-      }
-
-      // 4. Create payment record if payment was made
-      if (paymentAmount > 0) {
-        const remainingAmount = totalPrice - paymentAmount;
-        
-        const paymentData = {
-          gym_id: selectedGym.id,
-          member_id: member.id,
-          membership_id: membership.id,
-          amount: paymentAmount,
-          payment_mode: formData.paymentMode,
-          status: "paid",
-          paid_at: new Date(formData.startDate + 'T00:00:00').toISOString(),
-          notes: formData.notes || null,
-          updated_by: createdBy,
-          collected_by: collectedBy,
-          collected_by_name: collectedByName,
-        };
-
-        // Add next payment date and remaining amount for partial payments
-        if (remainingAmount > 0 && formData.nextPaymentDate) {
-          paymentData.next_payment_date = formData.nextPaymentDate;
-          paymentData.remaining_amount = remainingAmount;
-        }
-
-        const { error: paymentError } = await supabase
-          .from("payments")
-          .insert(paymentData);
-
-        if (paymentError) {
-          console.error("Payment error:", paymentError);
-        } else {
-          console.log("Payment recorded with collector:", {
-            amount: paymentAmount,
-            mode: formData.paymentMode,
-            collected_by: paymentData.collected_by,
-            collected_by_name: paymentData.collected_by_name,
-          });
-        }
-      }
-
-      // 6. Create member credentials for app login using phone number only
+      // ── Step 3: Single RPC call — all DB inserts in one transaction ──
       const defaultPassword = formData.phone.slice(1,2)+formData.phone.slice(3,5)+formData.phone.slice(-2) + "213";
-      try {
-        await supabase
-          .from("member_credentials")
-          .insert({
-            member_id: member.id,
-            login_type: "phone",
-            login_value: formData.phone,
-            password: defaultPassword,
-            created_by: createdBy,
-          });
-      } catch (credError) {
-        console.log("Credentials creation skipped:", credError);
+
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('add_member_with_membership', {
+        p_gym_id: selectedGym.id,
+        p_full_name: formData.name,
+        p_phone: formData.phone,
+        p_email: formData.email || null,
+        p_balance: Math.max(0, balanceOwed),
+        p_join_date: formData.joinDate,
+        p_created_by: createdBy,
+        p_created_by_name: createdByName,
+        p_self_plan_edit_access: formData.selfPlanEditAccess,
+        p_profile_image: profileImageUrl,
+        // Membership
+        p_plan_id: formData.planId,
+        p_start_date: formData.startDate,
+        p_end_date: membershipEndDate,
+        p_membership_status: isExpired ? "expired" : "active",
+        p_custom_price: (formData.useCustomPrice && formData.customPrice) ? parseFloat(formData.customPrice) : null,
+        p_due_amount: dueForMembership,
+        // Payment
+        p_payment_amount: paymentAmount,
+        p_payment_mode: formData.paymentMode,
+        p_paid_at: new Date(formData.startDate + 'T00:00:00').toISOString(),
+        p_payment_notes: formData.notes || null,
+        p_collected_by: collectedBy,
+        p_collected_by_name: collectedByName,
+        p_next_payment_date: (remainingAmount > 0 && formData.nextPaymentDate) ? formData.nextPaymentDate : null,
+        p_remaining_amount: (remainingAmount > 0 && formData.nextPaymentDate) ? remainingAmount : null,
+        // Credentials
+        p_login_value: formData.phone,
+        p_default_password: defaultPassword,
+      });
+
+      if (rpcError) {
+        // Handle duplicate phone error from RPC
+        if (rpcError.message?.includes('DUPLICATE_PHONE')) {
+          const existingName = rpcError.message.split('DUPLICATE_PHONE:')[1]?.trim() || '';
+          showError(`A member with phone number ${formData.phone} already exists${existingName ? `: ${existingName}` : ''}. Please use a different phone number or edit the existing member.`);
+          setLoading(false);
+          return;
+        }
+        throw rpcError;
       }
+
+      console.log("Member created via transaction:", rpcResult);
 
       // Show success message with appropriate status info
       const statusMessage = isStartDateInPast(formData.startDate) 
@@ -655,21 +598,7 @@ export default function AddMemberPage() {
                 </div>
 
                 {/* Join Date */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Join Date
-                  </label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <input
-                      type="date"
-                      className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
-                      value={formData.joinDate}
-                      onChange={(e) => updateForm("joinDate", e.target.value)}
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">Date when member joined the gym</p>
-                </div>
+              
 
                 {/* Email Address */}
                 <div>
@@ -937,7 +866,10 @@ export default function AddMemberPage() {
                     max={getTodayString()}
                     className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
                     value={formData.startDate}
-                    onChange={(e) => updateForm("startDate", e.target.value)}
+                    onChange={(e) => {
+                      updateForm("startDate", e.target.value);
+                      updateForm("joinDate", e.target.value);
+                    }}
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-1">Select today or a past date when membership started</p>

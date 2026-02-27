@@ -64,161 +64,67 @@ export default function MembersPage() {
     }
   }, []);
 
-  // Fetch members data directly from Supabase
+  // Fetch all members data via single RPC call
   const fetchMembers = async (gymId) => {
     if (!gymId) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("members")
-        .select(`
-          id,
-          full_name,
-          phone,
-          email,
-          gym_id,
-          balance,
-          profile_image,
-          created_at,
-          created_by,
-          created_by_name,
-          memberships (
-            id,
-            plan_id,
-            start_date,
-            end_date,
-            status,
-            membership_plans (
-              id,
-              name,
-              price,
-              duration_days
-            )
-          )
-        `)
-        .eq("gym_id", gymId)
-        .order("created_at", { ascending: false });
+      const { data: result, error } = await supabase.rpc('get_members_list', {
+        p_gym_id: gymId,
+        p_user_id: user?.id || null,
+        p_is_trainer: isTrainer || false
+      });
 
-      if (error) {
+      if (error || !result) {
         console.error("Error fetching members:", error);
         setRawMembers([]);
         setLoading(false);
         return;
       }
 
-      // Fetch trainer names for members created by trainers
-      const memberData = data || [];
-      const creatorIds = [...new Set(memberData.map(m => m.created_by).filter(Boolean))];
-      
-      let trainerNamesMap = {};
-      if (creatorIds.length > 0) {
-        // First try to get from gym_trainers table
-        const { data: trainersData, error: trainersError } = await supabase
-          .from("gym_trainers")
-          .select("profile_id, profiles(first_name, last_name)")
-          .in("profile_id", creatorIds)
-          .eq("gym_id", gymId);
+      const memberData = result.members || [];
+      const credentialIds = result.credentials || [];
+      const trainerAssignments = result.trainer_assignments || [];
+      const myMemberIdsList = result.my_member_ids || [];
 
-        console.log("Gym trainers query error:", trainersError);
-        console.log("Gym trainers data:", trainersData);
-
-        if (trainersData && trainersData.length > 0) {
-          trainerNamesMap = trainersData.reduce((acc, trainer) => {
-            const firstName = trainer.profiles?.first_name || "";
-            const lastName = trainer.profiles?.last_name || "";
-            acc[trainer.profile_id] = `${firstName} ${lastName}`.trim() || "Trainer";
-            return acc;
-          }, {});
+      // Build trainer assignments map
+      const trainerAssignmentsMap = {};
+      trainerAssignments.forEach(a => {
+        let trainerPlanDaysRemaining = null;
+        if (a.plan_end_date) {
+          const endDate = new Date(a.plan_end_date);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          endDate.setHours(0, 0, 0, 0);
+          trainerPlanDaysRemaining = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
         }
-
-        // If not found in gym_trainers, try to fetch directly from profiles table for trainers
-        if (Object.keys(trainerNamesMap).length === 0) {
-          console.log("No trainers found in gym_trainers, trying profiles table...");
-          const { data: profilesData, error: profilesError } = await supabase
-            .from("profiles")
-            .select("id, first_name, last_name")
-            .in("id", creatorIds)
-            .eq("role", "trainer");
-
-          console.log("Profiles query error:", profilesError);
-          console.log("Profiles data:", profilesData);
-
-          if (profilesData) {
-            trainerNamesMap = profilesData.reduce((acc, profile) => {
-              const firstName = profile.first_name || "";
-              const lastName = profile.last_name || "";
-              acc[profile.id] = `${firstName} ${lastName}`.trim() || "Trainer";
-              return acc;
-            }, {});
-          }
-        }
-      }
-
-      // Add creator info to members
-      const enrichedMembers = memberData.map(member => {
-        // Prefer created_by_name from database, fallback to trainer lookup
-        const trainerName = member.created_by_name || 
-          (member.created_by ? trainerNamesMap[member.created_by] : null);
-        return {
-          ...member,
-          createdByTrainerName: trainerName && trainerName.trim() ? trainerName : null
+        trainerAssignmentsMap[a.member_id] = {
+          trainerName: `${a.first_name || ""} ${a.last_name || ""}`.trim(),
+          planEndDate: a.plan_end_date,
+          trainerPlanDaysRemaining
         };
       });
 
-      // Fetch active trainer assignments with plan_end_date for all members
-      const memberIds = memberData.map(m => m.id);
-      let trainerAssignmentsMap = {};
-      if (memberIds.length > 0) {
-        const { data: assignmentsData } = await supabase
-          .from("trainer_member_assignments")
-          .select(`
-            member_id,
-            plan_end_date,
-            profiles:trainer_id (
-              first_name,
-              last_name
-            )
-          `)
-          .in("member_id", memberIds)
-          .eq("is_active", true);
-
-        if (assignmentsData) {
-          trainerAssignmentsMap = assignmentsData.reduce((acc, a) => {
-            let trainerPlanDaysRemaining = null;
-            if (a.plan_end_date) {
-              const endDate = new Date(a.plan_end_date);
-              const today = new Date();
-              today.setHours(0, 0, 0, 0);
-              endDate.setHours(0, 0, 0, 0);
-              trainerPlanDaysRemaining = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
-            }
-            acc[a.member_id] = {
-              trainerName: `${a.profiles?.first_name || ""} ${a.profiles?.last_name || ""}`.trim(),
-              planEndDate: a.plan_end_date,
-              trainerPlanDaysRemaining
-            };
-            return acc;
-          }, {});
-        }
-      }
-
-      // Merge trainer assignment info into members
-      const finalMembers = enrichedMembers.map(member => ({
-        ...member,
-        trainerAssignment: trainerAssignmentsMap[member.id] || null
-      }));
+      // Enrich members with creator info and trainer assignments
+      const finalMembers = memberData.map(member => {
+        const trainerName = member.created_by_name ||
+          (member.creator_profile_name && member.creator_profile_name.trim() ? member.creator_profile_name : null);
+        return {
+          ...member,
+          createdByTrainerName: trainerName && trainerName.trim() ? trainerName : null,
+          trainerAssignment: trainerAssignmentsMap[member.id] || null
+        };
+      });
 
       setRawMembers(finalMembers);
 
-      // Debug log to see what's happening
-      console.log("Creator IDs found:", creatorIds);
-      console.log("Trainer names map:", trainerNamesMap);
-      console.log("Members with trainer info:", enrichedMembers.filter(m => m.created_by).map(m => ({
-        name: m.full_name,
-        created_by: m.created_by,
-        trainerName: m.createdByTrainerName
-      })));
+      // Set credentials
+      setMembersWithCredentials(new Set(credentialIds));
 
+      // Set my member IDs (for trainer role)
+      if (isTrainer) {
+        setMyMemberIds(new Set(myMemberIdsList));
+      }
 
     } catch (err) {
       console.error("Error:", err);
@@ -232,47 +138,6 @@ export default function MembersPage() {
       fetchMembers(selectedGym.id);
     }
   }, [selectedGym?.id]);
-
-  // Fetch trainer's assigned member IDs
-  useEffect(() => {
-    const fetchMyMembers = async () => {
-      if (!isTrainer || !user?.id || !selectedGym?.id) return;
-      setMyMembersLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from("trainer_member_assignments")
-          .select("member_id")
-          .eq("trainer_id", user.id)
-          .eq("gym_id", selectedGym.id)
-          .eq("is_active", true);
-
-        if (!error && data) {
-          setMyMemberIds(new Set(data.map(d => d.member_id)));
-        }
-      } catch (err) {
-        console.error("Error fetching my assigned members:", err);
-      }
-      setMyMembersLoading(false);
-    };
-    fetchMyMembers();
-  }, [isTrainer, user?.id, selectedGym?.id]);
-
-  // Fetch credentials for members
-  useEffect(() => {
-    const fetchCredentials = async () => {
-      if (!rawMembers?.length) return;
-      
-      const memberIds = rawMembers.map(m => m.id);
-      const { data: credentialsData } = await supabase
-        .from("member_credentials")
-        .select("member_id")
-        .in("member_id", memberIds);
-
-      setMembersWithCredentials(new Set(credentialsData?.map(c => c.member_id) || []));
-    };
-
-    fetchCredentials();
-  }, [rawMembers]);
 
   // Transform members data with memoization
   const members = useMemo(() => {

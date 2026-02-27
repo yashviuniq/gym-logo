@@ -88,57 +88,32 @@ export default function MemberDetailPage() {
   const fetchMemberDetails = async (memberId, gymId) => {
     setLoading(true);
     try {
-      const { data: memberData, error } = await supabase
-        .from("members")
-        .select(`
-          id,
-          full_name,
-          phone,
-          email,
-          balance,
-          profile_image,
-          join_date,
-          created_at,
-          created_by_name,
-          gym_id,
-          memberships (
-            id,
-            plan_id,
-            start_date,
-            end_date,
-            status,
-            custom_price,
-            due_amount,
-            created_at,
-            membership_plans (
-              id,
-              name,
-              price,
-              duration_days
-            )
-          ),
-          payments (
-            id,
-            amount,
-            payment_mode,
-            status,
-            membership_id,
-            paid_at,
-            created_at
-          )
-        `)
-        .eq("id", memberId)
-        .single();
+      // Single RPC call replaces 7-8 separate queries
+      const { data: result, error } = await supabase.rpc('get_member_details', {
+        p_member_id: memberId,
+        p_gym_id: gymId
+      });
 
-      if (error) {
-        console.error("Error fetching member:", error);
+      if (error || result?.error) {
+        console.error("Error fetching member:", error || result?.error);
         setLoading(false);
         return;
       }
 
-      const activeMembership = memberData.memberships?.find(
+      const memberData = result.member;
+      const membershipsData = result.memberships || [];
+      const paymentsData = result.payments || [];
+      const attendanceData = result.attendance || [];
+      const dietPlansData = result.diet_plans || [];
+      const workoutPlansData = result.workout_plans || [];
+      const trainerData = result.trainer;
+      const trainerScheduleData = result.trainer_schedule || [];
+      const nextPaymentData = result.next_payment;
+
+      // Process active membership
+      const activeMembership = membershipsData.find(
         (m) => m.status === "active"
-      ) || memberData.memberships?.[0];
+      ) || membershipsData[0];
 
       let memberStatus = "inactive";
       if (activeMembership) {
@@ -184,8 +159,12 @@ export default function MemberDetailPage() {
         daysRemaining: daysRemaining,
         dueAmount: Math.max(0, memberData.balance || 0),
         balance: memberData.balance || 0,
-        attendance: [],
-        payments: memberData.payments?.map(p => ({
+        attendance: attendanceData.map(a => ({
+          date: new Date(a.check_in_date).toLocaleDateString("en-IN"),
+          checkIn: a.check_in_time,
+          checkOut: a.check_out_time || "-"
+        })),
+        payments: paymentsData.map(p => ({
           id: p.id,
           date: new Date(p.paid_at || p.created_at).toLocaleDateString("en-IN"),
           amount: p.amount,
@@ -193,32 +172,32 @@ export default function MemberDetailPage() {
           status: p.status,
           payment_mode: p.payment_mode,
           created_at: p.created_at
-        })) || []
+        }))
       };
 
       setMember(transformedMember);
 
-      const pending = memberData.payments?.filter(p => p.status === "pending").map(p => ({
+      // Pending payments
+      const pending = paymentsData.filter(p => p.status === "pending").map(p => ({
         id: p.id,
         amount: p.amount,
         created_at: p.created_at,
         membership_id: p.membership_id
-      })) || [];
+      }));
       setPendingPayments(pending);
 
-      const history = memberData.memberships?.map(m => {
+      // Renewal history
+      const history = membershipsData.map(m => {
         const planPrice = m.membership_plans?.price || 0;
         const customPrice = m.custom_price || null;
         const actualPrice = customPrice || planPrice;
         
-        // Find payment linked to this membership
-        const linkedPayment = memberData.payments?.find(p => p.membership_id === m.id && p.status === 'paid');
-        // Fallback: find payment created around the same time as this membership
-        const fallbackPayment = !linkedPayment ? memberData.payments?.find(p => {
+        const linkedPayment = paymentsData.find(p => p.membership_id === m.id && p.status === 'paid');
+        const fallbackPayment = !linkedPayment ? paymentsData.find(p => {
           if (p.status !== 'paid') return false;
           const pTime = new Date(p.created_at).getTime();
           const mTime = new Date(m.created_at).getTime();
-          return Math.abs(pTime - mTime) < 60000; // within 1 minute
+          return Math.abs(pTime - mTime) < 60000;
         }) : null;
         const payment = linkedPayment || fallbackPayment;
         const paymentAmount = payment?.amount || 0;
@@ -237,37 +216,76 @@ export default function MemberDetailPage() {
           newEndDate: m.end_date,
           renewedAt: m.created_at,
         };
-      }) || [];
-
+      });
       setRenewalHistory(history);
 
-      const { data: attendanceData } = await supabase
-        .from("attendance")
-        .select("*")
-        .eq("member_id", memberId)
-        .order("check_in_date", { ascending: false })
-        .limit(10);
+      // Diet plans
+      setAssignedDietPlans(dietPlansData.map(d => ({
+        id: d.id,
+        planId: d.diet_plans?.id,
+        title: d.diet_plans?.title || "Unknown Plan",
+        description: d.diet_plans?.description,
+        assignedAt: d.assigned_at,
+        isCustom: !!d.diet_plans?.member_id,
+        isTemplate: d.diet_plans?.is_template
+      })));
 
-      if (attendanceData) {
-        transformedMember.attendance = attendanceData.map(a => ({
-          date: new Date(a.check_in_date).toLocaleDateString("en-IN"),
-          checkIn: a.check_in_time,
-          checkOut: a.check_out_time || "-"
-        }));
-        setMember({ ...transformedMember });
+      // Workout plans
+      setAssignedWorkoutPlans(workoutPlansData.map(w => ({
+        id: w.id,
+        planId: w.workout_plans?.id,
+        title: w.workout_plans?.title || "Unknown Plan",
+        description: w.workout_plans?.description,
+        assignedAt: w.assigned_at,
+        isCustom: !!w.workout_plans?.member_id
+      })));
+
+      // Trainer
+      if (trainerData) {
+        let trainerPlanDaysRemaining = null;
+        if (trainerData.plan_end_date) {
+          const endDate = new Date(trainerData.plan_end_date);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          endDate.setHours(0, 0, 0, 0);
+          trainerPlanDaysRemaining = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
+        }
+
+        // Process trainer schedule from RPC data
+        let trainerSchedule = [];
+        if (trainerScheduleData.length > 0) {
+          const grouped = {};
+          const dayOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+          trainerScheduleData.forEach((b) => {
+            if (!grouped[b.day]) grouped[b.day] = [];
+            grouped[b.day].push(b.time_slot);
+          });
+          trainerSchedule = dayOrder
+            .filter(d => grouped[d])
+            .map(d => ({ day: d, slots: grouped[d] }));
+        }
+
+        setAssignedTrainer({
+          trainerId: trainerData.trainer_id,
+          name: `${trainerData.first_name || ""} ${trainerData.last_name || ""}`.trim(),
+          phone: trainerData.phone,
+          planEndDate: trainerData.plan_end_date,
+          planStartDate: trainerData.plan_start_date,
+          trainerPlanId: trainerData.trainer_plan_id,
+          trainerPlanDaysRemaining: trainerPlanDaysRemaining,
+          schedule: trainerSchedule,
+        });
+      } else {
+        setAssignedTrainer(null);
       }
 
-      // Fetch assigned diet plans
-      await fetchAssignedDietPlans(memberId);
-      
-      // Fetch assigned workout plans
-      await fetchAssignedWorkoutPlans(memberId);
-
-      // Fetch assigned trainer
-      await fetchAssignedTrainer(memberId, gymId);
-
-      // Fetch next payment info for partial payments
-      await fetchNextPaymentInfo(memberId);
+      // Next payment info
+      if (nextPaymentData) {
+        setNextPaymentInfo({
+          nextPaymentDate: nextPaymentData.next_payment_date,
+          remainingAmount: nextPaymentData.remaining_amount
+        });
+      }
 
     } catch (err) {
       console.error("Error:", err);
@@ -275,51 +293,12 @@ export default function MemberDetailPage() {
     setLoading(false);
   };
 
-  const fetchNextPaymentInfo = async (memberId) => {
-    try {
-      const { data, error } = await supabase
-        .from("payments")
-        .select("next_payment_date")
-        .eq("member_id", memberId)
-        .not("next_payment_date", "is", null)
-        .eq("status", "pending")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (!error && data) {
-        // Get the current member balance from the members table
-        const { data: memberData } = await supabase
-          .from("members")
-          .select("balance")
-          .eq("id", memberId)
-          .single();
-
-        setNextPaymentInfo({
-          nextPaymentDate: data.next_payment_date,
-          remainingAmount: Math.max(0, memberData?.balance || 0)
-        });
-      }
-    } catch (err) {
-      console.error("Error fetching next payment info:", err);
-    }
-  };
-
+  // Individual fetch functions for refresh after assign/remove operations
   const fetchAssignedDietPlans = async (memberId) => {
     try {
       const { data, error } = await supabase
         .from("member_diets")
-        .select(`
-          id,
-          assigned_at,
-          diet_plans (
-            id,
-            title,
-            description,
-            member_id,
-            is_template
-          )
-        `)
+        .select(`id, assigned_at, diet_plans (id, title, description, member_id, is_template)`)
         .eq("member_id", memberId)
         .order("assigned_at", { ascending: false });
 
@@ -343,16 +322,7 @@ export default function MemberDetailPage() {
     try {
       const { data, error } = await supabase
         .from("member_workouts")
-        .select(`
-          id,
-          assigned_at,
-          workout_plans (
-            id,
-            title,
-            description,
-            member_id
-          )
-        `)
+        .select(`id, assigned_at, workout_plans (id, title, description, member_id)`)
         .eq("member_id", memberId)
         .order("assigned_at", { ascending: false });
 
@@ -375,24 +345,12 @@ export default function MemberDetailPage() {
     try {
       const { data, error } = await supabase
         .from("trainer_member_assignments")
-        .select(`
-          trainer_id,
-          plan_end_date,
-          plan_start_date,
-          trainer_plan_id,
-          profiles:trainer_id (
-            id,
-            first_name,
-            last_name,
-            phone
-          )
-        `)
+        .select(`trainer_id, plan_end_date, plan_start_date, trainer_plan_id, profiles:trainer_id (id, first_name, last_name, phone)`)
         .eq("member_id", memberId)
         .eq("is_active", true)
         .maybeSingle();
 
       if (!error && data) {
-        // Calculate trainer plan days remaining
         let trainerPlanDaysRemaining = null;
         if (data.plan_end_date) {
           const endDate = new Date(data.plan_end_date);
@@ -402,7 +360,6 @@ export default function MemberDetailPage() {
           trainerPlanDaysRemaining = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
         }
 
-        // Fetch trainer bookings (schedule) for this member
         let trainerSchedule = [];
         const resolvedGymId = gymId || selectedGym?.id;
         if (resolvedGymId) {
@@ -414,18 +371,17 @@ export default function MemberDetailPage() {
             .eq("is_active", true)
             .order("day");
 
-        if (bookingsData && bookingsData.length > 0) {
-          // Group by day
-          const grouped = {};
-          const dayOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-          bookingsData.forEach((b) => {
-            if (!grouped[b.day]) grouped[b.day] = [];
-            grouped[b.day].push(b.time_slot);
-          });
-          trainerSchedule = dayOrder
-            .filter(d => grouped[d])
-            .map(d => ({ day: d, slots: grouped[d] }));
-        }
+          if (bookingsData && bookingsData.length > 0) {
+            const grouped = {};
+            const dayOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+            bookingsData.forEach((b) => {
+              if (!grouped[b.day]) grouped[b.day] = [];
+              grouped[b.day].push(b.time_slot);
+            });
+            trainerSchedule = dayOrder
+              .filter(d => grouped[d])
+              .map(d => ({ day: d, slots: grouped[d] }));
+          }
         }
 
         setAssignedTrainer({

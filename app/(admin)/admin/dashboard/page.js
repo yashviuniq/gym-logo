@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
@@ -63,8 +63,13 @@ export default function AdminDashboard() {
   const [showPaymentsModal, setShowPaymentsModal] = useState(false);
   const [showActivityModal, setShowActivityModal] = useState(false);
 
+  const hasFetchedRef = useRef(false);
+
   // Your existing logic remains exactly the same
   useEffect(() => {
+    if (hasFetchedRef.current) return;
+    hasFetchedRef.current = true;
+
     const checkAuth = async () => {
       // Check localStorage for admin/owner users (stored as 'gymUser')
       const storedUser = localStorage.getItem("gymUser");
@@ -240,169 +245,131 @@ export default function AdminDashboard() {
   const fetchDashboardData = async (gymId) => {
     setDataLoading(true);
     try {
-      // Your existing fetch logic remains exactly the same
-      const { data: members, error: membersError } = await supabase
-        .from("members")
-        .select(`
-          id,
-          full_name,
-          balance,
-          created_at,
-          memberships (
-            id,
-            status,
-            end_date,
-            membership_plans (price)
-          )
-        `)
-        .eq("gym_id", gymId);
+      // Single RPC call replaces 3 separate queries
+      const { data: result, error: rpcError } = await supabase.rpc('get_dashboard_data', {
+        p_gym_id: gymId
+      });
 
-      const today = new Date().toISOString().split('T')[0];
-      const { data: attendance, error: attendanceError } = await supabase
-        .from("attendance")
-        .select(`
-          id,
-          check_in_time,
-          check_out_time,
-          membership_status,
-          members (full_name)
-        `)
-        .eq("gym_id", gymId)
-        .eq("check_in_date", today)
-        .order("check_in_time", { ascending: false });
+      if (rpcError || !result) {
+        console.error("Error fetching dashboard data:", rpcError);
+        setDataLoading(false);
+        return;
+      }
 
-      const firstDayOfMonth = new Date();
-      firstDayOfMonth.setDate(1);
-      const firstDayOfMonthStr = firstDayOfMonth.toISOString().split('T')[0];
-      
-      const { data: payments, error: paymentsError } = await supabase
-        .from("payments")
-        .select("id, amount, created_at, collected_by, collected_by_name, members(full_name)")
-        .eq("gym_id", gymId)
-        .gte("created_at", firstDayOfMonthStr)
-        .order("created_at", { ascending: false });
+      const members = result.members || [];
+      const attendance = result.attendance || [];
+      const payments = result.payments || [];
 
-      if (!membersError && members) {
-        let activeMembers = 0;
-        let expiredMembers = 0;
-        let totalRevenue = 0;
-        let pendingDues = 0;
+      // Process members stats
+      let activeMembers = 0;
+      let expiredMembers = 0;
+      let totalRevenue = 0;
+      let pendingDues = 0;
 
-        members.forEach((member) => {
-          const activeMembership = member.memberships?.find(m => m.status === "active");
-          if (activeMembership) {
-            const endDate = new Date(activeMembership.end_date);
-            const today = new Date();
-            if (endDate > today) {
-              activeMembers++;
-            } else {
-              expiredMembers++;
-            }
+      members.forEach((member) => {
+        const activeMembership = member.memberships?.find(m => m.status === "active");
+        if (activeMembership) {
+          const endDate = new Date(activeMembership.end_date);
+          const today = new Date();
+          if (endDate > today) {
+            activeMembers++;
+          } else {
+            expiredMembers++;
           }
-          
-          if (member.balance > 0) {
-            pendingDues += parseFloat(member.balance || 0);
-          }
-        });
-
-        if (payments && !paymentsError) {
-          totalRevenue = payments.reduce((sum, payment) => sum + parseFloat(payment.amount || 0), 0);
         }
+        
+        if (member.balance > 0) {
+          pendingDues += parseFloat(member.balance || 0);
+        }
+      });
 
-        setDashboardData({
-          totalMembers: members.length,
-          activeMembers,
-          expiredMembers,
-          todayAttendance: attendance?.length || 0,
-          monthlyRevenue: totalRevenue,
-          pendingDues,
-        });
-      }
+      totalRevenue = payments.reduce((sum, payment) => sum + parseFloat(payment.amount || 0), 0);
 
-      if (attendance && !attendanceError) {
-        const formattedAttendance = attendance.map((att) => ({
-          id: att.id,
-          name: att.members?.full_name || "Unknown",
-          checkIn: new Date(`1970-01-01T${att.check_in_time}`).toLocaleTimeString("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
-          }),
-          status: att.check_out_time ? "left" : "active",
-          membershipStatus: att.membership_status || "ACTIVE",
+      setDashboardData({
+        totalMembers: members.length,
+        activeMembers,
+        expiredMembers,
+        todayAttendance: attendance.length,
+        monthlyRevenue: totalRevenue,
+        pendingDues,
+      });
+
+      // Process attendance
+      const formattedAttendance = attendance.map((att) => ({
+        id: att.id,
+        name: att.member_name || "Unknown",
+        checkIn: new Date(`1970-01-01T${att.check_in_time}`).toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        }),
+        status: att.check_out_time ? "left" : "active",
+        membershipStatus: att.membership_status || "ACTIVE",
+      }));
+      setAllTodayAttendance(formattedAttendance);
+      setTodayAttendanceList(formattedAttendance.slice(0, 5));
+
+      // Process pending payments (members with dues)
+      const allMembersDue = members
+        .filter((m) => m.balance > 0)
+        .sort((a, b) => b.balance - a.balance)
+        .map((member) => ({
+          id: member.id,
+          name: member.full_name,
+          amount: member.balance,
+          dueDate: "Overdue",
         }));
-        setAllTodayAttendance(formattedAttendance);
-        setTodayAttendanceList(formattedAttendance.slice(0, 5));
-      }
+      setAllPendingPayments(allMembersDue);
+      setPendingPayments(allMembersDue.slice(0, 5));
 
-      if (members && !membersError) {
-        const allMembersDue = members
-          .filter((m) => m.balance > 0)
-          .sort((a, b) => b.balance - a.balance)
-          .map((member) => ({
-            id: member.id,
-            name: member.full_name,
-            amount: member.balance,
-            dueDate: "Overdue",
-          }));
-        setAllPendingPayments(allMembersDue);
-        setPendingPayments(allMembersDue.slice(0, 5));
-      }
-
+      // Build recent activity
       let activities = [];
       
-      if (attendance && !attendanceError) {
-        activities = activities.concat(
-          attendance.map((att) => ({
-            id: `att_${att.id}`,
-            type: "attendance",
-            text: `${att.members?.full_name || "Member"} checked ${att.check_out_time ? "out" : "in"}`,
-            time: "Today",
-            icon: att.check_out_time ? "🔴" : "🟢",
-          }))
-        );
-      }
+      activities = activities.concat(
+        attendance.map((att) => ({
+          id: `att_${att.id}`,
+          type: "attendance",
+          text: `${att.member_name || "Member"} checked ${att.check_out_time ? "out" : "in"}`,
+          time: "Today",
+          icon: att.check_out_time ? "🔴" : "🟢",
+        }))
+      );
 
       const recentMembers = members
-        ?.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
         .slice(0, 10);
       
-      if (recentMembers) {
-        activities = activities.concat(
-          recentMembers.map((member) => ({
-            id: `member_${member.id}`,
-            type: "member",
-            text: `New member: ${member.full_name}`,
-            time: new Date(member.created_at).toLocaleDateString(),
-            icon: "🆕",
-          }))
-        );
-      }
+      activities = activities.concat(
+        recentMembers.map((member) => ({
+          id: `member_${member.id}`,
+          type: "member",
+          text: `New member: ${member.full_name}`,
+          time: new Date(member.created_at).toLocaleDateString(),
+          icon: "🆕",
+        }))
+      );
 
-      // Add recent payments to activities (especially trainer collections)
-      if (payments && !paymentsError) {
-        const recentPayments = payments.slice(0, 10);
-        activities = activities.concat(
-          recentPayments.map((payment) => {
-            const memberName = payment.members?.full_name || "Member";
-            const amount = parseFloat(payment.amount || 0).toLocaleString();
-            let text = `Payment of ₹${amount} from ${memberName}`;
-            
-            // If collected by a trainer, show trainer name
-            if (payment.collected_by && payment.collected_by_name) {
-              text = `${payment.collected_by_name} collected ₹${amount} from ${memberName}`;
-            }
-            
-            return {
-              id: `payment_${payment.id}`,
-              type: "payment",
-              text,
-              time: new Date(payment.created_at).toLocaleDateString(),
-              icon: payment.collected_by ? "👨‍🏫" : "💰",
-            };
-          })
-        );
-      }
+      // Add recent payments to activities
+      const recentPayments = payments.slice(0, 10);
+      activities = activities.concat(
+        recentPayments.map((payment) => {
+          const memberName = payment.member_name || "Member";
+          const amount = parseFloat(payment.amount || 0).toLocaleString();
+          let text = `Payment of ₹${amount} from ${memberName}`;
+          
+          if (payment.collected_by && payment.collected_by_name) {
+            text = `${payment.collected_by_name} collected ₹${amount} from ${memberName}`;
+          }
+          
+          return {
+            id: `payment_${payment.id}`,
+            type: "payment",
+            text,
+            time: new Date(payment.created_at).toLocaleDateString(),
+            icon: payment.collected_by ? "👨‍🏫" : "💰",
+          };
+        })
+      );
 
       setAllRecentActivity(activities);
       setRecentActivity(activities.slice(0, 5));
@@ -589,7 +556,7 @@ export default function AdminDashboard() {
         <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-4 text-white mx-1">
           <div className="flex items-start justify-between mb-4">
             <div className="flex-1">
-              <p className="text-gray-300 text-xs font-medium mb-1">Monthly Revenue</p>
+              <p className="text-gray-300 text-xs font-medium mb-1">Revenue</p>
               <p className="text-2xl font-bold text-white">
                 {canViewFinance ? `₹${(dashboardData.monthlyRevenue / 1000).toFixed(1)}K` : '*****'}
               </p>

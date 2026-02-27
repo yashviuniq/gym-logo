@@ -1453,10 +1453,10 @@ function TrainerPlanModal({ plan, gymId, trainerId, trainerName, onClose, onSave
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl max-h-[90vh] overflow-hidden shadow-2xl animate-slide-up">
+    <div className=" mb-15 fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center px-0 pb-[env(safe-area-inset-bottom,0px)] sm:p-4">
+      <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl max-h-[85vh] sm:max-h-[90vh] overflow-hidden shadow-2xl animate-slide-up flex flex-col">
         {/* Header */}
-        <div className="p-4 border-b border-gray-200 sticky top-0 bg-white z-10">
+        <div className="p-4 border-b border-gray-200 bg-white z-10 shrink-0">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-bold text-gray-900">
@@ -1475,7 +1475,8 @@ function TrainerPlanModal({ plan, gymId, trainerId, trainerName, onClose, onSave
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="overflow-y-auto max-h-[70vh] p-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="overflow-y-auto flex-1 min-h-0 p-4">
           <div className="space-y-4">
             {/* Quick Duration Presets */}
             {!plan && (
@@ -1632,9 +1633,10 @@ function TrainerPlanModal({ plan, gymId, trainerId, trainerName, onClose, onSave
               </div>
             </div>
           </div>
+          </div>
 
-          {/* Actions */}
-          <div className="flex gap-3 pt-5 border-t border-gray-200 mt-4">
+          {/* Actions - sticky footer */}
+          <div className="flex gap-3 p-4 pb-8 border-t border-gray-200 bg-white shrink-0">
             <button
               type="button"
               onClick={onClose}

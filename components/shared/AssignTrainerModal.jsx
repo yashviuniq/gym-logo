@@ -1283,7 +1283,7 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
                       selectedTrainerId === currentTrainerId ||
                       (trainerDays.length > 0 && totalSelections === 0)
                     }
-                    className="flex-1 px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-blue-200 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="flex-1 px-5 py-3 mb-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-blue-200 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {loading ? (
                       <Loader2 className="w-4 h-4 animate-spin" />

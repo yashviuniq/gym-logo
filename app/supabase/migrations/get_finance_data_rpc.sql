@@ -1,0 +1,113 @@
+-- RPC function to fetch all finance data in a single call
+-- Replaces 5-6 separate queries on the finance page
+CREATE OR REPLACE FUNCTION get_finance_data(
+  p_gym_id UUID,
+  p_period_start TIMESTAMPTZ,
+  p_period_end TIMESTAMPTZ
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_result JSONB;
+  v_payments JSONB;
+  v_members_with_dues JSONB;
+  v_expenses_total NUMERIC;
+  v_payments_with_next_date JSONB;
+BEGIN
+  -- 1. Fetch payments in period with member info and resolved collector names
+  --    Replicates the OR condition: (paid_at in range) OR (paid_at IS NULL AND created_at in range)
+  --    Collector name resolved via profiles table (same as gym_trainers→profiles + profiles fallback)
+  SELECT COALESCE(jsonb_agg(
+    jsonb_build_object(
+      'id', p.id,
+      'amount', p.amount,
+      'payment_mode', p.payment_mode,
+      'status', p.status,
+      'paid_at', p.paid_at,
+      'created_at', p.created_at,
+      'collected_by', p.collected_by,
+      'collected_by_name', p.collected_by_name,
+      'member_full_name', mem.full_name,
+      'member_phone', mem.phone,
+      'collector_name', CASE 
+        WHEN p.collected_by IS NOT NULL AND pr.id IS NOT NULL THEN 
+          COALESCE(
+            NULLIF(TRIM(COALESCE(pr.first_name, '') || ' ' || COALESCE(pr.last_name, '')), ''),
+            'Trainer'
+          )
+        ELSE NULL
+      END
+    ) ORDER BY p.created_at DESC
+  ), '[]'::jsonb)
+  INTO v_payments
+  FROM payments p
+  LEFT JOIN members mem ON mem.id = p.member_id
+  LEFT JOIN profiles pr ON pr.id = p.collected_by
+  WHERE p.gym_id = p_gym_id
+    AND (
+      (p.paid_at >= p_period_start AND p.paid_at <= p_period_end)
+      OR 
+      (p.paid_at IS NULL AND p.created_at >= p_period_start AND p.created_at <= p_period_end)
+    );
+
+  -- 2. Fetch members with balance > 0 (pending dues) with their memberships
+  SELECT COALESCE(jsonb_agg(
+    jsonb_build_object(
+      'id', m.id,
+      'full_name', m.full_name,
+      'phone', m.phone,
+      'balance', m.balance,
+      'memberships', (
+        SELECT COALESCE(jsonb_agg(
+          jsonb_build_object(
+            'id', ms.id,
+            'end_date', ms.end_date,
+            'status', ms.status
+          )
+        ), '[]'::jsonb)
+        FROM memberships ms
+        WHERE ms.member_id = m.id
+      )
+    )
+  ), '[]'::jsonb)
+  INTO v_members_with_dues
+  FROM members m
+  WHERE m.gym_id = p_gym_id
+    AND m.balance > 0;
+
+  -- 3. Fetch total expenses in period (expense_date is DATE type)
+  SELECT COALESCE(SUM(e.amount), 0)
+  INTO v_expenses_total
+  FROM expenses e
+  WHERE e.gym_id = p_gym_id
+    AND e.expense_date >= p_period_start::DATE
+    AND e.expense_date <= p_period_end::DATE;
+
+  -- 4. Fetch payments with next_payment_date for due date resolution
+  SELECT COALESCE(jsonb_agg(
+    jsonb_build_object(
+      'id', pp.id,
+      'member_id', pp.member_id,
+      'next_payment_date', pp.next_payment_date,
+      'remaining_amount', pp.remaining_amount
+    )
+  ), '[]'::jsonb)
+  INTO v_payments_with_next_date
+  FROM payments pp
+  WHERE pp.gym_id = p_gym_id
+    AND pp.next_payment_date IS NOT NULL
+    AND pp.remaining_amount > 0;
+
+  -- Build final result
+  v_result := jsonb_build_object(
+    'payments', v_payments,
+    'members_with_dues', v_members_with_dues,
+    'expenses_total', v_expenses_total,
+    'payments_with_next_date', v_payments_with_next_date
+  );
+
+  RETURN v_result;
+END;
+$$;

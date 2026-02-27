@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
@@ -53,11 +53,15 @@ export default function FinancePage() {
   const [recentTransactions, setRecentTransactions] = useState([]);
   const [pendingPayments, setPendingPayments] = useState([]);
   const [paymentModes, setPaymentModes] = useState([]);
+  const lastFetchParamsRef = useRef(null);
 
   useEffect(() => {
     const storedGym = localStorage.getItem("selectedGym");
     if (storedGym) {
       const gym = JSON.parse(storedGym);
+      const fetchKey = `${gym.id}-${dateFilter}-${customStartDate}-${customEndDate}`;
+      if (lastFetchParamsRef.current === fetchKey) return;
+      lastFetchParamsRef.current = fetchKey;
       setSelectedGym(gym);
       fetchFinancialData(gym.id);
     } else {
@@ -101,210 +105,110 @@ export default function FinancePage() {
 
       const startISO = periodStart.toISOString();
       const endISO = periodEnd.toISOString();
-      // Date-only strings for expense_date column (DATE type, not TIMESTAMPTZ)
-      const startDateStr = periodStart.toISOString().split('T')[0];
-      const endDateStr = periodEnd.toISOString().split('T')[0];
 
-      let paymentsQuery = supabase
-        .from("payments")
-        .select(`
-          id,
-          amount,
-          payment_mode,
-          status,
-          paid_at,
-          created_at,
-          collected_by,
-          collected_by_name,
-          members (
-            id,
-            full_name,
-            phone
-          )
-        `)
-        .eq("gym_id", gymId)
-        .or(`and(paid_at.gte.${startISO},paid_at.lte.${endISO}),and(paid_at.is.null,created_at.gte.${startISO},created_at.lte.${endISO})`);
-      
-      const { data: payments, error: paymentsError } = await paymentsQuery.order("created_at", { ascending: false });
+      // Single RPC call replaces 5-6 separate queries
+      const { data: result, error: rpcError } = await supabase.rpc('get_finance_data', {
+        p_gym_id: gymId,
+        p_period_start: startISO,
+        p_period_end: endISO
+      });
 
-      const { data: membersData, error: membersError } = await supabase
-        .from("members")
-        .select(`
-          id,
-          full_name,
-          phone,
-          balance,
-          memberships (
-            id,
-            end_date,
-            status
-          )
-        `)
-        .eq("gym_id", gymId)
-        .gt("balance", 0);
-
-      let expensesQuery = supabase
-        .from("expenses")
-        .select("amount")
-        .eq("gym_id", gymId)
-        .gte("expense_date", startDateStr)
-        .lte("expense_date", endDateStr);
-      
-      const { data: expensesData, error: expensesError } = await expensesQuery;
-
-      if (expensesError) {
-        console.error("Expenses query error:", expensesError);
+      if (rpcError || !result) {
+        console.error("Error fetching finance data:", rpcError);
+        setLoading(false);
+        return;
       }
 
-      if (paymentsError) {
-        console.error("Payments query error:", paymentsError);
-      }
-      
-      if (membersError) {
-        console.error("Members query error:", membersError);
+      const payments = result.payments || [];
+      const membersWithDues = result.members_with_dues || [];
+      const expensesTotal = parseFloat(result.expenses_total || 0);
+      const paymentsWithNextDate = result.payments_with_next_date || [];
+
+      // All payments returned are already filtered by the selected period
+      const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
+
+      // Today's collection: for "today" filter it equals totalRevenue;
+      // for other filters, compute from today's subset
+      let todayCollection;
+      if (dateFilter === "today") {
+        todayCollection = totalRevenue;
+      } else if (dateFilter === "custom") {
+        todayCollection = totalRevenue; // show full period total in the card
+      } else {
+        const todayStr = new Date().toDateString();
+        todayCollection = payments
+          .filter(p => new Date(p.paid_at || p.created_at).toDateString() === todayStr)
+          .reduce((sum, p) => sum + p.amount, 0);
       }
 
-      if (!paymentsError && payments) {
-        // All payments returned are already filtered by the selected period
-        const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
+      setFinancialData({
+        todayCollection,
+        monthlyRevenue: totalRevenue,
+        pendingDues: membersWithDues.reduce((sum, m) => sum + (m.balance || 0), 0) || 0,
+        monthlyExpenses: expensesTotal,
+      });
 
-        // Today's collection: for "today" filter it equals totalRevenue;
-        // for other filters, compute from today's subset
-        let todayCollection;
-        if (dateFilter === "today") {
-          todayCollection = totalRevenue;
-        } else if (dateFilter === "custom") {
-          todayCollection = totalRevenue; // show full period total in the card
-        } else {
-          const todayStr = new Date().toDateString();
-          todayCollection = payments
-            .filter(p => new Date(p.paid_at || p.created_at).toDateString() === todayStr)
-            .reduce((sum, p) => sum + p.amount, 0);
+      // Build recent transactions (collector_name resolved by RPC via profiles join)
+      const transformedTransactions = payments.slice(0, 10).map((payment) => {
+        let collectorName = payment.collector_name;
+        if (!collectorName && payment.collected_by_name && !payment.collected_by_name.includes('@')) {
+          collectorName = payment.collected_by_name;
         }
-
-        const totalExpenses = expensesData?.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0) || 0;
-
-        setFinancialData({
-          todayCollection,
-          monthlyRevenue: totalRevenue,
-          pendingDues: membersData?.reduce((sum, m) => sum + (m.balance || 0), 0) || 0,
-          monthlyExpenses: totalExpenses,
-        });
-
-        // Fetch trainer names for payments collected by trainers
-        const collectorIds = [...new Set(payments.filter(p => p.collected_by).map(p => p.collected_by))];
-        let trainerNamesMap = {};
         
-        if (collectorIds.length > 0) {
-          // First try to get from gym_trainers table
-          const { data: trainersData } = await supabase
-            .from("gym_trainers")
-            .select("profile_id, profiles(first_name, last_name)")
-            .in("profile_id", collectorIds)
-            .eq("gym_id", gymId);
+        return {
+          id: payment.id,
+          name: payment.member_full_name || "Unknown",
+          type: "membership",
+          amount: payment.amount,
+          mode: payment.payment_mode,
+          date: formatDate(payment.paid_at || payment.created_at),
+          status: payment.status,
+          collectedBy: collectorName || null,
+          collectedByFallback: payment.collected_by || null,
+        };
+      });
+      setRecentTransactions(transformedTransactions);
 
-          if (trainersData && trainersData.length > 0) {
-            trainerNamesMap = trainersData.reduce((acc, trainer) => {
-              const firstName = trainer.profiles?.first_name || "";
-              const lastName = trainer.profiles?.last_name || "";
-              acc[trainer.profile_id] = `${firstName} ${lastName}`.trim() || "Trainer";
-              return acc;
-            }, {});
-          }
+      // Build payment mode stats
+      const modeStats = payments.reduce((acc, payment) => {
+        const mode = payment.payment_mode?.toUpperCase() || "UNKNOWN";
+        acc[mode] = (acc[mode] || 0) + payment.amount;
+        return acc;
+      }, {});
 
-          // If not found in gym_trainers, try profiles table
-          const missingIds = collectorIds.filter(id => !trainerNamesMap[id]);
-          if (missingIds.length > 0) {
-            const { data: profilesData } = await supabase
-              .from("profiles")
-              .select("id, first_name, last_name")
-              .in("id", missingIds);
+      const totalAmount = Object.values(modeStats).reduce((sum, amount) => sum + amount, 0);
+      const modesArray = Object.entries(modeStats).map(([mode, amount]) => ({
+        mode,
+        amount,
+        percentage: totalAmount > 0 ? Math.round((amount / totalAmount) * 100) : 0,
+      }));
+      setPaymentModes(modesArray);
 
-            if (profilesData) {
-              profilesData.forEach((profile) => {
-                const firstName = profile.first_name || "";
-                const lastName = profile.last_name || "";
-                trainerNamesMap[profile.id] = `${firstName} ${lastName}`.trim() || "Trainer";
-              });
-            }
-          }
-        }
+      // Build pending payments
+      const pendingData = membersWithDues.map((member) => {
+        const activeMembership = member.memberships?.find(m => m.status === "active");
+        const memberPaymentWithDate = paymentsWithNextDate.find(p => p.member_id === member.id);
+        
+        // Use next_payment_date if available, otherwise fall back to membership end_date
+        const nextPaymentDate = memberPaymentWithDate?.next_payment_date;
+        const dueDate = nextPaymentDate || activeMembership?.end_date || null;
+        
+        const daysOverdue = dueDate ? 
+          Math.ceil((new Date() - new Date(dueDate)) / (1000 * 60 * 60 * 24)) : 0;
 
-        const transformedTransactions = payments.slice(0, 10).map((payment) => {
-          // Get trainer name from our map, fallback to collected_by_name if not an email
-          let collectorName = trainerNamesMap[payment.collected_by] || null;
-          if (!collectorName && payment.collected_by_name && !payment.collected_by_name.includes('@')) {
-            collectorName = payment.collected_by_name;
-          }
-          
-          return {
-            id: payment.id,
-            name: payment.members?.full_name || "Unknown",
-            type: "membership",
-            amount: payment.amount,
-            mode: payment.payment_mode,
-            date: formatDate(payment.paid_at || payment.created_at),
-            status: payment.status,
-            collectedBy: collectorName || null,
-            collectedByFallback: payment.collected_by || null,
-          };
-        });
-        setRecentTransactions(transformedTransactions);
-
-        const modeStats = payments.reduce((acc, payment) => {
-          const mode = payment.payment_mode?.toUpperCase() || "UNKNOWN";
-          acc[mode] = (acc[mode] || 0) + payment.amount;
-          return acc;
-        }, {});
-
-        const totalAmount = Object.values(modeStats).reduce((sum, amount) => sum + amount, 0);
-        const modesArray = Object.entries(modeStats).map(([mode, amount]) => ({
-          mode,
-          amount,
-          percentage: totalAmount > 0 ? Math.round((amount / totalAmount) * 100) : 0,
-        }));
-        setPaymentModes(modesArray);
-      }
-
-      if (!membersError && membersData) {
-        // Fetch payments with next_payment_date for pending payments
-        const { data: paymentsWithNextDate } = await supabase
-          .from("payments")
-          .select(`
-            id,
-            member_id,
-            next_payment_date,
-            remaining_amount
-          `)
-          .eq("gym_id", gymId)
-          .not("next_payment_date", "is", null)
-          .gt("remaining_amount", 0);
-
-        const pendingData = membersData.map((member) => {
-          const activeMembership = member.memberships?.find(m => m.status === "active");
-          const memberPaymentWithDate = paymentsWithNextDate?.find(p => p.member_id === member.id);
-          
-          // Use next_payment_date if available, otherwise fall back to membership end_date
-          const nextPaymentDate = memberPaymentWithDate?.next_payment_date;
-          const dueDate = nextPaymentDate || activeMembership?.end_date || null;
-          
-          const daysOverdue = dueDate ? 
-            Math.ceil((new Date() - new Date(dueDate)) / (1000 * 60 * 60 * 24)) : 0;
-
-          return {
-            id: member.id,
-            name: member.full_name,
-            phone: member.phone,
-            amount: member.balance,
-            dueDate: dueDate ? new Date(dueDate).toLocaleDateString("en-IN") : "No due date",
-            nextPaymentDate: nextPaymentDate,
-            remainingAmount: memberPaymentWithDate?.remaining_amount || member.balance,
-            daysOverdue: Math.max(0, daysOverdue),
-            isOverdue: daysOverdue > 0,
-          };
-        });
-        setPendingPayments(pendingData);
-      }
+        return {
+          id: member.id,
+          name: member.full_name,
+          phone: member.phone,
+          amount: member.balance,
+          dueDate: dueDate ? new Date(dueDate).toLocaleDateString("en-IN") : "No due date",
+          nextPaymentDate: nextPaymentDate,
+          remainingAmount: memberPaymentWithDate?.remaining_amount || member.balance,
+          daysOverdue: Math.max(0, daysOverdue),
+          isOverdue: daysOverdue > 0,
+        };
+      });
+      setPendingPayments(pendingData);
 
     } catch (err) {
       console.error("Error fetching financial data:", err);

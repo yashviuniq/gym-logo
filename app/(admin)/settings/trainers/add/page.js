@@ -125,87 +125,34 @@ export default function AddTrainerPage() {
       const { data: authData } = await supabase.auth.getUser();
       const createdBy = authData?.user?.id;
 
-      // Check for duplicate email
-      const { data: existingEmail } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("email", formData.email.trim().toLowerCase())
-        .eq("gym_id", selectedGym.id)
-        .limit(1);
-
-      if (existingEmail && existingEmail.length > 0) {
-        throw new Error("A user with this email already exists in this gym");
-      }
-
-      // Check for duplicate phone
-      const { data: existingPhone } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("phone", formData.phone.trim())
-        .eq("gym_id", selectedGym.id)
-        .limit(1);
-
-      if (existingPhone && existingPhone.length > 0) {
-        throw new Error("A user with this phone number already exists in this gym");
-      }
-
-      // 1. Create profile for the trainer
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .insert({
-          first_name: formData.firstName.trim(),
-          last_name: formData.lastName.trim(),
-          email: formData.email.trim().toLowerCase(),
-          phone: formData.phone.trim(),
-          password: formData.password,
-          role: "trainer",
-          gym_id: selectedGym.id
-        })
-        .select()
-        .single();
-
-      if (profileError) {
-        if (profileError.message.includes("duplicate")) {
-          throw new Error("A user with this email or phone number already exists");
-        }
-        throw profileError;
-      }
-
-      // 2. Update trainer-specific fields on profile
       const availableDays = formData.availableDays.length > 0 ? formData.availableDays : null;
       const availableTimeSlots = formData.availableDays.length > 0 ? formData.availableTimeSlots : null;
 
-      if (availableDays || availableTimeSlots) {
-        const { error: scheduleError } = await supabase
-          .from("profiles")
-          .update({
-            available_days: availableDays,
-            available_time_slots: availableTimeSlots
-          })
-          .eq("id", profileData.id);
+      // Single RPC call – profile + gym_trainers in one transaction
+      const { data, error: rpcError } = await supabase.rpc("add_trainer_with_gym", {
+        p_gym_id: selectedGym.id,
+        p_first_name: formData.firstName.trim(),
+        p_last_name: formData.lastName.trim(),
+        p_email: formData.email.trim().toLowerCase(),
+        p_phone: formData.phone.trim(),
+        p_password: formData.password,
+        p_specialization: formData.specialization.trim() || null,
+        p_bio: formData.bio.trim() || null,
+        p_created_by: createdBy || null,
+        p_available_days: availableDays,
+        p_available_time_slots: availableTimeSlots
+      });
 
-        if (scheduleError) {
-          console.error("Error setting trainer schedule:", scheduleError);
+      if (rpcError) {
+        // Parse structured errors from the RPC
+        const msg = rpcError.message || "";
+        if (msg.includes("DUPLICATE_EMAIL:")) {
+          throw new Error(msg.split("DUPLICATE_EMAIL:")[1]);
         }
-      }
-
-      // 3. Create gym_trainer association
-      const { error: trainerError } = await supabase
-        .from("gym_trainers")
-        .insert({
-          gym_id: selectedGym.id,
-          profile_id: profileData.id,
-          specialization: formData.specialization.trim() || null,
-          bio: formData.bio.trim() || null,
-          is_active: true,
-          hire_date: new Date().toISOString().split("T")[0],
-          created_by: createdBy
-        });
-
-      if (trainerError) {
-        // Rollback profile creation
-        await supabase.from("profiles").delete().eq("id", profileData.id);
-        throw trainerError;
+        if (msg.includes("DUPLICATE_PHONE:")) {
+          throw new Error(msg.split("DUPLICATE_PHONE:")[1]);
+        }
+        throw new Error(msg || "Failed to add trainer");
       }
 
       setSuccess(true);
@@ -214,7 +161,7 @@ export default function AddTrainerPage() {
       }, 1500);
     } catch (err) {
       console.error("Error creating trainer:", err);
-      setError(err.message || "Failed to create trainer");
+      setError(err.message || "Failed to add trainer. Please try again.");
     } finally {
       setLoading(false);
     }

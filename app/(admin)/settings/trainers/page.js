@@ -59,6 +59,34 @@ export default function TrainersPage() {
     setLoading(true);
 
     try {
+      // Sync: auto-create gym_trainers rows for any profile trainers missing from the table
+      const { data: profileTrainers } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("role", "trainer")
+        .eq("gym_id", selectedGym.id);
+
+      if (profileTrainers && profileTrainers.length > 0) {
+        const { data: existingGymTrainers } = await supabase
+          .from("gym_trainers")
+          .select("profile_id")
+          .eq("gym_id", selectedGym.id);
+
+        const existingIds = new Set(existingGymTrainers?.map(t => t.profile_id) || []);
+        const missing = profileTrainers.filter(p => !existingIds.has(p.id));
+
+        if (missing.length > 0) {
+          await supabase.from("gym_trainers").insert(
+            missing.map(p => ({
+              gym_id: selectedGym.id,
+              profile_id: p.id,
+              is_active: true,
+              hire_date: new Date().toISOString().split("T")[0],
+            }))
+          );
+        }
+      }
+
       // Fetch trainers with their assignments count
       const { data: trainersData, error } = await supabase
         .from("gym_trainers")
@@ -194,13 +222,23 @@ export default function TrainersPage() {
         .update({ trainer_id: null })
         .eq("trainer_id", trainer.profileId);
 
-      // 3) Delete trainer record
+      // 3) Delete gym_trainers record
       const { error } = await supabase
         .from("gym_trainers")
         .delete()
         .eq("id", trainer.id);
 
       if (error) throw error;
+
+      // 4) Delete the trainer profile so it doesn't get re-synced
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .delete()
+        .eq("id", trainer.profileId);
+
+      if (profileError) {
+        console.warn("Profile deletion failed (may have FK constraints):", profileError);
+      }
       
       fetchTrainers();
       setDeleteConfirm(null);

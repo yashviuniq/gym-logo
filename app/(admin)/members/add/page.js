@@ -116,12 +116,25 @@ export default function AddMemberPage() {
   const fetchMembershipPlans = async (gymId) => {
     setLoadingPlans(true);
     try {
-      const { data: plans, error } = await supabase
-        .from("membership_plans")
-        .select("id, name, duration_days, price, is_active")
-        .eq("gym_id", gymId)
-        .eq("is_active", true)
-        .order("price", { ascending: true });
+      // Use same-origin API proxy to avoid CORS issues
+      let plans = null;
+      let error = null;
+      try {
+        const res = await fetch(`/api/members/plans?gym_id=${gymId}`);
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'API error');
+        plans = json.plans;
+      } catch (apiErr) {
+        console.warn("API proxy failed, falling back to direct Supabase:", apiErr);
+        const result = await supabase
+          .from("membership_plans")
+          .select("id, name, duration_days, price, is_active")
+          .eq("gym_id", gymId)
+          .eq("is_active", true)
+          .order("price", { ascending: true });
+        plans = result.data;
+        error = result.error;
+      }
 
       if (error) {
         console.error("Error fetching plans:", error);
@@ -339,7 +352,7 @@ export default function AddMemberPage() {
       // ── Step 3: Single RPC call — all DB inserts in one transaction ──
       const defaultPassword = formData.phone.slice(1,2)+formData.phone.slice(3,5)+formData.phone.slice(-2) + "213";
 
-      const { data: rpcResult, error: rpcError } = await supabase.rpc('add_member_with_membership', {
+      const rpcParams = {
         p_gym_id: selectedGym.id,
         p_full_name: formData.name,
         p_phone: formData.phone,
@@ -369,7 +382,28 @@ export default function AddMemberPage() {
         // Credentials
         p_login_value: formData.phone,
         p_default_password: defaultPassword,
-      });
+      };
+
+      // Use same-origin API proxy to avoid CORS issues, fallback to direct Supabase
+      let rpcResult, rpcError;
+      try {
+        const res = await fetch('/api/members/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ params: rpcParams }),
+        });
+        const json = await res.json();
+        if (!res.ok) {
+          rpcError = { message: json.error };
+        } else {
+          rpcResult = json.data;
+        }
+      } catch (apiErr) {
+        console.warn("API proxy failed, falling back to direct Supabase:", apiErr);
+        const result = await supabase.rpc('add_member_with_membership', rpcParams);
+        rpcResult = result.data;
+        rpcError = result.error;
+      }
 
       if (rpcError) {
         // Handle duplicate phone error from RPC
@@ -866,10 +900,10 @@ export default function AddMemberPage() {
                     max={getTodayString()}
                     className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
                     value={formData.startDate}
-                    onChange={(e) => {
-                      updateForm("startDate", e.target.value);
-                      updateForm("joinDate", e.target.value);
-                    }}
+                    onChange={(e) =>{ updateForm("startDate", e.target.value)
+                      updateForm("joindate",e.target.value);
+                    }
+                    }
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-1">Select today or a past date when membership started</p>

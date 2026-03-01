@@ -48,7 +48,7 @@ export default function AdminDashboard() {
     activeMembers: 0,
     expiredMembers: 0,
     todayAttendance: 0,
-    monthlyRevenue: 0,
+    totalRevenue: 0,
     pendingDues: 0,
   });
   const [todayAttendanceList, setTodayAttendanceList] = useState([]);
@@ -246,9 +246,26 @@ export default function AdminDashboard() {
     setDataLoading(true);
     try {
       // Single RPC call replaces 3 separate queries
-      const { data: result, error: rpcError } = await supabase.rpc('get_dashboard_data', {
-        p_gym_id: gymId
-      });
+      // Use same-origin API proxy to avoid CORS issues, fallback to direct Supabase
+      let result, rpcError;
+      try {
+        const res = await fetch('/api/dashboard/data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ p_gym_id: gymId }),
+        });
+        const json = await res.json();
+        if (!res.ok) {
+          rpcError = { message: json.error };
+        } else {
+          result = json.data;
+        }
+      } catch (apiErr) {
+        console.warn("API proxy failed, falling back to direct Supabase:", apiErr);
+        const rpcResult = await supabase.rpc('get_dashboard_data', { p_gym_id: gymId });
+        result = rpcResult.data;
+        rpcError = rpcResult.error;
+      }
 
       if (rpcError || !result) {
         console.error("Error fetching dashboard data:", rpcError);
@@ -283,14 +300,17 @@ export default function AdminDashboard() {
         }
       });
 
-      totalRevenue = payments.reduce((sum, payment) => sum + parseFloat(payment.amount || 0), 0);
+      totalRevenue = parseFloat(result.overall_revenue || 0);
+      if (!totalRevenue) {
+        totalRevenue = payments.reduce((sum, payment) => sum + parseFloat(payment.amount || 0), 0);
+      }
 
       setDashboardData({
         totalMembers: members.length,
         activeMembers,
         expiredMembers,
         todayAttendance: attendance.length,
-        monthlyRevenue: totalRevenue,
+        totalRevenue,
         pendingDues,
       });
 
@@ -558,7 +578,7 @@ export default function AdminDashboard() {
             <div className="flex-1">
               <p className="text-gray-300 text-xs font-medium mb-1">Revenue</p>
               <p className="text-2xl font-bold text-white">
-                {canViewFinance ? `₹${(dashboardData.monthlyRevenue / 1000).toFixed(1)}K` : '*****'}
+                {canViewFinance ? `₹${(dashboardData.totalRevenue / 1000).toFixed(1)}K` : '*****'}
               </p>
               <div className="flex items-center gap-1 mt-2">
                 <TrendingUp className="w-3 h-3 text-green-400" />

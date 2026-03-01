@@ -1,5 +1,4 @@
--- RPC function to fetch all dashboard data in a single call
--- Replaces 3 separate queries on the dashboard page
+-- Update dashboard RPC to include all-time overall revenue
 CREATE OR REPLACE FUNCTION get_dashboard_data(
   p_gym_id UUID
 )
@@ -60,7 +59,7 @@ BEGIN
   WHERE a.gym_id = p_gym_id
     AND a.check_in_date = v_today;
 
-  -- 3. Fetch this month's payments with member names
+  -- 3. Fetch this month's payments with member names (used for recent payment activity)
   SELECT COALESCE(jsonb_agg(
     jsonb_build_object(
       'id', p.id,

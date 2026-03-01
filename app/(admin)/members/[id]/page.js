@@ -89,10 +89,29 @@ export default function MemberDetailPage() {
     setLoading(true);
     try {
       // Single RPC call replaces 7-8 separate queries
-      const { data: result, error } = await supabase.rpc('get_member_details', {
-        p_member_id: memberId,
-        p_gym_id: gymId
-      });
+      // Use same-origin API proxy to avoid CORS issues, fallback to direct Supabase
+      let result, error;
+      try {
+        const res = await fetch('/api/members/details', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ p_member_id: memberId, p_gym_id: gymId }),
+        });
+        const json = await res.json();
+        if (!res.ok) {
+          error = { message: json.error };
+        } else {
+          result = json.data;
+        }
+      } catch (apiErr) {
+        console.warn("API proxy failed, falling back to direct Supabase:", apiErr);
+        const rpcResult = await supabase.rpc('get_member_details', {
+          p_member_id: memberId,
+          p_gym_id: gymId
+        });
+        result = rpcResult.data;
+        error = rpcResult.error;
+      }
 
       if (error || result?.error) {
         console.error("Error fetching member:", error || result?.error);

@@ -69,11 +69,30 @@ export default function MembersPage() {
     if (!gymId) return;
     setLoading(true);
     try {
-      const { data: result, error } = await supabase.rpc('get_members_list', {
-        p_gym_id: gymId,
-        p_user_id: user?.id || null,
-        p_is_trainer: isTrainer || false
-      });
+      // Use same-origin API proxy to avoid CORS issues, fallback to direct Supabase
+      let result, error;
+      try {
+        const res = await fetch('/api/members/list', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ p_gym_id: gymId, p_user_id: user?.id || null, p_is_trainer: isTrainer || false }),
+        });
+        const json = await res.json();
+        if (!res.ok) {
+          error = { message: json.error };
+        } else {
+          result = json.data;
+        }
+      } catch (apiErr) {
+        console.warn("API proxy failed, falling back to direct Supabase:", apiErr);
+        const rpcResult = await supabase.rpc('get_members_list', {
+          p_gym_id: gymId,
+          p_user_id: user?.id || null,
+          p_is_trainer: isTrainer || false
+        });
+        result = rpcResult.data;
+        error = rpcResult.error;
+      }
 
       if (error || !result) {
         console.error("Error fetching members:", error);
@@ -198,12 +217,18 @@ export default function MembersPage() {
     const activeCount = members.filter(m => m.status === "active").length;
     const expiredCount = members.filter(m => m.status === "expired").length;
     const duesCount = members.filter(m => m.dueAmount > 0).length;
+    // Renewal: members whose membership expires within 7 days OR expired within last 7 days
+    const renewalCount = members.filter(m => {
+      if (m.daysRemaining === null) return false;
+      return m.daysRemaining >= -7 && m.daysRemaining <= 7;
+    }).length;
     
     setStats({
       total: members.length,
       active: activeCount,
       expired: expiredCount,
-      dues: duesCount
+      dues: duesCount,
+      renewal: renewalCount
     });
   }, [members]);
 
@@ -212,11 +237,22 @@ export default function MembersPage() {
       member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       member.phone.includes(searchQuery) ||
       (member.email && member.email.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesFilter =
-      filterStatus === "all" || member.status === filterStatus;
+    let matchesFilter;
+    if (filterStatus === "renewal") {
+      // Show members expiring within 7 days or expired within last 7 days
+      matchesFilter = member.daysRemaining !== null && member.daysRemaining >= -7 && member.daysRemaining <= 7;
+    } else {
+      matchesFilter = filterStatus === "all" || member.status === filterStatus;
+    }
     const matchesMyMembers =
       !showMyMembers || myMemberIds.has(member.id);
     return matchesSearch && matchesFilter && matchesMyMembers;
+  }).sort((a, b) => {
+    // When renewal filter is active, sort by days remaining (most urgent first)
+    if (filterStatus === "renewal") {
+      return (a.daysRemaining ?? 999) - (b.daysRemaining ?? 999);
+    }
+    return 0;
   });
 
   const getStatusConfig = (status) => {
@@ -452,6 +488,7 @@ export default function MembersPage() {
               { id: "all", label: "All", count: stats.total },
               { id: "active", label: "Active", count: stats.active },
               { id: "expired", label: "Expired", count: stats.expired },
+              { id: "renewal", label: "Renewal", count: stats.renewal || 0 },
               { id: "inactive", label: "Inactive", count: stats.total - stats.active - stats.expired }
             ].map((filter) => (
               <button

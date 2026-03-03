@@ -446,6 +446,24 @@ export default function FinancePage() {
           </div>
         </div>
 
+        {/* Finance Insights Quick Link */}
+        <button
+          onClick={() => router.push("/finance/insights")}
+          className="w-full bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl p-3 mx-1 shadow-md flex items-center justify-between text-white active:scale-[0.98] transition-transform"
+          style={{ maxWidth: 'calc(100% - 8px)' }}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+              <BarChart3 className="w-5 h-5 text-white" />
+            </div>
+            <div className="text-left">
+              <p className="text-sm font-semibold">Finance Insights</p>
+              <p className="text-xs text-white/80">All-time stats & monthly breakdown</p>
+            </div>
+          </div>
+          <ChevronRight className="w-5 h-5 text-white/70" />
+        </button>
+
         {/* Tabs - Mobile Optimized */}
         <div className="bg-white rounded-xl p-3 mx-1 border border-gray-200 shadow-sm">
           <div className="flex items-center gap-2 mb-3">

@@ -15,6 +15,9 @@ import {
   Activity,
   RefreshCw,
   ArrowLeft,
+  X,
+  Phone,
+  ChevronRight,
 } from "lucide-react";
 
 const MONTHS = [
@@ -75,6 +78,7 @@ export default function FinanceInsightsPage() {
   const [loading, setLoading] = useState(true);
   const [monthLoading, setMonthLoading] = useState(false);
   const [data, setData] = useState(null);
+  const [drillDown, setDrillDown] = useState(null); // null | "new_joins" | "revenue" | "renewals"
 
   useEffect(() => {
     const storedGym = localStorage.getItem("selectedGym");
@@ -321,8 +325,11 @@ export default function FinanceInsightsPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {/* Revenue Card */}
-              <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+              {/* Revenue Card - Clickable */}
+              <div
+                onClick={() => (data?.month_revenue_list?.length > 0) && setDrillDown("revenue")}
+                className={`bg-white rounded-2xl p-5 border border-gray-100 shadow-sm ${data?.month_revenue_list?.length > 0 ? "cursor-pointer active:scale-[0.98] transition-transform" : ""}`}
+              >
                 <div className="flex items-center gap-2 mb-4">
                   <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-sm">
                     <IndianRupee className="w-4 h-4 text-white" />
@@ -333,15 +340,22 @@ export default function FinanceInsightsPage() {
                   </span>
                 </div>
                 <div className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl p-4 border border-emerald-100">
-                  <p className="text-xs font-medium text-emerald-600 mb-1">Total Revenue</p>
-                  <p className="text-2xl font-bold text-emerald-700">
-                    {formatCurrency(data?.month_revenue)}
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-emerald-600 mb-1">Total Revenue</p>
+                      <p className="text-2xl font-bold text-emerald-700">
+                        {formatCurrency(data?.month_revenue)}
+                      </p>
+                    </div>
+                    {data?.month_revenue_list?.length > 0 && (
+                      <ChevronRight className="w-5 h-5 text-emerald-400" />
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* Members Card */}
-              <div className="bg-white rounded-2xl p-5 border mb-10 border-gray-100 shadow-sm">
+              <div className="bg-white rounded-2xl p-5 border mb-20 border-gray-100 shadow-sm">
                 <div className="flex items-center gap-2 mb-4">
                   <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-sm">
                     <Users className="w-4 h-4 text-white" />
@@ -352,13 +366,19 @@ export default function FinanceInsightsPage() {
                   </span>
                 </div>
 
-                {/* New Joins - Highlighted */}
-                <div className="bg-gradient-to-r from-violet-50 to-purple-50 rounded-xl p-4 border border-violet-200 mb-3">
+                {/* New Joins - Clickable */}
+                <div
+                  onClick={() => (data?.month_new_joins_list?.length > 0) && setDrillDown("new_joins")}
+                  className={`bg-gradient-to-r from-violet-50 to-purple-50 rounded-xl p-4 border border-violet-200 mb-3 ${data?.month_new_joins_list?.length > 0 ? "cursor-pointer active:scale-[0.98] transition-transform" : ""}`}
+                >
                   <div className="flex items-center gap-2 mb-1">
                     <UserPlus className="w-4 h-4 text-violet-600" />
                     <p className="text-xs font-semibold text-violet-600 uppercase tracking-wide">
                       New Joins
                     </p>
+                    {data?.month_new_joins_list?.length > 0 && (
+                      <ChevronRight className="w-4 h-4 text-violet-400 ml-auto" />
+                    )}
                   </div>
                   <p className="text-3xl font-extrabold text-violet-700">
                     {data?.month_new_joins ?? 0}
@@ -370,10 +390,17 @@ export default function FinanceInsightsPage() {
 
                 {/* Renewals & Active - Secondary */}
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                  {/* Renewals - Clickable */}
+                  <div
+                    onClick={() => (data?.month_renewals_list?.length > 0) && setDrillDown("renewals")}
+                    className={`bg-gray-50 rounded-xl p-3 border border-gray-100 ${data?.month_renewals_list?.length > 0 ? "cursor-pointer active:scale-[0.98] transition-transform" : ""}`}
+                  >
                     <div className="flex items-center gap-1.5 mb-1">
                       <RefreshCw className="w-3.5 h-3.5 text-blue-500" />
                       <p className="text-xs font-medium text-gray-500">Renewals</p>
+                      {data?.month_renewals_list?.length > 0 && (
+                        <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
+                      )}
                     </div>
                     <p className="text-lg font-bold text-gray-800">
                       {data?.month_renewals ?? 0}
@@ -394,6 +421,172 @@ export default function FinanceInsightsPage() {
           )}
         </section>
       </main>
+
+      {/* ─── Drill-Down Modal ─── */}
+      {drillDown && (
+        <div className="fixed inset-0 mb-3 bg-black/50 z-50 flex items-end sm:items-center justify-center" onClick={() => setDrillDown(null)}>
+          <div
+            className="bg-white w-full max-w-lg max-h-[85vh] rounded-t-2xl sm:rounded-2xl overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className={`p-4 flex items-center gap-3 border-b border-gray-100 ${
+              drillDown === "revenue" ? "bg-gradient-to-r from-emerald-50 to-green-50" :
+              drillDown === "new_joins" ? "bg-gradient-to-r from-violet-50 to-purple-50" :
+              "bg-gradient-to-r from-blue-50 to-indigo-50"
+            }`}>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm ${
+                drillDown === "revenue" ? "bg-gradient-to-br from-emerald-500 to-green-600" :
+                drillDown === "new_joins" ? "bg-gradient-to-br from-violet-500 to-purple-600" :
+                "bg-gradient-to-br from-blue-500 to-indigo-600"
+              }`}>
+                {drillDown === "revenue" && <IndianRupee className="w-5 h-5 text-white" />}
+                {drillDown === "new_joins" && <UserPlus className="w-5 h-5 text-white" />}
+                {drillDown === "renewals" && <RefreshCw className="w-5 h-5 text-white" />}
+              </div>
+              <div className="flex-1 ">
+                <h3 className="font-bold text-gray-900 text-base">
+                  {drillDown === "revenue" && "Revenue Details"}
+                  {drillDown === "new_joins" && "New Members"}
+                  {drillDown === "renewals" && "Renewals"}
+                </h3>
+                <p className="text-xs text-gray-500">{MONTHS[selectedMonth]} {selectedYear}</p>
+              </div>
+              <button
+                onClick={() => setDrillDown(null)}
+                className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 active:scale-90 transition-all"
+              >
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-4 mb-15 space-y-2">
+              {/* Revenue Drill-Down */}
+              {drillDown === "revenue" && (
+                <>
+                  <div className="flex items-center justify-between mb-3 px-1">
+                    <span className="text-xs font-medium text-gray-500">
+                      {data?.month_revenue_list?.length || 0} payments
+                    </span>
+                    <span className="text-sm font-bold text-emerald-600">
+                      Total: {formatCurrency(data?.month_revenue)}
+                    </span>
+                  </div>
+                  {(data?.month_revenue_list || []).map((p, i) => (
+                    <div key={p.id || i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                        {(p.member_name || "?").charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-gray-900 text-sm truncate">{p.member_name}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {p.phone && (
+                            <span className="text-xs text-gray-500 flex items-center gap-1">
+                              <Phone className="w-3 h-3" />{p.phone}
+                            </span>
+                          )}
+                          <span className="text-xs text-gray-400 capitalize">• {p.payment_mode}</span>
+                        </div>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          {new Date(p.paid_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                        </p>
+                      </div>
+                      <p className="font-bold text-emerald-600 text-sm whitespace-nowrap">
+                        ₹{Number(p.amount).toLocaleString("en-IN")}
+                      </p>
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {/* New Joins Drill-Down */}
+              {drillDown === "new_joins" && (
+                <>
+                  <div className="flex items-center justify-between mb-5 px-1">
+                    <span className="text-xs font-medium text-gray-500">
+                      {data?.month_new_joins_list?.length || 0} members
+                    </span>
+                  </div>
+                  {(data?.month_new_joins_list || []).map((m, i) => (
+                    <div
+                      key={m.id || i}
+                      onClick={() => router.push(`/members/${m.id}`)}
+                      className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer active:scale-[0.98] transition-transform"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                        {(m.full_name || "?").charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-gray-900 text-sm truncate">{m.full_name}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {m.phone && (
+                            <span className="text-xs text-gray-500 flex items-center gap-1">
+                              <Phone className="w-3 h-3" />{m.phone}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          Joined {new Date(m.join_date + 'T00:00:00').toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                        </p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-xs font-medium text-violet-600">{m.plan_name}</p>
+                        <ChevronRight className="w-4 h-4 text-gray-400 ml-auto mt-1" />
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {/* Renewals Drill-Down */}
+              {drillDown === "renewals" && (
+                <>
+                  <div className="flex items-center justify-between mb-3 px-1">
+                    <span className="text-xs font-medium text-gray-500">
+                      {data?.month_renewals_list?.length || 0} renewals
+                    </span>
+                  </div>
+                  {(data?.month_renewals_list || []).map((r, i) => (
+                    <div key={r.id || i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                        {(r.member_name || "?").charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-gray-900 text-sm truncate">{r.member_name}</p>
+                        {r.phone && (
+                          <span className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                            <Phone className="w-3 h-3" />{r.phone}
+                          </span>
+                        )}
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          {new Date(r.start_date + 'T00:00:00').toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}
+                          {" → "}
+                          {new Date(r.end_date + 'T00:00:00').toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                        </p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <span className="px-2 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-lg border border-blue-100">
+                          {r.plan_name}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {/* Empty state */}
+              {((drillDown === "revenue" && !(data?.month_revenue_list?.length)) ||
+                (drillDown === "new_joins" && !(data?.month_new_joins_list?.length)) ||
+                (drillDown === "renewals" && !(data?.month_renewals_list?.length))) && (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 text-sm">No data found</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

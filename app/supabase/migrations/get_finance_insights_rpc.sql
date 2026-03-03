@@ -127,7 +127,75 @@ BEGIN
     'month_revenue', v_month_revenue,
     'month_new_joins', v_month_new_joins,
     'month_renewals', v_month_renewals,
-    'month_active_members', v_month_active_members
+    'month_active_members', v_month_active_members,
+
+    -- Detail: New Joins list
+    'month_new_joins_list', COALESCE((
+      SELECT jsonb_agg(jsonb_build_object(
+        'id', m.id,
+        'full_name', m.full_name,
+        'phone', m.phone,
+        'join_date', m.join_date,
+        'plan_name', COALESCE(
+          (SELECT mp.name FROM memberships ms2
+           JOIN membership_plans mp ON mp.id = ms2.plan_id
+           WHERE ms2.member_id = m.id AND ms2.gym_id = p_gym_id
+           ORDER BY ms2.created_at DESC LIMIT 1),
+          'No Plan'
+        )
+      ) ORDER BY m.join_date DESC)
+      FROM members m
+      WHERE m.gym_id = p_gym_id
+        AND m.join_date >= v_month_start
+        AND m.join_date <= v_month_end
+    ), '[]'::jsonb),
+
+    -- Detail: Revenue payments list
+    'month_revenue_list', COALESCE((
+      SELECT jsonb_agg(jsonb_build_object(
+        'id', p.id,
+        'member_name', COALESCE(mem.full_name, 'Unknown'),
+        'phone', mem.phone,
+        'amount', p.amount,
+        'payment_mode', p.payment_mode,
+        'paid_at', COALESCE(p.paid_at, p.created_at)
+      ) ORDER BY COALESCE(p.paid_at, p.created_at) DESC)
+      FROM payments p
+      LEFT JOIN members mem ON mem.id = p.member_id
+      WHERE p.gym_id = p_gym_id
+        AND p.status = 'paid'
+        AND (
+          (p.paid_at IS NOT NULL AND p.paid_at::date >= v_month_start AND p.paid_at::date <= v_month_end)
+          OR
+          (p.paid_at IS NULL AND p.created_at::date >= v_month_start AND p.created_at::date <= v_month_end)
+        )
+    ), '[]'::jsonb),
+
+    -- Detail: Renewals list
+    'month_renewals_list', COALESCE((
+      SELECT jsonb_agg(jsonb_build_object(
+        'id', ms.id,
+        'member_name', COALESCE(mem.full_name, 'Unknown'),
+        'phone', mem.phone,
+        'plan_name', COALESCE(mp.name, 'N/A'),
+        'start_date', ms.start_date,
+        'end_date', ms.end_date,
+        'created_at', ms.created_at
+      ) ORDER BY ms.created_at DESC)
+      FROM memberships ms
+      JOIN members mem ON mem.id = ms.member_id
+      LEFT JOIN membership_plans mp ON mp.id = ms.plan_id
+      WHERE ms.gym_id = p_gym_id
+        AND ms.created_at::date >= v_month_start
+        AND ms.created_at::date <= v_month_end
+        AND EXISTS (
+          SELECT 1 FROM memberships ms2
+          WHERE ms2.member_id = ms.member_id
+            AND ms2.gym_id = p_gym_id
+            AND ms2.id != ms.id
+            AND ms2.created_at < ms.created_at
+        )
+    ), '[]'::jsonb)
   );
 
   RETURN v_result;

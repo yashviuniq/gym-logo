@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
 import { supabase } from "@/lib/supabaseClient";
+import { clearSession } from "@/lib/sessionStorage";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useUserRole } from "@/lib/hooks/useUserRole";
 import { hasPermission, PERMISSIONS } from "@/lib/constants/permissions";
@@ -698,11 +699,16 @@ export default function SettingsPage() {
 
           {/* Logout Button */}
           <button
-            onClick={() => {
+            onClick={async () => {
               if (window.confirm("Are you sure you want to logout?")) {
+                // Clear all session & cached data
+                await clearSession();
                 localStorage.removeItem("selectedGym");
-                localStorage.removeItem("gymUser");
-                localStorage.removeItem("gymUserExpiry");
+                localStorage.removeItem("member");
+                localStorage.removeItem("swr-cache");
+                localStorage.removeItem("trainer_login_at");
+                localStorage.removeItem("notif_state");
+                localStorage.removeItem("lastReceiptCleanup");
                 window.history.replaceState(null, "", "/auth/login");
                 router.replace("/auth/login");
               }

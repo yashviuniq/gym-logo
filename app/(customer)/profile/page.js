@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
 import { supabase } from "@/lib/supabaseClient";
+import { clearSession } from "@/lib/sessionStorage";
 import { ProfilePageSkeleton } from "@/components/shared/CustomerSkeleton";
 import { Edit2, Camera, Calendar, AlertTriangle, DollarSign } from "lucide-react";
 
@@ -628,9 +629,15 @@ export default function CustomerProfilePage() {
 
         {/* Logout Button */}
         <button
-          onClick={() => {
-            localStorage.removeItem("gymUser");
-            localStorage.removeItem("gymUserExpiry");
+          onClick={async () => {
+            // Clear all session & cached data
+            await clearSession();
+            localStorage.removeItem("selectedGym");
+            localStorage.removeItem("member");
+            localStorage.removeItem("swr-cache");
+            localStorage.removeItem("trainer_login_at");
+            localStorage.removeItem("notif_state");
+            localStorage.removeItem("lastReceiptCleanup");
             window.history.replaceState(null, "", "/auth/login");
             router.replace("/auth/login");
           }}

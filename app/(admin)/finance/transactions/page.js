@@ -38,6 +38,10 @@ export default function TransactionsPage() {
           created_at,
           collected_by,
           collected_by_name,
+          collector:profiles!collected_by(
+            first_name,
+            last_name
+          ),
           members (
             id,
             full_name,
@@ -52,17 +56,30 @@ export default function TransactionsPage() {
         console.error("Error fetching transactions:", error);
         setTransactions([]);
       } else {
-        const transformedTransactions = payments.map((payment) => ({
-          id: payment.id,
-          name: payment.members?.full_name || "Unknown",
-          type: "membership",
-          amount: parseFloat(payment.amount),
-          mode: payment.payment_mode?.toLowerCase() || "cash",
-          date: payment.paid_at || payment.created_at,
-          status: payment.status || "paid",
-          collectedBy: payment.collected_by_name || null,
-          collectedByFallback: payment.collected_by || null,
-        }));
+        const transformedTransactions = payments.map((payment) => {
+          // Resolve collector name: prefer collected_by_name, then profiles join, then null
+          let collectorName = null;
+          if (payment.collected_by_name && !payment.collected_by_name.includes('@')) {
+            collectorName = payment.collected_by_name;
+          } else if (payment.collector) {
+            const fn = payment.collector.first_name || "";
+            const ln = payment.collector.last_name || "";
+            const fullName = `${fn} ${ln}`.trim();
+            if (fullName) collectorName = fullName;
+          }
+
+          return {
+            id: payment.id,
+            name: payment.members?.full_name || "Unknown",
+            type: "membership",
+            amount: parseFloat(payment.amount),
+            mode: payment.payment_mode?.toLowerCase() || "cash",
+            date: payment.paid_at || payment.created_at,
+            status: payment.status || "paid",
+            collectedBy: collectorName,
+            collectedByFallback: payment.collected_by || null,
+          };
+        });
         setTransactions(transformedTransactions);
       }
     } catch (err) {
@@ -211,10 +228,10 @@ export default function TransactionsPage() {
                   <div>
                     <p className="font-medium text-gray-900">
                       {txn.name}
-                      {(txn.collectedBy || txn.collectedByFallback) && (
+                      {txn.collectedBy && (
                         <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold text-purple-700 bg-purple-50 rounded-full border border-purple-100">
                           <span>Trainer:</span>
-                          <span>{txn.collectedBy || "Trainer"}</span>
+                          <span>{txn.collectedBy}</span>
                         </span>
                       )}
                     </p>

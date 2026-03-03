@@ -82,228 +82,107 @@ export default function TrainerDetailsPage({ params }) {
     setLoading(true);
 
     try {
-      // Fetch trainer details
-      const { data: trainerData, error: trainerError } = await supabase
-        .from("gym_trainers")
-        .select(`
-          id,
-          profile_id,
-          specialization,
-          bio,
-          is_active,
-          hire_date,
-          created_at,
-          profiles:profile_id (
-            id,
-            first_name,
-            last_name,
-            email,
-            phone,
-            password,
-            trainer_cost,
-            available_days,
-            available_time_slots
-          )
-        `)
-        .eq("id", id)
-        .eq("gym_id", selectedGym.id)
-        .single();
+      // Single RPC call replaces 8+ separate queries
+      const response = await fetch("/api/trainers/details", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ p_trainer_id: id, p_gym_id: selectedGym.id }),
+      });
 
-      if (trainerError) throw trainerError;
+      const result = await response.json();
 
+      if (!response.ok || result.error) {
+        console.error("Error fetching trainer details:", result.error);
+        return;
+      }
+
+      const { trainer: trainerData, assigned_members, activity_log, trainer_plans, trainer_earnings, earnings_summary } = result.data;
+
+      if (!trainerData) return;
+
+      // Map trainer
       setTrainer({
         id: trainerData.id,
         profileId: trainerData.profile_id,
-        name: `${trainerData.profiles?.first_name || ""} ${trainerData.profiles?.last_name || ""}`.trim(),
-        firstName: trainerData.profiles?.first_name,
-        lastName: trainerData.profiles?.last_name,
-        email: trainerData.profiles?.email,
-        phone: trainerData.profiles?.phone,
-        password: trainerData.profiles?.password,
+        name: `${trainerData.first_name || ""} ${trainerData.last_name || ""}`.trim(),
+        firstName: trainerData.first_name,
+        lastName: trainerData.last_name,
+        email: trainerData.email,
+        phone: trainerData.phone,
+        password: trainerData.password,
         specialization: trainerData.specialization,
         bio: trainerData.bio,
         isActive: trainerData.is_active,
         hireDate: trainerData.hire_date,
         createdAt: trainerData.created_at,
-        trainerCost: trainerData.profiles?.trainer_cost,
-        availableDays: trainerData.profiles?.available_days || [],
-        availableTimeSlots: trainerData.profiles?.available_time_slots || {}
+        trainerCost: trainerData.trainer_cost,
+        availableDays: trainerData.available_days || [],
+        availableTimeSlots: trainerData.available_time_slots || {}
       });
 
-      // Fetch assigned members
-      const { data: assignmentsData, error: assignmentsError } = await supabase
-        .from("trainer_member_assignments")
-        .select(`
-          id,
-          member_id,
-          assigned_at,
-          notes,
-          is_active,
-          trainer_plan_id,
-          plan_start_date,
-          plan_end_date,
-          trainer_plans:trainer_plan_id (
-            name,
-            price,
-            duration_days
-          ),
-          members:member_id (
-            id,
-            full_name,
-            phone,
-            profile_image,
-            memberships (
-              status,
-              end_date
-            )
-          )
-        `)
-        .eq("trainer_id", trainerData.profile_id)
-        .eq("gym_id", selectedGym.id)
-        .eq("is_active", true)
-        .order("assigned_at", { ascending: false });
+      // Map assigned members
+      const members = (assigned_members || []).map(a => {
+        const planEndDate = a.plan_end_date ? new Date(a.plan_end_date) : null;
+        const now = new Date();
+        const daysRemaining = planEndDate ? Math.ceil((planEndDate - now) / (1000 * 60 * 60 * 24)) : null;
+        const paidAmount = a.paid_amount ? parseFloat(a.paid_amount) : null;
 
-      if (!assignmentsError) {
-        // Also fetch the actual paid amount from trainer_earnings for each assignment
-        const assignmentIds = (assignmentsData || []).map(a => a.id);
-        let earningsMap = {};
-        if (assignmentIds.length > 0) {
-          const { data: earningsData } = await supabase
-            .from("trainer_earnings")
-            .select("assignment_id, total_amount")
-            .in("assignment_id", assignmentIds);
-          (earningsData || []).forEach(e => {
-            earningsMap[e.assignment_id] = parseFloat(e.total_amount);
-          });
-        }
+        return {
+          assignmentId: a.assignment_id,
+          memberId: a.member_id,
+          name: a.member_name,
+          phone: a.member_phone,
+          profileImage: a.member_profile_image,
+          assignedAt: a.assigned_at,
+          notes: a.notes,
+          status: a.membership_status || "inactive",
+          membershipEnd: a.membership_end_date,
+          planName: a.plan_name || null,
+          planPrice: a.plan_price ? parseFloat(a.plan_price) : null,
+          paidAmount,
+          planEndDate: a.plan_end_date,
+          daysRemaining,
+        };
+      });
+      setAssignedMembers(members);
 
-        const members = assignmentsData?.map(a => {
-          const planEndDate = a.plan_end_date ? new Date(a.plan_end_date) : null;
-          const now = new Date();
-          const daysRemaining = planEndDate ? Math.ceil((planEndDate - now) / (1000 * 60 * 60 * 24)) : null;
-          const paidAmount = earningsMap[a.id] || null;
-
-          return {
-            assignmentId: a.id,
-            memberId: a.member_id,
-            name: a.members?.full_name,
-            phone: a.members?.phone,
-            profileImage: a.members?.profile_image,
-            assignedAt: a.assigned_at,
-            notes: a.notes,
-            status: a.members?.memberships?.[0]?.status || "inactive",
-            membershipEnd: a.members?.memberships?.[0]?.end_date,
-            planName: a.trainer_plans?.name || null,
-            planPrice: a.trainer_plans?.price ? parseFloat(a.trainer_plans.price) : null,
-            paidAmount,
-            planEndDate: a.plan_end_date,
-            daysRemaining,
-          };
-        }) || [];
-
-        setAssignedMembers(members);
-      }
-
-      // Fetch activity log (diet/workout assignments, member assignments, payments collected)
-      const trainerId = trainerData.profile_id;
-      
-      // Get diet assignments by trainer
-      const { data: dietAssignments } = await supabase
-        .from("member_diets")
-        .select(`
-          id,
-          assigned_at,
-          members:member_id (full_name),
-          diet_plans:diet_plan_id (title)
-        `)
-        .eq("assigned_by_trainer_id", trainerId)
-        .order("assigned_at", { ascending: false })
-        .limit(15);
-
-      // Get workout assignments by trainer
-      const { data: workoutAssignments } = await supabase
-        .from("member_workouts")
-        .select(`
-          id,
-          assigned_at,
-          members:member_id (full_name),
-          workout_plans:workout_plan_id (title)
-        `)
-        .eq("assigned_by_trainer_id", trainerId)
-        .order("assigned_at", { ascending: false })
-        .limit(15);
-
-      // Get member assignments to this trainer
-      const { data: memberAssignments } = await supabase
-        .from("trainer_member_assignments")
-        .select(`
-          id,
-          assigned_at,
-          is_active,
-          members:member_id (full_name)
-        `)
-        .eq("trainer_id", trainerId)
-        .eq("gym_id", selectedGym.id)
-        .order("assigned_at", { ascending: false })
-        .limit(15);
-
-      // Get payments collected by this trainer
-      const { data: paymentsCollected } = await supabase
-        .from("payments")
-        .select(`
-          id,
-          amount,
-          created_at,
-          members:member_id (full_name)
-        `)
-        .eq("gym_id", selectedGym.id)
-        .eq("collected_by", trainerId)
-        .order("created_at", { ascending: false })
-        .limit(15);
-
-      // Combine and sort activity
-      const activity = [
-        ...(dietAssignments?.map(d => ({
-          id: `diet-${d.id}`,
-          type: "diet",
-          action: "Assigned diet plan",
-          memberName: d.members?.full_name,
-          details: d.diet_plans?.title,
-          date: d.assigned_at
-        })) || []),
-        ...(workoutAssignments?.map(w => ({
-          id: `workout-${w.id}`,
-          type: "workout",
-          action: "Assigned workout plan",
-          memberName: w.members?.full_name,
-          details: w.workout_plans?.title,
-          date: w.assigned_at
-        })) || []),
-        ...(memberAssignments?.map(m => ({
-          id: `member-${m.id}`,
-          type: "member_assignment",
-          action: m.is_active ? "Member assigned" : "Member unassigned",
-          memberName: m.members?.full_name,
-          details: null,
-          date: m.assigned_at
-        })) || []),
-        ...(paymentsCollected?.map(p => ({
-          id: `payment-${p.id}`,
-          type: "payment",
-          action: "Collected payment",
-          memberName: p.members?.full_name,
-          details: `₹${parseFloat(p.amount).toLocaleString("en-IN")}`,
-          date: p.created_at
-        })) || [])
-      ].sort((a, b) => new Date(b.date) - new Date(a.date));
-
+      // Map activity log (already sorted by RPC)
+      const activity = (activity_log || []).map(a => ({
+        id: a.id,
+        type: a.type,
+        action: a.action,
+        memberName: a.member_name,
+        details: a.details,
+        date: a.date
+      }));
       setActivityLog(activity.slice(0, 20));
 
-      // Fetch trainer plans
-      await fetchTrainerPlans(trainerData.profile_id);
+      // Map trainer plans
+      setTrainerPlans(
+        (trainer_plans || []).map(p => ({
+          ...p,
+          price: parseFloat(p.price),
+          subscribers: p.subscribers || 0,
+        }))
+      );
 
-      // Fetch trainer earnings
-      await fetchTrainerEarnings(trainerData.profile_id);
+      // Map trainer earnings
+      const earnings = (trainer_earnings || []).map(e => ({
+        ...e,
+        total_amount: parseFloat(e.total_amount),
+        trainer_amount: parseFloat(e.trainer_amount),
+        gym_amount: parseFloat(e.gym_amount),
+        members: { full_name: e.member_name, phone: e.member_phone },
+        trainer_plans: { name: e.plan_name, duration_days: e.plan_duration_days },
+      }));
+      setTrainerEarnings(earnings);
+
+      // Set earnings summary
+      setEarningsSummary({
+        total: parseFloat(earnings_summary?.total || 0),
+        thisMonth: parseFloat(earnings_summary?.this_month || 0),
+        lastMonth: parseFloat(earnings_summary?.last_month || 0),
+      });
     } catch (err) {
       console.error("Error fetching trainer details:", err);
     } finally {
@@ -311,98 +190,7 @@ export default function TrainerDetailsPage({ params }) {
     }
   };
 
-  const fetchTrainerPlans = async (trainerId) => {
-    if (!selectedGym?.id || !trainerId) return;
-    setPlansLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("trainer_plans")
-        .select("*")
-        .eq("gym_id", selectedGym.id)
-        .eq("trainer_id", trainerId)
-        .order("duration_days", { ascending: true });
-
-      if (error) throw error;
-
-      // Get subscriber counts per plan
-      const { data: assignmentsData } = await supabase
-        .from("trainer_member_assignments")
-        .select("trainer_plan_id")
-        .eq("trainer_id", trainerId)
-        .eq("gym_id", selectedGym.id)
-        .eq("is_active", true);
-
-      const subCounts = {};
-      (assignmentsData || []).forEach((a) => {
-        if (a.trainer_plan_id) {
-          subCounts[a.trainer_plan_id] = (subCounts[a.trainer_plan_id] || 0) + 1;
-        }
-      });
-
-      setTrainerPlans(
-        (data || []).map((p) => ({
-          ...p,
-          price: parseFloat(p.price),
-          subscribers: subCounts[p.id] || 0,
-        }))
-      );
-    } catch (err) {
-      console.error("Error fetching trainer plans:", err);
-    } finally {
-      setPlansLoading(false);
-    }
-  };
-
-  const fetchTrainerEarnings = async (trainerId) => {
-    if (!selectedGym?.id || !trainerId) return;
-    setEarningsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("trainer_earnings")
-        .select(`
-          *,
-          members:member_id (full_name, phone),
-          trainer_plans:trainer_plan_id (name, duration_days)
-        `)
-        .eq("gym_id", selectedGym.id)
-        .eq("trainer_id", trainerId)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-
-      const earnings = (data || []).map((e) => ({
-        ...e,
-        total_amount: parseFloat(e.total_amount),
-        trainer_amount: parseFloat(e.trainer_amount),
-        gym_amount: parseFloat(e.gym_amount),
-      }));
-
-      setTrainerEarnings(earnings);
-
-      // Calculate summary
-      const now = new Date();
-      const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
-
-      const total = earnings.reduce((sum, e) => sum + e.trainer_amount, 0);
-      const thisMonth = earnings
-        .filter((e) => new Date(e.created_at) >= thisMonthStart)
-        .reduce((sum, e) => sum + e.trainer_amount, 0);
-      const lastMonth = earnings
-        .filter((e) => {
-          const d = new Date(e.created_at);
-          return d >= lastMonthStart && d <= lastMonthEnd;
-        })
-        .reduce((sum, e) => sum + e.trainer_amount, 0);
-
-      setEarningsSummary({ total, thisMonth, lastMonth });
-    } catch (err) {
-      console.error("Error fetching trainer earnings:", err);
-    } finally {
-      setEarningsLoading(false);
-    }
-  };
+  // fetchTrainerPlans and fetchTrainerEarnings are now included in the single RPC call above
 
   const togglePlanStatus = async (planId) => {
     const plan = trainerPlans.find((p) => p.id === planId);
@@ -1301,7 +1089,7 @@ export default function TrainerDetailsPage({ params }) {
             trainerName={trainer?.firstName || trainer?.name}
             onClose={() => { setShowPlanModal(false); setEditingPlan(null); }}
             onSave={() => {
-              fetchTrainerPlans(trainer.profileId);
+              fetchTrainerDetails();
               setShowPlanModal(false);
               setEditingPlan(null);
             }}

@@ -284,15 +284,28 @@ export default function AdminDashboard() {
       let pendingDues = 0;
 
       members.forEach((member) => {
-        const activeMembership = member.memberships?.find(m => m.status === "active");
+        const activeMembership =
+          member.memberships?.find((membership) => membership.status === "active") ||
+          member.memberships?.[0];
+
+        let memberStatus = "inactive";
         if (activeMembership) {
           const endDate = new Date(activeMembership.end_date);
           const today = new Date();
-          if (endDate > today) {
-            activeMembers++;
-          } else {
-            expiredMembers++;
+          today.setHours(0, 0, 0, 0);
+          endDate.setHours(0, 0, 0, 0);
+
+          if (endDate >= today && activeMembership.status === "active") {
+            memberStatus = "active";
+          } else if (endDate < today || activeMembership.status === "expired") {
+            memberStatus = "expired";
           }
+        }
+
+        if (memberStatus === "active") {
+          activeMembers++;
+        } else if (memberStatus === "expired") {
+          expiredMembers++;
         }
         
         if (member.balance > 0) {

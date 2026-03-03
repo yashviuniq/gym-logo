@@ -8,31 +8,16 @@ const supabaseAdmin = createClient(
 
 export async function POST(request) {
   try {
-    const body = await request.json();
-    const {
-      p_gym_id,
-      p_search,
-      p_status,
-      p_page,
-      p_page_size,
-      p_user_id,
-      p_is_trainer,
-      p_show_my_members,
-    } = body;
+    const { p_gym_id, p_user_id, p_is_trainer } = await request.json();
 
     if (!p_gym_id) {
       return NextResponse.json({ error: "Missing p_gym_id" }, { status: 400 });
     }
 
-    const { data, error } = await supabaseAdmin.rpc("get_members_paginated", {
+    const { data, error } = await supabaseAdmin.rpc("get_members_stats", {
       p_gym_id,
-      p_search: p_search || "",
-      p_status: p_status || "all",
-      p_page: p_page || 1,
-      p_page_size: p_page_size || 20,
       p_user_id: p_user_id || null,
       p_is_trainer: p_is_trainer || false,
-      p_show_my_members: p_show_my_members || false,
     });
 
     if (error) {
@@ -41,7 +26,7 @@ export async function POST(request) {
 
     return NextResponse.json({ data });
   } catch (err) {
-    console.error("API /members/list error:", err);
+    console.error("API /members/stats error:", err);
     return NextResponse.json({ error: err.message || "Internal server error" }, { status: 500 });
   }
 }

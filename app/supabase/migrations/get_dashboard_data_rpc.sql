@@ -32,7 +32,7 @@ BEGIN
             'membership_plans', jsonb_build_object(
               'price', mp.price
             )
-          )
+          ) ORDER BY ms.created_at DESC
         ), '[]'::jsonb)
         FROM memberships ms
         LEFT JOIN membership_plans mp ON mp.id = ms.plan_id

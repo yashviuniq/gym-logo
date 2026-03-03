@@ -59,130 +59,44 @@ export default function TrainersPage() {
     setLoading(true);
 
     try {
-      // Sync: auto-create gym_trainers rows for any profile trainers missing from the table
-      const { data: profileTrainers } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("role", "trainer")
-        .eq("gym_id", selectedGym.id);
+      // Single RPC call replaces 6+ separate queries
+      const response = await fetch("/api/trainers/list", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ p_gym_id: selectedGym.id }),
+      });
 
-      if (profileTrainers && profileTrainers.length > 0) {
-        const { data: existingGymTrainers } = await supabase
-          .from("gym_trainers")
-          .select("profile_id")
-          .eq("gym_id", selectedGym.id);
+      const result = await response.json();
 
-        const existingIds = new Set(existingGymTrainers?.map(t => t.profile_id) || []);
-        const missing = profileTrainers.filter(p => !existingIds.has(p.id));
-
-        if (missing.length > 0) {
-          await supabase.from("gym_trainers").insert(
-            missing.map(p => ({
-              gym_id: selectedGym.id,
-              profile_id: p.id,
-              is_active: true,
-              hire_date: new Date().toISOString().split("T")[0],
-            }))
-          );
-        }
-      }
-
-      // Fetch trainers with their assignments count
-      const { data: trainersData, error } = await supabase
-        .from("gym_trainers")
-        .select(`
-          id,
-          profile_id,
-          specialization,
-          bio,
-          is_active,
-          hire_date,
-          created_at,
-          profiles:profile_id (
-            id,
-            first_name,
-            last_name,
-            email,
-            phone
-          )
-        `)
-        .eq("gym_id", selectedGym.id)
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("Error fetching trainers:", error);
+      if (!response.ok || result.error) {
+        console.error("Error fetching trainers:", result.error);
         setTrainers([]);
         return;
       }
 
-      // Get assignment counts for each trainer
-      const trainerIds = trainersData?.map(t => t.profile_id) || [];
-      
-      let assignmentCounts = {};
-      let dietCounts = {};
-      let workoutCounts = {};
+      const { trainers: trainersData, stats: rpcStats } = result.data;
 
-      if (trainerIds.length > 0) {
-        // Get member assignments count
-        const { data: assignments } = await supabase
-          .from("trainer_member_assignments")
-          .select("trainer_id")
-          .eq("gym_id", selectedGym.id)
-          .eq("is_active", true)
-          .in("trainer_id", trainerIds);
-
-        // Count assignments per trainer
-        assignments?.forEach(a => {
-          assignmentCounts[a.trainer_id] = (assignmentCounts[a.trainer_id] || 0) + 1;
-        });
-
-        // Get diet plans count
-        const { data: diets } = await supabase
-          .from("diet_plans")
-          .select("trainer_id")
-          .eq("gym_id", selectedGym.id)
-          .in("trainer_id", trainerIds);
-
-        diets?.forEach(d => {
-          dietCounts[d.trainer_id] = (dietCounts[d.trainer_id] || 0) + 1;
-        });
-
-        // Get workout plans count
-        const { data: workouts } = await supabase
-          .from("workout_plans")
-          .select("trainer_id")
-          .eq("gym_id", selectedGym.id)
-          .in("trainer_id", trainerIds);
-
-        workouts?.forEach(w => {
-          workoutCounts[w.trainer_id] = (workoutCounts[w.trainer_id] || 0) + 1;
-        });
-      }
-
-      // Map trainers with counts
-      const enrichedTrainers = trainersData?.map(t => ({
+      // Map trainers from RPC response
+      const enrichedTrainers = (trainersData || []).map(t => ({
         id: t.id,
         profileId: t.profile_id,
-        name: `${t.profiles?.first_name || ""} ${t.profiles?.last_name || ""}`.trim(),
-        email: t.profiles?.email,
-        phone: t.profiles?.phone,
+        name: `${t.first_name || ""} ${t.last_name || ""}`.trim(),
+        email: t.email,
+        phone: t.phone,
         specialization: t.specialization,
         bio: t.bio,
         isActive: t.is_active,
         hireDate: t.hire_date,
-        assignedMembers: assignmentCounts[t.profile_id] || 0,
-        dietPlans: dietCounts[t.profile_id] || 0,
-        workoutPlans: workoutCounts[t.profile_id] || 0
-      })) || [];
+        assignedMembers: t.assigned_members || 0,
+        dietPlans: t.diet_plans || 0,
+        workoutPlans: t.workout_plans || 0
+      }));
 
       setTrainers(enrichedTrainers);
-      
-      // Calculate stats
-      const totalAssignments = Object.values(assignmentCounts).reduce((a, b) => a + b, 0);
       setStats({
-        total: enrichedTrainers.length,
-        active: enrichedTrainers.filter(t => t.isActive).length,
-        totalAssignments
+        total: rpcStats?.total || 0,
+        active: rpcStats?.active || 0,
+        totalAssignments: rpcStats?.total_assignments || 0
       });
     } catch (err) {
       console.error("Error:", err);

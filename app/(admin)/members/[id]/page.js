@@ -11,6 +11,7 @@ import AssignDietPlanModal from "@/components/shared/AssignDietPlanModal";
 import AssignWorkoutPlanModal from "@/components/shared/AssignWorkoutPlanModal";
 import AssignTrainerModal from "@/components/shared/AssignTrainerModal";
 import AssignAmenityModal from "@/components/shared/AssignAmenityModal";
+import ProfileImageUpload from "@/components/shared/ProfileImageUpload";
 import {
   Phone,
   Mail,
@@ -597,16 +598,14 @@ export default function MemberDetailPage() {
         {/* Profile Header */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
           <div className="flex items-start gap-4 mb-4">
-            <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-xl shadow-sm overflow-hidden">
-              {member.profileImage ? (
-                <img
-                  src={member.profileImage}
-                  alt={member.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                member.name.charAt(0).toUpperCase()
-              )}
+            <div className="flex-shrink-0">
+              <ProfileImageUpload
+                currentImage={member.profileImage}
+                onImageChange={(url) => setMember(prev => ({ ...prev, profileImage: url }))}
+                memberId={member.id}
+                size="md"
+                editable={true}
+              />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between mb-1">

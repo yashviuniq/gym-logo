@@ -18,6 +18,9 @@ import {
   X,
   Phone,
   ChevronRight,
+  Calendar,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 const MONTHS = [
@@ -34,6 +37,101 @@ function formatCurrency(value) {
     return "₹" + (num / 100000).toFixed(2) + " L";
   }
   return "₹" + num.toLocaleString("en-IN", { maximumFractionDigits: 0 });
+}
+
+// ─── Week/Day Breakdown Helpers ───────────────────────────────
+
+function getWeeksForMonth(month, year) {
+  // month is 0-indexed
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const weeks = [];
+  let weekStart = new Date(firstDay);
+  let weekNum = 1;
+
+  while (weekStart <= lastDay) {
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    // Clamp to end of month
+    const clampedEnd = weekEnd > lastDay ? new Date(lastDay) : weekEnd;
+    weeks.push({
+      num: weekNum,
+      start: new Date(weekStart),
+      end: new Date(clampedEnd),
+      label: `Week ${weekNum}`,
+      range: `${formatShortDate(weekStart)} – ${formatShortDate(clampedEnd)}`,
+    });
+    weekStart = new Date(clampedEnd);
+    weekStart.setDate(weekStart.getDate() + 1);
+    weekNum++;
+  }
+  return weeks;
+}
+
+function formatShortDate(d) {
+  return d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+}
+
+function isDateInRange(dateStr, start, end) {
+  // dateStr can be "2026-03-01" or ISO timestamp
+  const d = new Date(dateStr.length <= 10 ? dateStr + "T00:00:00" : dateStr);
+  d.setHours(0, 0, 0, 0);
+  const s = new Date(start);
+  s.setHours(0, 0, 0, 0);
+  const e = new Date(end);
+  e.setHours(23, 59, 59, 999);
+  return d >= s && d <= e;
+}
+
+function isDateOnDay(dateStr, targetDate) {
+  const d = new Date(dateStr.length <= 10 ? dateStr + "T00:00:00" : dateStr);
+  return (
+    d.getFullYear() === targetDate.getFullYear() &&
+    d.getMonth() === targetDate.getMonth() &&
+    d.getDate() === targetDate.getDate()
+  );
+}
+
+function getPaymentDate(p) {
+  return p.paid_at || p.created_at;
+}
+
+function computeWeekData(data, weekStart, weekEnd) {
+  const revenueList = (data?.month_revenue_list || []).filter((p) =>
+    isDateInRange(getPaymentDate(p), weekStart, weekEnd)
+  );
+  const newJoinsList = (data?.month_new_joins_list || []).filter((m) =>
+    isDateInRange(m.join_date, weekStart, weekEnd)
+  );
+  const renewalsList = (data?.month_renewals_list || []).filter((r) =>
+    isDateInRange(r.start_date || r.created_at, weekStart, weekEnd)
+  );
+  const revenue = revenueList.reduce((s, p) => s + Number(p.amount || 0), 0);
+  return { revenue, revenueList, newJoinsList, renewalsList };
+}
+
+function getDaysInRange(start, end) {
+  const days = [];
+  const d = new Date(start);
+  while (d <= end) {
+    days.push(new Date(d));
+    d.setDate(d.getDate() + 1);
+  }
+  return days;
+}
+
+function computeDayData(data, day) {
+  const revenueList = (data?.month_revenue_list || []).filter((p) =>
+    isDateOnDay(getPaymentDate(p), day)
+  );
+  const newJoinsList = (data?.month_new_joins_list || []).filter((m) =>
+    isDateOnDay(m.join_date, day)
+  );
+  const renewalsList = (data?.month_renewals_list || []).filter((r) =>
+    isDateOnDay(r.start_date || r.created_at, day)
+  );
+  const revenue = revenueList.reduce((s, p) => s + Number(p.amount || 0), 0);
+  return { revenue, revenueList, newJoinsList, renewalsList };
 }
 
 // Skeleton loader for the page
@@ -79,6 +177,10 @@ export default function FinanceInsightsPage() {
   const [monthLoading, setMonthLoading] = useState(false);
   const [data, setData] = useState(null);
   const [drillDown, setDrillDown] = useState(null); // null | "new_joins" | "revenue" | "renewals"
+
+  // Week & Day drill-down state
+  const [weekModal, setWeekModal] = useState(null); // { week, type: "revenue"|"new_joins"|"renewals"|null }
+  const [dayModal, setDayModal] = useState(null);   // { day: Date, type: "revenue"|"new_joins"|"renewals" }
 
   useEffect(() => {
     const storedGym = localStorage.getItem("selectedGym");
@@ -355,7 +457,7 @@ export default function FinanceInsightsPage() {
               </div>
 
               {/* Members Card */}
-              <div className="bg-white rounded-2xl p-5 border mb-20 border-gray-100 shadow-sm">
+              <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
                 <div className="flex items-center gap-2 mb-4">
                   <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-sm">
                     <Users className="w-4 h-4 text-white" />
@@ -420,6 +522,67 @@ export default function FinanceInsightsPage() {
             </div>
           )}
         </section>
+
+        {/* ─── Week Breakdown ─── */}
+        {!monthLoading && data && (
+          <section className="mb-20">
+            <div className="flex items-center gap-2 mb-3 px-1">
+              <Calendar className="w-4 h-4 text-gray-400" />
+              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+                Week Breakdown
+              </h2>
+              <span className="text-xs text-gray-400 ml-auto">
+                {MONTHS[selectedMonth]} {selectedYear}
+              </span>
+            </div>
+            <div className="space-y-3">
+              {getWeeksForMonth(selectedMonth, selectedYear).map((week) => {
+                const wd = computeWeekData(data, week.start, week.end);
+                const hasData = wd.revenue > 0 || wd.newJoinsList.length > 0 || wd.renewalsList.length > 0;
+                return (
+                  <div
+                    key={week.num}
+                    className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
+                  >
+                    {/* Week Header */}
+                    <div
+                      className={`p-4 ${hasData ? "cursor-pointer active:scale-[0.99] transition-transform" : ""}`}
+                      onClick={() => hasData && setWeekModal({ week, type: null })}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shadow-sm">
+                            <span className="text-white text-xs font-bold">W{week.num}</span>
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-800">{week.label}</p>
+                            <p className="text-xs text-gray-400">{week.range}</p>
+                          </div>
+                        </div>
+                        {hasData && <ChevronRight className="w-4 h-4 text-gray-400" />}
+                      </div>
+                      {/* Week Stats */}
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="bg-emerald-50 rounded-xl p-2.5 border border-emerald-100 text-center">
+                          <p className="text-[10px] font-medium text-emerald-600 uppercase">Revenue</p>
+                          <p className="text-sm font-bold text-emerald-700">{formatCurrency(wd.revenue)}</p>
+                        </div>
+                        <div className="bg-violet-50 rounded-xl p-2.5 border border-violet-100 text-center">
+                          <p className="text-[10px] font-medium text-violet-600 uppercase">New Joins</p>
+                          <p className="text-sm font-bold text-violet-700">{wd.newJoinsList.length}</p>
+                        </div>
+                        <div className="bg-blue-50 rounded-xl p-2.5 border border-blue-100 text-center">
+                          <p className="text-[10px] font-medium text-blue-600 uppercase">Renewals</p>
+                          <p className="text-sm font-bold text-blue-700">{wd.renewalsList.length}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
       </main>
 
       {/* ─── Drill-Down Modal ─── */}
@@ -587,6 +750,329 @@ export default function FinanceInsightsPage() {
           </div>
         </div>
       )}
+
+      {/* ─── Week Drill-Down Modal ─── */}
+      {weekModal && (() => {
+        const week = weekModal.week;
+        const wd = computeWeekData(data, week.start, week.end);
+        const days = getDaysInRange(week.start, week.end);
+        return (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center" onClick={() => setWeekModal(null)}>
+            <div
+              className="bg-white w-full max-w-lg max-h-[90vh] rounded-t-2xl sm:rounded-2xl overflow-hidden flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="p-4 flex items-center gap-3 border-b border-gray-100 bg-gradient-to-r from-indigo-50 to-blue-50">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shadow-sm">
+                  <span className="text-white text-sm font-bold">W{week.num}</span>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-gray-900 text-base">{week.label}</h3>
+                  <p className="text-xs text-gray-500">{week.range}</p>
+                </div>
+                <button
+                  onClick={() => setWeekModal(null)}
+                  className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 active:scale-90 transition-all"
+                >
+                  <X className="w-5 h-5 text-gray-600" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {/* Week Summary Stats */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div
+                    onClick={() => wd.revenueList.length > 0 && setWeekModal({ week, type: "revenue" })}
+                    className={`bg-emerald-50 rounded-xl p-3 border border-emerald-100 text-center ${wd.revenueList.length > 0 ? "cursor-pointer active:scale-95 transition-transform" : ""}`}
+                  >
+                    <IndianRupee className="w-4 h-4 text-emerald-600 mx-auto mb-1" />
+                    <p className="text-[10px] font-medium text-emerald-600 uppercase">Revenue</p>
+                    <p className="text-sm font-bold text-emerald-700">{formatCurrency(wd.revenue)}</p>
+                  </div>
+                  <div
+                    onClick={() => wd.newJoinsList.length > 0 && setWeekModal({ week, type: "new_joins" })}
+                    className={`bg-violet-50 rounded-xl p-3 border border-violet-100 text-center ${wd.newJoinsList.length > 0 ? "cursor-pointer active:scale-95 transition-transform" : ""}`}
+                  >
+                    <UserPlus className="w-4 h-4 text-violet-600 mx-auto mb-1" />
+                    <p className="text-[10px] font-medium text-violet-600 uppercase">New Joins</p>
+                    <p className="text-sm font-bold text-violet-700">{wd.newJoinsList.length}</p>
+                  </div>
+                  <div
+                    onClick={() => wd.renewalsList.length > 0 && setWeekModal({ week, type: "renewals" })}
+                    className={`bg-blue-50 rounded-xl p-3 border border-blue-100 text-center ${wd.renewalsList.length > 0 ? "cursor-pointer active:scale-95 transition-transform" : ""}`}
+                  >
+                    <RefreshCw className="w-4 h-4 text-blue-600 mx-auto mb-1" />
+                    <p className="text-[10px] font-medium text-blue-600 uppercase">Renewals</p>
+                    <p className="text-sm font-bold text-blue-700">{wd.renewalsList.length}</p>
+                  </div>
+                </div>
+
+                {/* Week Lists (if a type is selected) */}
+                {weekModal.type === "revenue" && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between px-1 mb-2">
+                      <span className="text-xs font-medium text-gray-500">{wd.revenueList.length} payments</span>
+                      <span className="text-sm font-bold text-emerald-600">Total: {formatCurrency(wd.revenue)}</span>
+                    </div>
+                    {wd.revenueList.map((p, i) => (
+                      <div key={p.id || i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                          {(p.member_name || "?").charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 text-sm truncate">{p.member_name}</p>
+                          {p.phone && <span className="text-xs text-gray-500 flex items-center gap-1"><Phone className="w-3 h-3" />{p.phone}</span>}
+                          <p className="text-xs text-gray-400 mt-0.5">{new Date(getPaymentDate(p)).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })} • {p.payment_mode}</p>
+                        </div>
+                        <p className="font-bold text-emerald-600 text-sm whitespace-nowrap">₹{Number(p.amount).toLocaleString("en-IN")}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {weekModal.type === "new_joins" && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between px-1 mb-2">
+                      <span className="text-xs font-medium text-gray-500">{wd.newJoinsList.length} members</span>
+                    </div>
+                    {wd.newJoinsList.map((m, i) => (
+                      <div key={m.id || i} onClick={() => router.push(`/members/${m.id}`)} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer active:scale-[0.98] transition-transform">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                          {(m.full_name || "?").charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 text-sm truncate">{m.full_name}</p>
+                          {m.phone && <span className="text-xs text-gray-500 flex items-center gap-1"><Phone className="w-3 h-3" />{m.phone}</span>}
+                          <p className="text-xs text-gray-400 mt-0.5">Joined {new Date(m.join_date + "T00:00:00").toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-xs font-medium text-violet-600">{m.plan_name}</p>
+                          <ChevronRight className="w-4 h-4 text-gray-400 ml-auto mt-1" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {weekModal.type === "renewals" && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between px-1 mb-2">
+                      <span className="text-xs font-medium text-gray-500">{wd.renewalsList.length} renewals</span>
+                    </div>
+                    {wd.renewalsList.map((r, i) => (
+                      <div key={r.id || i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                          {(r.member_name || "?").charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 text-sm truncate">{r.member_name}</p>
+                          {r.phone && <span className="text-xs text-gray-500 flex items-center gap-1 mt-0.5"><Phone className="w-3 h-3" />{r.phone}</span>}
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {new Date(r.start_date + "T00:00:00").toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}
+                            {" → "}
+                            {new Date(r.end_date + "T00:00:00").toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                          </p>
+                        </div>
+                        <span className="px-2 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-lg border border-blue-100">{r.plan_name}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Day-wise Breakdown */}
+                {!weekModal.type && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3 px-1 flex items-center gap-2">
+                      <Calendar className="w-3.5 h-3.5" />
+                      Day-wise Breakdown
+                    </h4>
+                    <div className="space-y-2">
+                      {days.map((day) => {
+                        const dd = computeDayData(data, day);
+                        const dayHasData = dd.revenue > 0 || dd.newJoinsList.length > 0 || dd.renewalsList.length > 0;
+                        const dayLabel = day.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
+                        return (
+                          <div
+                            key={day.toISOString()}
+                            className={`rounded-xl border border-gray-100 p-3 ${dayHasData ? "bg-white cursor-pointer active:scale-[0.98] transition-transform" : "bg-gray-50"}`}
+                            onClick={() => dayHasData && setDayModal({ day, type: null })}
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <p className="text-sm font-semibold text-gray-800">{dayLabel}</p>
+                              {dayHasData && <ChevronRight className="w-4 h-4 text-gray-400" />}
+                            </div>
+                            <div className="grid grid-cols-3 gap-2">
+                              <div className="text-center">
+                                <p className="text-[10px] text-emerald-600 font-medium">Revenue</p>
+                                <p className="text-xs font-bold text-emerald-700">{dd.revenue > 0 ? formatCurrency(dd.revenue) : "₹0"}</p>
+                              </div>
+                              <div className="text-center">
+                                <p className="text-[10px] text-violet-600 font-medium">New Joins</p>
+                                <p className="text-xs font-bold text-violet-700">{dd.newJoinsList.length}</p>
+                              </div>
+                              <div className="text-center">
+                                <p className="text-[10px] text-blue-600 font-medium">Renewals</p>
+                                <p className="text-xs font-bold text-blue-700">{dd.renewalsList.length}</p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ─── Day Detail Modal ─── */}
+      {dayModal && (() => {
+        const dd = computeDayData(data, dayModal.day);
+        const dayStr = dayModal.day.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "short", year: "numeric" });
+        return (
+          <div className="fixed inset-0 bg-black/50 z-[60] flex items-end sm:items-center justify-center" onClick={() => setDayModal(null)}>
+            <div
+              className="bg-white w-full max-w-lg max-h-[85vh] rounded-t-2xl sm:rounded-2xl overflow-hidden flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="p-4 flex items-center gap-3 border-b border-gray-100 bg-gradient-to-r from-amber-50 to-orange-50">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-sm">
+                  <Calendar className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-gray-900 text-base">Day Details</h3>
+                  <p className="text-xs text-gray-500">{dayStr}</p>
+                </div>
+                <button
+                  onClick={() => setDayModal(null)}
+                  className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 active:scale-90 transition-all"
+                >
+                  <X className="w-5 h-5 text-gray-600" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {/* Day Summary */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div
+                    onClick={() => dd.revenueList.length > 0 && setDayModal({ day: dayModal.day, type: "revenue" })}
+                    className={`bg-emerald-50 rounded-xl p-3 border border-emerald-100 text-center ${dd.revenueList.length > 0 ? "cursor-pointer active:scale-95 transition-transform" : ""}`}
+                  >
+                    <IndianRupee className="w-4 h-4 text-emerald-600 mx-auto mb-1" />
+                    <p className="text-[10px] font-medium text-emerald-600 uppercase">Revenue</p>
+                    <p className="text-sm font-bold text-emerald-700">{formatCurrency(dd.revenue)}</p>
+                  </div>
+                  <div
+                    onClick={() => dd.newJoinsList.length > 0 && setDayModal({ day: dayModal.day, type: "new_joins" })}
+                    className={`bg-violet-50 rounded-xl p-3 border border-violet-100 text-center ${dd.newJoinsList.length > 0 ? "cursor-pointer active:scale-95 transition-transform" : ""}`}
+                  >
+                    <UserPlus className="w-4 h-4 text-violet-600 mx-auto mb-1" />
+                    <p className="text-[10px] font-medium text-violet-600 uppercase">New Joins</p>
+                    <p className="text-sm font-bold text-violet-700">{dd.newJoinsList.length}</p>
+                  </div>
+                  <div
+                    onClick={() => dd.renewalsList.length > 0 && setDayModal({ day: dayModal.day, type: "renewals" })}
+                    className={`bg-blue-50 rounded-xl p-3 border border-blue-100 text-center ${dd.renewalsList.length > 0 ? "cursor-pointer active:scale-95 transition-transform" : ""}`}
+                  >
+                    <RefreshCw className="w-4 h-4 text-blue-600 mx-auto mb-1" />
+                    <p className="text-[10px] font-medium text-blue-600 uppercase">Renewals</p>
+                    <p className="text-sm font-bold text-blue-700">{dd.renewalsList.length}</p>
+                  </div>
+                </div>
+
+                {/* Day Detail Lists */}
+                {dayModal.type === "revenue" && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between px-1 mb-2">
+                      <span className="text-xs font-medium text-gray-500">{dd.revenueList.length} payments</span>
+                      <span className="text-sm font-bold text-emerald-600">Total: {formatCurrency(dd.revenue)}</span>
+                    </div>
+                    {dd.revenueList.map((p, i) => (
+                      <div key={p.id || i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                          {(p.member_name || "?").charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 text-sm truncate">{p.member_name}</p>
+                          {p.phone && <span className="text-xs text-gray-500 flex items-center gap-1"><Phone className="w-3 h-3" />{p.phone}</span>}
+                          <p className="text-xs text-gray-400 mt-0.5 capitalize">{p.payment_mode}</p>
+                        </div>
+                        <p className="font-bold text-emerald-600 text-sm whitespace-nowrap">₹{Number(p.amount).toLocaleString("en-IN")}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {dayModal.type === "new_joins" && (
+                  <div className="space-y-2">
+                    <div className="px-1 mb-2">
+                      <span className="text-xs font-medium text-gray-500">{dd.newJoinsList.length} members</span>
+                    </div>
+                    {dd.newJoinsList.map((m, i) => (
+                      <div key={m.id || i} onClick={() => router.push(`/members/${m.id}`)} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer active:scale-[0.98] transition-transform">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                          {(m.full_name || "?").charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 text-sm truncate">{m.full_name}</p>
+                          {m.phone && <span className="text-xs text-gray-500 flex items-center gap-1"><Phone className="w-3 h-3" />{m.phone}</span>}
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-xs font-medium text-violet-600">{m.plan_name}</p>
+                          <ChevronRight className="w-4 h-4 text-gray-400 ml-auto mt-1" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {dayModal.type === "renewals" && (
+                  <div className="space-y-2">
+                    <div className="px-1 mb-2">
+                      <span className="text-xs font-medium text-gray-500">{dd.renewalsList.length} renewals</span>
+                    </div>
+                    {dd.renewalsList.map((r, i) => (
+                      <div key={r.id || i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                          {(r.member_name || "?").charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 text-sm truncate">{r.member_name}</p>
+                          {r.phone && <span className="text-xs text-gray-500 flex items-center gap-1 mt-0.5"><Phone className="w-3 h-3" />{r.phone}</span>}
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {new Date(r.start_date + "T00:00:00").toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}
+                            {" → "}
+                            {new Date(r.end_date + "T00:00:00").toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                          </p>
+                        </div>
+                        <span className="px-2 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-lg border border-blue-100">{r.plan_name}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Empty state for day with no details selected yet */}
+                {!dayModal.type && (
+                  <div className="text-center py-4">
+                    <p className="text-gray-400 text-xs">Tap a stat above to see details</p>
+                  </div>
+                )}
+
+                {/* Empty state for selected type with no data */}
+                {dayModal.type && (
+                  (dayModal.type === "revenue" && dd.revenueList.length === 0) ||
+                  (dayModal.type === "new_joins" && dd.newJoinsList.length === 0) ||
+                  (dayModal.type === "renewals" && dd.renewalsList.length === 0)
+                ) && (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500 text-sm">No data found</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

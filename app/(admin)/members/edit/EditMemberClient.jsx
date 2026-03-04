@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
+import ProfileImageUpload from "@/components/shared/ProfileImageUpload";
 import { useToast } from "@/contexts/ToastContext";
 
 export default function EditMemberClient() {
@@ -13,6 +14,7 @@ export default function EditMemberClient() {
   const memberId = searchParams.get("id");
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
+  const [profileImage, setProfileImage] = useState(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -51,6 +53,7 @@ export default function EditMemberClient() {
           email: data.email || "",
           selfPlanEditAccess: data.self_plan_edit_access || false,
         });
+        setProfileImage(data.profile_image || null);
       }
     } catch (err) {
       console.error("Error:", err);
@@ -131,6 +134,17 @@ export default function EditMemberClient() {
 
       <form onSubmit={handleSubmit} className="px-4 py-4">
         <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
+          {/* Profile Image */}
+          <div className="flex justify-center pb-2">
+            <ProfileImageUpload
+              currentImage={profileImage}
+              onImageChange={(url) => setProfileImage(url)}
+              memberId={memberId}
+              size="lg"
+              editable={true}
+            />
+          </div>
+
           <div>
             <label className="block text-sm font-semibold text-gray-800 mb-2">
               Full Name *

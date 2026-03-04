@@ -188,7 +188,7 @@ export default function MemberDetailPage() {
           id: p.id,
           date: new Date(p.paid_at || p.created_at).toLocaleDateString("en-IN"),
           amount: p.amount,
-          type: "Membership",
+          type: p.membership_id ? "Membership" : "Trainer",
           status: p.status,
           payment_mode: p.payment_mode,
           created_at: p.created_at

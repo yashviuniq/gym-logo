@@ -115,7 +115,7 @@ export default function CustomerProfilePage() {
           id: p.id,
           date: p.created_at.split('T')[0],
           amount: parseFloat(p.amount),
-          type: p.membership_id ? "Membership" : "Other",
+          type: p.membership_id ? "Membership" : "Trainer",
           status: p.status,
         })));
       }

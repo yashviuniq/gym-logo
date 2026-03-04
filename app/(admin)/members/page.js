@@ -64,7 +64,7 @@ const transformMember = (m) => ({
 
 export default function MembersPage() {
   const router = useRouter();
-  const { canViewFinance, isTrainer, user } = useUserRole();
+  const { canViewFinance, isTrainer, user, loading: roleLoading } = useUserRole();
 
   // Search & filter
   const [searchQuery, setSearchQuery] = useState("");
@@ -119,7 +119,7 @@ export default function MembersPage() {
 
   // ─── Fetch stats (independent of pagination) ────────────────
   useEffect(() => {
-    if (!selectedGym?.id) return;
+    if (!selectedGym?.id || roleLoading) return;
     const fetchStats = async () => {
       try {
         const res = await fetch("/api/members/stats", {
@@ -147,11 +147,11 @@ export default function MembersPage() {
       }
     };
     fetchStats();
-  }, [selectedGym?.id, user?.id, isTrainer, refreshTrigger]);
+  }, [selectedGym?.id, user?.id, isTrainer, roleLoading, refreshTrigger]);
 
   // ─── Fetch paginated members ─────────────────────────────────
   useEffect(() => {
-    if (!selectedGym?.id) return;
+    if (!selectedGym?.id || roleLoading) return;
     let cancelled = false;
 
     const fetchMembersList = async () => {
@@ -233,6 +233,7 @@ export default function MembersPage() {
     showMyMembers,
     user?.id,
     isTrainer,
+    roleLoading,
     refreshTrigger,
   ]);
 

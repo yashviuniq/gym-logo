@@ -525,7 +525,7 @@ export default function FinanceInsightsPage() {
 
         {/* ─── Week Breakdown ─── */}
         {!monthLoading && data && (
-          <section className="mb-20">
+          <section className="mb-30">
             <div className="flex items-center gap-2 mb-3 px-1">
               <Calendar className="w-4 h-4 text-gray-400" />
               <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
@@ -759,11 +759,11 @@ export default function FinanceInsightsPage() {
         return (
           <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center" onClick={() => setWeekModal(null)}>
             <div
-              className="bg-white w-full max-w-lg max-h-[90vh] rounded-t-2xl sm:rounded-2xl overflow-hidden flex flex-col"
+              className="bg-white w-full mb-20 max-w-lg max-h-[90vh] rounded-t-2xl sm:rounded-2xl overflow-hidden flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal Header */}
-              <div className="p-4 flex items-center gap-3 border-b border-gray-100 bg-gradient-to-r from-indigo-50 to-blue-50">
+              <div className="p-4  flex items-center gap-3 border-b border-gray-100 bg-gradient-to-r from-indigo-50 to-blue-50">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shadow-sm">
                   <span className="text-white text-sm font-bold">W{week.num}</span>
                 </div>

@@ -608,27 +608,25 @@ export default function MemberDetailPage() {
               />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between mb-1">
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900 truncate">
-                    {member.name}
-                  </h2>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Phone className="w-3.5 h-3.5 text-gray-400" />
-                    <span className="text-gray-600 text-sm">{member.phone}</span>
-                  </div>
-                  {member.email && (
-                    <div className="flex items-center gap-2 mt-1">
-                      <Mail className="w-3.5 h-3.5 text-gray-400" />
-                      <span className="text-gray-600 text-sm truncate">{member.email}</span>
-                    </div>
-                  )}
-                </div>
-                <div className={`px-2.5 py-1.5 rounded-lg border ${statusConfig.color} ${statusConfig.text} flex items-center gap-1.5`}>
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <h2 className="text-xl font-bold text-gray-900 break-words min-w-0">
+                  {member.name}
+                </h2>
+                <div className={`px-2.5 py-1 rounded-lg border ${statusConfig.color} ${statusConfig.text} flex items-center gap-1.5 shrink-0`}>
                   {statusConfig.icon}
                   <span className="text-xs font-medium">{statusConfig.label}</span>
                 </div>
               </div>
+              <div className="flex items-center gap-2 mt-1">
+                <Phone className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                <span className="text-gray-600 text-sm">{member.phone}</span>
+              </div>
+              {member.email && (
+                <div className="flex items-center gap-2 mt-1">
+                  <Mail className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                  <span className="text-gray-600 text-sm break-all">{member.email}</span>
+                </div>
+              )}
             </div>
           </div>
 

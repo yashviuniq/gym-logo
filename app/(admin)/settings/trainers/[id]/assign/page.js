@@ -4,46 +4,69 @@ import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
 import { supabase } from "@/lib/supabaseClient";
+import { useToast } from "@/contexts/ToastContext";
 import {
   Search,
   User,
   Phone,
   CheckCircle,
-  Circle,
-  UserPlus,
   Users,
   Loader2,
   AlertCircle,
-  ArrowLeft,
-  Save
+  Save,
+  Check,
+  Clock,
+  CalendarDays,
+  Tag,
+  Award,
+  Plus,
+  ExternalLink,
+  ChevronDown,
+  ChevronUp,
+  X
 } from "lucide-react";
 
 export default function AssignMembersPage({ params }) {
   const router = useRouter();
   const { id } = use(params);
+  const { showSuccess, showError } = useToast();
+
+  // Core data
   const [trainer, setTrainer] = useState(null);
   const [allMembers, setAllMembers] = useState([]);
-  const [assignedMemberIds, setAssignedMemberIds] = useState(new Set());
-  const [selectedMembers, setSelectedMembers] = useState(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [selectedGym, setSelectedGym] = useState(null);
-  const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-  const [memberTrainerMap, setMemberTrainerMap] = useState({}); // Maps member_id to trainer name
+
+  // Trainer schedule & plans
+  const [trainerPlans, setTrainerPlans] = useState([]);
+  const [plansLoading, setPlansLoading] = useState(false);
+  const [bookedSlotsMap, setBookedSlotsMap] = useState({});
+  const [fetchingSlots, setFetchingSlots] = useState(false);
+  const [trainerAvailableDays, setTrainerAvailableDays] = useState([]);
+  const [trainerAvailableTimeSlots, setTrainerAvailableTimeSlots] = useState({});
+
+  // Assignment tracking
+  const [assignedMemberIds, setAssignedMemberIds] = useState(new Set());
+  const [memberTrainerMap, setMemberTrainerMap] = useState({});
+  const [existingAssignments, setExistingAssignments] = useState({});
+
+  // Per-member configuration
+  const [memberConfigs, setMemberConfigs] = useState({});
+  const [expandedMemberId, setExpandedMemberId] = useState(null);
+  const [activeDay, setActiveDay] = useState("");
+  // Track members marked for unassignment
+  const [unassignSet, setUnassignSet] = useState(new Set());
 
   useEffect(() => {
     const storedGym = localStorage.getItem("selectedGym");
-    if (storedGym) {
-      setSelectedGym(JSON.parse(storedGym));
-    }
+    if (storedGym) setSelectedGym(JSON.parse(storedGym));
   }, []);
 
   useEffect(() => {
-    if (id && selectedGym?.id) {
-      fetchData();
-    }
+    if (id && selectedGym?.id) fetchData();
   }, [id, selectedGym?.id]);
 
   const fetchData = async () => {
@@ -51,15 +74,14 @@ export default function AssignMembersPage({ params }) {
     setLoading(true);
 
     try {
-      // Fetch trainer details
+      // Fetch trainer details with schedule info
       const { data: trainerData, error: trainerError } = await supabase
         .from("gym_trainers")
         .select(`
-          id,
-          profile_id,
+          id, profile_id,
           profiles:profile_id (
-            first_name,
-            last_name
+            first_name, last_name, phone, trainer_cost,
+            available_days, available_time_slots
           )
         `)
         .eq("id", id)
@@ -68,209 +90,437 @@ export default function AssignMembersPage({ params }) {
 
       if (trainerError) throw trainerError;
 
+      const profileData = trainerData.profiles;
       setTrainer({
         id: trainerData.id,
         profileId: trainerData.profile_id,
-        name: `${trainerData.profiles?.first_name || ""} ${trainerData.profiles?.last_name || ""}`.trim()
+        name: `${profileData?.first_name || ""} ${profileData?.last_name || ""}`.trim(),
+        phone: profileData?.phone || "",
+        cost: profileData?.trainer_cost ? parseFloat(profileData.trainer_cost) : null,
       });
+      setTrainerAvailableDays(profileData?.available_days || []);
+      setTrainerAvailableTimeSlots(profileData?.available_time_slots || {});
 
-      // Fetch all members in the gym
-      const { data: membersData, error: membersError } = await supabase
+      // Fetch plans & booked slots
+      await fetchTrainerPlans(trainerData.profile_id);
+      await fetchAllBookedSlots(trainerData.profile_id);
+
+      // Fetch all members
+      const { data: membersData } = await supabase
         .from("members")
-        .select(`
-          id,
-          full_name,
-          phone,
-          profile_image,
-          memberships (
-            status,
-            end_date
-          )
-        `)
+        .select(`id, full_name, phone, profile_image, memberships (status, end_date)`)
         .eq("gym_id", selectedGym.id)
         .order("full_name", { ascending: true });
 
-      if (membersError) throw membersError;
+      setAllMembers(
+        membersData?.map((m) => ({
+          id: m.id,
+          name: m.full_name,
+          phone: m.phone,
+          profileImage: m.profile_image,
+          status: m.memberships?.[0]?.status || "inactive",
+        })) || []
+      );
 
-      setAllMembers(membersData?.map(m => ({
-        id: m.id,
-        name: m.full_name,
-        phone: m.phone,
-        profileImage: m.profile_image,
-        status: m.memberships?.[0]?.status || "inactive"
-      })) || []);
-
-      // Fetch already assigned members to this trainer
+      // Fetch current assignments for this trainer (with plan info)
       const { data: assignmentsData } = await supabase
         .from("trainer_member_assignments")
-        .select("member_id")
+        .select(`
+          id, member_id, trainer_plan_id, plan_start_date, plan_end_date,
+          trainer_plans:trainer_plan_id (id, name, price, duration_days)
+        `)
         .eq("trainer_id", trainerData.profile_id)
         .eq("gym_id", selectedGym.id)
         .eq("is_active", true);
 
-      const assigned = new Set(assignmentsData?.map(a => a.member_id) || []);
+      const assigned = new Set();
+      const existingMap = {};
+      (assignmentsData || []).forEach((a) => {
+        assigned.add(a.member_id);
+        existingMap[a.member_id] = {
+          assignmentId: a.id,
+          planId: a.trainer_plan_id,
+          planName: a.trainer_plans?.name,
+          planPrice: a.trainer_plans?.price ? parseFloat(a.trainer_plans.price) : null,
+          planDuration: a.trainer_plans?.duration_days,
+          planStartDate: a.plan_start_date,
+          planEndDate: a.plan_end_date,
+        };
+      });
       setAssignedMemberIds(assigned);
-      setSelectedMembers(new Set(assigned));
+      setExistingAssignments(existingMap);
 
-      // Fetch ALL active trainer assignments to show which members are assigned to which trainers
+      // Fetch ALL active assignments (for other-trainer warnings)
       const { data: allAssignments } = await supabase
         .from("trainer_member_assignments")
-        .select(`
-          member_id,
-          trainer_id,
-          profiles:trainer_id (first_name, last_name)
-        `)
+        .select(`member_id, trainer_id, profiles:trainer_id (first_name, last_name)`)
         .eq("gym_id", selectedGym.id)
         .eq("is_active", true);
 
-      // Create a map of member_id -> trainer name (for trainers OTHER than current one)
       const trainerMap = {};
-      if (allAssignments) {
-        allAssignments.forEach(a => {
-          if (a.trainer_id !== trainerData.profile_id) {
-            const trainerName = `${a.profiles?.first_name || ''} ${a.profiles?.last_name || ''}`.trim() || 'Unknown Trainer';
-            if (!trainerMap[a.member_id]) {
-              trainerMap[a.member_id] = [];
-            }
-            trainerMap[a.member_id].push(trainerName);
-          }
-        });
-      }
+      (allAssignments || []).forEach((a) => {
+        if (a.trainer_id !== trainerData.profile_id) {
+          const name = `${a.profiles?.first_name || ""} ${a.profiles?.last_name || ""}`.trim() || "Unknown";
+          if (!trainerMap[a.member_id]) trainerMap[a.member_id] = [];
+          trainerMap[a.member_id].push(name);
+        }
+      });
       setMemberTrainerMap(trainerMap);
     } catch (err) {
       console.error("Error fetching data:", err);
-      setError("Failed to load data");
+      showError("Failed to load data");
     } finally {
       setLoading(false);
     }
   };
 
-  const toggleMember = (memberId) => {
-    setSelectedMembers(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(memberId)) {
-        newSet.delete(memberId);
-      } else {
-        newSet.add(memberId);
+  const fetchTrainerPlans = async (trainerId) => {
+    if (!selectedGym?.id || !trainerId) return;
+    setPlansLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("trainer_plans")
+        .select("*")
+        .eq("gym_id", selectedGym.id)
+        .eq("trainer_id", trainerId)
+        .eq("is_active", true)
+        .order("duration_days", { ascending: true });
+
+      if (error) throw error;
+      setTrainerPlans((data || []).map((p) => ({ ...p, price: parseFloat(p.price) })));
+    } catch (err) {
+      console.error("Error fetching trainer plans:", err);
+      setTrainerPlans([]);
+    } finally {
+      setPlansLoading(false);
+    }
+  };
+
+  const fetchAllBookedSlots = async (trainerId) => {
+    if (!selectedGym?.id || !trainerId) return;
+    setFetchingSlots(true);
+    try {
+      const { data, error } = await supabase
+        .from("trainer_bookings")
+        .select("time_slot, member_id, day")
+        .eq("trainer_id", trainerId)
+        .eq("gym_id", selectedGym.id)
+        .eq("is_active", true);
+
+      if (error) throw error;
+      const map = {};
+      (data || []).forEach((b) => {
+        if (!map[b.day]) map[b.day] = [];
+        map[b.day].push({ time_slot: b.time_slot, member_id: b.member_id });
+      });
+      setBookedSlotsMap(map);
+    } catch (err) {
+      console.error("Error fetching slots:", err);
+      setBookedSlotsMap({});
+    } finally {
+      setFetchingSlots(false);
+    }
+  };
+
+  const formatDuration = (days) => {
+    if (days === 1) return "1 Day";
+    if (days === 7) return "1 Week";
+    if (days < 30) return `${days} Days`;
+    const months = Math.round(days / 30);
+    if (months === 1) return "1 Month";
+    if (months === 3) return "3 Months";
+    if (months === 6) return "6 Months";
+    if (months === 12) return "1 Year";
+    return `${months} Months`;
+  };
+
+  const getDefaultConfig = () => ({
+    planId: null,
+    selectedSlots: {},
+    paymentMode: "cash",
+    useCustomPrice: false,
+    customPrice: "",
+    confirmed: false,
+  });
+
+  const getMemberConfig = (memberId) => memberConfigs[memberId] || getDefaultConfig();
+
+  const updateMemberConfig = (memberId, updates) => {
+    setMemberConfigs((prev) => ({
+      ...prev,
+      [memberId]: { ...(prev[memberId] || getDefaultConfig()), ...updates },
+    }));
+  };
+
+  const toggleMemberExpand = (memberId) => {
+    if (expandedMemberId === memberId) {
+      setExpandedMemberId(null);
+      setActiveDay("");
+    } else {
+      setExpandedMemberId(memberId);
+      setActiveDay("");
+
+      // Pre-fill config from existing assignment if already assigned and no config yet
+      if (assignedMemberIds.has(memberId) && !memberConfigs[memberId]) {
+        const existingSlots = {};
+        Object.entries(bookedSlotsMap).forEach(([day, bookings]) => {
+          const memberSlots = bookings
+            .filter((b) => b.member_id === memberId)
+            .map((b) => b.time_slot);
+          if (memberSlots.length > 0) existingSlots[day] = memberSlots;
+        });
+
+        updateMemberConfig(memberId, {
+          planId: existingAssignments[memberId]?.planId || null,
+          selectedSlots: existingSlots,
+          confirmed: true,
+        });
       }
-      return newSet;
-    });
+    }
   };
 
-  const selectAll = () => {
-    const filtered = filteredMembers.map(m => m.id);
-    setSelectedMembers(new Set([...selectedMembers, ...filtered]));
+  const confirmMemberConfig = (memberId) => {
+    updateMemberConfig(memberId, { confirmed: true });
+    // Remove from unassign set if it was there
+    setUnassignSet((prev) => {
+      const next = new Set(prev);
+      next.delete(memberId);
+      return next;
+    });
+    setExpandedMemberId(null);
+    setActiveDay("");
   };
 
-  const deselectAll = () => {
-    const filtered = new Set(filteredMembers.map(m => m.id));
-    setSelectedMembers(prev => {
-      const newSet = new Set(prev);
-      filtered.forEach(id => newSet.delete(id));
-      return newSet;
+  const removeMemberConfig = (memberId) => {
+    setMemberConfigs((prev) => {
+      const next = { ...prev };
+      delete next[memberId];
+      return next;
     });
+    setExpandedMemberId(null);
+    setActiveDay("");
   };
+
+  const toggleUnassign = (memberId) => {
+    setUnassignSet((prev) => {
+      const next = new Set(prev);
+      if (next.has(memberId)) {
+        next.delete(memberId);
+      } else {
+        next.add(memberId);
+      }
+      return next;
+    });
+    setExpandedMemberId(null);
+    setActiveDay("");
+  };
+
+  // Compute counts for summary
+  const newConfiguredCount = Object.entries(memberConfigs).filter(
+    ([mid, c]) => c.confirmed && !assignedMemberIds.has(mid)
+  ).length;
+  const unassignCount = unassignSet.size;
+  const hasChanges = newConfiguredCount > 0 || unassignCount > 0;
 
   const handleSave = async () => {
     if (!trainer?.profileId || !selectedGym?.id) return;
 
-    // Find newly added and removed members
-    const newAssignments = [...selectedMembers].filter(id => !assignedMemberIds.has(id));
-    const removedAssignments = [...assignedMemberIds].filter(id => !selectedMembers.has(id));
+    // Validate all new configs have at least a plan if plans exist
+    const newConfigs = Object.entries(memberConfigs).filter(
+      ([mid, c]) => c.confirmed && !assignedMemberIds.has(mid)
+    );
 
-    // Check if any of the new assignments are already assigned to other trainers
-    const membersWithOtherTrainers = newAssignments.filter(memberId => 
-      memberTrainerMap[memberId] && memberTrainerMap[memberId].length > 0
+    // Check for members assigned to other trainers
+    const membersWithOtherTrainers = newConfigs.filter(
+      ([mid]) => memberTrainerMap[mid]?.length > 0
     );
 
     if (membersWithOtherTrainers.length > 0) {
       const memberNames = membersWithOtherTrainers
-        .map(id => {
-          const member = allMembers.find(m => m.id === id);
-          const trainers = memberTrainerMap[id];
-          return `• ${member?.name} (currently assigned to ${trainers.join(', ')})`;
+        .map(([mid]) => {
+          const member = allMembers.find((m) => m.id === mid);
+          const trainers = memberTrainerMap[mid];
+          return `• ${member?.name} (assigned to ${trainers.join(", ")})`;
         })
-        .join('\n');
+        .join("\n");
 
       const confirmed = window.confirm(
-        `⚠️ Warning: The following members are already assigned to other trainers:\n\n${memberNames}\n\n` +
-        `Proceeding will remove them from their current trainers and assign them to ${trainer.name}.\n\n` +
-        `Do you want to continue?`
+        `⚠️ Warning: These members are assigned to other trainers:\n\n${memberNames}\n\n` +
+          `They will be reassigned to ${trainer.name}.\n\nContinue?`
       );
-
       if (!confirmed) return;
     }
 
     setSaving(true);
-    setError("");
-
     try {
       const { data: authData } = await supabase.auth.getUser();
       const assignedBy = authData?.user?.id;
 
-      // CRITICAL: For new assignments, first deactivate ALL existing assignments for those members
-      if (newAssignments.length > 0) {
-        // Deactivate all existing active assignments for these members
+      // Process new assignments
+      for (const [memberId, config] of newConfigs) {
+        // Deactivate all existing assignments for this member
         await supabase
           .from("trainer_member_assignments")
           .update({ is_active: false })
+          .eq("member_id", memberId)
           .eq("gym_id", selectedGym.id)
-          .in("member_id", newAssignments)
           .eq("is_active", true);
 
-        // Then create new assignments
-        const assignmentsToInsert = newAssignments.map(memberId => ({
+        // Delete existing bookings for this member
+        await supabase
+          .from("trainer_bookings")
+          .delete()
+          .eq("member_id", memberId)
+          .eq("gym_id", selectedGym.id);
+
+        // Build assignment data
+        const selectedPlan = trainerPlans.find((p) => p.id === config.planId);
+        const now = new Date();
+        const assignmentData = {
           gym_id: selectedGym.id,
           trainer_id: trainer.profileId,
           member_id: memberId,
           assigned_by: assignedBy,
-          is_active: true
-        }));
+          is_active: true,
+        };
 
-        const { error: insertError } = await supabase
+        if (selectedPlan) {
+          assignmentData.trainer_plan_id = selectedPlan.id;
+          assignmentData.plan_start_date = now.toISOString().split("T")[0];
+          const endDate = new Date(now);
+          endDate.setDate(endDate.getDate() + selectedPlan.duration_days);
+          assignmentData.plan_end_date = endDate.toISOString().split("T")[0];
+        }
+
+        const { data: assignmentResult, error: upsertError } = await supabase
           .from("trainer_member_assignments")
-          .upsert(assignmentsToInsert, {
-            onConflict: "gym_id,member_id,trainer_id"
+          .upsert(assignmentData, { onConflict: "gym_id,member_id,trainer_id" })
+          .select("id")
+          .single();
+
+        if (upsertError) throw upsertError;
+
+        // Handle bookings
+        const totalSelectedSlots = Object.values(config.selectedSlots).flat().length;
+        if (totalSelectedSlots > 0) {
+          const bookingRows = [];
+          for (const [day, slots] of Object.entries(config.selectedSlots)) {
+            for (const slot of slots) {
+              bookingRows.push({
+                trainer_id: trainer.profileId,
+                member_id: memberId,
+                gym_id: selectedGym.id,
+                day,
+                time_slot: slot,
+                is_active: true,
+              });
+            }
+          }
+
+          // Check for conflicts
+          for (const row of bookingRows) {
+            const { data: conflict } = await supabase
+              .from("trainer_bookings")
+              .select("id")
+              .eq("trainer_id", row.trainer_id)
+              .eq("gym_id", row.gym_id)
+              .eq("day", row.day)
+              .eq("time_slot", row.time_slot)
+              .eq("is_active", true)
+              .maybeSingle();
+
+            if (conflict) {
+              const member = allMembers.find((m) => m.id === memberId);
+              showError(
+                `Slot ${row.day} ${row.time_slot} for ${member?.name || "member"} is already booked. Please edit and try again.`
+              );
+              await fetchAllBookedSlots(trainer.profileId);
+              setSaving(false);
+              return;
+            }
+          }
+
+          const { error: bookingError } = await supabase
+            .from("trainer_bookings")
+            .insert(bookingRows);
+
+          if (bookingError) {
+            if (bookingError.code === "23505") {
+              showError("Slot conflict detected. Please refresh and try again.");
+              await fetchAllBookedSlots(trainer.profileId);
+              setSaving(false);
+              return;
+            }
+            throw bookingError;
+          }
+        }
+
+        // Handle payment if plan selected
+        if (selectedPlan) {
+          const totalAmount =
+            config.useCustomPrice && config.customPrice
+              ? parseFloat(config.customPrice)
+              : selectedPlan.price;
+          const gymAmount = Math.round((totalAmount / 2) * 100) / 100;
+          const trainerAmount = Math.round((totalAmount - gymAmount) * 100) / 100;
+
+          await supabase.from("payments").insert({
+            gym_id: selectedGym.id,
+            member_id: memberId,
+            amount: gymAmount,
+            payment_mode: config.paymentMode,
+            status: "paid",
+            paid_at: new Date().toISOString(),
           });
 
-        if (insertError) throw insertError;
+          await supabase.from("trainer_earnings").insert({
+            gym_id: selectedGym.id,
+            trainer_id: trainer.profileId,
+            member_id: memberId,
+            trainer_plan_id: selectedPlan.id,
+            assignment_id: assignmentResult?.id || null,
+            total_amount: totalAmount,
+            trainer_amount: trainerAmount,
+            gym_amount: gymAmount,
+            payment_mode: config.paymentMode,
+            notes: `Plan: ${selectedPlan.name} (${formatDuration(selectedPlan.duration_days)})`,
+          });
+        }
       }
 
-      // Deactivate removed assignments
-      if (removedAssignments.length > 0) {
-        const { error: updateError } = await supabase
+      // Process unassignments
+      for (const memberId of unassignSet) {
+        await supabase
           .from("trainer_member_assignments")
           .update({ is_active: false })
           .eq("trainer_id", trainer.profileId)
           .eq("gym_id", selectedGym.id)
-          .in("member_id", removedAssignments);
+          .eq("member_id", memberId);
 
-        if (updateError) throw updateError;
+        await supabase
+          .from("trainer_bookings")
+          .delete()
+          .eq("member_id", memberId)
+          .eq("trainer_id", trainer.profileId)
+          .eq("gym_id", selectedGym.id);
       }
 
       setSuccess(true);
-      setTimeout(() => {
-        router.push(`/settings/trainers/${id}`);
-      }, 1000);
+      showSuccess("Assignments saved successfully!");
+      setTimeout(() => router.push(`/settings/trainers/${id}`), 1000);
     } catch (err) {
-      console.error("Error saving assignments:", err);
-      setError("Failed to save assignments");
+      console.error("Error saving:", err);
+      showError("Failed to save assignments");
     } finally {
       setSaving(false);
     }
   };
 
-  const filteredMembers = allMembers.filter(member =>
-    member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    member.phone?.includes(searchQuery)
+  const filteredMembers = allMembers.filter(
+    (m) =>
+      m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      m.phone?.includes(searchQuery)
   );
-
-  const hasChanges = 
-    [...selectedMembers].some(id => !assignedMemberIds.has(id)) ||
-    [...assignedMemberIds].some(id => !selectedMembers.has(id));
-
-  const newAssignmentsCount = [...selectedMembers].filter(id => !assignedMemberIds.has(id)).length;
-  const removedCount = [...assignedMemberIds].filter(id => !selectedMembers.has(id)).length;
 
   if (success) {
     return (
@@ -279,7 +529,7 @@ export default function AssignMembersPage({ params }) {
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle className="w-8 h-8 text-green-600" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Members Updated!</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Assignments Saved!</h2>
           <p className="text-gray-500">Redirecting back...</p>
         </div>
       </div>
@@ -301,38 +551,24 @@ export default function AssignMembersPage({ params }) {
     <div className="min-h-screen bg-gray-50 pb-32">
       <Header title={`Assign to ${trainer?.name || "Trainer"}`} />
 
-      <main className={`px-4 py-4 space-y-4 ${hasChanges ? 'pb-40' : 'pb-4'}`}>
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-            <p className="text-red-700 text-sm">{error}</p>
-          </div>
-        )}
-
+      <main className={`px-4 py-4 space-y-4 ${hasChanges ? "pb-40" : "pb-4"}`}>
         {/* Stats */}
         <div className="bg-white rounded-xl p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="font-semibold text-gray-900">
-                {selectedMembers.size} member{selectedMembers.size !== 1 ? "s" : ""} selected
+                {assignedMemberIds.size - unassignCount + newConfiguredCount} member
+                {assignedMemberIds.size - unassignCount + newConfiguredCount !== 1 ? "s" : ""} assigned
               </h3>
               <p className="text-sm text-gray-500">
-                {allMembers.length} total members in gym
+                {newConfiguredCount > 0 && (
+                  <span className="text-green-600 mr-1">+{newConfiguredCount} new</span>
+                )}
+                {unassignCount > 0 && (
+                  <span className="text-red-600 mr-1">-{unassignCount} removed</span>
+                )}
+                <span>{allMembers.length} total members in gym</span>
               </p>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={selectAll}
-                className="px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100"
-              >
-                Select All
-              </button>
-              <button
-                onClick={deselectAll}
-                className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200"
-              >
-                Deselect All
-              </button>
             </div>
           </div>
         </div>
@@ -361,71 +597,146 @@ export default function AssignMembersPage({ params }) {
             </div>
           ) : (
             filteredMembers.map((member) => {
-              const isSelected = selectedMembers.has(member.id);
-              const wasAlreadyAssigned = assignedMemberIds.has(member.id);
+              const isAssigned = assignedMemberIds.has(member.id);
+              const config = memberConfigs[member.id];
+              const isConfigured = config?.confirmed && !isAssigned;
+              const isExpanded = expandedMemberId === member.id;
+              const isMarkedForUnassign = unassignSet.has(member.id);
               const assignedToOtherTrainers = memberTrainerMap[member.id];
 
               return (
-                <div
-                  key={member.id}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleMember(member.id);
-                  }}
-                  className={`bg-white rounded-xl p-4 shadow-sm cursor-pointer transition-all ${
-                    isSelected 
-                      ? "ring-2 ring-blue-500 bg-blue-50" 
-                      : "hover:bg-gray-50"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    {/* Checkbox */}
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                      isSelected 
-                        ? "bg-blue-600" 
-                        : "border-2 border-gray-300"
-                    }`}>
-                      {isSelected && <CheckCircle className="w-5 h-5 text-white" />}
-                    </div>
+                <div key={member.id}>
+                  {/* Member Card */}
+                  <div
+                    onClick={() => toggleMemberExpand(member.id)}
+                    className={`bg-white rounded-xl p-4 shadow-sm cursor-pointer transition-all ${
+                      isExpanded
+                        ? "ring-2 ring-blue-500 rounded-b-none"
+                        : isMarkedForUnassign
+                        ? "ring-2 ring-red-400 bg-red-50 opacity-60"
+                        : isConfigured
+                        ? "ring-2 ring-green-500 bg-green-50"
+                        : isAssigned
+                        ? "ring-1 ring-blue-200 bg-blue-50/30"
+                        : "hover:bg-gray-50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      {/* Status Icon */}
+                      <div
+                        className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          isMarkedForUnassign
+                            ? "bg-red-500"
+                            : isConfigured
+                            ? "bg-green-600"
+                            : isAssigned
+                            ? "bg-blue-600"
+                            : "border-2 border-gray-300"
+                        }`}
+                      >
+                        {isMarkedForUnassign ? (
+                          <X className="w-4 h-4 text-white" />
+                        ) : (isConfigured || isAssigned) ? (
+                          <Check className="w-4 h-4 text-white" />
+                        ) : null}
+                      </div>
 
-                    {/* Avatar */}
-                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                      {member.profileImage ? (
-                        <img src={member.profileImage} alt="" className="w-full h-full object-cover" />
+                      {/* Avatar */}
+                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        {member.profileImage ? (
+                          <img src={member.profileImage} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <User className="w-5 h-5 text-gray-400" />
+                        )}
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="font-medium text-gray-900 truncate">{member.name}</h4>
+                          {isMarkedForUnassign && (
+                            <span className="px-1.5 py-0.5 bg-red-100 text-red-700 text-xs rounded-full">
+                              Will Remove
+                            </span>
+                          )}
+                          {isAssigned && !isMarkedForUnassign && (
+                            <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">
+                              Assigned
+                            </span>
+                          )}
+                          {isConfigured && (
+                            <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
+                              Configured
+                            </span>
+                          )}
+                          {assignedToOtherTrainers?.length > 0 && (
+                            <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-xs rounded-full flex items-center gap-1">
+                              <AlertCircle className="w-3 h-3" />
+                              {assignedToOtherTrainers.join(", ")}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <Phone className="w-3 h-3" />
+                          <span>{member.phone}</span>
+                          {isConfigured && config.planId && (
+                            <span className="text-green-600 font-medium">
+                              · {trainerPlans.find((p) => p.id === config.planId)?.name}
+                            </span>
+                          )}
+                          {isAssigned && existingAssignments[member.id]?.planName && !isMarkedForUnassign && (
+                            <span className="text-blue-600 font-medium">
+                              · {existingAssignments[member.id].planName}
+                            </span>
+                          )}
+                          <span
+                            className={`px-1.5 py-0.5 rounded-full ${
+                              member.status === "active"
+                                ? "bg-green-100 text-green-700"
+                                : "bg-gray-100 text-gray-600"
+                            }`}
+                          >
+                            {member.status}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Expand Indicator */}
+                      {isExpanded ? (
+                        <ChevronUp className="w-5 h-5 text-gray-400 flex-shrink-0" />
                       ) : (
-                        <User className="w-5 h-5 text-gray-400" />
+                        <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0" />
                       )}
                     </div>
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h4 className="font-medium text-gray-900 truncate">{member.name}</h4>
-                        {wasAlreadyAssigned && (
-                          <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
-                            Assigned
-                          </span>
-                        )}
-                        {assignedToOtherTrainers && assignedToOtherTrainers.length > 0 && (
-                          <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-xs rounded-full flex items-center gap-1">
-                            <AlertCircle className="w-3 h-3" />
-                            Assigned to {assignedToOtherTrainers.join(", ")}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <Phone className="w-3 h-3" />
-                        <span>{member.phone}</span>
-                        <span className={`px-1.5 py-0.5 rounded-full ${
-                          member.status === "active" 
-                            ? "bg-green-100 text-green-700" 
-                            : "bg-gray-100 text-gray-600"
-                        }`}>
-                          {member.status}
-                        </span>
-                      </div>
-                    </div>
                   </div>
+
+                  {/* Expanded Configuration Panel */}
+                  {isExpanded && (
+                    <MemberConfigPanel
+                      member={member}
+                      config={getMemberConfig(member.id)}
+                      isAssigned={isAssigned}
+                      existingAssignment={existingAssignments[member.id]}
+                      trainerPlans={trainerPlans}
+                      plansLoading={plansLoading}
+                      trainerAvailableDays={trainerAvailableDays}
+                      trainerAvailableTimeSlots={trainerAvailableTimeSlots}
+                      bookedSlotsMap={bookedSlotsMap}
+                      fetchingSlots={fetchingSlots}
+                      activeDay={activeDay}
+                      setActiveDay={setActiveDay}
+                      onUpdateConfig={(updates) => updateMemberConfig(member.id, updates)}
+                      onConfirm={() => confirmMemberConfig(member.id)}
+                      onRemove={() => removeMemberConfig(member.id)}
+                      onUnassign={() => toggleUnassign(member.id)}
+                      onCancel={() => {
+                        setExpandedMemberId(null);
+                        setActiveDay("");
+                      }}
+                      formatDuration={formatDuration}
+                      trainerId={id}
+                    />
+                  )}
                 </div>
               );
             })
@@ -440,15 +751,11 @@ export default function AssignMembersPage({ params }) {
             <div className="bg-white rounded-xl p-4 shadow-lg border border-gray-200 pointer-events-auto">
               <div className="flex items-center justify-between mb-3">
                 <div className="text-sm text-gray-600">
-                  {newAssignmentsCount > 0 && (
-                    <span className="text-green-600 mr-2">
-                      +{newAssignmentsCount} new
-                    </span>
+                  {newConfiguredCount > 0 && (
+                    <span className="text-green-600 mr-2">+{newConfiguredCount} new</span>
                   )}
-                  {removedCount > 0 && (
-                    <span className="text-red-600">
-                      -{removedCount} removed
-                    </span>
+                  {unassignCount > 0 && (
+                    <span className="text-red-600">-{unassignCount} removed</span>
                   )}
                 </div>
               </div>
@@ -465,7 +772,7 @@ export default function AssignMembersPage({ params }) {
                 ) : (
                   <>
                     <Save className="w-5 h-5" />
-                    Save Assignments
+                    Save All Assignments
                   </>
                 )}
               </button>
@@ -473,6 +780,446 @@ export default function AssignMembersPage({ params }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Per-Member Configuration Panel ─────────────────────────────────────────
+
+function MemberConfigPanel({
+  member,
+  config,
+  isAssigned,
+  existingAssignment,
+  trainerPlans,
+  plansLoading,
+  trainerAvailableDays,
+  trainerAvailableTimeSlots,
+  bookedSlotsMap,
+  fetchingSlots,
+  activeDay,
+  setActiveDay,
+  onUpdateConfig,
+  onConfirm,
+  onRemove,
+  onUnassign,
+  onCancel,
+  formatDuration,
+  trainerId,
+}) {
+  const router = useRouter();
+  const { selectedSlots, planId: selectedPlanId, paymentMode, useCustomPrice, customPrice } = config;
+
+  // Available slots for active day
+  const activeDaySlots = activeDay ? trainerAvailableTimeSlots[activeDay] || [] : [];
+
+  // Booked by others (not this member)
+  const activeDayBooked = (bookedSlotsMap[activeDay] || [])
+    .filter((b) => b.member_id !== member.id)
+    .map((b) => b.time_slot);
+
+  // This member's existing slots for active day
+  const memberExistingSlots = (bookedSlotsMap[activeDay] || [])
+    .filter((b) => b.member_id === member.id)
+    .map((b) => b.time_slot);
+
+  const totalSelections = Object.entries(selectedSlots)
+    .filter(([, slots]) => slots.length > 0)
+    .reduce((sum, [, slots]) => sum + slots.length, 0);
+
+  return (
+    <div className="bg-white border-2 border-blue-500 border-t-0 rounded-b-xl shadow-sm overflow-hidden">
+      {/* Already assigned info */}
+      {isAssigned && existingAssignment && (
+        <div className="p-4 bg-blue-50 border-b border-blue-100">
+          <div className="flex items-center gap-2 mb-1">
+            <Check className="w-4 h-4 text-blue-600" />
+            <span className="text-sm font-semibold text-blue-800">Already Assigned</span>
+          </div>
+          {existingAssignment.planName && (
+            <p className="text-xs text-blue-600">
+              Plan: {existingAssignment.planName} · ₹
+              {(existingAssignment.planPrice || 0).toLocaleString("en-IN")}
+              {existingAssignment.planDuration && (
+                <span> · {formatDuration(existingAssignment.planDuration)}</span>
+              )}
+            </p>
+          )}
+          {existingAssignment.planEndDate && (
+            <p className="text-xs text-gray-500 mt-0.5">
+              Ends: {new Date(existingAssignment.planEndDate).toLocaleDateString("en-IN")}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Plan Selection (for new assignments) */}
+      {!isAssigned && (
+        <div className="p-4 border-b border-gray-100">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+              <Tag className="w-4 h-4" />
+              Select Plan
+            </h3>
+            <button
+              type="button"
+              onClick={() => router.push(`/settings/trainers/${trainerId}?tab=plans`)}
+              className="text-xs text-orange-600 font-medium flex items-center gap-1 hover:text-orange-700 px-2 py-1 bg-orange-50 rounded-lg"
+            >
+              <Plus className="w-3 h-3" />
+              Create Plan
+              <ExternalLink className="w-3 h-3" />
+            </button>
+          </div>
+
+          {plansLoading ? (
+            <div className="flex items-center justify-center py-6">
+              <Loader2 className="w-5 h-5 text-orange-500 animate-spin" />
+              <span className="ml-2 text-sm text-gray-500">Loading plans...</span>
+            </div>
+          ) : trainerPlans.length === 0 ? (
+            <div className="text-center py-5 bg-gray-50 rounded-xl">
+              <Tag className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+              <p className="text-sm text-gray-500">No plans available</p>
+              <button
+                type="button"
+                onClick={() => router.push(`/settings/trainers/${trainerId}?tab=plans`)}
+                className="mt-2 text-xs text-orange-600 font-medium flex items-center gap-1 mx-auto hover:text-orange-700"
+              >
+                <Plus className="w-3 h-3" />
+                Create a plan first
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {trainerPlans.map((plan) => {
+                const isSelected = selectedPlanId === plan.id;
+                return (
+                  <div
+                    key={plan.id}
+                    onClick={() => onUpdateConfig({ planId: isSelected ? null : plan.id })}
+                    className={`p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                      isSelected
+                        ? "border-orange-500 bg-gradient-to-r from-orange-50 to-amber-50 shadow-sm"
+                        : "border-gray-100 bg-gray-50/50 hover:border-gray-300"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                          isSelected ? "border-orange-500 bg-orange-500" : "border-gray-300 bg-white"
+                        }`}
+                      >
+                        {isSelected && <Check className="w-3 h-3 text-white" />}
+                      </div>
+                      <div
+                        className={`w-9 h-9 rounded-lg flex items-center justify-center text-white flex-shrink-0 ${
+                          isSelected
+                            ? "bg-gradient-to-br from-orange-500 to-amber-600"
+                            : "bg-gradient-to-br from-gray-400 to-gray-500"
+                        }`}
+                      >
+                        <Award className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-gray-900 text-sm truncate">{plan.name}</h4>
+                        <p className="text-xs text-gray-500 flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {formatDuration(plan.duration_days)}
+                        </p>
+                      </div>
+                      <p className="text-base font-bold text-gray-900 flex-shrink-0">
+                        ₹{plan.price.toLocaleString("en-IN")}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Payment Split + Mode (when plan selected) */}
+          {selectedPlanId && (
+            <div className="mt-3 space-y-3">
+              {/* Custom Price Toggle */}
+              <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-gray-900 text-sm">Custom Price</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newVal = !useCustomPrice;
+                      const updates = { useCustomPrice: newVal };
+                      if (newVal) {
+                        const plan = trainerPlans.find((p) => p.id === selectedPlanId);
+                        if (plan) updates.customPrice = plan.price.toString();
+                      }
+                      onUpdateConfig(updates);
+                    }}
+                    className={`w-10 h-5 rounded-full transition ${
+                      useCustomPrice ? "bg-[#F97316]" : "bg-gray-300"
+                    }`}
+                  >
+                    <div
+                      className={`w-4 h-4 bg-white rounded-full shadow transition transform ${
+                        useCustomPrice ? "translate-x-5" : "translate-x-0.5"
+                      }`}
+                    ></div>
+                  </button>
+                </div>
+                {useCustomPrice && (
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*\.?[0-9]*"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] outline-none text-sm"
+                    placeholder="Enter custom price"
+                    value={customPrice}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                        onUpdateConfig({ customPrice: value });
+                      }
+                    }}
+                  />
+                )}
+              </div>
+
+              {/* Payment Split */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-3">
+                <p className="text-xs font-semibold text-blue-800 mb-2">Payment Split:</p>
+                {(() => {
+                  const plan = trainerPlans.find((p) => p.id === selectedPlanId);
+                  if (!plan) return null;
+                  const effectivePrice =
+                    useCustomPrice && customPrice ? parseFloat(customPrice) : plan.price;
+                  const gymAmt = Math.round((effectivePrice / 2) * 100) / 100;
+                  const trainerAmt = Math.round((effectivePrice - gymAmt) * 100) / 100;
+                  return (
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 bg-white rounded-lg p-2 text-center border border-blue-100">
+                        <p className="text-[10px] text-gray-500 uppercase">Gym</p>
+                        <p className="text-sm font-bold text-blue-700">
+                          ₹{gymAmt.toLocaleString("en-IN")}
+                        </p>
+                      </div>
+                      <div className="text-gray-400 text-xs">+</div>
+                      <div className="flex-1 bg-white rounded-lg p-2 text-center border border-orange-100">
+                        <p className="text-[10px] text-gray-500 uppercase">Trainer</p>
+                        <p className="text-sm font-bold text-orange-700">
+                          ₹{trainerAmt.toLocaleString("en-IN")}
+                        </p>
+                      </div>
+                      <div className="text-gray-400 text-xs">=</div>
+                      <div className="flex-1 bg-white rounded-lg p-2 text-center border border-green-100">
+                        <p className="text-[10px] text-gray-500 uppercase">Total</p>
+                        <p className="text-sm font-bold text-green-700">
+                          ₹{effectivePrice.toLocaleString("en-IN")}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Payment Mode */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                  Payment Mode
+                </label>
+                <div className="flex gap-2">
+                  {["cash", "upi", "card", "bank"].map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => onUpdateConfig({ paymentMode: mode })}
+                      className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all border ${
+                        paymentMode === mode
+                          ? "border-blue-500 bg-blue-50 text-blue-700"
+                          : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                      }`}
+                    >
+                      {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Schedule Selection */}
+      {trainerAvailableDays.length > 0 && (
+        <div className="p-4 space-y-4 border-b border-gray-100">
+          <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+            <CalendarDays className="w-4 h-4" />
+            Select Schedule
+            {totalSelections > 0 && (
+              <span className="ml-auto text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
+                {totalSelections} slot{totalSelections > 1 ? "s" : ""} selected
+              </span>
+            )}
+          </h3>
+
+          {/* Day Tabs */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1.5">Day</label>
+            <div className="flex flex-wrap gap-1.5">
+              {trainerAvailableDays.map((day) => {
+                const dayCount = (selectedSlots[day] || []).length;
+                const isActive = activeDay === day;
+                return (
+                  <button
+                    key={day}
+                    type="button"
+                    onClick={() => setActiveDay(isActive ? "" : day)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all relative ${
+                      isActive
+                        ? "bg-blue-600 text-white shadow-sm"
+                        : dayCount > 0
+                        ? "bg-blue-50 text-blue-700 border border-blue-200"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    {day.slice(0, 3)}
+                    {dayCount > 0 && (
+                      <span
+                        className={`ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold ${
+                          isActive ? "bg-white text-blue-600" : "bg-blue-600 text-white"
+                        }`}
+                      >
+                        {dayCount}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Time Slots */}
+          {activeDay && (
+            <div>
+              <label className="text-xs font-medium text-gray-600 mb-1.5 flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5" />
+                Time Slots — {activeDay}
+                <span className="text-gray-400 ml-1">(tap to toggle)</span>
+              </label>
+
+              {fetchingSlots ? (
+                <div className="flex items-center justify-center py-6">
+                  <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+                  <span className="ml-2 text-sm text-gray-500">Checking availability...</span>
+                </div>
+              ) : activeDaySlots.length === 0 ? (
+                <div className="text-center py-6 bg-gray-50 rounded-xl">
+                  <Clock className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                  <p className="text-sm text-gray-500">No slots for {activeDay}</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  {activeDaySlots.map((slot) => {
+                    const isBooked = activeDayBooked.includes(slot);
+                    const isMemberSlot = memberExistingSlots.includes(slot);
+                    const isSlotSelected = (selectedSlots[activeDay] || []).includes(slot);
+
+                    return (
+                      <button
+                        key={slot}
+                        type="button"
+                        disabled={isBooked}
+                        onClick={() => {
+                          const daySlots = selectedSlots[activeDay] || [];
+                          const updated = daySlots.includes(slot)
+                            ? daySlots.filter((s) => s !== slot)
+                            : [...daySlots, slot];
+                          onUpdateConfig({
+                            selectedSlots: { ...selectedSlots, [activeDay]: updated },
+                          });
+                        }}
+                        className={`px-2 py-2 rounded-lg text-xs font-medium transition-all text-center ${
+                          isBooked
+                            ? "bg-red-50 text-red-300 border border-red-100 cursor-not-allowed line-through"
+                            : isSlotSelected
+                            ? "bg-blue-600 text-white shadow-md scale-[1.02]"
+                            : isMemberSlot
+                            ? "bg-green-50 text-green-700 border-2 border-green-300 hover:bg-green-100"
+                            : "bg-white text-gray-700 border border-gray-200 hover:border-blue-300 hover:bg-blue-50"
+                        }`}
+                      >
+                        {slot}
+                        {isBooked && (
+                          <span className="block text-[9px] text-red-400 mt-0.5">Booked</span>
+                        )}
+                        {isMemberSlot && !isSlotSelected && (
+                          <span className="block text-[9px] text-green-600 mt-0.5">Current</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Legend */}
+              <div className="flex items-center gap-4 mt-3 text-[10px] text-gray-500">
+                <span className="flex items-center gap-1">
+                  <span className="w-2.5 h-2.5 rounded-sm bg-white border border-gray-200" /> Available
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2.5 h-2.5 rounded-sm bg-red-50 border border-red-200" /> Booked
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2.5 h-2.5 rounded-sm bg-blue-600" /> Selected
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Selected Slots Summary */}
+          {totalSelections > 0 && (
+            <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl">
+              <p className="text-xs font-semibold text-blue-800 mb-1.5">Selected Schedule:</p>
+              <div className="space-y-1">
+                {Object.entries(selectedSlots)
+                  .filter(([, slots]) => slots.length > 0)
+                  .map(([day, slots]) => (
+                    <p key={day} className="text-xs text-blue-700">
+                      <span className="font-medium">{day}:</span> {slots.join(", ")}
+                    </p>
+                  ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Action Buttons */}
+      <div className="p-4 flex gap-3">
+        <button
+          onClick={onCancel}
+          className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium text-sm hover:bg-gray-200 transition-colors"
+        >
+          Cancel
+        </button>
+        {isAssigned ? (
+          <button
+            onClick={onUnassign}
+            className="flex-1 px-4 py-2.5 bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 text-red-600 rounded-xl font-medium text-sm flex items-center justify-center gap-2 hover:from-red-100 hover:to-rose-100 transition-colors"
+          >
+            <X className="w-4 h-4" />
+            Unassign
+          </button>
+        ) : (
+          <button
+            onClick={onConfirm}
+            className="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
+          >
+            <Check className="w-4 h-4" />
+            Confirm
+          </button>
+        )}
+      </div>
     </div>
   );
 }

@@ -177,7 +177,7 @@ export default function FinancePage() {
         return {
           id: payment.id,
           name: payment.member_full_name || "Unknown",
-          type: "membership",
+          type: payment.membership_id ? "membership" : "trainer",
           amount: payment.amount,
           mode: payment.payment_mode,
           date: formatDate(payment.paid_at || payment.created_at),

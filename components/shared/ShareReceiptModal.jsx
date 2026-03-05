@@ -47,6 +47,7 @@ export default function ShareReceiptModal({ member, gymData, onClose }) {
         }
 
         // If no receipt, fetch latest payment to potentially generate one
+        // Fetch latest MEMBERSHIP payment (not trainer payments)
         const { data: payment, error: paymentError } = await supabase
           .from("payments")
           .select(`
@@ -63,6 +64,7 @@ export default function ShareReceiptModal({ member, gymData, onClose }) {
           `)
           .eq("member_id", member.id)
           .eq("status", "paid")
+          .not("membership_id", "is", null)
           .order("created_at", { ascending: false })
           .limit(1)
           .single();
@@ -94,8 +96,32 @@ export default function ShareReceiptModal({ member, gymData, onClose }) {
     setError(null);
 
     try {
-      const membership = latestPayment.memberships;
-      const plan = membership?.membership_plans;
+      let membership = latestPayment.memberships;
+      let plan = membership?.membership_plans;
+
+      // If membership join didn't resolve dates, fetch active membership directly
+      if (!membership?.start_date || !membership?.end_date) {
+        const { data: activeMembership } = await supabase
+          .from("memberships")
+          .select(`
+            id,
+            start_date,
+            end_date,
+            membership_plans (
+              name,
+              duration_days
+            )
+          `)
+          .eq("member_id", member.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+
+        if (activeMembership) {
+          membership = activeMembership;
+          plan = activeMembership.membership_plans || plan;
+        }
+      }
 
       const result = await createPaymentReceipt({
         gymId: gymData.id,
@@ -108,8 +134,8 @@ export default function ShareReceiptModal({ member, gymData, onClose }) {
         memberEmail: member.email,
         planName: plan?.name || member.plan || "Membership",
         planDuration: plan?.duration_days || 30,
-        validityStart: membership?.start_date,
-        validityEnd: membership?.end_date, // Use only database date, not formatted display date
+        validityStart: membership?.start_date || null,
+        validityEnd: membership?.end_date || null,
         amount: latestPayment.amount,
         balanceAmount: member.balance || 0,
         paymentMode: latestPayment.payment_mode,

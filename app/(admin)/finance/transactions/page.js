@@ -71,7 +71,7 @@ export default function TransactionsPage() {
           return {
             id: payment.id,
             name: payment.members?.full_name || "Unknown",
-            type: "membership",
+            type: payment.membership_id ? "membership" : "trainer",
             amount: parseFloat(payment.amount),
             mode: payment.payment_mode?.toLowerCase() || "cash",
             date: payment.paid_at || payment.created_at,

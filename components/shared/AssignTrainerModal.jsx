@@ -18,7 +18,7 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
   const [activeDay, setActiveDay] = useState(""); // currently viewed day tab
   // Multi-day, multi-slot selection: { "Monday": ["12-1 PM", "2-3 PM"], "Tuesday": ["5-6 PM"] }
   const [selectedSlots, setSelectedSlots] = useState({});
-  // Booked slots for ALL days: { "Monday": [{time_slot, member_id}], ... }
+  // Active slot assignments for ALL days: { "Monday": [{time_slot, member_id}], ... }
   const [bookedSlotsMap, setBookedSlotsMap] = useState({});
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
@@ -366,26 +366,6 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
           }
         }
 
-        // Check for conflicts on all selected slots
-        for (const row of bookingRows) {
-          const { data: conflict } = await supabase
-            .from("trainer_bookings")
-            .select("id")
-            .eq("trainer_id", row.trainer_id)
-            .eq("gym_id", row.gym_id)
-            .eq("day", row.day)
-            .eq("time_slot", row.time_slot)
-            .eq("is_active", true)
-            .maybeSingle();
-
-          if (conflict) {
-            showError(`${row.day} ${row.time_slot} was just booked. Please deselect it and try again.`);
-            await fetchAllBookedSlots(selectedTrainerId);
-            setLoading(false);
-            return;
-          }
-        }
-
         // Insert all bookings
         const { error: bookingError } = await supabase
           .from("trainer_bookings")
@@ -393,7 +373,7 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
 
         if (bookingError) {
           if (bookingError.code === "23505") {
-            showError("One or more slots were just booked. Please refresh and try again.");
+            showError("One or more selected slots are duplicated for this member. Please review and try again.");
             await fetchAllBookedSlots(selectedTrainerId);
             setLoading(false);
             return;
@@ -521,33 +501,13 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
         }
       }
 
-      // Check for conflicts
-      for (const row of bookingRows) {
-        const { data: conflict } = await supabase
-          .from("trainer_bookings")
-          .select("id")
-          .eq("trainer_id", row.trainer_id)
-          .eq("gym_id", row.gym_id)
-          .eq("day", row.day)
-          .eq("time_slot", row.time_slot)
-          .eq("is_active", true)
-          .maybeSingle();
-
-        if (conflict) {
-          showError(`${row.day} ${row.time_slot} was just booked by someone else. Please deselect and try again.`);
-          await fetchAllBookedSlots(currentTrainerId);
-          setLoading(false);
-          return;
-        }
-      }
-
       const { error: bookingError } = await supabase
         .from("trainer_bookings")
         .insert(bookingRows);
 
       if (bookingError) {
         if (bookingError.code === "23505") {
-          showError("One or more slots were just booked. Please refresh and try again.");
+          showError("One or more selected slots are duplicated for this member. Please review and try again.");
           await fetchAllBookedSlots(currentTrainerId);
           setLoading(false);
           return;
@@ -576,10 +536,14 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
   const activeDaySlots = activeDay
     ? (selectedTrainer?.availableTimeSlots?.[activeDay] || [])
     : [];
-  // Booked slots for the active day (by others)
-  const activeDayBooked = (bookedSlotsMap[activeDay] || [])
-    .filter((b) => b.member_id !== memberId)
-    .map((b) => b.time_slot);
+  // Active slot usage for the selected day by other members.
+  const activeDayAssignmentsByOthers = (bookedSlotsMap[activeDay] || []).filter(
+    (b) => b.member_id !== memberId
+  );
+  const activeDayAssignedCountMap = activeDayAssignmentsByOthers.reduce((acc, booking) => {
+    acc[booking.time_slot] = (acc[booking.time_slot] || 0) + 1;
+    return acc;
+  }, {});
   // This member's existing slots for active day
   const memberExistingSlots = (bookedSlotsMap[activeDay] || [])
     .filter((b) => b.member_id === memberId)
@@ -1097,7 +1061,8 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
                     ) : (
                       <div className="grid grid-cols-3 gap-2">
                         {activeDaySlots.map((slot) => {
-                          const isBooked = activeDayBooked.includes(slot);
+                          const assignedCount = activeDayAssignedCountMap[slot] || 0;
+                          const hasAssignedMembers = assignedCount > 0;
                           const isMemberSlot = memberExistingSlots.includes(slot);
                           const isSlotSelected = (selectedSlots[activeDay] || []).includes(slot);
 
@@ -1105,7 +1070,7 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
                             <button
                               key={slot}
                               type="button"
-                              disabled={isBooked || loading}
+                              disabled={loading}
                               onClick={() => {
                                 setSelectedSlots(prev => {
                                   const daySlots = prev[activeDay] || [];
@@ -1117,20 +1082,28 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
                               }}
                               className={`
                                 px-2 py-2 rounded-lg text-xs font-medium transition-all duration-150 text-center
-                                ${isBooked
-                                  ? 'bg-red-50 text-red-300 border border-red-100 cursor-not-allowed line-through'
-                                  : isSlotSelected
+                                ${isSlotSelected
                                     ? 'bg-blue-600 text-white shadow-md scale-[1.02]'
                                     : isMemberSlot
                                       ? 'bg-green-50 text-green-700 border-2 border-green-300 hover:bg-green-100'
+                                      : hasAssignedMembers
+                                        ? 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100'
                                       : 'bg-white text-gray-700 border border-gray-200 hover:border-blue-300 hover:bg-blue-50'
                                 }
                               `}
-                              title={isBooked ? "Already booked" : isMemberSlot ? "Your current slot" : "Available"}
+                              title={
+                                hasAssignedMembers
+                                  ? `${assignedCount} member${assignedCount > 1 ? "s" : ""} already assigned`
+                                  : isMemberSlot
+                                    ? "Your current slot"
+                                    : "Available"
+                              }
                             >
                               {slot}
-                              {isBooked && (
-                                <span className="block text-[9px] text-red-400 mt-0.5">Booked</span>
+                              {hasAssignedMembers && (
+                                <span className="block text-[9px] mt-0.5">
+                                  {assignedCount} member{assignedCount > 1 ? "s" : ""}
+                                </span>
                               )}
                               {isMemberSlot && !isSlotSelected && (
                                 <span className="block text-[9px] text-green-600 mt-0.5">Your slot</span>
@@ -1147,7 +1120,7 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
                         <span className="w-2.5 h-2.5 rounded-sm bg-white border border-gray-200" /> Available
                       </span>
                       <span className="flex items-center gap-1">
-                        <span className="w-2.5 h-2.5 rounded-sm bg-red-50 border border-red-200" /> Booked
+                        <span className="w-2.5 h-2.5 rounded-sm bg-amber-50 border border-amber-200" /> Assigned (shared)
                       </span>
                       <span className="flex items-center gap-1">
                         <span className="w-2.5 h-2.5 rounded-sm bg-blue-600" /> Selected

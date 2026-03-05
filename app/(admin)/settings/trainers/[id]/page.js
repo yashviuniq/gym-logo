@@ -63,6 +63,8 @@ export default function TrainerDetailsPage({ params }) {
   const [trainerEarnings, setTrainerEarnings] = useState([]);
   const [earningsLoading, setEarningsLoading] = useState(false);
   const [earningsSummary, setEarningsSummary] = useState({ total: 0, thisMonth: 0, lastMonth: 0 });
+  const [trainerSlotAssignments, setTrainerSlotAssignments] = useState({});
+  const [selectedScheduleSlot, setSelectedScheduleSlot] = useState(null);
 
   useEffect(() => {
     const storedGym = localStorage.getItem("selectedGym");
@@ -119,6 +121,39 @@ export default function TrainerDetailsPage({ params }) {
         availableDays: trainerData.available_days || [],
         availableTimeSlots: trainerData.available_time_slots || {}
       });
+
+      // Fetch active bookings to show shared-session counts and member names by slot.
+      const { data: slotBookingsData, error: slotBookingsError } = await supabase
+        .from("trainer_bookings")
+        .select("day, time_slot, member_id, members:member_id(full_name)")
+        .eq("trainer_id", trainerData.profile_id)
+        .eq("gym_id", selectedGym.id)
+        .eq("is_active", true);
+
+      if (slotBookingsError) {
+        console.error("Error fetching trainer slot assignments:", slotBookingsError);
+        setTrainerSlotAssignments({});
+      } else {
+        const groupedByDayAndSlot = {};
+        (slotBookingsData || []).forEach((booking) => {
+          if (!groupedByDayAndSlot[booking.day]) groupedByDayAndSlot[booking.day] = {};
+          if (!groupedByDayAndSlot[booking.day][booking.time_slot]) {
+            groupedByDayAndSlot[booking.day][booking.time_slot] = [];
+          }
+
+          const alreadyAdded = groupedByDayAndSlot[booking.day][booking.time_slot].some(
+            (m) => m.memberId === booking.member_id
+          );
+          if (!alreadyAdded) {
+            groupedByDayAndSlot[booking.day][booking.time_slot].push({
+              memberId: booking.member_id,
+              name: booking.members?.full_name || "Member",
+            });
+          }
+        });
+        setTrainerSlotAssignments(groupedByDayAndSlot);
+      }
+      setSelectedScheduleSlot(null);
 
       // Map assigned members
       const members = (assigned_members || []).map(a => {
@@ -736,6 +771,7 @@ export default function TrainerDetailsPage({ params }) {
                 {DAYS_OF_WEEK.map((day) => {
                   const isAvailable = trainer.availableDays.includes(day);
                   const slots = trainer.availableTimeSlots?.[day] || [];
+                  const daySlotAssignments = trainerSlotAssignments[day] || {};
                   
                   return (
                     <div key={day} className={`px-4 py-3 flex items-start gap-3 ${!isAvailable ? 'opacity-40' : ''}`}>
@@ -762,17 +798,70 @@ export default function TrainerDetailsPage({ params }) {
                                 const isPM_b = b.includes('PM') && !b.includes('12');
                                 return (getHour(a) + (isPM_a ? 12 : 0)) - (getHour(b) + (isPM_b ? 12 : 0));
                               })
-                              .map((slot) => (
-                                <span
-                                  key={slot}
-                                  className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-medium rounded-md border border-blue-100"
-                                >
-                                  <Clock className="w-3 h-3" />
-                                  {slot}
-                                </span>
-                              ))}
+                              .map((slot) => {
+                                const assignedMembers = daySlotAssignments[slot] || [];
+                                const assignedCount = assignedMembers.length;
+                                const isSelectedSlot =
+                                  selectedScheduleSlot?.day === day &&
+                                  selectedScheduleSlot?.slot === slot;
+
+                                return (
+                                  <button
+                                    key={slot}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedScheduleSlot((prev) => {
+                                        if (prev?.day === day && prev?.slot === slot) return null;
+                                        return { day, slot };
+                                      });
+                                    }}
+                                    className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-md border transition-colors ${
+                                      isSelectedSlot
+                                        ? "bg-blue-600 text-white border-blue-600"
+                                        : assignedCount > 0
+                                          ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+                                          : "bg-blue-50 text-blue-700 border-blue-100 hover:bg-blue-100"
+                                    }`}
+                                  >
+                                    <Clock className="w-3 h-3" />
+                                    {slot}
+                                    {assignedCount > 0 && (
+                                      <span className={`ml-0.5 ${isSelectedSlot ? "text-blue-100" : "text-amber-700"}`}>
+                                        ({assignedCount} member{assignedCount > 1 ? "s" : ""})
+                                      </span>
+                                    )}
+                                  </button>
+                                );
+                              })}
                           </div>
                         )}
+                        {isAvailable &&
+                          selectedScheduleSlot?.day === day &&
+                          selectedScheduleSlot?.slot && (
+                            <div className="mt-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+                              <p className="text-xs font-semibold text-gray-700">
+                                {selectedScheduleSlot.slot} - Assigned Members
+                              </p>
+                              {(() => {
+                                const selectedMembers =
+                                  daySlotAssignments[selectedScheduleSlot.slot] || [];
+                                if (selectedMembers.length === 0) {
+                                  return (
+                                    <p className="text-xs text-gray-500 mt-1">No members assigned</p>
+                                  );
+                                }
+                                return (
+                                  <div className="mt-1 space-y-1">
+                                    {selectedMembers.map((m) => (
+                                      <p key={m.memberId} className="text-xs text-gray-700">
+                                        {m.name}
+                                      </p>
+                                    ))}
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                          )}
                         {isAvailable && slots.length === 0 && (
                           <p className="text-xs text-gray-400 mt-1">Available (no specific slots set)</p>
                         )}

@@ -417,36 +417,13 @@ export default function AssignMembersPage({ params }) {
             }
           }
 
-          // Check for conflicts
-          for (const row of bookingRows) {
-            const { data: conflict } = await supabase
-              .from("trainer_bookings")
-              .select("id")
-              .eq("trainer_id", row.trainer_id)
-              .eq("gym_id", row.gym_id)
-              .eq("day", row.day)
-              .eq("time_slot", row.time_slot)
-              .eq("is_active", true)
-              .maybeSingle();
-
-            if (conflict) {
-              const member = allMembers.find((m) => m.id === memberId);
-              showError(
-                `Slot ${row.day} ${row.time_slot} for ${member?.name || "member"} is already booked. Please edit and try again.`
-              );
-              await fetchAllBookedSlots(trainer.profileId);
-              setSaving(false);
-              return;
-            }
-          }
-
           const { error: bookingError } = await supabase
             .from("trainer_bookings")
             .insert(bookingRows);
 
           if (bookingError) {
             if (bookingError.code === "23505") {
-              showError("Slot conflict detected. Please refresh and try again.");
+              showError("One or more selected slots are duplicated for this member. Please review and try again.");
               await fetchAllBookedSlots(trainer.profileId);
               setSaving(false);
               return;
@@ -813,10 +790,14 @@ function MemberConfigPanel({
   // Available slots for active day
   const activeDaySlots = activeDay ? trainerAvailableTimeSlots[activeDay] || [] : [];
 
-  // Booked by others (not this member)
-  const activeDayBooked = (bookedSlotsMap[activeDay] || [])
-    .filter((b) => b.member_id !== member.id)
-    .map((b) => b.time_slot);
+  // Active slot usage for the selected day by other members.
+  const activeDayAssignmentsByOthers = (bookedSlotsMap[activeDay] || []).filter(
+    (b) => b.member_id !== member.id
+  );
+  const activeDayAssignedCountMap = activeDayAssignmentsByOthers.reduce((acc, booking) => {
+    acc[booking.time_slot] = (acc[booking.time_slot] || 0) + 1;
+    return acc;
+  }, {});
 
   // This member's existing slots for active day
   const memberExistingSlots = (bookedSlotsMap[activeDay] || [])
@@ -1120,7 +1101,8 @@ function MemberConfigPanel({
               ) : (
                 <div className="grid grid-cols-3 gap-2">
                   {activeDaySlots.map((slot) => {
-                    const isBooked = activeDayBooked.includes(slot);
+                    const assignedCount = activeDayAssignedCountMap[slot] || 0;
+                    const hasAssignedMembers = assignedCount > 0;
                     const isMemberSlot = memberExistingSlots.includes(slot);
                     const isSlotSelected = (selectedSlots[activeDay] || []).includes(slot);
 
@@ -1128,7 +1110,6 @@ function MemberConfigPanel({
                       <button
                         key={slot}
                         type="button"
-                        disabled={isBooked}
                         onClick={() => {
                           const daySlots = selectedSlots[activeDay] || [];
                           const updated = daySlots.includes(slot)
@@ -1139,18 +1120,27 @@ function MemberConfigPanel({
                           });
                         }}
                         className={`px-2 py-2 rounded-lg text-xs font-medium transition-all text-center ${
-                          isBooked
-                            ? "bg-red-50 text-red-300 border border-red-100 cursor-not-allowed line-through"
-                            : isSlotSelected
+                          isSlotSelected
                             ? "bg-blue-600 text-white shadow-md scale-[1.02]"
                             : isMemberSlot
                             ? "bg-green-50 text-green-700 border-2 border-green-300 hover:bg-green-100"
+                            : hasAssignedMembers
+                            ? "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100"
                             : "bg-white text-gray-700 border border-gray-200 hover:border-blue-300 hover:bg-blue-50"
                         }`}
+                        title={
+                          hasAssignedMembers
+                            ? `${assignedCount} member${assignedCount > 1 ? "s" : ""} already assigned`
+                            : isMemberSlot
+                            ? "Current slot"
+                            : "Available"
+                        }
                       >
                         {slot}
-                        {isBooked && (
-                          <span className="block text-[9px] text-red-400 mt-0.5">Booked</span>
+                        {hasAssignedMembers && (
+                          <span className="block text-[9px] mt-0.5">
+                            {assignedCount} member{assignedCount > 1 ? "s" : ""}
+                          </span>
                         )}
                         {isMemberSlot && !isSlotSelected && (
                           <span className="block text-[9px] text-green-600 mt-0.5">Current</span>
@@ -1167,7 +1157,7 @@ function MemberConfigPanel({
                   <span className="w-2.5 h-2.5 rounded-sm bg-white border border-gray-200" /> Available
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="w-2.5 h-2.5 rounded-sm bg-red-50 border border-red-200" /> Booked
+                  <span className="w-2.5 h-2.5 rounded-sm bg-amber-50 border border-amber-200" /> Assigned (shared)
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="w-2.5 h-2.5 rounded-sm bg-blue-600" /> Selected

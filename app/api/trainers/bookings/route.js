@@ -51,7 +51,7 @@ export async function GET(request) {
 
 /**
  * POST /api/trainers/bookings
- * Create a new trainer booking (with double-booking prevention)
+ * Create a new trainer booking (shared slots allowed)
  *
  * Body: { trainer_id, member_id, gym_id, day, time_slot }
  */
@@ -68,11 +68,12 @@ export async function POST(request) {
       );
     }
 
-    // 1. Check if the slot is already booked (server-side validation)
+    // 1. Prevent duplicate assignment of same member to same trainer/day/slot.
     const { data: existingBooking } = await supabaseAdmin
       .from("trainer_bookings")
       .select("id")
       .eq("trainer_id", trainer_id)
+      .eq("member_id", member_id)
       .eq("gym_id", gym_id)
       .eq("day", day)
       .eq("time_slot", time_slot)
@@ -81,7 +82,7 @@ export async function POST(request) {
 
     if (existingBooking) {
       return NextResponse.json(
-        { error: "This time slot is already booked for this trainer" },
+        { error: "This member is already assigned to this slot" },
         { status: 409 }
       );
     }
@@ -112,7 +113,7 @@ export async function POST(request) {
       // Handle unique constraint violation (race condition)
       if (insertError.code === "23505") {
         return NextResponse.json(
-          { error: "Slot was just booked by another member. Please choose a different slot." },
+          { error: "This member is already assigned to that slot." },
           { status: 409 }
         );
       }

@@ -31,7 +31,7 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose })
                                     Current Plan: {member.plan}
                                 </p>
                             </div>
-                        </div>
+                        </div>  
                     </div>
 
                     {/* Renewal Timeline */}

@@ -1,7 +1,8 @@
--- ============================================================
--- RPC: get_finance_insights
--- Returns all-time summary + month-wise breakdown for Finance Insights page
--- ============================================================
+-- Fix finance insights inconsistencies by aligning month calculations with finance page semantics.
+-- - Revenue uses event timestamp (paid_at fallback created_at) in a timezone-safe month window.
+-- - New joins are based on first paid membership payment, not members.join_date.
+-- - Renewals month boundaries use timestamp windows instead of date casts.
+
 CREATE OR REPLACE FUNCTION get_finance_insights(
   p_gym_id UUID,
   p_month INTEGER,       -- 1-12

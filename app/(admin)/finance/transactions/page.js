@@ -228,12 +228,7 @@ export default function TransactionsPage() {
                   <div>
                     <p className="font-medium text-gray-900">
                       {txn.name}
-                      {txn.collectedBy && (
-                        <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold text-purple-700 bg-purple-50 rounded-full border border-purple-100">
-                          <span>Trainer:</span>
-                          <span>{txn.collectedBy}</span>
-                        </span>
-                      )}
+                      
                     </p>
                     <p className="text-xs text-gray-500 capitalize">
                       {txn.type.replace("_", " ")} • {txn.mode} •{" "}

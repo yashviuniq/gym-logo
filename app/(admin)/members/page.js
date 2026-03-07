@@ -862,14 +862,7 @@ export default function MembersPage() {
                     {/* Plan and Status Info */}
                     <div className="mt-3 space-y-2">
                       {/* Show if created by trainer */}
-                      {member.createdByTrainerName && (
-                        <div className="flex items-center gap-2 bg-purple-50 rounded-lg px-2 py-1.5">
-                          <UserCheck className="w-3.5 h-3.5 text-purple-600" />
-                          <span className="text-xs text-purple-700">
-                            Created by Trainer ({member.createdByTrainerName})
-                          </span>
-                        </div>
-                      )}
+                   
 
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">

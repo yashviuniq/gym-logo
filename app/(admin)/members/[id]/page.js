@@ -159,6 +159,10 @@ export default function MemberDetailPage() {
         daysRemaining = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
       }
 
+      const totalPaid = paymentsData
+        .filter((payment) => payment.status === "paid")
+        .reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0);
+
       const transformedMember = {
         id: memberData.id,
         gymId: memberData.gym_id,
@@ -179,6 +183,7 @@ export default function MemberDetailPage() {
         daysRemaining: daysRemaining,
         dueAmount: Math.max(0, memberData.balance || 0),
         balance: memberData.balance || 0,
+        totalPaid,
         attendance: attendanceData.map(a => ({
           date: new Date(a.check_in_date).toLocaleDateString("en-IN"),
           checkIn: a.check_in_time,

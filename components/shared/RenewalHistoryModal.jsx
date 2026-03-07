@@ -1,6 +1,15 @@
 "use client";
 
 export default function RenewalHistoryModal({ member, renewalHistory, onClose }) {
+    const totalPaid = member?.totalPaid ?? renewalHistory.reduce(
+        (sum, renewal) => sum + (renewal.paymentAmount || 0),
+        0
+    );
+    const totalDue = Math.max(0, member?.balance ?? renewalHistory.reduce(
+        (sum, renewal) => sum + (renewal.dueAmount || 0),
+        0
+    ));
+
     return (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end">
             <div className="bg-white w-full rounded-t-3xl max-h-[90vh] overflow-hidden flex flex-col">
@@ -155,21 +164,13 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose })
                                 <div className="bg-green-50 rounded-lg p-3 text-center">
                                     <p className="text-xs text-green-600 mb-1">Total Paid</p>
                                     <p className="text-xl font-bold text-green-700">
-                                        ₹
-                                        {renewalHistory.reduce(
-                                            (sum, r) => sum + r.paymentAmount,
-                                            0
-                                        )}
+                                        ₹{totalPaid}
                                     </p>
                                 </div>
                                 <div className="bg-orange-50 rounded-lg p-3 text-center">
                                     <p className="text-xs text-orange-600 mb-1">Total Due</p>
                                     <p className="text-xl font-bold text-orange-700">
-                                        ₹
-                                        {renewalHistory.reduce(
-                                            (sum, r) => sum + (r.dueAmount || 0),
-                                            0
-                                        )}
+                                        ₹{totalDue}
                                     </p>
                                 </div>
                             </div>

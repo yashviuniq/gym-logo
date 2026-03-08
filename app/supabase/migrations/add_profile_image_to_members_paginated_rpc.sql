@@ -1,5 +1,5 @@
--- RPC function to fetch paginated members with server-side search, status filter, and enrichment
--- Replaces the old get_members_list which fetched ALL members at once
+-- Include member profile_image in paginated members RPC so list cards can render avatars.
+
 CREATE OR REPLACE FUNCTION get_members_paginated(
   p_gym_id UUID,
   p_search TEXT DEFAULT '',
@@ -24,7 +24,6 @@ BEGIN
   v_offset := (p_page - 1) * p_page_size;
   v_search := NULLIF(TRIM(COALESCE(p_search, '')), '');
 
-  -- Count total matching members (same filters as data query)
   SELECT COUNT(*) INTO v_total_count
   FROM members m
   LEFT JOIN LATERAL (
@@ -35,12 +34,10 @@ BEGIN
     LIMIT 1
   ) lat_ms ON true
   WHERE m.gym_id = p_gym_id
-    -- Search filter
     AND (v_search IS NULL OR
          m.full_name ILIKE '%' || v_search || '%' OR
          m.phone ILIKE '%' || v_search || '%' OR
          m.email ILIKE '%' || v_search || '%')
-    -- Status filter
     AND (
       p_status IS NULL OR p_status = '' OR p_status = 'all' OR
       (p_status = 'active' AND lat_ms.ms_id IS NOT NULL
@@ -52,7 +49,6 @@ BEGIN
         AND lat_ms.end_date >= (CURRENT_DATE - 7)
         AND lat_ms.end_date <= (CURRENT_DATE + 7))
     )
-    -- Trainer's own members filter
     AND (
       NOT p_show_my_members OR NOT p_is_trainer OR p_user_id IS NULL OR
       EXISTS (
@@ -62,7 +58,6 @@ BEGIN
       )
     );
 
-  -- Fetch paginated members with enriched data
   SELECT COALESCE(jsonb_agg(row_data), '[]'::jsonb) INTO v_members
   FROM (
     SELECT jsonb_build_object(
@@ -155,7 +150,6 @@ BEGIN
     LIMIT p_page_size OFFSET v_offset
   ) sub;
 
-  -- Build result
   v_result := jsonb_build_object(
     'members', v_members,
     'total_count', v_total_count,

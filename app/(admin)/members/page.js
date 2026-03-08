@@ -36,11 +36,33 @@ import {
 
 const PAGE_SIZE = 20;
 
+function MemberAvatar({ name, profileImage }) {
+  const [imageFailed, setImageFailed] = useState(false);
+
+  if (profileImage && !imageFailed) {
+    return (
+      <img
+        src={profileImage}
+        alt={name}
+        className="w-12 h-12 rounded-xl object-cover shadow-sm"
+        onError={() => setImageFailed(true)}
+      />
+    );
+  }
+
+  return (
+    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-sm">
+      {name.charAt(0).toUpperCase()}
+    </div>
+  );
+}
+
 // Transform server response to the shape expected by the UI
 const transformMember = (m) => ({
   id: m.id,
   gymId: m.gym_id,
   name: m.full_name || "N/A",
+  profileImage: m.profile_image || null,
   phone: m.phone || "N/A",
   email: m.email,
   plan: m.plan_name || "No Plan",
@@ -843,6 +865,10 @@ Best regards,
         >
           {members.map((member) => {
             const statusConfig = getStatusConfig(member.status);
+            const canShowRenewReminder =
+              member.status === "expired" ||
+              member.status === "renewal" ||
+              (member.daysRemaining !== null && member.daysRemaining <= 7);
 
             return (
               <div
@@ -853,9 +879,10 @@ Best regards,
                 <div className="flex items-start gap-3">
                   {/* Avatar */}
                   <div className="flex-shrink-0">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-sm">
-                      {member.name.charAt(0).toUpperCase()}
-                    </div>
+                    <MemberAvatar
+                      name={member.name}
+                      profileImage={member.profileImage}
+                    />
                   </div>
 
                   {/* Member Info */}
@@ -896,7 +923,22 @@ Best regards,
                         <ChevronRight className="w-4 h-4 text-gray-400" />
                       </div>
                     </div>
-
+                    
+                      {/* Days remaining for active memberships */}
+                      {member.daysRemaining !== null && (
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-gray-400" />
+                          <span
+                            className={`text-xs ${getDaysRemainingColor(
+                              member.daysRemaining
+                            )}`}
+                          >
+                            {member.daysRemaining > 0
+                              ? `${member.daysRemaining} days remaining`
+                              : "Membership expired"}
+                          </span>
+                        </div>
+                      )}
                     {/* Plan and Status Info */}
                     <div className="mt-3 space-y-2">
                       {/* Show if created by trainer */}
@@ -923,21 +965,6 @@ Best regards,
                         </div>
                       </div>
 
-                      {/* Days remaining for active memberships */}
-                      {member.daysRemaining !== null && (
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-gray-400" />
-                          <span
-                            className={`text-xs ${getDaysRemainingColor(
-                              member.daysRemaining
-                            )}`}
-                          >
-                            {member.daysRemaining > 0
-                              ? `${member.daysRemaining} days remaining`
-                              : "Membership expired"}
-                          </span>
-                        </div>
-                      )}
 
                       {/* Trainer plan expiry */}
                       {member.trainerAssignment &&
@@ -1017,7 +1044,7 @@ Best regards,
                         <span className="hidden sm:inline">Share Receipt</span>
                       </button>
 
-                      {(member.status === "expired" || member.status === "renewal") && (
+                      {canShowRenewReminder && (
                         <button
                           onClick={(e) => handleRenewalReminder(e, member)}
                           title="Remind"

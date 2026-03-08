@@ -3,7 +3,7 @@ CREATE OR REPLACE FUNCTION get_member_details(
   p_gym_id UUID
 )
 RETURNS JSONB
-LANGUAGE plpgsql
+LANGUAGE plpgsql 
 SECURITY DEFINER
 AS $$
 DECLARE
@@ -189,3 +189,4 @@ BEGIN
   RETURN v_result;
 END;
 $$;
+

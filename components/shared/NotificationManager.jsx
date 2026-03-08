@@ -13,6 +13,24 @@ export default function NotificationManager() {
   const [permission, setPermission] = useState('default');
   const [showPrompt, setShowPrompt] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const [localUserId, setLocalUserId] = useState(null);
+  const [localUserRole, setLocalUserRole] = useState('member');
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    try {
+      const raw = localStorage.getItem('gymUser');
+      if (!raw) return;
+
+      const parsed = JSON.parse(raw);
+      setLocalUserId(parsed?.id || null);
+      setLocalUserRole(parsed?.role || 'member');
+    } catch {
+      setLocalUserId(null);
+      setLocalUserRole('member');
+    }
+  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -31,15 +49,6 @@ export default function NotificationManager() {
   }, [dismissed]);
 
   useEffect(() => {
-    // Determine user id from Supabase or localStorage (for member/admin local login)
-    const localUserId = (() => {
-      try {
-        const raw = localStorage.getItem('gymUser');
-        if (raw) return JSON.parse(raw)?.id || null;
-      } catch {}
-      return null;
-    })();
-
     const effectiveUserId = user?.id || localUserId;
     if (!effectiveUserId) return;
 
@@ -82,7 +91,7 @@ export default function NotificationManager() {
         unsubscribe();
       }
     };
-  }, [user, permission, showToast]);
+  }, [addNotification, localUserId, permission, showToast, user]);
 
   const registerToken = async (effectiveUserId) => {
     try {
@@ -91,8 +100,7 @@ export default function NotificationManager() {
       const uid = effectiveUserId || user?.id;
       if (token && uid) {
         console.log('FCM token:', token);
-        const raw = localStorage.getItem('gymUser');
-        const role = raw ? (JSON.parse(raw)?.role || 'member') : (user?.role || 'member');
+        const role = localUserRole || user?.role || 'member';
         const userType = role === 'member' ? 'member' : 'profile';
         // Register token with backend
         const response = await fetch('/api/notifications/register', {
@@ -141,8 +149,7 @@ export default function NotificationManager() {
       setPermission(result);
       
       if (result === 'granted') {
-        const raw = localStorage.getItem('gymUser');
-        const uid = user?.id || (raw ? JSON.parse(raw)?.id : null);
+        const uid = user?.id || localUserId;
         await registerToken(uid);
         showToast('Notifications enabled successfully!', 'success');
         setShowPrompt(false);
@@ -162,15 +169,6 @@ export default function NotificationManager() {
       showToast('Failed to request notification permission', 'error');
     }
   };
-
-  // Show notification prompt if not granted and user is logged in
-  const localUserId = (() => {
-    try {
-      const raw = localStorage.getItem('gymUser');
-      if (raw) return JSON.parse(raw)?.id || null;
-    } catch {}
-    return null;
-  })();
 
   if (showPrompt && (user?.id || localUserId)) {
     return (

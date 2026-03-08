@@ -1,5 +1,3 @@
--- RPC function to fetch all member details in a single call
--- Replaces 7-8 separate queries on the member/[id] page
 CREATE OR REPLACE FUNCTION get_member_details(
   p_member_id UUID,
   p_gym_id UUID
@@ -20,8 +18,7 @@ DECLARE
   v_trainer_schedule JSONB;
   v_next_payment JSONB;
 BEGIN
-  -- 1. Fetch member basic info
-  SELECT id, full_name, phone, email, balance, profile_image, 
+  SELECT id, full_name, phone, email, balance, profile_image,
          join_date, created_at, created_by_name, gym_id
   INTO v_member
   FROM members
@@ -31,7 +28,6 @@ BEGIN
     RETURN jsonb_build_object('error', 'Member not found');
   END IF;
 
-  -- 2. Fetch memberships with plan details
   SELECT COALESCE(jsonb_agg(
     jsonb_build_object(
       'id', m.id,
@@ -55,7 +51,6 @@ BEGIN
   LEFT JOIN membership_plans mp ON mp.id = m.plan_id
   WHERE m.member_id = p_member_id;
 
-  -- 3. Fetch all payments
   SELECT COALESCE(jsonb_agg(
     jsonb_build_object(
       'id', p.id,
@@ -73,7 +68,6 @@ BEGIN
   FROM payments p
   WHERE p.member_id = p_member_id;
 
-  -- 4. Fetch last 10 attendance records
   SELECT COALESCE(jsonb_agg(
     jsonb_build_object(
       'check_in_date', a.check_in_date,
@@ -90,7 +84,6 @@ BEGIN
     LIMIT 10
   ) a;
 
-  -- 5. Fetch assigned diet plans
   SELECT COALESCE(jsonb_agg(
     jsonb_build_object(
       'id', md.id,
@@ -109,7 +102,6 @@ BEGIN
   LEFT JOIN diet_plans dp ON dp.id = md.diet_plan_id
   WHERE md.member_id = p_member_id;
 
-  -- 6. Fetch assigned workout plans
   SELECT COALESCE(jsonb_agg(
     jsonb_build_object(
       'id', mw.id,
@@ -127,7 +119,6 @@ BEGIN
   LEFT JOIN workout_plans wp ON wp.id = mw.workout_plan_id
   WHERE mw.member_id = p_member_id;
 
-  -- 7. Fetch assigned trainer with profile
   SELECT jsonb_build_object(
     'trainer_id', tma.trainer_id,
     'plan_end_date', tma.plan_end_date,
@@ -144,7 +135,6 @@ BEGIN
     AND tma.is_active = true
   LIMIT 1;
 
-  -- 8. Fetch trainer bookings/schedule (only if trainer assigned)
   IF v_trainer IS NOT NULL THEN
     SELECT COALESCE(jsonb_agg(
       jsonb_build_object(
@@ -161,7 +151,6 @@ BEGIN
     v_trainer_schedule := '[]'::jsonb;
   END IF;
 
-  -- 9. Get next payment info (pending payment with next_payment_date)
   SELECT jsonb_build_object(
     'next_payment_date', p.next_payment_date,
     'remaining_amount', GREATEST(0, COALESCE(v_member.balance, 0))
@@ -174,7 +163,6 @@ BEGIN
   ORDER BY p.created_at DESC
   LIMIT 1;
 
-  -- Build final result
   v_result := jsonb_build_object(
     'member', jsonb_build_object(
       'id', v_member.id,

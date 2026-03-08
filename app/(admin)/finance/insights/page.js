@@ -21,12 +21,19 @@ import {
   Calendar,
   ChevronDown,
   ChevronUp,
+  Download,
+  Loader2,
+  FileText,
 } from "lucide-react";
 
 const MONTHS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
+
+const REPORT_START_YEAR = 2024;
+
+const EXCEL_CURRENCY_FORMAT = '"₹"#,##0.00';
 
 function formatCurrency(value) {
   const num = Number(value) || 0;
@@ -37,6 +44,19 @@ function formatCurrency(value) {
     return "₹" + (num / 100000).toFixed(2) + " L";
   }
   return "₹" + num.toLocaleString("en-IN", { maximumFractionDigits: 0 });
+}
+
+function formatExcelDate(value) {
+  if (!value) return "-";
+
+  const date = new Date(value.length <= 10 ? `${value}T00:00:00` : value);
+  if (Number.isNaN(date.getTime())) return "-";
+
+  return date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 // ─── Week/Day Breakdown Helpers ───────────────────────────────
@@ -134,6 +154,160 @@ function computeDayData(data, day) {
   return { revenue, revenueList, newJoinsList, renewalsList };
 }
 
+function getFinanceExportBaseName(gymName, year, monthIndex) {
+  return `${gymName.replace(/\s+/g, "_")}_Finance_Insights_${year}_${String(monthIndex + 1).padStart(2, "0")}`;
+}
+
+function getFinanceOverallExportBaseName(gymName) {
+  return `${gymName.replace(/\s+/g, "_")}_Finance_Overall_Report`;
+}
+
+function getReportYears(currentYear) {
+  const years = [];
+  for (let year = REPORT_START_YEAR; year <= currentYear; year += 1) {
+    years.push(year);
+  }
+  return years;
+}
+
+function summarizeOverallRevenueHistory(yearlyHistory) {
+  const populatedYears = yearlyHistory.filter((entry) => entry.totalRevenue > 0);
+  const sourceYears = populatedYears.length ? populatedYears : yearlyHistory;
+
+  const bestYear = sourceYears.reduce((best, current) => {
+    if (!best || current.totalRevenue > best.totalRevenue) {
+      return current;
+    }
+    return best;
+  }, null);
+
+  const bestMonth = yearlyHistory
+    .flatMap((yearEntry) => yearEntry.months.map((monthEntry) => ({
+      year: yearEntry.year,
+      ...monthEntry,
+    })))
+    .reduce((best, current) => {
+      if (!best || current.revenue > best.revenue) {
+        return current;
+      }
+      return best;
+    }, null);
+
+  return {
+    yearsCovered: yearlyHistory.length,
+    activeYears: populatedYears.length,
+    bestYear,
+    bestMonth,
+  };
+}
+
+function buildOverviewRows(data, gymName, monthName, year, generatedAt) {
+  return [
+    [`${gymName} Finance Insights`],
+    ["Gym", gymName],
+    ["Report Month", `${monthName} ${year}`],
+    ["Generated At", generatedAt],
+    [],
+    ["All Time Summary"],
+    ["Metric", "Value"],
+    ["Total Revenue", Number(data?.total_revenue_all_time || 0)],
+    ["Salary Paid", Number(data?.total_salary_paid_all_time || 0)],
+    ["Pending Dues", Number(data?.total_dues_all_time || 0)],
+    ["Net Profit", Number(data?.net_profit_all_time || 0)],
+    ["Average Monthly Revenue", Number(data?.avg_monthly_revenue || 0)],
+    [],
+    ["Selected Month Summary"],
+    ["Metric", "Value"],
+    ["Month Revenue", Number(data?.month_revenue || 0)],
+    ["New Joins", Number(data?.month_new_joins || 0)],
+    ["Renewals", Number(data?.month_renewals || 0)],
+    ["Active Members", Number(data?.month_active_members || 0)],
+  ];
+}
+
+function buildWeeklyRows(data, selectedMonth, selectedYear) {
+  return [
+    ["Week", "Range", "Revenue", "New Joins", "Renewals"],
+    ...getWeeksForMonth(selectedMonth, selectedYear).map((week) => {
+      const weekData = computeWeekData(data, week.start, week.end);
+      return [
+        week.label,
+        week.range,
+        Number(weekData.revenue || 0),
+        weekData.newJoinsList.length,
+        weekData.renewalsList.length,
+      ];
+    }),
+  ];
+}
+
+function buildSummaryChartRows(data, selectedMonth, selectedYear, gymName, monthName) {
+  const weeklyRows = buildWeeklyRows(data, selectedMonth, selectedYear);
+
+  return [
+    [`${gymName} Finance Summary`],
+    [`${monthName} ${selectedYear}`],
+    [],
+    ["KPI", "Value"],
+    ["Month Revenue", Number(data?.month_revenue || 0)],
+    ["Total Revenue", Number(data?.total_revenue_all_time || 0)],
+    ["Net Profit", Number(data?.net_profit_all_time || 0)],
+    ["Pending Dues", Number(data?.total_dues_all_time || 0)],
+    ["New Joins", String(data?.month_new_joins || 0)],
+    ["Renewals", String(data?.month_renewals || 0)],
+    ["Active Members", String(data?.month_active_members || 0)],
+    [],
+    ["Weekly Revenue Chart Data"],
+    ["Week", "Revenue", "New Joins", "Renewals"],
+    ...weeklyRows.slice(1).map((row) => [row[0], row[2], row[3], row[4]]),
+  ];
+}
+
+function buildRevenueRows(data) {
+  return [
+    ["Member Name", "Phone", "Amount", "Payment Mode", "Paid At"],
+    ...(data?.month_revenue_list?.length
+      ? data.month_revenue_list.map((payment) => [
+          payment.member_name || "Unknown",
+          payment.phone || "-",
+          Number(payment.amount || 0),
+          payment.payment_mode || "-",
+          formatExcelDate(getPaymentDate(payment)),
+        ])
+      : [["No revenue records found", "", "", "", ""]]),
+  ];
+}
+
+function buildNewJoinRows(data) {
+  return [
+    ["Member Name", "Phone", "Plan", "Join Date"],
+    ...(data?.month_new_joins_list?.length
+      ? data.month_new_joins_list.map((member) => [
+          member.full_name || "Unknown",
+          member.phone || "-",
+          member.plan_name || "-",
+          formatExcelDate(member.join_date),
+        ])
+      : [["No new joins found", "", "", ""]]),
+  ];
+}
+
+function buildRenewalRows(data) {
+  return [
+    ["Member Name", "Phone", "Plan", "Start Date", "End Date", "Created At"],
+    ...(data?.month_renewals_list?.length
+      ? data.month_renewals_list.map((renewal) => [
+          renewal.member_name || "Unknown",
+          renewal.phone || "-",
+          renewal.plan_name || "-",
+          formatExcelDate(renewal.start_date),
+          formatExcelDate(renewal.end_date),
+          formatExcelDate(renewal.created_at),
+        ])
+      : [["No renewals found", "", "", "", "", ""]]),
+  ];
+}
+
 // Skeleton loader for the page
 function InsightsSkeleton() {
   return (
@@ -176,6 +350,9 @@ export default function FinanceInsightsPage() {
   const [loading, setLoading] = useState(true);
   const [monthLoading, setMonthLoading] = useState(false);
   const [data, setData] = useState(null);
+  const [exporting, setExporting] = useState(false);
+  const [pdfExporting, setPdfExporting] = useState(false);
+  const [overallPdfExporting, setOverallPdfExporting] = useState(false);
   const [drillDown, setDrillDown] = useState(null); // null | "new_joins" | "revenue" | "renewals"
 
   // Week & Day drill-down state
@@ -195,6 +372,25 @@ export default function FinanceInsightsPage() {
     }
   }, []);
 
+  const requestInsights = useCallback(async (gymId, month, year) => {
+    const res = await fetch("/api/finance/insights", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        p_gym_id: gymId,
+        p_month: month + 1,
+        p_year: year,
+      }),
+    });
+
+    const json = await res.json();
+    if (!res.ok || !json.data) {
+      throw new Error(json.error || "Failed to fetch finance insights");
+    }
+
+    return json.data;
+  }, []);
+
   const fetchInsights = useCallback(
     async (gymId, month, year, isMonthChange = false) => {
       if (isMonthChange) {
@@ -204,22 +400,8 @@ export default function FinanceInsightsPage() {
       }
 
       try {
-        const res = await fetch("/api/finance/insights", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            p_gym_id: gymId,
-            p_month: month + 1, // API expects 1-indexed
-            p_year: year,
-          }),
-        });
-
-        const json = await res.json();
-        if (res.ok && json.data) {
-          setData(json.data);
-        } else {
-          console.error("Failed to fetch insights:", json.error);
-        }
+        const result = await requestInsights(gymId, month, year);
+        setData(result);
       } catch (err) {
         console.error("Error fetching insights:", err);
       } finally {
@@ -227,7 +409,7 @@ export default function FinanceInsightsPage() {
         setMonthLoading(false);
       }
     },
-    []
+    [requestInsights]
   );
 
   useEffect(() => {
@@ -254,6 +436,490 @@ export default function FinanceInsightsPage() {
       fetchInsights(selectedGym.id, newMonth, year, true);
     }
   };
+
+  const handleExportExcel = async () => {
+    if (!data || !selectedGym?.name) return;
+
+    setExporting(true);
+    try {
+      const XLSX = await import("xlsx");
+      const workbook = XLSX.utils.book_new();
+      const monthName = MONTHS[selectedMonth];
+      const generatedAt = new Date().toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      const addSheet = (name, rows, cols = [], currencyColumns = [], currencyStartRow = 1) => {
+        const sheet = XLSX.utils.aoa_to_sheet(rows);
+        if (cols.length > 0) sheet["!cols"] = cols;
+        if (currencyColumns.length > 0) {
+          const range = XLSX.utils.decode_range(sheet["!ref"] || "A1");
+          for (let row = currencyStartRow; row <= range.e.r; row += 1) {
+            currencyColumns.forEach((columnIndex) => {
+              const cellRef = XLSX.utils.encode_cell({ r: row, c: columnIndex });
+              const cell = sheet[cellRef];
+              if (cell && typeof cell.v === "number") {
+                cell.z = EXCEL_CURRENCY_FORMAT;
+              }
+            });
+          }
+        }
+        XLSX.utils.book_append_sheet(workbook, sheet, name);
+      };
+
+      const chartSummaryRows = buildSummaryChartRows(
+        data,
+        selectedMonth,
+        selectedYear,
+        selectedGym.name,
+        monthName
+      );
+      const overviewRows = buildOverviewRows(data, selectedGym.name, monthName, selectedYear, generatedAt);
+      const weeklyRows = buildWeeklyRows(data, selectedMonth, selectedYear);
+      const revenueRows = buildRevenueRows(data);
+      const newJoinRows = buildNewJoinRows(data);
+      const renewalRows = buildRenewalRows(data);
+
+      addSheet(
+        "Summary Chart",
+        chartSummaryRows,
+        [{ wch: 24 }, { wch: 18 }, { wch: 14 }, { wch: 14 }],
+        [1],
+        4
+      );
+
+      addSheet(
+        "Overview",
+        overviewRows,
+        [{ wch: 28 }, { wch: 18 }],
+        [1],
+        7
+      );
+
+      addSheet(
+        "Weekly Breakdown",
+        weeklyRows,
+        [{ wch: 12 }, { wch: 22 }, { wch: 14 }, { wch: 12 }, { wch: 12 }],
+        [2]
+      );
+
+      addSheet(
+        "Revenue Payments",
+        revenueRows,
+        [{ wch: 28 }, { wch: 18 }, { wch: 14 }, { wch: 16 }, { wch: 18 }],
+        [2]
+      );
+
+      addSheet(
+        "New Joins",
+        newJoinRows,
+        [{ wch: 28 }, { wch: 18 }, { wch: 22 }, { wch: 18 }]
+      );
+
+      addSheet(
+        "Renewals",
+        renewalRows,
+        [{ wch: 28 }, { wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 18 }, { wch: 18 }]
+      );
+
+      XLSX.writeFile(
+        workbook,
+        `${getFinanceExportBaseName(selectedGym.name, selectedYear, selectedMonth)}.xlsx`
+      );
+    } catch (error) {
+      console.error("Error exporting finance insights workbook:", error);
+      window.alert("Failed to export Excel file. Please try again.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleExportPdf = async () => {
+    if (!data || !selectedGym?.name) return;
+
+    setPdfExporting(true);
+    try {
+      const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+        import("jspdf"),
+        import("jspdf-autotable"),
+      ]);
+
+      const monthName = MONTHS[selectedMonth];
+      const generatedAt = new Date().toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      const overviewRows = buildOverviewRows(data, selectedGym.name, monthName, selectedYear, generatedAt);
+      const weeklyRows = buildWeeklyRows(data, selectedMonth, selectedYear);
+      const revenueRows = buildRevenueRows(data);
+      const newJoinRows = buildNewJoinRows(data);
+      const renewalRows = buildRenewalRows(data);
+      const summaryPdfRows = [
+        ["Total Revenue", formatCurrency(data?.total_revenue_all_time)],
+        ["Salary Paid", formatCurrency(data?.total_salary_paid_all_time)],
+        ["Pending Dues", formatCurrency(data?.total_dues_all_time)],
+        ["Net Profit", formatCurrency(data?.net_profit_all_time)],
+        ["Month Revenue", formatCurrency(data?.month_revenue)],
+        ["New Joins", String(data?.month_new_joins || 0)],
+        ["Renewals", String(data?.month_renewals || 0)],
+        ["Active Members", String(data?.month_active_members || 0)],
+      ];
+      const weeklyPdfRows = weeklyRows.slice(1).map((row) => [
+        row[0],
+        row[1],
+        formatCurrency(row[2]),
+        String(row[3]),
+        String(row[4]),
+      ]);
+      const revenuePdfRows = revenueRows.slice(1).map((row) => [
+        row[0],
+        row[1],
+        typeof row[2] === "number" ? formatCurrency(row[2]) : row[2],
+        row[3],
+        row[4],
+      ]);
+
+      const doc = new jsPDF("l", "mm", "a4");
+      const pageWidth = doc.internal.pageSize.getWidth();
+
+      doc.setFillColor(16, 185, 129);
+      doc.rect(0, 0, pageWidth, 28, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(18);
+      doc.text("Finance Insights Report", 14, 12);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(selectedGym.name, 14, 19);
+      doc.text(`${monthName} ${selectedYear}`, 14, 24);
+
+      doc.setTextColor(80, 80, 80);
+      doc.setFontSize(9);
+      doc.text(`Generated: ${generatedAt}`, pageWidth - 14, 19, { align: "right" });
+
+      autoTable(doc, {
+        startY: 34,
+        head: [["Metric", "Value"]],
+        body: summaryPdfRows,
+        theme: "striped",
+        headStyles: { fillColor: [37, 99, 235] },
+        columnStyles: {
+          0: { cellWidth: 85 },
+          1: { halign: "right", cellWidth: 50 },
+        },
+        styles: { fontSize: 9 },
+      });
+
+      autoTable(doc, {
+        startY: doc.lastAutoTable.finalY + 8,
+        head: [weeklyRows[0]],
+        body: weeklyPdfRows,
+        theme: "striped",
+        headStyles: { fillColor: [99, 102, 241] },
+        styles: { fontSize: 8 },
+        columnStyles: {
+          2: { halign: "right" },
+          3: { halign: "center" },
+          4: { halign: "center" },
+        },
+      });
+
+      autoTable(doc, {
+        startY: doc.lastAutoTable.finalY + 8,
+        head: [revenueRows[0]],
+        body: revenuePdfRows,
+        theme: "striped",
+        headStyles: { fillColor: [16, 185, 129] },
+        styles: { fontSize: 8 },
+        columnStyles: { 2: { halign: "right" } },
+      });
+
+      autoTable(doc, {
+        startY: doc.lastAutoTable.finalY + 8,
+        head: [newJoinRows[0]],
+        body: newJoinRows.slice(1),
+        theme: "striped",
+        headStyles: { fillColor: [139, 92, 246] },
+        styles: { fontSize: 8 },
+      });
+
+      autoTable(doc, {
+        startY: doc.lastAutoTable.finalY + 8,
+        head: [renewalRows[0]],
+        body: renewalRows.slice(1),
+        theme: "striped",
+        headStyles: { fillColor: [59, 130, 246] },
+        styles: { fontSize: 8 },
+      });
+
+      doc.save(`${getFinanceExportBaseName(selectedGym.name, selectedYear, selectedMonth)}.pdf`);
+    } catch (error) {
+      console.error("Error exporting finance insights PDF:", error);
+      window.alert("Failed to export PDF file. Please try again.");
+    } finally {
+      setPdfExporting(false);
+    }
+  };
+
+  const handleExportOverallPdf = async () => {
+  if (!selectedGym?.id || !selectedGym?.name || !data) return;
+
+  setOverallPdfExporting(true);
+  try {
+    const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+      import("jspdf"),
+      import("jspdf-autotable"),
+    ]);
+
+    const years = getReportYears(now.getFullYear());
+    const yearlyHistory = [];
+
+    for (const year of years) {
+      const monthLimit = year === now.getFullYear() ? now.getMonth() + 1 : 12;
+      const monthResponses = await Promise.all(
+        Array.from({ length: monthLimit }, (_, monthIndex) =>
+          requestInsights(selectedGym.id, monthIndex, year)
+        )
+      );
+
+      const months = monthResponses.map((monthData, monthIndex) => ({
+        monthIndex,
+        monthName: MONTHS[monthIndex],
+        revenue: Number(monthData?.month_revenue || 0),
+        newJoins: Number(monthData?.month_new_joins || 0),
+        renewals: Number(monthData?.month_renewals || 0),
+        activeMembers: Number(monthData?.month_active_members || 0),
+      }));
+
+      yearlyHistory.push({
+        year,
+        totalRevenue: months.reduce((sum, month) => sum + month.revenue, 0),
+        totalNewJoins: months.reduce((sum, m) => sum + m.newJoins, 0),
+        totalRenewals: months.reduce((sum, m) => sum + m.renewals, 0),
+        months,
+      });
+    }
+
+    const overallSummary = summarizeOverallRevenueHistory(yearlyHistory);
+    const generatedAt = new Date().toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const doc = new jsPDF("l", "mm", "a4");
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 14;
+    const usableWidth = pageWidth - margin * 2;
+
+    // ===== Helper to add footer on all pages =====
+    const addPageFooter = () => {
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(120, 120, 120);
+        doc.text(selectedGym.name, margin, pageHeight - 8);
+        doc.text(`Page ${i} of ${pageCount}`, pageWidth - margin, pageHeight - 8, {
+          align: "right",
+        });
+      }
+    };
+
+    // ===== Header =====
+    doc.setFillColor(20, 30, 50);
+    doc.rect(0, 0, pageWidth, 22, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.text("Overall Revenue Report", margin, 12);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text(selectedGym.name, margin, 18);
+    doc.text(
+      `${REPORT_START_YEAR} – ${now.getFullYear()}  •  Generated: ${generatedAt}`,
+      pageWidth - margin,
+      16,
+      { align: "right" }
+    );
+
+    // ===== 1. Two‑column KPI tables =====
+    const kpiLeft = [
+      ["All‑Time Revenue", formatCurrency(data?.total_revenue_all_time)],
+      ["Salary Paid", formatCurrency(data?.total_salary_paid_all_time)],
+      ["Net Profit", formatCurrency(data?.net_profit_all_time)],
+      ["Pending Dues", formatCurrency(data?.total_dues_all_time)],
+    ];
+    const kpiRight = [
+      ["Avg Monthly Revenue", formatCurrency(data?.avg_monthly_revenue)],
+      [
+        "Best Revenue Year",
+        overallSummary.bestYear
+          ? `${overallSummary.bestYear.year} (${formatCurrency(
+              overallSummary.bestYear.totalRevenue
+            )})`
+          : "-",
+      ],
+      [
+        "Best Revenue Month",
+        overallSummary.bestMonth
+          ? `${overallSummary.bestMonth.monthName} ${overallSummary.bestMonth.year} (${formatCurrency(
+              overallSummary.bestMonth.revenue
+            )})`
+          : "-",
+      ],
+      ["Years with Revenue", `${overallSummary.activeYears} of ${overallSummary.yearsCovered}`],
+    ];
+
+    const tableWidthHalf = usableWidth / 2 - 4; // gap between columns
+
+    autoTable(doc, {
+      startY: 28,
+      margin: { left: margin },
+      head: [["Metric", "Value"]],
+      body: kpiLeft,
+      theme: "grid",
+      headStyles: { fillColor: [40, 50, 70], fontSize: 9, fontStyle: "bold", cellPadding: 3 },
+      bodyStyles: { fontSize: 9, cellPadding: 3 },
+      alternateRowStyles: { fillColor: [245, 245, 250] },
+      tableWidth: tableWidthHalf,
+      columnStyles: {
+        0: { cellWidth: tableWidthHalf * 0.6 }, // Metric column wider
+        1: { cellWidth: tableWidthHalf * 0.4, halign: "right", fontStyle: "bold" },
+      },
+    });
+    const leftEndY = doc.lastAutoTable.finalY;
+
+    autoTable(doc, {
+      startY: 28,
+      margin: { left: margin + tableWidthHalf + 8 },
+      head: [["Metric", "Value"]],
+      body: kpiRight,
+      theme: "grid",
+      headStyles: { fillColor: [40, 50, 70], fontSize: 9, fontStyle: "bold", cellPadding: 3 },
+      bodyStyles: { fontSize: 9, cellPadding: 3 },
+      alternateRowStyles: { fillColor: [245, 245, 250] },
+      tableWidth: tableWidthHalf,
+      columnStyles: {
+        0: { cellWidth: tableWidthHalf * 0.6 },
+        1: { cellWidth: tableWidthHalf * 0.4, halign: "right", fontStyle: "bold" },
+      },
+    });
+    const kpiEndY = Math.max(leftEndY, doc.lastAutoTable.finalY);
+
+    // ===== 2. Year‑wise summary table with explicit column widths =====
+    autoTable(doc, {
+      startY: kpiEndY + 12,
+      margin: { left: margin, right: margin },
+      head: [["Year", "Total Revenue", "New Joins", "Renewals", "Avg Revenue / Month"]],
+      body: yearlyHistory.map((ye) => [
+        String(ye.year),
+        formatCurrency(ye.totalRevenue),
+        ye.totalNewJoins.toString(),
+        ye.totalRenewals.toString(),
+        formatCurrency(ye.months.length ? ye.totalRevenue / ye.months.length : 0),
+      ]),
+      theme: "grid",
+      headStyles: { fillColor: [0, 100, 150], fontSize: 9.5, fontStyle: "bold", cellPadding: 4 },
+      bodyStyles: { fontSize: 9.5, cellPadding: 3.5 },
+      alternateRowStyles: { fillColor: [240, 248, 255] },
+      columnStyles: {
+        0: { cellWidth: 20, halign: "center", fontStyle: "bold" }, // Year
+        1: { cellWidth: 45, halign: "right", fontStyle: "bold" }, // Total Revenue
+        2: { cellWidth: 25, halign: "center" }, // New Joins
+        3: { cellWidth: 25, halign: "center" }, // Renewals
+        4: { cellWidth: 45, halign: "right" }, // Avg Revenue / Month
+      },
+    });
+
+    // ===== 3. Monthly breakdown per year =====
+    const yearColors = [
+      [55, 65, 81],
+      [29, 78, 216],
+      [147, 51, 234],
+      [220, 38, 38],
+      [5, 150, 105],
+    ];
+
+    yearlyHistory.forEach((yearEntry, yi) => {
+      const color = yearColors[yi % yearColors.length];
+      if (yi > 0) doc.addPage();
+
+      // Year header
+      const headerY = yi === 0 ? doc.lastAutoTable.finalY + 15 : 15;
+      doc.setFillColor(...color);
+      doc.rect(margin, headerY, usableWidth, 9, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.text(
+        `${yearEntry.year}  —  Total: ${formatCurrency(
+          yearEntry.totalRevenue
+        )}  |  Joins: ${yearEntry.totalNewJoins}  |  Renewals: ${yearEntry.totalRenewals}`,
+        margin + 4,
+        headerY + 6
+      );
+
+      autoTable(doc, {
+        startY: headerY + 12,
+        margin: { left: margin, right: margin },
+        head: [["Month", "Revenue", "New Joins", "Renewals", "Active Members"]],
+        body: yearEntry.months.map((m) => [
+          m.monthName,
+          formatCurrency(m.revenue),
+          m.newJoins.toString(),
+          m.renewals.toString(),
+          m.activeMembers.toString(),
+        ]),
+        theme: "grid",
+        headStyles: {
+          fillColor: color,
+          fontSize: 9,
+          fontStyle: "bold",
+          cellPadding: 3.5,
+          textColor: 255,
+        },
+        bodyStyles: { fontSize: 9, cellPadding: 3 },
+        alternateRowStyles: { fillColor: [250, 250, 255] },
+        columnStyles: {
+          0: { cellWidth: 28, fontStyle: "bold" }, // Month name
+          1: { cellWidth: 35, halign: "right", fontStyle: "bold" }, // Revenue
+          2: { cellWidth: 22, halign: "center" }, // New Joins
+          3: { cellWidth: 22, halign: "center" }, // Renewals
+          4: { cellWidth: 28, halign: "center" }, // Active Members
+        },
+        didParseCell: (data) => {
+          if (data.section === "body" && data.column.index === 1) {
+            const monthEntry = yearEntry.months[data.row.index];
+            if (monthEntry && monthEntry.revenue > 0) {
+              data.cell.styles.textColor = [0, 100, 0];
+            }
+          }
+        },
+      });
+    });
+
+    addPageFooter();
+    doc.save(`${getFinanceOverallExportBaseName(selectedGym.name)}.pdf`);
+  } catch (error) {
+    console.error("Error exporting overall revenue PDF:", error);
+    window.alert("Failed to export overall PDF. Please try again.");
+  } finally {
+    setOverallPdfExporting(false);
+  }
+};
+
 
   if (loading) {
     return (
@@ -339,9 +1005,25 @@ export default function FinanceInsightsPage() {
       <main className="px-4 py-4 space-y-5">
         {/* ─── All Time Summary ─── */}
         <section>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3 px-1">
-            All Time Overview
-          </h2>
+          <div className="flex items-center justify-between gap-3 mb-3 px-1">
+            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+              All Time Overview
+            </h2>
+            <button
+              onClick={handleExportOverallPdf}
+              disabled={overallPdfExporting || loading || monthLoading || !data}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-1.5 shrink-0"
+              title="Export overall multi-year revenue report"
+            >
+              {overallPdfExporting ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <FileText className="w-3.5 h-3.5" />
+              )}
+              <span className="hidden sm:inline">Export Overall PDF</span>
+              <span className="sm:hidden">Overall PDF</span>
+            </button>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             {summaryCards.map((card, idx) => (
               <div
@@ -369,6 +1051,30 @@ export default function FinanceInsightsPage() {
               Monthly Breakdown
             </h2>
             <div className="flex items-center gap-1.5">
+              <button
+                onClick={handleExportPdf}
+                disabled={pdfExporting || monthLoading || !data}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-1.5"
+              >
+                {pdfExporting ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <FileText className="w-3.5 h-3.5" />
+                )}
+                <span className="hidden sm:inline">Export PDF</span>
+              </button>
+              <button
+                onClick={handleExportExcel}
+                disabled={exporting || monthLoading || !data}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-1.5"
+              >
+                {exporting ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Download className="w-3.5 h-3.5" />
+                )}
+                <span className="hidden sm:inline">Export Excel</span>
+              </button>
               {(() => {
                 const startYear = 2024;
                 const years = [];

@@ -33,6 +33,7 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
   const [paymentMode, setPaymentMode] = useState("cash");
   const [useCustomPrice, setUseCustomPrice] = useState(false);
   const [customPrice, setCustomPrice] = useState("");
+  const [customStartDate, setCustomStartDate] = useState("");
 
   // Current booking info for the member (if already booked with a trainer)
   const [currentBooking, setCurrentBooking] = useState(null);
@@ -53,6 +54,7 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
       setPaymentMode("cash");
       setUseCustomPrice(false);
       setCustomPrice("");
+      setCustomStartDate("");
     }
   }, [isOpen, selectedGym?.id, currentTrainerId]);
 
@@ -82,8 +84,40 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
       setSelectedPlanId(null);
       setUseCustomPrice(false);
       setCustomPrice("");
+      setCustomStartDate("");
     }
   }, [selectedTrainerId, selectedGym?.id]);
+
+  useEffect(() => {
+    if (!selectedPlanId || customStartDate) return;
+
+    let baseDate = new Date();
+    baseDate.setHours(0, 0, 0, 0);
+
+    if (currentAssignment?.planEndDate) {
+      const currentEndDate = new Date(currentAssignment.planEndDate);
+      currentEndDate.setHours(0, 0, 0, 0);
+
+      if (currentEndDate >= baseDate) {
+        baseDate = new Date(currentEndDate);
+        baseDate.setDate(baseDate.getDate() + 1);
+      }
+    }
+
+    setCustomStartDate(baseDate.toISOString().split("T")[0]);
+  }, [selectedPlanId, currentAssignment?.planEndDate, customStartDate]);
+
+  const calculatePlanEndDate = useCallback(() => {
+    const selectedPlan = trainerPlans.find((plan) => plan.id === selectedPlanId);
+
+    if (!selectedPlan || !customStartDate) return null;
+
+    const startDate = new Date(`${customStartDate}T00:00:00`);
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + selectedPlan.duration_days);
+
+    return endDate.toISOString().split("T")[0];
+  }, [customStartDate, selectedPlanId, trainerPlans]);
 
   const fetchTrainers = async () => {
     setFetching(true);
@@ -316,11 +350,15 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
 
       // Add plan fields if a plan is selected
       if (selectedPlan) {
+        if (!customStartDate) {
+          showError("Please select a start date for the trainer plan");
+          setLoading(false);
+          return;
+        }
+
         assignmentData.trainer_plan_id = selectedPlan.id;
-        assignmentData.plan_start_date = now.toISOString().split("T")[0];
-        const endDate = new Date(now);
-        endDate.setDate(endDate.getDate() + selectedPlan.duration_days);
-        assignmentData.plan_end_date = endDate.toISOString().split("T")[0];
+        assignmentData.plan_start_date = customStartDate;
+        assignmentData.plan_end_date = calculatePlanEndDate();
       }
 
       // Upsert the trainer-member assignment
@@ -894,6 +932,25 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
                 {/* Payment split info & Payment mode (shown when plan is selected) */}
                 {selectedPlanId && (
                   <div className="mt-3 space-y-3">
+                    {/* Start Date */}
+                    <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+                      <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
+                        <CalendarDays className="w-4 h-4 text-orange-500" />
+                        Start Date
+                      </div>
+                      <input
+                        type="date"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] outline-none text-sm"
+                        value={customStartDate}
+                        onChange={(e) => setCustomStartDate(e.target.value)}
+                      />
+                      {calculatePlanEndDate() && (
+                        <p className="text-xs text-blue-600">
+                          Validity: {new Date(`${customStartDate}T00:00:00`).toLocaleDateString("en-IN")} to {new Date(`${calculatePlanEndDate()}T00:00:00`).toLocaleDateString("en-IN")}
+                        </p>
+                      )}
+                    </div>
+
                     {/* Custom Price Toggle */}
                     <div className="bg-gray-50 rounded-xl p-3 space-y-2">
                       <div className="flex items-center justify-between">

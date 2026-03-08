@@ -163,6 +163,9 @@ export default function MemberDetailPage() {
         .filter((payment) => payment.status === "paid")
         .reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0);
 
+      const latestAdminNote = paymentsData
+        .find((payment) => typeof payment.notes === "string" && payment.notes.trim().length > 0)?.notes?.trim() || "";
+
       const transformedMember = {
         id: memberData.id,
         gymId: memberData.gym_id,
@@ -184,6 +187,7 @@ export default function MemberDetailPage() {
         dueAmount: Math.max(0, memberData.balance || 0),
         balance: memberData.balance || 0,
         totalPaid,
+        adminNote: latestAdminNote,
         attendance: attendanceData.map(a => ({
           date: new Date(a.check_in_date).toLocaleDateString("en-IN"),
           checkIn: a.check_in_time,
@@ -196,6 +200,7 @@ export default function MemberDetailPage() {
           type: p.membership_id ? "Membership" : "Trainer",
           status: p.status,
           payment_mode: p.payment_mode,
+          notes: p.notes || "",
           created_at: p.created_at
         }))
       };
@@ -578,7 +583,7 @@ export default function MemberDetailPage() {
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Member Not Found</h3>
             <p className="text-gray-500 text-center mb-6 max-w-sm mx-auto">
-              The member you're looking for doesn't exist or has been removed.
+              The member you&apos;re looking for doesn&apos;t exist or has been removed.
             </p>
             <button
               onClick={() => router.push("/members")}
@@ -654,6 +659,24 @@ export default function MemberDetailPage() {
               <p className="text-xs text-gray-500">Due Amount</p>
             </div>
           </div>
+
+          {member.adminNote && (
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <div className="flex items-start gap-3 rounded-xl bg-blue-50 border border-blue-100 p-3">
+                <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+                  <FileText className="w-4 h-4 text-blue-600" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 mb-1">
+                    Admin Note
+                  </p>
+                  <p className="text-sm text-gray-700 leading-6 whitespace-pre-wrap wrap-break-word">
+                    {member.adminNote}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Scheduled Membership Alert */}

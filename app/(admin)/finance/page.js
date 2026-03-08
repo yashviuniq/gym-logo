@@ -948,31 +948,30 @@ function ExpensesSection({ router, selectedGym, dateFilter, customStartDate, cus
             {expenses.map((expense) => (
               <div
                 key={expense.id}
-                className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-all active:scale-95 cursor-pointer"
+                className="flex items-start justify-between gap-3 p-3 hover:bg-gray-50 rounded-lg transition-all active:scale-95 cursor-pointer"
                 onClick={() => router.push(`/finance/expenses/${expense.id}`)}
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-50 to-orange-100 flex items-center justify-center">
+                <div className="flex items-start gap-3 min-w-0 flex-1">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-50 to-orange-100 flex items-center justify-center shrink-0">
                     <div className="text-orange-600">
                       {expense.icon}
                     </div>
                   </div>
-                  <div>
-                    <p className="font-medium text-gray-900 text-sm">{expense.categoryName}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-gray-900 text-sm wrap-break-word">{expense.categoryName}</p>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                       <span className="text-xs text-gray-500">{expense.fullDate}</span>
-                      {expense.notes && (
-                        <>
-                          <span className="text-xs text-gray-400">•</span>
-                          <span className="text-xs text-gray-400 truncate max-w-[100px]">
-                            {expense.notes}
-                          </span>
-                        </>
-                      )}
                     </div>
+                    {expense.notes && (
+                      <div className="mt-2 rounded-md bg-gray-50 border border-gray-100 px-2.5 py-2">
+                        <p className="text-sm text-gray-700 leading-5 wrap-break-word whitespace-pre-wrap line-clamp-3 sm:line-clamp-4">
+                          {expense.notes}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
-                <p className="font-semibold text-red-500 text-sm">
+                <p className="font-semibold text-red-500 text-sm shrink-0 text-right pt-0.5">
                   -{formatCurrency(expense.amount)}
                 </p>
               </div>

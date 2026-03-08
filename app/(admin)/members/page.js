@@ -990,11 +990,15 @@ Best regards,
                           e.stopPropagation();
                           router.push(`/members/${member.id}/credentials`);
                         }}
-                        className="flex-shrink-0 px-3 py-2 bg-blue-50 text-blue-700 cursor-pointer text-xs font-medium rounded-lg active:bg-blue-100 transition-all flex items-center gap-2"
+                        title={member.hasCredentials ? "Credentials" : "Setup Login"}
+                        aria-label={member.hasCredentials ? "Credentials" : "Setup Login"}
+                        className="flex-shrink-0 px-2.5 sm:px-3 py-2 bg-blue-50 text-blue-700 cursor-pointer text-xs font-medium rounded-lg active:bg-blue-100 transition-all flex items-center justify-center gap-0 sm:gap-2"
                         style={{ minHeight: "36px" }}
                       >
                         <Key className="w-3.5 h-3.5" />
-                        {member.hasCredentials ? "Credentials" : "Setup Login"}
+                        <span className="hidden sm:inline">
+                          {member.hasCredentials ? "Credentials" : "Setup Login"}
+                        </span>
                       </button>
 
                       {/* Share Receipt Button */}
@@ -1004,43 +1008,51 @@ Best regards,
                           setSelectedMember(member);
                           setShowShareReceiptModal(true);
                         }}
-                        className="flex-shrink-0 px-3 py-2 bg-green-50 text-green-700 cursor-pointer text-xs font-medium rounded-lg active:bg-green-100 transition-all flex items-center gap-2"
+                        title="Share Receipt"
+                        aria-label="Share Receipt"
+                        className="flex-shrink-0 px-2.5 sm:px-3 py-2 bg-green-50 text-green-700 cursor-pointer text-xs font-medium rounded-lg active:bg-green-100 transition-all flex items-center justify-center gap-0 sm:gap-2"
                         style={{ minHeight: "36px" }}
                       >
                         <Share2 className="w-3.5 h-3.5" />
-                        Share Receipt
+                        <span className="hidden sm:inline">Share Receipt</span>
                       </button>
 
                       {(member.status === "expired" || member.status === "renewal") && (
                         <button
                           onClick={(e) => handleRenewalReminder(e, member)}
-                          className="flex-shrink-0 px-3 py-2 bg-emerald-100 text-emerald-700 cursor-pointer text-xs font-medium rounded-lg active:bg-emerald-200 transition-all flex items-center gap-2"
+                          title="Remind"
+                          aria-label="Remind"
+                          className="flex-shrink-0 px-2.5 sm:px-3 py-2 bg-emerald-100 text-emerald-700 cursor-pointer text-xs font-medium rounded-lg active:bg-emerald-200 transition-all flex items-center justify-center gap-0 sm:gap-2"
                           style={{ minHeight: "36px" }}
                         >
                           <MessageCircle className="w-3.5 h-3.5" />
-                          Remind
+                          <span className="hidden sm:inline">Remind</span>
                         </button>
                       )}
 
                       {(member.status === "expired" || member.status === "renewal") && (
                         <button
                           onClick={(e) => handleRenewClick(e, member)}
-                          className="flex-shrink-0 px-3 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-xs font-medium rounded-lg active:scale-95 transition-all flex items-center gap-2"
+                          title="Renew"
+                          aria-label="Renew"
+                          className="flex-shrink-0 px-2.5 sm:px-3 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-xs font-medium rounded-lg active:scale-95 transition-all flex items-center justify-center gap-0 sm:gap-2"
                           style={{ minHeight: "36px" }}
                         >
                           <RefreshCw className="w-3.5 h-3.5" />
-                          Renew
+                          <span className="hidden sm:inline">Renew</span>
                         </button>
                       )}
 
                       {!isTrainer && (
                         <button
                           onClick={(e) => handleDeleteMember(e, member)}
-                          className="flex-shrink-0 px-3 py-2 bg-red-50 cursor-pointer text-red-700 text-xs font-medium rounded-lg active:bg-red-100 transition-all flex items-center gap-2"
+                          title="Delete"
+                          aria-label="Delete"
+                          className="flex-shrink-0 px-2.5 sm:px-3 py-2 bg-red-50 cursor-pointer text-red-700 text-xs font-medium rounded-lg active:bg-red-100 transition-all flex items-center justify-center gap-0 sm:gap-2"
                           style={{ minHeight: "36px" }}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
-                          Delete
+                          <span className="hidden sm:inline">Delete</span>
                         </button>
                       )}
                     </div>

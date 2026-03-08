@@ -640,7 +640,7 @@ export default function MemberDetailPage() {
             </div>
           </div>
 
-          {/* Quick Stats */}
+          {/* Quick Statss */}
           <div className="grid grid-cols-3 gap-3 pt-4 border-t border-gray-100">
             <div className="text-center">
               <p className="text-lg font-bold text-gray-900">{member.plan}</p>

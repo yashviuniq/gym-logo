@@ -28,6 +28,7 @@ import {
   Building,
   Phone,
   Mail,
+  MessageCircle,
   Share2,
   UserCheck,
   Download,
@@ -529,6 +530,43 @@ export default function MembersPage() {
     return "text-gray-600";
   };
 
+  const handleRenewalReminder = (e, member) => {
+    e.stopPropagation();
+
+    const gymName = selectedGym?.name || "Our Gym";
+    const validTillText = member.validTill || "your membership expiry date";
+    const statusLine =
+      member.status === "expired"
+        ? " *Status:* Your membership has already expired"
+        : member.daysRemaining !== null
+        ? ` *Days Remaining:* ${member.daysRemaining} day${member.daysRemaining === 1 ? "" : "s"}`
+        : " *Renewal Reminder:* Your membership is due for renewal soon";
+    const message = `Dear ${member.name},
+
+Greetings from *${gymName}*! 
+
+This is a friendly reminder that your *${member.plan}* membership is due for renewal.
+
+*Current Plan:* ${member.plan}
+ *Valid Till:* ${validTillText}
+${statusLine}
+
+To continue enjoying uninterrupted access to our gym facilities, we request you to renew your membership at the earliest.
+
+You can visit the gym reception for quick renewal assistance.
+
+If you have any questions, feel free to contact us.
+
+Thank you for being a valued member! 
+
+Best regards,
+*${gymName} Team*`;
+
+    const phone = `${member.phone || ""}`.replace(/\D/g, "");
+    const encodedMessage = encodeURIComponent(message);
+    window.open(`https://wa.me/91${phone}?text=${encodedMessage}`);
+  };
+
   // ─── Event handlers ──────────────────────────────────────────
   const handleFilterChange = (newStatus) => {
     setFilterStatus(newStatus);
@@ -973,7 +1011,18 @@ export default function MembersPage() {
                         Share Receipt
                       </button>
 
-                      {member.status === "expired" && (
+                      {(member.status === "expired" || member.status === "renewal") && (
+                        <button
+                          onClick={(e) => handleRenewalReminder(e, member)}
+                          className="flex-shrink-0 px-3 py-2 bg-emerald-100 text-emerald-700 cursor-pointer text-xs font-medium rounded-lg active:bg-emerald-200 transition-all flex items-center gap-2"
+                          style={{ minHeight: "36px" }}
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                          Remind
+                        </button>
+                      )}
+
+                      {(member.status === "expired" || member.status === "renewal") && (
                         <button
                           onClick={(e) => handleRenewClick(e, member)}
                           className="flex-shrink-0 px-3 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-xs font-medium rounded-lg active:scale-95 transition-all flex items-center gap-2"

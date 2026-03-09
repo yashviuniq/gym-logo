@@ -12,6 +12,7 @@ CREATE OR REPLACE FUNCTION add_trainer_with_gym(
   -- gym_trainers fields
   p_specialization  TEXT    DEFAULT NULL,
   p_bio             TEXT    DEFAULT NULL,
+  p_monthly_salary  INTEGER DEFAULT NULL,
   p_created_by      UUID   DEFAULT NULL,
   -- Schedule fields on profiles
   p_available_days       TEXT[]  DEFAULT NULL,
@@ -59,13 +60,14 @@ BEGIN
 
   -- 4. Insert into gym_trainers (association table)
   INSERT INTO gym_trainers (
-    gym_id, profile_id, specialization, bio,
+    gym_id, profile_id, specialization, bio, monthly_salary,
     is_active, hire_date, created_by
   ) VALUES (
     p_gym_id,
     v_profile_id,
     p_specialization,
     p_bio,
+    CASE WHEN p_monthly_salary IS NOT NULL AND p_monthly_salary >= 0 THEN p_monthly_salary ELSE NULL END,
     TRUE,
     CURRENT_DATE,
     p_created_by

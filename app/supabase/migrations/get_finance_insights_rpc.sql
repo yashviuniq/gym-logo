@@ -27,6 +27,8 @@ DECLARE
   v_month_active_members INTEGER;
   v_month_start_ts TIMESTAMPTZ;
   v_month_end_ts TIMESTAMPTZ;
+  v_current_year INTEGER;
+  v_current_month INTEGER;
   v_reporting_tz TEXT := 'Asia/Kolkata';
 BEGIN
   -- ===================== ALL-TIME STATS =====================
@@ -76,6 +78,12 @@ BEGIN
   v_month_end := (v_month_start + INTERVAL '1 month' - INTERVAL '1 day')::date;
   v_month_start_ts := (v_month_start::timestamp AT TIME ZONE v_reporting_tz);
   v_month_end_ts := (((v_month_start + INTERVAL '1 month')::timestamp AT TIME ZONE v_reporting_tz) - INTERVAL '1 millisecond');
+  v_current_year := EXTRACT(YEAR FROM (NOW() AT TIME ZONE v_reporting_tz));
+  v_current_month := EXTRACT(MONTH FROM (NOW() AT TIME ZONE v_reporting_tz));
+
+  IF p_year = v_current_year AND p_month = v_current_month THEN
+    v_month_end_ts := LEAST(v_month_end_ts, NOW());
+  END IF;
 
   -- 5. Month Revenue (same event-time semantics as /finance page)
   SELECT COALESCE(SUM(amount), 0)
@@ -205,20 +213,21 @@ BEGIN
         'plan_name', COALESCE(mp.name, 'N/A'),
         'start_date', ms.start_date,
         'end_date', ms.end_date,
+        'renewed_at', ms.start_date,
         'created_at', ms.created_at
-      ) ORDER BY ms.created_at DESC)
+      ) ORDER BY ms.start_date DESC, ms.created_at DESC)
       FROM memberships ms
       JOIN members mem ON mem.id = ms.member_id
       LEFT JOIN membership_plans mp ON mp.id = ms.plan_id
       WHERE ms.gym_id = p_gym_id
-        AND ms.created_at >= v_month_start_ts
-        AND ms.created_at <= v_month_end_ts
+        AND ms.start_date >= v_month_start_ts::date
+        AND ms.start_date <= v_month_end_ts::date
         AND EXISTS (
           SELECT 1 FROM memberships ms2
           WHERE ms2.member_id = ms.member_id
             AND ms2.gym_id = p_gym_id
             AND ms2.id != ms.id
-            AND ms2.created_at < ms.created_at
+            AND COALESCE(ms2.start_date, ms2.created_at::date) < COALESCE(ms.start_date, ms.created_at::date)
         )
     ), '[]'::jsonb)
   );

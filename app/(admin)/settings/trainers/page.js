@@ -21,7 +21,10 @@ import {
   Trash2,
   UserPlus,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  IndianRupee,
+  CalendarDays,
+  Wallet
 } from "lucide-react";
 
 export default function TrainersPage() {
@@ -33,6 +36,9 @@ export default function TrainersPage() {
   const [selectedGym, setSelectedGym] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [payrollMonth, setPayrollMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [payrollLoading, setPayrollLoading] = useState(false);
+  const [payrollData, setPayrollData] = useState({ summary: null, trainers: [] });
   const [stats, setStats] = useState({
     total: 0,
     active: 0,
@@ -51,8 +57,13 @@ export default function TrainersPage() {
   useEffect(() => {
     if (selectedGym?.id) {
       fetchTrainers();
+      if (canCreateTrainer) {
+        fetchPayroll();
+      } else {
+        setPayrollData({ summary: null, trainers: [] });
+      }
     }
-  }, [selectedGym?.id]);
+  }, [selectedGym?.id, payrollMonth, canCreateTrainer]);
 
   const fetchTrainers = async () => {
     if (!selectedGym?.id) return;
@@ -87,6 +98,7 @@ export default function TrainersPage() {
         bio: t.bio,
         isActive: t.is_active,
         hireDate: t.hire_date,
+        monthlySalary: t.monthly_salary || 0,
         assignedMembers: t.assigned_members || 0,
         dietPlans: t.diet_plans || 0,
         workoutPlans: t.workout_plans || 0
@@ -102,6 +114,40 @@ export default function TrainersPage() {
       console.error("Error:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPayroll = async () => {
+    if (!selectedGym?.id) return;
+
+    setPayrollLoading(true);
+    try {
+      const response = await fetch("/api/trainers/payroll", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          p_gym_id: selectedGym.id,
+          p_month: `${payrollMonth}-01`,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || result.error) {
+        console.error("Error fetching trainer payroll:", result.error);
+        setPayrollData({ summary: null, trainers: [] });
+        return;
+      }
+
+      setPayrollData({
+        summary: result.data?.summary || null,
+        trainers: result.data?.trainers || [],
+      });
+    } catch (error) {
+      console.error("Error fetching trainer payroll:", error);
+      setPayrollData({ summary: null, trainers: [] });
+    } finally {
+      setPayrollLoading(false);
     }
   };
 
@@ -224,6 +270,105 @@ export default function TrainersPage() {
           )}
         </div>
 
+        {canCreateTrainer && (
+          <div className="bg-white rounded-xl p-4 shadow-sm space-y-4">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <h3 className="font-semibold text-gray-900">Monthly Payroll Dashboard</h3>
+                <p className="text-xs text-gray-500">Attendance-based salary, PT charges, and total payable by trainer.</p>
+              </div>
+              <div className="relative">
+                <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="month"
+                  value={payrollMonth}
+                  onChange={(e) => setPayrollMonth(e.target.value)}
+                  className="pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3">
+                <div className="flex items-center gap-2 text-emerald-700 text-xs font-medium uppercase tracking-wide">
+                  <IndianRupee className="w-4 h-4" />
+                  Salary Earned
+                </div>
+                <p className="mt-2 text-lg font-bold text-emerald-800">
+                  ₹{Number(payrollData.summary?.total_salary_earned || 0).toLocaleString("en-IN")}
+                </p>
+              </div>
+              <div className="rounded-xl border border-blue-100 bg-blue-50 p-3">
+                <div className="flex items-center gap-2 text-blue-700 text-xs font-medium uppercase tracking-wide">
+                  <Wallet className="w-4 h-4" />
+                  PT Charges
+                </div>
+                <p className="mt-2 text-lg font-bold text-blue-800">
+                  ₹{Number(payrollData.summary?.total_pt_charges || 0).toLocaleString("en-IN")}
+                </p>
+              </div>
+              <div className="rounded-xl border border-purple-100 bg-purple-50 p-3">
+                <div className="flex items-center gap-2 text-purple-700 text-xs font-medium uppercase tracking-wide">
+                  <IndianRupee className="w-4 h-4" />
+                  Total Payable
+                </div>
+                <p className="mt-2 text-lg font-bold text-purple-800">
+                  ₹{Number(payrollData.summary?.total_payable || 0).toLocaleString("en-IN")}
+                </p>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto rounded-xl border border-gray-200">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-50 text-gray-600">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-medium">Trainer</th>
+                    <th className="px-4 py-3 text-left font-medium">Attendance</th>
+                    <th className="px-4 py-3 text-left font-medium">Salary Earned</th>
+                    <th className="px-4 py-3 text-left font-medium">PT</th>
+                    <th className="px-4 py-3 text-left font-medium">Total</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 bg-white">
+                  {payrollLoading ? (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-8 text-center text-gray-500">Loading payroll...</td>
+                    </tr>
+                  ) : payrollData.trainers.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-8 text-center text-gray-500">No payroll data for this month.</td>
+                    </tr>
+                  ) : (
+                    payrollData.trainers.map((row) => (
+                      <tr key={row.gym_trainer_id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => router.push(`/settings/trainers/${row.gym_trainer_id}?tab=attendance`)}
+                            className="text-left"
+                          >
+                            <p className="font-medium text-gray-900">{row.trainer_name}</p>
+                            <p className="text-xs text-gray-500">
+                              Salary ₹{Number(row.monthly_salary || 0).toLocaleString("en-IN")}
+                              {row.specialization ? ` • ${row.specialization}` : ""}
+                            </p>
+                          </button>
+                        </td>
+                        <td className="px-4 py-3 text-gray-700">
+                          <p>{Number(row.attendance_days || 0).toLocaleString("en-IN")} / {Number(row.working_days || 0).toLocaleString("en-IN")} days</p>
+                          <p className="text-xs text-gray-500">{row.attended_shifts || 0} shifts</p>
+                        </td>
+                        <td className="px-4 py-3 font-medium text-emerald-700">₹{Number(row.salary_earned || 0).toLocaleString("en-IN")}</td>
+                        <td className="px-4 py-3 font-medium text-blue-700">₹{Number(row.pt_charges || 0).toLocaleString("en-IN")}</td>
+                        <td className="px-4 py-3 font-semibold text-purple-700">₹{Number(row.total_payable || 0).toLocaleString("en-IN")}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
         {/* Trainers List */}
         {loading ? (
           <div className="space-y-3">
@@ -301,6 +446,10 @@ export default function TrainersPage() {
                         {trainer.specialization}
                       </p>
                     )}
+
+                    <p className="text-xs text-emerald-700 font-medium mb-2">
+                      Monthly Salary: ₹{Number(trainer.monthlySalary || 0).toLocaleString("en-IN")}
+                    </p>
 
                     <div className="flex flex-wrap gap-2 text-xs text-gray-500 mb-2">
                       {trainer.phone && (

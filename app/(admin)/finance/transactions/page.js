@@ -5,27 +5,34 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
 
+function getStoredGym() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const storedGym = localStorage.getItem("selectedGym");
+
+  if (!storedGym) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(storedGym);
+  } catch {
+    return null;
+  }
+}
+
 export default function TransactionsPage() {
   const router = useRouter();
+  const initialGym = getStoredGym();
   const [filterMode, setFilterMode] = useState("all");
   const [filterType, setFilterType] = useState("all");
   const [transactions, setTransactions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedGym, setSelectedGym] = useState(null);
+  const [loading, setLoading] = useState(Boolean(initialGym));
+  const [selectedGym] = useState(initialGym);
 
-  useEffect(() => {
-    const storedGym = localStorage.getItem("selectedGym");
-    if (storedGym) {
-      const gym = JSON.parse(storedGym);
-      setSelectedGym(gym);
-      fetchTransactions(gym.id);
-    } else {
-      setLoading(false);
-    }
-  }, []);
-
-  const fetchTransactions = async (gymId) => {
-    setLoading(true);
+  async function fetchTransactions(gymId) {
     try {
       const { data: payments, error } = await supabase
         .from("payments")
@@ -71,7 +78,7 @@ export default function TransactionsPage() {
           return {
             id: payment.id,
             name: payment.members?.full_name || "Unknown",
-            type: payment.membership_id ? "membership" : "trainer",
+            type: "membership",
             amount: parseFloat(payment.amount),
             mode: payment.payment_mode?.toLowerCase() || "cash",
             date: payment.paid_at || payment.created_at,
@@ -87,7 +94,19 @@ export default function TransactionsPage() {
       setTransactions([]);
     }
     setLoading(false);
-  };
+  }
+
+  useEffect(() => {
+    if (selectedGym?.id) {
+      const timerId = setTimeout(() => {
+        fetchTransactions(selectedGym.id);
+      }, 0);
+
+      return () => clearTimeout(timerId);
+    }
+
+    return undefined;
+  }, [selectedGym]);
 
   const filteredTransactions = transactions.filter((txn) => {
     const matchesMode = filterMode === "all" || txn.mode === filterMode;
@@ -226,14 +245,13 @@ export default function TransactionsPage() {
                     <span className={`font-bold ${txn.collectedBy ? "text-purple-600" : "text-green-600"}`}>₹</span>
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">
-                      {txn.name}
-                      
-                    </p>
+                    <p className="font-medium text-gray-900">{txn.name}</p>
                     <p className="text-xs text-gray-500 capitalize">
-                      {txn.type.replace("_", " ")} • {txn.mode} •{" "}
-                      {formatDate(txn.date)}
+                      {txn.type.replace("_", " ")} • {txn.mode} • {formatDate(txn.date)}
                     </p>
+                    {txn.collectedBy && (
+                      <p className="text-xs text-purple-600">by {txn.collectedBy}</p>
+                    )}
                   </div>
                 </div>
                 <div className="text-right">

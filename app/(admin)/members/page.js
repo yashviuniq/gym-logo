@@ -85,6 +85,31 @@ const transformMember = (m) => ({
     : null,
 });
 
+const sortRenewalMembers = (memberList) => {
+  return [...memberList].sort((leftMember, rightMember) => {
+    const leftIsExpired =
+      leftMember.status === "expired" ||
+      leftMember.daysRemaining === null ||
+      leftMember.daysRemaining <= 0;
+    const rightIsExpired =
+      rightMember.status === "expired" ||
+      rightMember.daysRemaining === null ||
+      rightMember.daysRemaining <= 0;
+
+    if (leftIsExpired !== rightIsExpired) {
+      return leftIsExpired ? 1 : -1;
+    }
+
+    if (!leftIsExpired && !rightIsExpired) {
+      if (leftMember.daysRemaining !== rightMember.daysRemaining) {
+        return leftMember.daysRemaining - rightMember.daysRemaining;
+      }
+    }
+
+    return leftMember.name.localeCompare(rightMember.name);
+  });
+};
+
 export default function MembersPage() {
   const router = useRouter();
   const { canViewFinance, isTrainer, user, loading: roleLoading } = useUserRole();
@@ -223,7 +248,12 @@ export default function MembersPage() {
             setCurrentPage(Math.max(1, result.total_pages || 1));
             return;
           }
-          setMembers((result.members || []).map(transformMember));
+          const transformedMembers = (result.members || []).map(transformMember);
+          setMembers(
+            filterStatus === "renewal"
+              ? sortRenewalMembers(transformedMembers)
+              : transformedMembers
+          );
           setTotalCount(result.total_count || 0);
           setTotalPages(Math.max(1, result.total_pages || 1));
         } else {

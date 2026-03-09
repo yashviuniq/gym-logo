@@ -32,6 +32,7 @@ BEGIN
       'profile_id', gt.profile_id,
       'specialization', gt.specialization,
       'bio', gt.bio,
+      'monthly_salary', gt.monthly_salary,
       'is_active', gt.is_active,
       'hire_date', gt.hire_date,
       'created_at', gt.created_at,

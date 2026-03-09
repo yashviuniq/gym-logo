@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
 import { FinancePageSkeleton } from "@/components/shared/Skeleton";
+import { useToast } from "@/contexts/ToastContext";
 import { useUserRole } from "@/lib/hooks/useUserRole";
 import { 
   DollarSign, 
@@ -35,6 +36,112 @@ import {
   Package
 } from "lucide-react";
 
+const EXPENSE_EXCEL_AMOUNT_FORMAT = "#,##0.##";
+
+function getExpenseExportTitle(dateFilter, customStartDate, customEndDate) {
+  const now = new Date();
+
+  if (dateFilter === "custom" && customStartDate && customEndDate) {
+    const startDate = new Date(`${customStartDate}T00:00:00`);
+    const endDate = new Date(`${customEndDate}T00:00:00`);
+
+    if (
+      startDate.getFullYear() === endDate.getFullYear() &&
+      startDate.getMonth() === endDate.getMonth()
+    ) {
+      return `${startDate.toLocaleDateString("en-IN", { month: "long" }).toUpperCase()} EXPENSES`;
+    }
+
+    return "CUSTOM EXPENSES";
+  }
+
+  if (dateFilter === "today") {
+    return "TODAY EXPENSES";
+  }
+
+  if (dateFilter === "week") {
+    return "WEEKLY EXPENSES";
+  }
+
+  return `${now.toLocaleDateString("en-IN", { month: "long" }).toUpperCase()} EXPENSES`;
+}
+
+function getExpenseExportFileName(gymName, title) {
+  const safeGymName = (gymName || "Gym").replace(/\s+/g, "_");
+  const safeTitle = title.replace(/\s+/g, "_");
+  return `${safeGymName}_${safeTitle}.xlsx`;
+}
+
+function formatExpenseExportDate(value) {
+  if (!value) return "";
+
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleDateString("en-GB").replace(/\//g, "-");
+}
+
+function styleExpenseExportSheet(sheet, rowCount) {
+  sheet["!cols"] = [{ wch: 44 }, { wch: 14 }, { wch: 16 }];
+  sheet["!rows"] = [{ hpx: 26 }, { hpx: 12 }];
+  sheet["!autofilter"] = { ref: `A1:C${Math.max(rowCount, 2)}` };
+
+  ["A1", "B1", "C1"].forEach((cellRef) => {
+    if (!sheet[cellRef]) return;
+    sheet[cellRef].s = {
+      font: { bold: true, color: { rgb: "000000" }, sz: 14 },
+      fill: { fgColor: { rgb: "18A7D8" } },
+      alignment: { horizontal: "left", vertical: "center" },
+      border: {
+        top: { style: "thin", color: { rgb: "18A7D8" } },
+        bottom: { style: "thin", color: { rgb: "18A7D8" } },
+      },
+    };
+  });
+
+  for (let row = 3; row <= rowCount; row += 1) {
+    const descriptionCell = sheet[`A${row}`];
+    const amountCell = sheet[`B${row}`];
+    const dateCell = sheet[`C${row}`];
+
+    if (descriptionCell) {
+      descriptionCell.s = {
+        font: { sz: 12 },
+        alignment: { vertical: "center", wrapText: true },
+      };
+    }
+
+    if (amountCell) {
+      amountCell.z = EXPENSE_EXCEL_AMOUNT_FORMAT;
+      amountCell.s = {
+        font: { sz: 12, bold: true },
+        alignment: { horizontal: "right", vertical: "center" },
+      };
+    }
+
+    if (dateCell) {
+      dateCell.s = {
+        font: { sz: 12 },
+        alignment: { horizontal: "right", vertical: "center" },
+      };
+    }
+  }
+}
+
+function buildExpenseExportRows(expenses, exportTitle) {
+  return [
+    [exportTitle, "AMOUNT", "DATE"],
+    [],
+    ...expenses.map((expense) => [
+      expense.notes?.trim() || expense.categoryName,
+      Number(expense.amount || 0),
+      formatExpenseExportDate(expense.expenseDate),
+    ]),
+  ];
+}
+
 export default function FinancePage() {
   const router = useRouter();
   const { canViewFinance } = useUserRole();
@@ -55,21 +162,7 @@ export default function FinancePage() {
   const [paymentModes, setPaymentModes] = useState([]);
   const lastFetchParamsRef = useRef(null);
 
-  useEffect(() => {
-    const storedGym = localStorage.getItem("selectedGym");
-    if (storedGym) {
-      const gym = JSON.parse(storedGym);
-      const fetchKey = `${gym.id}-${dateFilter}-${customStartDate}-${customEndDate}`;
-      if (lastFetchParamsRef.current === fetchKey) return;
-      lastFetchParamsRef.current = fetchKey;
-      setSelectedGym(gym);
-      fetchFinancialData(gym.id);
-    } else {
-      setLoading(false);
-    }
-  }, [dateFilter, customStartDate, customEndDate]);
-
-  const fetchFinancialData = async (gymId) => {
+  const fetchFinancialData = useCallback(async (gymId) => {
     setLoading(true);
     try {
       const now = new Date();
@@ -233,28 +326,41 @@ export default function FinancePage() {
       console.error("Error fetching financial data:", err);
     }
     setLoading(false);
-  };
+  }, [customEndDate, customStartDate, dateFilter]);
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    const today = new Date();
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    if (date.toDateString() === today.toDateString()) {
-      return `Today, ${date.toLocaleTimeString("en-IN", { 
-        hour: "2-digit", 
-        minute: "2-digit" 
-      })}`;
-    } else if (date.toDateString() === yesterday.toDateString()) {
-      return "Yesterday";
+  useEffect(() => {
+    const storedGym = localStorage.getItem("selectedGym");
+    if (storedGym) {
+      const gym = JSON.parse(storedGym);
+      const fetchKey = `${gym.id}-${dateFilter}-${customStartDate}-${customEndDate}`;
+      if (lastFetchParamsRef.current === fetchKey) return;
+      lastFetchParamsRef.current = fetchKey;
+      setSelectedGym(gym);
+      fetchFinancialData(gym.id);
     } else {
-      return date.toLocaleDateString("en-IN", { 
-        month: "short", 
-        day: "numeric" 
-      });
+      setLoading(false);
     }
-  };
+  }, [customEndDate, customStartDate, dateFilter, fetchFinancialData]);
+
+ const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (date.toDateString() === today.toDateString()) {
+    return "Today";
+  } 
+  else if (date.toDateString() === yesterday.toDateString()) {
+    return "Yesterday";
+  } 
+  else {
+    return date.toLocaleDateString("en-IN", { 
+      month: "short", 
+      day: "numeric" 
+    });
+  }
+};
 
   const formatCurrency = (amount) => {
     // If user can't view finance, mask the values
@@ -781,9 +887,12 @@ Best regards,
 // Expenses Section Component
 function ExpensesSection({ router, selectedGym, dateFilter, customStartDate, customEndDate }) {
   const { canViewFinance } = useUserRole();
+  const { showSuccess, showError } = useToast();
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [totalExpenses, setTotalExpenses] = useState(0);
+  const [exporting, setExporting] = useState(false);
+  const [overallExporting, setOverallExporting] = useState(false);
 
   const expenseCategories = {
     rent: { name: "Rent", icon: <Home className="w-4 h-4" /> },
@@ -796,13 +905,7 @@ function ExpensesSection({ router, selectedGym, dateFilter, customStartDate, cus
     other: { name: "Other", icon: <Package className="w-4 h-4" /> },
   };
 
-  useEffect(() => {
-    if (selectedGym) {
-      fetchExpenses(selectedGym.id);
-    }
-  }, [selectedGym, dateFilter, customStartDate, customEndDate]);
-
-  const fetchExpenses = async (gymId) => {
+  const fetchExpenses = useCallback(async (gymId) => {
     try {
       setLoading(true);
       
@@ -845,6 +948,7 @@ function ExpensesSection({ router, selectedGym, dateFilter, customStartDate, cus
         category: expense.category,
         categoryName: expenseCategories[expense.category]?.name || expense.category,
         amount: parseFloat(expense.amount),
+        expenseDate: expense.expense_date,
         date: new Date(expense.expense_date).toLocaleDateString("en-IN", {
           month: "short",
           day: "numeric"
@@ -866,6 +970,102 @@ function ExpensesSection({ router, selectedGym, dateFilter, customStartDate, cus
       console.error("Error fetching expenses:", error);
     } finally {
       setLoading(false);
+    }
+  }, [customEndDate, customStartDate, dateFilter]);
+
+  const mapExpenseRecord = useCallback((expense) => ({
+    id: expense.id,
+    category: expense.category,
+    categoryName: expenseCategories[expense.category]?.name || expense.category,
+    amount: parseFloat(expense.amount),
+    expenseDate: expense.expense_date,
+    date: new Date(expense.expense_date).toLocaleDateString("en-IN", {
+      month: "short",
+      day: "numeric"
+    }),
+    fullDate: new Date(expense.expense_date).toLocaleDateString("en-IN", {
+      weekday: "short",
+      month: "short",
+      day: "numeric"
+    }),
+    icon: expenseCategories[expense.category]?.icon || <Package className="w-4 h-4" />,
+    notes: expense.notes,
+  }), [expenseCategories]);
+
+  useEffect(() => {
+    if (selectedGym) {
+      fetchExpenses(selectedGym.id);
+    }
+  }, [selectedGym, dateFilter, customStartDate, customEndDate, fetchExpenses]);
+
+  const handleExportExcel = async () => {
+    if (!selectedGym?.name || expenses.length === 0) {
+      showError("No expenses available to export");
+      return;
+    }
+
+    setExporting(true);
+    try {
+      const XLSX = await import("xlsx");
+      const exportTitle = getExpenseExportTitle(dateFilter, customStartDate, customEndDate);
+      const rows = buildExpenseExportRows(expenses, exportTitle);
+
+      const workbook = XLSX.utils.book_new();
+      const sheet = XLSX.utils.aoa_to_sheet(rows);
+
+      styleExpenseExportSheet(sheet, rows.length);
+      XLSX.utils.book_append_sheet(workbook, sheet, "Expenses");
+      XLSX.writeFile(workbook, getExpenseExportFileName(selectedGym.name, exportTitle));
+      showSuccess("Expenses exported to Excel");
+    } catch (error) {
+      console.error("Error exporting expenses workbook:", error);
+      showError("Failed to export expenses. Please try again.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleExportOverallExcel = async () => {
+    if (!selectedGym?.id || !selectedGym?.name) {
+      showError("Please select a gym first");
+      return;
+    }
+
+    setOverallExporting(true);
+    try {
+      const { data, error } = await supabase
+        .from("expenses")
+        .select("*")
+        .eq("gym_id", selectedGym.id)
+        .order("expense_date", { ascending: false })
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      const allExpenses = (data || []).map(mapExpenseRecord);
+
+      if (allExpenses.length === 0) {
+        showError("No expenses available to export");
+        return;
+      }
+
+      const XLSX = await import("xlsx");
+      const exportTitle = "OVERALL EXPENSES";
+      const rows = buildExpenseExportRows(allExpenses, exportTitle);
+      const workbook = XLSX.utils.book_new();
+      const sheet = XLSX.utils.aoa_to_sheet(rows);
+
+      styleExpenseExportSheet(sheet, rows.length);
+      XLSX.utils.book_append_sheet(workbook, sheet, "Overall Expenses");
+      XLSX.writeFile(workbook, getExpenseExportFileName(selectedGym.name, exportTitle));
+      showSuccess("Overall expenses exported to Excel");
+    } catch (error) {
+      console.error("Error exporting overall expenses workbook:", error);
+      showError("Failed to export overall expenses. Please try again.");
+    } finally {
+      setOverallExporting(false);
     }
   };
 
@@ -909,14 +1109,38 @@ function ExpensesSection({ router, selectedGym, dateFilter, customStartDate, cus
               {formatCurrency(totalExpenses)}
             </p>
           </div>
-          <button
-            onClick={() => router.push("/finance/expenses/add")}
-            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-xs font-medium active:scale-95 transition-transform flex items-center gap-2"
-            style={{ minHeight: '36px' }}
-          >
-            <Plus className="w-4 h-4" />
-            Add
-          </button>
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            {canViewFinance && (
+              <>
+                <button
+                  onClick={handleExportOverallExcel}
+                  disabled={overallExporting}
+                  className="px-4 py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-xs font-medium active:scale-95 transition-transform flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ minHeight: '36px' }}
+                >
+                  <Download className="w-4 h-4" />
+                  {overallExporting ? "Exporting..." : "Overall Excel"}
+                </button>
+                <button
+                  onClick={handleExportExcel}
+                  disabled={exporting || expenses.length === 0}
+                  className="px-4 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-medium active:scale-95 transition-transform flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ minHeight: '36px' }}
+                >
+                  <Download className="w-4 h-4" />
+                  {exporting ? "Exporting..." : "This Period"}
+                </button>
+              </>
+            )}
+            <button
+              onClick={() => router.push("/finance/expenses/add")}
+              className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-xs font-medium active:scale-95 transition-transform flex items-center gap-2"
+              style={{ minHeight: '36px' }}
+            >
+              <Plus className="w-4 h-4" />
+              Add
+            </button>
+          </div>
         </div>
       </div>
 
@@ -948,8 +1172,7 @@ function ExpensesSection({ router, selectedGym, dateFilter, customStartDate, cus
             {expenses.map((expense) => (
               <div
                 key={expense.id}
-                className="flex items-start justify-between gap-3 p-3 hover:bg-gray-50 rounded-lg transition-all active:scale-95 cursor-pointer"
-                onClick={() => router.push(`/finance/expenses/${expense.id}`)}
+                className="flex items-start justify-between gap-3 p-3 rounded-lg border border-gray-100 bg-white"
               >
                 <div className="flex items-start gap-3 min-w-0 flex-1">
                   <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-50 to-orange-100 flex items-center justify-center shrink-0">

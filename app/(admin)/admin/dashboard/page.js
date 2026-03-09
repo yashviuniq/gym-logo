@@ -30,7 +30,8 @@ import {
   Search,
   X,
   XCircle,
-  ClipboardList
+  ClipboardList,
+  UserCheck
 } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -41,7 +42,7 @@ export default function AdminDashboard() {
   const [selectedGym, setSelectedGym] = useState(null);
   const [loadingGyms, setLoadingGyms] = useState(true);
   const { permissions } = usePermissions();
-  const { canViewFinance } = useUserRole();
+  const { canViewFinance, canCreateTrainer } = useUserRole();
   const [dataLoading, setDataLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState({
     totalMembers: 0,
@@ -503,7 +504,7 @@ export default function AdminDashboard() {
             <h1 className="text-lg font-bold text-gray-900 truncate">
               Welcome back, {user?.name?.split(' ')[0] || 'Admin'}! 👋
             </h1>
-            <p className="text-xs text-gray-500 truncate">Here's your gym overview for today</p>
+            <p className="text-xs text-gray-500 truncate">Here&apos;s your gym overview for today</p>
           </div>
           {gyms.length > 1 && (
             <button
@@ -630,10 +631,15 @@ export default function AdminDashboard() {
             {[
               { label: "Add Member", icon: <UserPlus className="w-4 h-4" />, href: "/members/add", color: "bg-blue-500", permission: PERMISSIONS.MEMBERS },
               { label: "Attendance", icon: <CheckCircle className="w-4 h-4" />, href: "/attendance", color: "bg-green-500", permission: PERMISSIONS.ATTENDANCE },
+              { label: "Trainer Att.", icon: <UserCheck className="w-4 h-4" />, href: "/settings/trainers/attendance", color: "bg-violet-500", permission: PERMISSIONS.SETTINGS, adminOnly: true },
               { label: "Payment", icon: <CreditCard className="w-4 h-4" />, href: "/finance", color: "bg-indigo-500", permission: PERMISSIONS.FINANCE },
               { label: "Members", icon: <Users className="w-4 h-4" />, href: "/members", color: "bg-blue-600", permission: PERMISSIONS.MEMBERS },
               { label: "Inquiries", icon: <ClipboardList className="w-4 h-4" />, href: "/inquiries", color: "bg-purple-500", permission: PERMISSIONS.INQUIRIES }
-            ].filter(action => hasPermission(permissions, action.permission)).map((action) => (
+            ].filter((action) => {
+              if (!hasPermission(permissions, action.permission)) return false;
+              if (action.adminOnly && !canCreateTrainer) return false;
+              return true;
+            }).map((action) => (
               <button
                 key={action.label}
                 onClick={() => router.push(action.href)}
@@ -664,7 +670,7 @@ export default function AdminDashboard() {
                   <Calendar className="w-4 h-4 text-indigo-600" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-gray-900">Today's Check-ins</h3>
+                  <h3 className="text-sm font-bold text-gray-900">Today&apos;s Check-ins</h3>
                   <p className="text-xs text-gray-500">{dashboardData.todayAttendance} members</p>
                 </div>
               </div>
@@ -879,7 +885,7 @@ className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-medi
                   <Calendar className="w-5 h-5 text-indigo-600" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-gray-900">Today's Check-ins</h2>
+                  <h2 className="text-lg font-bold text-gray-900">Today&apos;s Check-ins</h2>
                   <p className="text-xs text-gray-500">{allTodayAttendance.length} members checked in</p>
                 </div>
               </div>

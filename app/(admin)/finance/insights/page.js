@@ -116,6 +116,21 @@ function getPaymentDate(p) {
   return p.paid_at || p.created_at;
 }
 
+function getRenewalEventDate(renewal) {
+  return renewal.start_date || renewal.renewed_at || renewal.created_at;
+}
+
+function getSelectedMonthRenewals(renewals, selectedMonth, selectedYear) {
+  return (renewals || []).filter((renewal) => {
+    const renewalDate = new Date(getRenewalEventDate(renewal));
+    return (
+      !Number.isNaN(renewalDate.getTime()) &&
+      renewalDate.getMonth() === selectedMonth &&
+      renewalDate.getFullYear() === selectedYear
+    );
+  });
+}
+
 function computeWeekData(data, weekStart, weekEnd) {
   const revenueList = (data?.month_revenue_list || []).filter((p) =>
     isDateInRange(getPaymentDate(p), weekStart, weekEnd)
@@ -124,7 +139,7 @@ function computeWeekData(data, weekStart, weekEnd) {
     isDateInRange(m.join_date, weekStart, weekEnd)
   );
   const renewalsList = (data?.month_renewals_list || []).filter((r) =>
-    isDateInRange(r.start_date || r.created_at, weekStart, weekEnd)
+    isDateInRange(getRenewalEventDate(r), weekStart, weekEnd)
   );
   const revenue = revenueList.reduce((s, p) => s + Number(p.amount || 0), 0);
   return { revenue, revenueList, newJoinsList, renewalsList };
@@ -148,7 +163,7 @@ function computeDayData(data, day) {
     isDateOnDay(m.join_date, day)
   );
   const renewalsList = (data?.month_renewals_list || []).filter((r) =>
-    isDateOnDay(r.start_date || r.created_at, day)
+    isDateOnDay(getRenewalEventDate(r), day)
   );
   const revenue = revenueList.reduce((s, p) => s + Number(p.amount || 0), 0);
   return { revenue, revenueList, newJoinsList, renewalsList };
@@ -201,7 +216,9 @@ function summarizeOverallRevenueHistory(yearlyHistory) {
   };
 }
 
-function buildOverviewRows(data, gymName, monthName, year, generatedAt) {
+function buildOverviewRows(data, gymName, monthName, year, generatedAt, selectedMonth) {
+  const monthRenewalsList = getSelectedMonthRenewals(data?.month_renewals_list, selectedMonth, year);
+
   return [
     [`${gymName} Finance Insights`],
     ["Gym", gymName],
@@ -220,7 +237,7 @@ function buildOverviewRows(data, gymName, monthName, year, generatedAt) {
     ["Metric", "Value"],
     ["Month Revenue", Number(data?.month_revenue || 0)],
     ["New Joins", Number(data?.month_new_joins || 0)],
-    ["Renewals", Number(data?.month_renewals || 0)],
+    ["Renewals", monthRenewalsList.length],
     ["Active Members", Number(data?.month_active_members || 0)],
   ];
 }
@@ -243,6 +260,7 @@ function buildWeeklyRows(data, selectedMonth, selectedYear) {
 
 function buildSummaryChartRows(data, selectedMonth, selectedYear, gymName, monthName) {
   const weeklyRows = buildWeeklyRows(data, selectedMonth, selectedYear);
+  const monthRenewalsList = getSelectedMonthRenewals(data?.month_renewals_list, selectedMonth, selectedYear);
 
   return [
     [`${gymName} Finance Summary`],
@@ -254,7 +272,7 @@ function buildSummaryChartRows(data, selectedMonth, selectedYear, gymName, month
     ["Net Profit", Number(data?.net_profit_all_time || 0)],
     ["Pending Dues", Number(data?.total_dues_all_time || 0)],
     ["New Joins", String(data?.month_new_joins || 0)],
-    ["Renewals", String(data?.month_renewals || 0)],
+    ["Renewals", String(monthRenewalsList.length)],
     ["Active Members", String(data?.month_active_members || 0)],
     [],
     ["Weekly Revenue Chart Data"],
@@ -293,18 +311,21 @@ function buildNewJoinRows(data) {
 }
 
 function buildRenewalRows(data) {
+  const renewalRows = data?.month_renewals_list || [];
+
   return [
-    ["Member Name", "Phone", "Plan", "Start Date", "End Date", "Created At"],
-    ...(data?.month_renewals_list?.length
-      ? data.month_renewals_list.map((renewal) => [
+    ["Member Name", "Phone", "Plan", "Renewed At", "Start Date", "End Date", "Created At"],
+    ...(renewalRows.length
+      ? renewalRows.map((renewal) => [
           renewal.member_name || "Unknown",
           renewal.phone || "-",
           renewal.plan_name || "-",
+          formatExcelDate(getRenewalEventDate(renewal)),
           formatExcelDate(renewal.start_date),
           formatExcelDate(renewal.end_date),
           formatExcelDate(renewal.created_at),
         ])
-      : [["No renewals found", "", "", "", "", ""]]),
+      : [["No renewals found", "", "", "", "", "", ""]]),
   ];
 }
 
@@ -437,6 +458,9 @@ export default function FinanceInsightsPage() {
     }
   };
 
+  const monthRenewalsList = getSelectedMonthRenewals(data?.month_renewals_list, selectedMonth, selectedYear);
+  const monthRenewalsCount = monthRenewalsList.length;
+
   const handleExportExcel = async () => {
     if (!data || !selectedGym?.name) return;
 
@@ -478,11 +502,11 @@ export default function FinanceInsightsPage() {
         selectedGym.name,
         monthName
       );
-      const overviewRows = buildOverviewRows(data, selectedGym.name, monthName, selectedYear, generatedAt);
+      const overviewRows = buildOverviewRows(data, selectedGym.name, monthName, selectedYear, generatedAt, selectedMonth);
       const weeklyRows = buildWeeklyRows(data, selectedMonth, selectedYear);
       const revenueRows = buildRevenueRows(data);
       const newJoinRows = buildNewJoinRows(data);
-      const renewalRows = buildRenewalRows(data);
+      const renewalRows = buildRenewalRows({ ...data, month_renewals_list: monthRenewalsList });
 
       addSheet(
         "Summary Chart",
@@ -523,7 +547,7 @@ export default function FinanceInsightsPage() {
       addSheet(
         "Renewals",
         renewalRows,
-        [{ wch: 28 }, { wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 18 }, { wch: 18 }]
+        [{ wch: 28 }, { wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 }]
       );
 
       XLSX.writeFile(
@@ -557,11 +581,11 @@ export default function FinanceInsightsPage() {
         minute: "2-digit",
       });
 
-      const overviewRows = buildOverviewRows(data, selectedGym.name, monthName, selectedYear, generatedAt);
+      const overviewRows = buildOverviewRows(data, selectedGym.name, monthName, selectedYear, generatedAt, selectedMonth);
       const weeklyRows = buildWeeklyRows(data, selectedMonth, selectedYear);
       const revenueRows = buildRevenueRows(data);
       const newJoinRows = buildNewJoinRows(data);
-      const renewalRows = buildRenewalRows(data);
+      const renewalRows = buildRenewalRows({ ...data, month_renewals_list: monthRenewalsList });
       const summaryPdfRows = [
         ["Total Revenue", formatCurrency(data?.total_revenue_all_time)],
         ["Salary Paid", formatCurrency(data?.total_salary_paid_all_time)],
@@ -569,7 +593,7 @@ export default function FinanceInsightsPage() {
         ["Net Profit", formatCurrency(data?.net_profit_all_time)],
         ["Month Revenue", formatCurrency(data?.month_revenue)],
         ["New Joins", String(data?.month_new_joins || 0)],
-        ["Renewals", String(data?.month_renewals || 0)],
+        ["Renewals", String(monthRenewalsCount)],
         ["Active Members", String(data?.month_active_members || 0)],
       ];
       const weeklyPdfRows = weeklyRows.slice(1).map((row) => [
@@ -1200,18 +1224,18 @@ export default function FinanceInsightsPage() {
                 <div className="grid grid-cols-2 gap-3">
                   {/* Renewals - Clickable */}
                   <div
-                    onClick={() => (data?.month_renewals_list?.length > 0) && setDrillDown("renewals")}
-                    className={`bg-gray-50 rounded-xl p-3 border border-gray-100 ${data?.month_renewals_list?.length > 0 ? "cursor-pointer active:scale-[0.98] transition-transform" : ""}`}
+                    onClick={() => monthRenewalsList.length > 0 && setDrillDown("renewals")}
+                    className={`bg-gray-50 rounded-xl p-3 border border-gray-100 ${monthRenewalsList.length > 0 ? "cursor-pointer active:scale-[0.98] transition-transform" : ""}`}
                   >
                     <div className="flex items-center gap-1.5 mb-1">
                       <RefreshCw className="w-3.5 h-3.5 text-blue-500" />
                       <p className="text-xs font-medium text-gray-500">Renewals</p>
-                      {data?.month_renewals_list?.length > 0 && (
+                      {monthRenewalsList.length > 0 && (
                         <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
                       )}
                     </div>
-                    <p className="text-lg font-bold text-gray-800">
-                      {data?.month_renewals ?? 0}
+                    <p className="text-xl font-bold text-gray-900">
+                      {monthRenewalsCount}
                     </p>
                   </div>
                   <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
@@ -1413,10 +1437,10 @@ export default function FinanceInsightsPage() {
                 <>
                   <div className="flex items-center justify-between mb-3 px-1">
                     <span className="text-xs font-medium text-gray-500">
-                      {data?.month_renewals_list?.length || 0} renewals
+                      {monthRenewalsCount} renewals
                     </span>
                   </div>
-                  {(data?.month_renewals_list || []).map((r, i) => (
+                  {monthRenewalsList.map((r, i) => (
                     <div key={r.id || i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
                       <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                         {(r.member_name || "?").charAt(0).toUpperCase()}
@@ -1428,8 +1452,11 @@ export default function FinanceInsightsPage() {
                             <Phone className="w-3 h-3" />{r.phone}
                           </span>
                         )}
+                        <p className="text-xs text-blue-600 mt-0.5 font-medium">
+                          Renewed on {new Date(getRenewalEventDate(r)).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                        </p>
                         <p className="text-xs text-gray-400 mt-0.5">
-                          {new Date(r.start_date + 'T00:00:00').toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}
+                          Valid {new Date(r.start_date + 'T00:00:00').toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}
                           {" → "}
                           {new Date(r.end_date + 'T00:00:00').toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                         </p>
@@ -1447,7 +1474,7 @@ export default function FinanceInsightsPage() {
               {/* Empty state */}
               {((drillDown === "revenue" && !(data?.month_revenue_list?.length)) ||
                 (drillDown === "new_joins" && !(data?.month_new_joins_list?.length)) ||
-                (drillDown === "renewals" && !(data?.month_renewals_list?.length))) && (
+                (drillDown === "renewals" && !monthRenewalsList.length)) && (
                 <div className="text-center py-8">
                   <p className="text-gray-500 text-sm">No data found</p>
                 </div>
@@ -1572,8 +1599,11 @@ export default function FinanceInsightsPage() {
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-gray-900 text-sm truncate">{r.member_name}</p>
                           {r.phone && <span className="text-xs text-gray-500 flex items-center gap-1 mt-0.5"><Phone className="w-3 h-3" />{r.phone}</span>}
+                          <p className="text-xs text-blue-600 mt-0.5 font-medium">
+                            Renewed on {new Date(getRenewalEventDate(r)).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                          </p>
                           <p className="text-xs text-gray-400 mt-0.5">
-                            {new Date(r.start_date + "T00:00:00").toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}
+                            Valid {new Date(r.start_date + "T00:00:00").toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}
                             {" → "}
                             {new Date(r.end_date + "T00:00:00").toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                           </p>
@@ -1745,8 +1775,11 @@ export default function FinanceInsightsPage() {
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-gray-900 text-sm truncate">{r.member_name}</p>
                           {r.phone && <span className="text-xs text-gray-500 flex items-center gap-1 mt-0.5"><Phone className="w-3 h-3" />{r.phone}</span>}
+                          <p className="text-xs text-blue-600 mt-0.5 font-medium">
+                            Renewed on {new Date(getRenewalEventDate(r)).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                          </p>
                           <p className="text-xs text-gray-400 mt-0.5">
-                            {new Date(r.start_date + "T00:00:00").toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}
+                            Valid {new Date(r.start_date + "T00:00:00").toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}
                             {" → "}
                             {new Date(r.end_date + "T00:00:00").toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                           </p>

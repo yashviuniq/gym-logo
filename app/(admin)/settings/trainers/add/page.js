@@ -47,6 +47,7 @@ export default function AddTrainerPage() {
     confirmPassword: "",
     specialization: "",
     bio: "",
+    monthlySalary: "",
     availableDays: [],
     availableTimeSlots: {}
   });
@@ -104,6 +105,13 @@ export default function AddTrainerPage() {
       newErrors.confirmPassword = "Passwords do not match";
     }
 
+    if (formData.monthlySalary.trim()) {
+      const monthlySalary = Number(formData.monthlySalary);
+      if (!Number.isFinite(monthlySalary) || monthlySalary < 0) {
+        newErrors.monthlySalary = "Monthly salary must be a valid amount";
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -138,6 +146,7 @@ export default function AddTrainerPage() {
         p_password: formData.password,
         p_specialization: formData.specialization.trim() || null,
         p_bio: formData.bio.trim() || null,
+        p_monthly_salary: formData.monthlySalary.trim() ? Number(formData.monthlySalary) : null,
         p_created_by: createdBy || null,
         p_available_days: availableDays,
         p_available_time_slots: availableTimeSlots
@@ -431,6 +440,30 @@ export default function AddTrainerPage() {
                   placeholder="Brief description about the trainer..."
                 />
               </div>
+            </div>
+
+            <div className="mt-3">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Monthly Salary
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium">₹</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={formData.monthlySalary}
+                  onChange={(e) => handleChange("monthlySalary", e.target.value)}
+                  className={`w-full pl-8 pr-4 py-3 rounded-xl border ${
+                    errors.monthlySalary ? "border-red-300 bg-red-50" : "border-gray-200"
+                  } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                  placeholder="25000"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Used in monthly trainer payroll reports</p>
+              {errors.monthlySalary && (
+                <p className="text-red-500 text-xs mt-1">{errors.monthlySalary}</p>
+              )}
             </div>
 
 

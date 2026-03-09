@@ -59,6 +59,7 @@ export default function EditTrainerPage({ params }) {
     password: "",
     specialization: [],
     bio: "",
+    monthlySalary: "",
     hireDate: "",
     isActive: true
   });
@@ -86,6 +87,7 @@ export default function EditTrainerPage({ params }) {
           profile_id,
           specialization,
           bio,
+          monthly_salary,
           is_active,
           hire_date,
           profiles:profile_id (
@@ -114,6 +116,7 @@ export default function EditTrainerPage({ params }) {
         password: trainerData.profiles?.password || "",
         specialization: trainerData.specialization || [],
         bio: trainerData.bio || "",
+        monthlySalary: trainerData.monthly_salary ?? "",
         hireDate: trainerData.hire_date || "",
         isActive: trainerData.is_active ?? true,
         profileId: trainerData.profile_id,
@@ -202,6 +205,13 @@ export default function EditTrainerPage({ params }) {
         throw new Error("Password is required");
       }
 
+      if (formData.monthlySalary !== "") {
+        const monthlySalary = Number(formData.monthlySalary);
+        if (!Number.isFinite(monthlySalary) || monthlySalary < 0) {
+          throw new Error("Monthly salary must be a valid amount");
+        }
+      }
+
       // Update profile with credentials_updated_at to force trainer logout
       const availableDays = formData.availableDays.length > 0 ? formData.availableDays : null;
       const availableTimeSlots = formData.availableDays.length > 0 ? formData.availableTimeSlots : null;
@@ -228,6 +238,7 @@ export default function EditTrainerPage({ params }) {
         .update({
           specialization: formData.specialization.length > 0 ? formData.specialization : null,
           bio: formData.bio.trim() || null,
+          monthly_salary: formData.monthlySalary === "" ? null : Number(formData.monthlySalary),
           hire_date: formData.hireDate || null,
           is_active: formData.isActive
         })
@@ -441,6 +452,33 @@ export default function EditTrainerPage({ params }) {
             placeholder="Brief description about the trainer..."
             className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
           />
+        </div>
+
+        <div className="bg-white rounded-xl p-4 shadow-sm">
+          <div className="flex items-center gap-2 mb-4">
+            <IndianRupee className="w-5 h-5 text-emerald-600" />
+            <h2 className="font-semibold text-gray-900">Payroll</h2>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Monthly Salary
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium">₹</span>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                name="monthlySalary"
+                value={formData.monthlySalary}
+                onChange={handleChange}
+                className="w-full pl-8 pr-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="25000"
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Used to calculate attendance-based salary earned every month.</p>
+          </div>
         </div>
 
         {/* Availability Schedule */}

@@ -232,6 +232,7 @@ export default function MemberDetailPage() {
         const payment = linkedPayment || fallbackPayment;
         const paymentAmount = payment?.amount || 0;
         const dueAmount = m.due_amount != null ? m.due_amount : Math.max(0, actualPrice - paymentAmount);
+        const renewalEventDate = payment?.paid_at || (m.start_date ? `${m.start_date}T00:00:00` : m.created_at);
 
         return {
           planName: m.membership_plans?.name || "Unknown",
@@ -244,7 +245,7 @@ export default function MemberDetailPage() {
           paymentMode: payment?.payment_mode || "cash",
           notes: "",
           newEndDate: m.end_date,
-          renewedAt: m.created_at,
+          renewedAt: renewalEventDate,
         };
       });
       setRenewalHistory(history);

@@ -107,6 +107,7 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
             const targetGymId = gymId || member.gymId;
             const newEndDate = calculateNewEndDate();
             const startDate = getStartDate();
+            const renewalEventTimestamp = new Date(startDate + 'T00:00:00').toISOString();
             const paymentAmountNum = parseFloat(paymentAmount) || 0;
             const dueForMembership = Math.max(0, finalPrice - paymentAmountNum);
 
@@ -117,6 +118,7 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
                     plan_id: selectedPlan,
                     start_date: startDate,
                     end_date: newEndDate,
+                created_at: renewalEventTimestamp,
                     status: "active",
                     due_amount: dueForMembership,
             };
@@ -157,7 +159,8 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
                         amount: paymentAmountNum,
                         payment_mode: paymentMode,
                         status: "paid",
-                        paid_at: new Date(startDate + 'T00:00:00').toISOString()
+                        paid_at: renewalEventTimestamp,
+                        created_at: renewalEventTimestamp
                     })
                     .select("id")
                     .single();
@@ -197,7 +200,7 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
                             balanceAmount: Math.max(0, finalPrice - paymentAmountNum),
                             paymentMode: paymentMode,
                             paymentId: paymentId,
-                            paymentDate: new Date()
+                            paymentDate: new Date(renewalEventTimestamp)
                         }).then(result => {
                             if (result.success) {
                                 console.log("Receipt generated:", result.receiptNumber);
@@ -232,7 +235,7 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
                 paymentMode,
                 notes,
                 newEndDate,
-                renewedAt: new Date().toISOString(),
+                renewedAt: renewalEventTimestamp,
             };
 
             setLoading(false);

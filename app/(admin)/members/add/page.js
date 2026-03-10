@@ -5,6 +5,11 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
 import { useToast } from "@/contexts/ToastContext";
+import {
+  compressMemberImage,
+  fileToDataUrl,
+  validateMemberImage,
+} from "@/lib/utils/memberImageUpload";
 import { 
   User, 
   Phone, 
@@ -540,20 +545,23 @@ export default function AddMemberPage() {
                           type="file"
                           accept="image/jpeg,image/png,image/webp"
                           className="hidden"
-                          onChange={(e) => {
+                          onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              // Validate file size (3MB max)
-                              if (file.size > 3 * 1024 * 1024) {
-                                alert("Image must be less than 3MB");
+                              const validationError = validateMemberImage(file);
+                              if (validationError) {
+                                alert(validationError);
                                 return;
                               }
-                              // Create preview URL
-                              const reader = new FileReader();
-                              reader.onloadend = () => {
-                                updateForm("profileImage", reader.result);
-                              };
-                              reader.readAsDataURL(file);
+
+                              try {
+                                const compressedFile = await compressMemberImage(file);
+                                const imageDataUrl = await fileToDataUrl(compressedFile);
+                                updateForm("profileImage", imageDataUrl);
+                              } catch (error) {
+                                console.error("Compression failed", error);
+                                alert("Could not compress image. Please try another photo.");
+                              }
                             }
                           }}
                         />
@@ -573,7 +581,7 @@ export default function AddMemberPage() {
                     Upload member photo (Optional)
                   </p>
                   <p className="text-xs text-gray-400 text-center">
-                    JPG, PNG or WebP • Max 3MB
+                    JPG, PNG or WebP • Compressed under 100KB
                   </p>
                 </div>
 

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/layout/Header";
+import AttendanceTimePicker from "@/components/shared/AttendanceTimePicker";
 import { supabase } from "@/lib/supabaseClient";
 import { useUserRole } from "@/lib/hooks/useUserRole";
 import {
@@ -15,7 +16,16 @@ import {
   IndianRupee,
   Clock,
   ChevronRight,
+  Save,
 } from "lucide-react";
+import {
+  TRAINER_ATTENDANCE_SESSIONS,
+  buildAttendanceDrafts,
+  createEmptyTimeParts,
+  fromTimeParts,
+  formatHoursLabel,
+  validateSessionTimes,
+} from "@/lib/utils/trainerAttendance";
 
 const formatLocalDate = (date) => {
   const year = date.getFullYear();
@@ -39,7 +49,8 @@ export default function TrainerAttendanceQuickPage() {
   const [viewMode, setViewMode] = useState("today");
   const [attendanceLoading, setAttendanceLoading] = useState(false);
   const [attendanceSaving, setAttendanceSaving] = useState(false);
-  const [attendanceData, setAttendanceData] = useState({ month: null, summary: null, attendance: [], pt_sessions: [] });
+  const [attendanceData, setAttendanceData] = useState({ month: null, summary: null, attendance_days: [], pt_sessions: [] });
+  const [attendanceDrafts, setAttendanceDrafts] = useState({});
 
   useEffect(() => {
     if (!roleLoading && !canCreateTrainer) {
@@ -117,23 +128,27 @@ export default function TrainerAttendanceQuickPage() {
       const result = await response.json();
       if (!response.ok || result.error) {
         console.error("Error fetching trainer attendance summary:", result.error);
-        setAttendanceData({ month: null, summary: null, attendance: [], pt_sessions: [] });
+        setAttendanceData({ month: null, summary: null, attendance_days: [], pt_sessions: [] });
         return;
       }
 
       setAttendanceData({
         month: result.data?.month || null,
         summary: result.data?.summary || null,
-        attendance: result.data?.attendance || [],
+        attendance_days: result.data?.attendance_days || [],
         pt_sessions: result.data?.pt_sessions || [],
       });
     } catch (error) {
       console.error("Error fetching trainer attendance summary:", error);
-      setAttendanceData({ month: null, summary: null, attendance: [], pt_sessions: [] });
+      setAttendanceData({ month: null, summary: null, attendance_days: [], pt_sessions: [] });
     } finally {
       setAttendanceLoading(false);
     }
   }, [selectedGym?.id]);
+
+  useEffect(() => {
+    setAttendanceDrafts(buildAttendanceDrafts(attendanceData.attendance_days || []));
+  }, [attendanceData.attendance_days]);
 
   useEffect(() => {
     if (selectedGym?.id && canCreateTrainer) {
@@ -148,11 +163,7 @@ export default function TrainerAttendanceQuickPage() {
   }, [selectedGym?.id, selectedTrainerId, selectedMonth, fetchAttendanceSummary]);
 
   const selectedTrainer = trainers.find((trainer) => trainer.gymTrainerId === selectedTrainerId) || null;
-
-  const attendanceMap = attendanceData.attendance.reduce((map, entry) => {
-    map.set(`${entry.attendance_date}-${entry.shift_number}`, entry);
-    return map;
-  }, new Map());
+  const attendanceDays = attendanceData.attendance_days || [];
 
   const filteredTrainers = (() => {
     const query = searchQuery.trim().toLowerCase();
@@ -163,63 +174,133 @@ export default function TrainerAttendanceQuickPage() {
     );
   })();
 
-  const getMonthDays = () => {
-    const [year, month] = selectedMonth.split("-").map(Number);
-    const totalDays = new Date(year, month, 0).getDate();
-
-    return Array.from({ length: totalDays }, (_, index) => {
-      const currentDate = new Date(year, month - 1, index + 1);
-      const dateValue = formatLocalDate(currentDate);
-      const isSunday = currentDate.getDay() === 0;
-      const closed = attendanceData.month?.sunday_off && isSunday;
-
-      return {
-        dateValue,
-        label: currentDate.toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
-        weekday: currentDate.toLocaleDateString("en-IN", { weekday: "short" }),
-        closed,
-        closedReason: isSunday && attendanceData.month?.sunday_off ? "Gym closed" : "",
-      };
-    });
-  };
-
   const visibleDays = (() => {
-    const monthDays = getMonthDays();
-    if (viewMode === "month") return monthDays;
+    if (viewMode === "month") return attendanceDays;
 
     const currentMonth = formatLocalMonth(new Date());
     const focusDate = currentMonth === selectedMonth
       ? formatLocalDate(new Date())
       : `${selectedMonth}-01`;
 
-    return monthDays.filter((day) => day.dateValue === focusDate).slice(0, 1);
+    const matchingDays = attendanceDays.filter((day) => day.attendance_date === focusDate);
+    return matchingDays.length > 0 ? matchingDays : attendanceDays.slice(0, 1);
   })();
 
-  const toggleAttendanceShift = async (attendanceDate, shiftNumber) => {
-    if (!selectedGym?.id || !selectedTrainer?.profileId) return;
+  const updateSessionTimePart = (attendanceDate, sessionNumber, field, part, value) => {
+    setAttendanceDrafts((currentDrafts) => ({
+      ...currentDrafts,
+      [attendanceDate]: {
+        ...(currentDrafts[attendanceDate] || buildAttendanceDrafts([{ attendance_date: attendanceDate }])[attendanceDate]),
+        [sessionNumber]: {
+          ...((currentDrafts[attendanceDate] || {})[sessionNumber] || {
+            id: null,
+            notes: "",
+            checkInParts: createEmptyTimeParts(),
+            checkOutParts: createEmptyTimeParts(),
+          }),
+          [field]: {
+            ...(((currentDrafts[attendanceDate] || {})[sessionNumber] || {})[field] || createEmptyTimeParts()),
+            minute: part === "minute"
+              ? value
+              : ((((currentDrafts[attendanceDate] || {})[sessionNumber] || {})[field] || {}).minute || "00"),
+            [part]: value,
+          },
+        },
+      },
+    }));
+  };
 
-    const existingEntry = attendanceMap.get(`${attendanceDate}-${shiftNumber}`);
+  const clearSessionTime = (attendanceDate, sessionNumber, field) => {
+    setAttendanceDrafts((currentDrafts) => ({
+      ...currentDrafts,
+      [attendanceDate]: {
+        ...(currentDrafts[attendanceDate] || buildAttendanceDrafts([{ attendance_date: attendanceDate }])[attendanceDate]),
+        [sessionNumber]: {
+          ...((currentDrafts[attendanceDate] || {})[sessionNumber] || {
+            id: null,
+            notes: "",
+            checkInParts: createEmptyTimeParts(),
+            checkOutParts: createEmptyTimeParts(),
+          }),
+          [field]: createEmptyTimeParts(),
+        },
+      },
+    }));
+  };
+
+  const resetAttendanceDay = (day) => {
+    setAttendanceDrafts((currentDrafts) => ({
+      ...currentDrafts,
+      [day.attendance_date]: buildAttendanceDrafts([day])[day.attendance_date],
+    }));
+  };
+
+  const saveAttendanceDay = async (day) => {
+    if (!selectedGym?.id || !selectedTrainer?.profileId) return;
+    const dayDraft = attendanceDrafts[day.attendance_date] || buildAttendanceDrafts([day])[day.attendance_date];
     const storedUser = localStorage.getItem("gymUser");
     const user = storedUser ? JSON.parse(storedUser) : null;
 
+    for (const session of TRAINER_ATTENDANCE_SESSIONS) {
+      const draft = dayDraft[session.sessionNumber];
+      const validationError = validateSessionTimes(draft?.checkInParts, draft?.checkOutParts);
+      if (validationError) {
+        alert(`${session.label}: ${validationError}`);
+        return;
+      }
+    }
+
     setAttendanceSaving(true);
     try {
-      if (existingEntry) {
+      const existingSessions = new Map((day.sessions || []).map((session) => [session.session_number, session]));
+      const sessionRowsToSave = [];
+      const sessionIdsToDelete = [];
+
+      for (const session of TRAINER_ATTENDANCE_SESSIONS) {
+        const draft = dayDraft[session.sessionNumber] || {
+          id: null,
+          notes: "",
+          checkInParts: createEmptyTimeParts(),
+          checkOutParts: createEmptyTimeParts(),
+        };
+        const existingSession = existingSessions.get(session.sessionNumber);
+        const checkInValue = fromTimeParts(draft.checkInParts);
+        const checkOutValue = fromTimeParts(draft.checkOutParts);
+
+        if (!checkInValue && !checkOutValue) {
+          if (existingSession?.id) {
+            sessionIdsToDelete.push(existingSession.id);
+          }
+          continue;
+        }
+
+        sessionRowsToSave.push({
+          gym_id: selectedGym.id,
+          trainer_id: selectedTrainer.profileId,
+          attendance_date: day.attendance_date,
+          session_number: session.sessionNumber,
+          check_in_time: checkInValue,
+          check_out_time: checkOutValue,
+          notes: draft.notes || null,
+          marked_by: user?.id || null,
+          marked_at: new Date().toISOString(),
+        });
+      }
+
+      if (sessionIdsToDelete.length > 0) {
         const { error } = await supabase
           .from("trainer_attendance")
           .delete()
-          .eq("id", existingEntry.id);
+          .in("id", sessionIdsToDelete);
 
         if (error) throw error;
-      } else {
+      }
+
+      if (sessionRowsToSave.length > 0) {
         const { error } = await supabase
           .from("trainer_attendance")
-          .insert({
-            gym_id: selectedGym.id,
-            trainer_id: selectedTrainer.profileId,
-            attendance_date: attendanceDate,
-            shift_number: shiftNumber,
-            marked_by: user?.id || null,
+          .upsert(sessionRowsToSave, {
+            onConflict: "gym_id,trainer_id,attendance_date,session_number",
           });
 
         if (error) throw error;
@@ -296,7 +377,7 @@ export default function TrainerAttendanceQuickPage() {
                 />
               </div>
 
-              <div className="max-h-[28rem] overflow-y-auto space-y-2 pr-1">
+              <div className="max-h-112 overflow-y-auto space-y-2 pr-1">
                 {filteredTrainers.length === 0 ? (
                   <div className="rounded-xl border border-dashed border-gray-200 px-4 py-6 text-center text-sm text-gray-500">
                     No trainers found.
@@ -377,18 +458,21 @@ export default function TrainerAttendanceQuickPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
                     <SummaryCard icon={<CalendarDays className="w-4 h-4 text-gray-600" />} label="Working Days" value={Number(attendanceData.month?.working_days || 0).toLocaleString("en-IN")} />
-                    <SummaryCard icon={<UserCheck className="w-4 h-4 text-blue-600" />} label="Attendance Days" value={Number(attendanceData.summary?.attendance_days || 0).toLocaleString("en-IN")} tone="blue" />
+                    <SummaryCard icon={<Clock className="w-4 h-4 text-blue-600" />} label="Expected Hours" value={formatHoursLabel(Number(attendanceData.summary?.expected_hours || 0) * 60)} tone="blue" />
+                    <SummaryCard icon={<UserCheck className="w-4 h-4 text-sky-600" />} label="Worked Hours" value={formatHoursLabel(Number(attendanceData.summary?.worked_hours || 0) * 60)} tone="blue" />
                     <SummaryCard icon={<IndianRupee className="w-4 h-4 text-emerald-600" />} label="Salary Earned" value={`₹${Number(attendanceData.summary?.salary_earned || 0).toLocaleString("en-IN")}`} tone="emerald" />
+                    <SummaryCard icon={<IndianRupee className="w-4 h-4 text-blue-600" />} label="PT Charges" value={`₹${Number(attendanceData.summary?.pt_charges || 0).toLocaleString("en-IN")}`} tone="blue" />
+                    <SummaryCard icon={<IndianRupee className="w-4 h-4 text-gray-600" />} label="Hourly Salary" value={`₹${Number(attendanceData.summary?.hourly_salary || 0).toLocaleString("en-IN")}`} />
                     <SummaryCard icon={<IndianRupee className="w-4 h-4 text-violet-600" />} label="Total Payable" value={`₹${Number(attendanceData.summary?.total_payable || 0).toLocaleString("en-IN")}`} tone="violet" />
                   </div>
 
                   <div className="bg-white rounded-xl p-4 shadow-sm space-y-4">
                     <div className="flex items-center justify-between gap-3 flex-wrap">
                       <div>
-                        <h3 className="font-semibold text-gray-900">{viewMode === "today" ? "Today’s Shift Marking" : "Monthly Shift Marking"}</h3>
-                        <p className="text-xs text-gray-500">One marked shift counts as half day. Two marked shifts count as full day.</p>
+                        <h3 className="font-semibold text-gray-900">{viewMode === "today" ? "Today’s Attendance Sessions" : "Monthly Attendance Sessions"}</h3>
+                        <p className="text-xs text-gray-500">Record up to two check in/check out sessions per day. Salary is calculated from worked hours.</p>
                       </div>
                       <button
                         onClick={() => router.push(`/settings/trainers/${selectedTrainer.gymTrainerId}?tab=attendance`)}
@@ -403,32 +487,83 @@ export default function TrainerAttendanceQuickPage() {
                     ) : (
                       <div className="space-y-2 max-h-112 overflow-y-auto pr-1">
                         {visibleDays.map((day) => (
-                          <div key={day.dateValue} className="rounded-xl border border-gray-100 px-3 py-3 flex items-center justify-between gap-3 flex-wrap">
-                            <div>
-                              <p className="font-medium text-gray-900">{day.label}</p>
-                              <p className="text-xs text-gray-500">{day.weekday}{day.closedReason ? ` • ${day.closedReason}` : ""}</p>
+                          <div key={day.attendance_date} className="rounded-xl border border-gray-100 px-3 py-3 space-y-3">
+                            <div className="flex items-start justify-between gap-3 flex-wrap">
+                              <div>
+                                <p className="font-medium text-gray-900">
+                                  {new Date(`${day.attendance_date}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                                </p>
+                                <p className="text-xs text-gray-500">{day.weekday_name}</p>
+                              </div>
+                              <div className="flex gap-2 flex-wrap text-xs">
+                                <span className="rounded-full bg-gray-100 px-2.5 py-1 text-gray-700">Expected {formatHoursLabel(day.expected_minutes)}</span>
+                                <span className="rounded-full bg-blue-50 px-2.5 py-1 text-blue-700">Worked {formatHoursLabel(day.worked_minutes)}</span>
+                                <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">Salary ₹{Number(day.daily_salary || 0).toLocaleString("en-IN")}</span>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              {[1, 2].map((shiftNumber) => {
-                                const isMarked = attendanceMap.has(`${day.dateValue}-${shiftNumber}`);
+
+                            {(day.expected_slots || []).length > 0 && (
+                              <div className="flex flex-wrap gap-2">
+                                {day.expected_slots.map((slot) => (
+                                  <span key={slot} className="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700">
+                                    {slot}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+
+                            <div className="grid gap-3 lg:grid-cols-2">
+                              {TRAINER_ATTENDANCE_SESSIONS.map((session) => {
+                                const draft = attendanceDrafts[day.attendance_date]?.[session.sessionNumber] || {
+                                  checkInParts: createEmptyTimeParts(),
+                                  checkOutParts: createEmptyTimeParts(),
+                                };
+                                const existingSession = (day.sessions || []).find((item) => item.session_number === session.sessionNumber);
                                 return (
-                                  <button
-                                    key={shiftNumber}
-                                    type="button"
-                                    onClick={() => toggleAttendanceShift(day.dateValue, shiftNumber)}
-                                    disabled={day.closed || attendanceSaving}
-                                    className={`px-3 py-2 rounded-lg text-xs font-medium border transition-colors ${
-                                      day.closed
-                                        ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                                        : isMarked
-                                          ? "bg-violet-600 text-white border-violet-600"
-                                          : "bg-white text-gray-700 border-gray-200 hover:bg-violet-50 hover:border-violet-200"
-                                    }`}
-                                  >
-                                    Shift {shiftNumber}
-                                  </button>
+                                  <div key={session.sessionNumber} className="rounded-xl border border-gray-200 bg-gray-50 p-3 space-y-3">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <p className="text-sm font-semibold text-gray-900">{session.label}</p>
+                                      <span className="text-xs text-gray-500">{existingSession?.worked_minutes ? formatHoursLabel(existingSession.worked_minutes) : "0 hrs"}</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                      <AttendanceTimePicker
+                                        label="Check In"
+                                        parts={draft.checkInParts}
+                                        disabled={attendanceSaving}
+                                        onPartChange={(part, value) => updateSessionTimePart(day.attendance_date, session.sessionNumber, "checkInParts", part, value)}
+                                        onClear={() => clearSessionTime(day.attendance_date, session.sessionNumber, "checkInParts")}
+                                      />
+                                      <AttendanceTimePicker
+                                        label="Check Out"
+                                        parts={draft.checkOutParts}
+                                        disabled={attendanceSaving}
+                                        onPartChange={(part, value) => updateSessionTimePart(day.attendance_date, session.sessionNumber, "checkOutParts", part, value)}
+                                        onClear={() => clearSessionTime(day.attendance_date, session.sessionNumber, "checkOutParts")}
+                                      />
+                                    </div>
+                                  </div>
                                 );
                               })}
+                            </div>
+
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={() => resetAttendanceDay(day)}
+                                disabled={attendanceSaving}
+                                className="px-3 py-2 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+                              >
+                                Reset
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => saveAttendanceDay(day)}
+                                disabled={attendanceSaving}
+                                className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-3 py-2 text-xs font-medium text-white hover:bg-violet-700 disabled:opacity-60"
+                              >
+                                <Save className="w-3.5 h-3.5" />
+                                Save Day
+                              </button>
                             </div>
                           </div>
                         ))}

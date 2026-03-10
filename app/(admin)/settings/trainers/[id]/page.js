@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/layout/Header";
+import AttendanceTimePicker from "@/components/shared/AttendanceTimePicker";
 import { supabase } from "@/lib/supabaseClient";
 import { useUserRole } from "@/lib/hooks/useUserRole";
 import {
@@ -38,8 +39,17 @@ import {
   TrendingUp,
   BarChart3,
   RefreshCw,
+  Save,
 } from "lucide-react";
 import { DAYS_OF_WEEK } from "@/lib/constants/trainerSchedule";
+import {
+  TRAINER_ATTENDANCE_SESSIONS,
+  buildAttendanceDrafts,
+  createEmptyTimeParts,
+  fromTimeParts,
+  formatHoursLabel,
+  validateSessionTimes,
+} from "@/lib/utils/trainerAttendance";
 
 const formatLocalDate = (date) => {
   const year = date.getFullYear();
@@ -77,7 +87,8 @@ export default function TrainerDetailsPage({ params }) {
   const [attendanceMonth, setAttendanceMonth] = useState(formatLocalMonth(new Date()));
   const [attendanceLoading, setAttendanceLoading] = useState(false);
   const [attendanceSaving, setAttendanceSaving] = useState(false);
-  const [attendanceData, setAttendanceData] = useState({ month: null, summary: null, attendance: [], pt_sessions: [] });
+  const [attendanceData, setAttendanceData] = useState({ month: null, summary: null, attendance_days: [], pt_sessions: [] });
+  const [attendanceDrafts, setAttendanceDrafts] = useState({});
 
   useEffect(() => {
     const storedGym = localStorage.getItem("selectedGym");
@@ -270,23 +281,27 @@ export default function TrainerDetailsPage({ params }) {
 
       if (!response.ok || result.error) {
         console.error("Error fetching attendance summary:", result.error);
-        setAttendanceData({ month: null, summary: null, attendance: [], pt_sessions: [] });
+        setAttendanceData({ month: null, summary: null, attendance_days: [], pt_sessions: [] });
         return;
       }
 
       setAttendanceData({
         month: result.data?.month || null,
         summary: result.data?.summary || null,
-        attendance: result.data?.attendance || [],
+        attendance_days: result.data?.attendance_days || [],
         pt_sessions: result.data?.pt_sessions || [],
       });
     } catch (error) {
       console.error("Error fetching attendance summary:", error);
-      setAttendanceData({ month: null, summary: null, attendance: [], pt_sessions: [] });
+      setAttendanceData({ month: null, summary: null, attendance_days: [], pt_sessions: [] });
     } finally {
       setAttendanceLoading(false);
     }
   };
+
+  useEffect(() => {
+    setAttendanceDrafts(buildAttendanceDrafts(attendanceData.attendance_days || []));
+  }, [attendanceData.attendance_days]);
 
   // fetchTrainerPlans and fetchTrainerEarnings are now included in the single RPC call above
 
@@ -395,59 +410,121 @@ export default function TrainerDetailsPage({ params }) {
     }
   };
 
-  const getAttendanceKey = (attendanceDate, shiftNumber) => `${attendanceDate}-${shiftNumber}`;
-
-  const attendanceMap = attendanceData.attendance.reduce((map, entry) => {
-    map.set(getAttendanceKey(entry.attendance_date, entry.shift_number), entry);
-    return map;
-  }, new Map());
-
-  const getMonthDays = () => {
-    const [year, month] = attendanceMonth.split("-").map(Number);
-    const totalDays = new Date(year, month, 0).getDate();
-
-    return Array.from({ length: totalDays }, (_, index) => {
-      const currentDate = new Date(year, month - 1, index + 1);
-      const dateValue = formatLocalDate(currentDate);
-      const isSunday = currentDate.getDay() === 0;
-      const joinedAfterDate = trainer?.hireDate && dateValue < trainer.hireDate;
-      const closed = (attendanceData.month?.sunday_off && isSunday) || joinedAfterDate;
-
-      return {
-        dateValue,
-        label: currentDate.toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
-        weekday: currentDate.toLocaleDateString("en-IN", { weekday: "short" }),
-        closed,
-        closedReason: joinedAfterDate ? "Before join date" : isSunday && attendanceData.month?.sunday_off ? "Gym closed" : "",
-      };
-    });
+  const updateSessionTimePart = (attendanceDate, sessionNumber, field, part, value) => {
+    setAttendanceDrafts((currentDrafts) => ({
+      ...currentDrafts,
+      [attendanceDate]: {
+        ...(currentDrafts[attendanceDate] || buildAttendanceDrafts([{ attendance_date: attendanceDate }])[attendanceDate]),
+        [sessionNumber]: {
+          ...((currentDrafts[attendanceDate] || {})[sessionNumber] || {
+            id: null,
+            notes: "",
+            checkInParts: createEmptyTimeParts(),
+            checkOutParts: createEmptyTimeParts(),
+          }),
+          [field]: {
+            ...(((currentDrafts[attendanceDate] || {})[sessionNumber] || {})[field] || createEmptyTimeParts()),
+            minute: part === "minute"
+              ? value
+              : ((((currentDrafts[attendanceDate] || {})[sessionNumber] || {})[field] || {}).minute || "00"),
+            [part]: value,
+          },
+        },
+      },
+    }));
   };
 
-  const toggleAttendanceShift = async (attendanceDate, shiftNumber) => {
-    if (!selectedGym?.id || !trainer?.profileId || !canCreateTrainer) return;
+  const clearSessionTime = (attendanceDate, sessionNumber, field) => {
+    setAttendanceDrafts((currentDrafts) => ({
+      ...currentDrafts,
+      [attendanceDate]: {
+        ...(currentDrafts[attendanceDate] || buildAttendanceDrafts([{ attendance_date: attendanceDate }])[attendanceDate]),
+        [sessionNumber]: {
+          ...((currentDrafts[attendanceDate] || {})[sessionNumber] || {
+            id: null,
+            notes: "",
+            checkInParts: createEmptyTimeParts(),
+            checkOutParts: createEmptyTimeParts(),
+          }),
+          [field]: createEmptyTimeParts(),
+        },
+      },
+    }));
+  };
 
-    const existingEntry = attendanceMap.get(getAttendanceKey(attendanceDate, shiftNumber));
+  const resetAttendanceDay = (day) => {
+    setAttendanceDrafts((currentDrafts) => ({
+      ...currentDrafts,
+      [day.attendance_date]: buildAttendanceDrafts([day])[day.attendance_date],
+    }));
+  };
+
+  const saveAttendanceDay = async (day) => {
+    if (!selectedGym?.id || !trainer?.profileId || !canCreateTrainer) return;
     const storedUser = localStorage.getItem("gymUser");
     const user = storedUser ? JSON.parse(storedUser) : null;
+    const dayDraft = attendanceDrafts[day.attendance_date] || buildAttendanceDrafts([day])[day.attendance_date];
+
+    for (const session of TRAINER_ATTENDANCE_SESSIONS) {
+      const draft = dayDraft[session.sessionNumber];
+      const validationError = validateSessionTimes(draft?.checkInParts, draft?.checkOutParts);
+      if (validationError) {
+        alert(`${session.label}: ${validationError}`);
+        return;
+      }
+    }
 
     setAttendanceSaving(true);
     try {
-      if (existingEntry) {
+      const existingSessions = new Map((day.sessions || []).map((session) => [session.session_number, session]));
+      const sessionRowsToSave = [];
+      const sessionIdsToDelete = [];
+
+      for (const session of TRAINER_ATTENDANCE_SESSIONS) {
+        const draft = dayDraft[session.sessionNumber] || {
+          id: null,
+          notes: "",
+          checkInParts: createEmptyTimeParts(),
+          checkOutParts: createEmptyTimeParts(),
+        };
+        const existingSession = existingSessions.get(session.sessionNumber);
+        const checkInValue = fromTimeParts(draft.checkInParts);
+        const checkOutValue = fromTimeParts(draft.checkOutParts);
+
+        if (!checkInValue && !checkOutValue) {
+          if (existingSession?.id) {
+            sessionIdsToDelete.push(existingSession.id);
+          }
+          continue;
+        }
+
+        sessionRowsToSave.push({
+          gym_id: selectedGym.id,
+          trainer_id: trainer.profileId,
+          attendance_date: day.attendance_date,
+          session_number: session.sessionNumber,
+          check_in_time: checkInValue,
+          check_out_time: checkOutValue,
+          notes: draft.notes || null,
+          marked_by: user?.id || null,
+          marked_at: new Date().toISOString(),
+        });
+      }
+
+      if (sessionIdsToDelete.length > 0) {
         const { error } = await supabase
           .from("trainer_attendance")
           .delete()
-          .eq("id", existingEntry.id);
+          .in("id", sessionIdsToDelete);
 
         if (error) throw error;
-      } else {
+      }
+
+      if (sessionRowsToSave.length > 0) {
         const { error } = await supabase
           .from("trainer_attendance")
-          .insert({
-            gym_id: selectedGym.id,
-            trainer_id: trainer.profileId,
-            attendance_date: attendanceDate,
-            shift_number: shiftNumber,
-            marked_by: user?.id || null,
+          .upsert(sessionRowsToSave, {
+            onConflict: "gym_id,trainer_id,attendance_date,session_number",
           });
 
         if (error) throw error;
@@ -1257,7 +1334,7 @@ export default function TrainerDetailsPage({ params }) {
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div>
                   <h3 className="font-semibold text-gray-900">Attendance & Payroll</h3>
-                  <p className="text-xs text-gray-500">Two shifts per day. One shift counts as half day for salary calculation.</p>
+                  <p className="text-xs text-gray-500">Salary is calculated from worked hours against the trainer&apos;s weekly schedule.</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <input
@@ -1276,18 +1353,26 @@ export default function TrainerDetailsPage({ params }) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
                 <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
                   <p className="text-xs text-gray-500">Working Days</p>
-                  <p className="mt-1 text-lg font-bold text-gray-900">{Number(attendanceData.summary?.attendance_days !== undefined ? attendanceData.month?.working_days || 0 : 0).toLocaleString("en-IN")}</p>
+                  <p className="mt-1 text-lg font-bold text-gray-900">{Number(attendanceData.month?.working_days || 0).toLocaleString("en-IN")}</p>
                 </div>
                 <div className="rounded-xl border border-blue-100 bg-blue-50 p-3">
-                  <p className="text-xs text-blue-600">Attendance Days</p>
-                  <p className="mt-1 text-lg font-bold text-blue-800">{Number(attendanceData.summary?.attendance_days || 0).toLocaleString("en-IN")}</p>
+                  <p className="text-xs text-blue-600">Expected Hours</p>
+                  <p className="mt-1 text-lg font-bold text-blue-800">{formatHoursLabel(Number(attendanceData.summary?.expected_hours || 0) * 60)}</p>
+                </div>
+                <div className="rounded-xl border border-sky-100 bg-sky-50 p-3">
+                  <p className="text-xs text-sky-600">Worked Hours</p>
+                  <p className="mt-1 text-lg font-bold text-sky-800">{formatHoursLabel(Number(attendanceData.summary?.worked_hours || 0) * 60)}</p>
                 </div>
                 <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3">
                   <p className="text-xs text-emerald-600">Salary Earned</p>
                   <p className="mt-1 text-lg font-bold text-emerald-800">₹{Number(attendanceData.summary?.salary_earned || 0).toLocaleString("en-IN")}</p>
+                </div>
+                <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-3">
+                  <p className="text-xs text-indigo-600">PT Charges</p>
+                  <p className="mt-1 text-lg font-bold text-indigo-800">₹{Number(attendanceData.summary?.pt_charges || 0).toLocaleString("en-IN")}</p>
                 </div>
                 <div className="rounded-xl border border-purple-100 bg-purple-50 p-3">
                   <p className="text-xs text-purple-600">Total Payable</p>
@@ -1301,8 +1386,8 @@ export default function TrainerDetailsPage({ params }) {
                   <p className="font-semibold text-gray-900">₹{Number(trainer.monthlySalary || 0).toLocaleString("en-IN")}</p>
                 </div>
                 <div className="rounded-lg bg-gray-50 px-3 py-2">
-                  <span className="text-gray-500">Attended Shifts</span>
-                  <p className="font-semibold text-gray-900">{attendanceData.summary?.attended_shifts || 0}</p>
+                  <span className="text-gray-500">Hourly Salary</span>
+                  <p className="font-semibold text-gray-900">₹{Number(attendanceData.summary?.hourly_salary || 0).toLocaleString("en-IN")}</p>
                 </div>
                 <div className="rounded-lg bg-gray-50 px-3 py-2">
                   <span className="text-gray-500">PT Charges</span>
@@ -1318,43 +1403,96 @@ export default function TrainerDetailsPage({ params }) {
                   <CheckCircle className="w-5 h-5 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Shift Attendance</h3>
-                  <p className="text-xs text-gray-500">Mark each shift separately. Tap again to remove a mark.</p>
+                  <h3 className="font-semibold text-gray-900">Session Attendance</h3>
+                  <p className="text-xs text-gray-500">Record Morning Session and Evening Session using check in and check out times.</p>
                 </div>
               </div>
 
               {attendanceLoading ? (
                 <div className="py-10 text-center text-gray-500">Loading attendance...</div>
               ) : (
-                <div className="space-y-2 max-h-[28rem] overflow-y-auto pr-1">
-                  {getMonthDays().map((day) => (
-                    <div key={day.dateValue} className="rounded-xl border border-gray-100 px-3 py-3 flex items-center justify-between gap-3 flex-wrap">
-                      <div>
-                        <p className="font-medium text-gray-900">{day.label}</p>
-                        <p className="text-xs text-gray-500">{day.weekday}{day.closedReason ? ` • ${day.closedReason}` : ""}</p>
+                <div className="space-y-2 max-h-112 overflow-y-auto pr-1">
+                  {(attendanceData.attendance_days || []).map((day) => (
+                    <div key={day.attendance_date} className="rounded-xl border border-gray-100 px-3 py-3 space-y-3">
+                      <div className="flex items-start justify-between gap-3 flex-wrap">
+                        <div>
+                          <p className="font-medium text-gray-900">
+                            {new Date(`${day.attendance_date}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                          </p>
+                          <p className="text-xs text-gray-500">{day.weekday_name}</p>
+                        </div>
+                        <div className="flex gap-2 flex-wrap text-xs">
+                          <span className="rounded-full bg-gray-100 px-2.5 py-1 text-gray-700">Expected {formatHoursLabel(day.expected_minutes)}</span>
+                          <span className="rounded-full bg-blue-50 px-2.5 py-1 text-blue-700">Worked {formatHoursLabel(day.worked_minutes)}</span>
+                          <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">Salary ₹{Number(day.daily_salary || 0).toLocaleString("en-IN")}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {[1, 2].map((shiftNumber) => {
-                          const isMarked = attendanceMap.has(getAttendanceKey(day.dateValue, shiftNumber));
+
+                      {(day.expected_slots || []).length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {day.expected_slots.map((slot) => (
+                            <span key={slot} className="rounded-full bg-purple-50 px-2.5 py-1 text-xs font-medium text-purple-700">
+                              {slot}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="grid gap-3 lg:grid-cols-2">
+                        {TRAINER_ATTENDANCE_SESSIONS.map((session) => {
+                          const draft = attendanceDrafts[day.attendance_date]?.[session.sessionNumber] || {
+                            checkInParts: createEmptyTimeParts(),
+                            checkOutParts: createEmptyTimeParts(),
+                          };
+                          const existingSession = (day.sessions || []).find((item) => item.session_number === session.sessionNumber);
                           return (
-                            <button
-                              key={shiftNumber}
-                              type="button"
-                              onClick={() => toggleAttendanceShift(day.dateValue, shiftNumber)}
-                              disabled={day.closed || attendanceSaving || !canCreateTrainer}
-                              className={`px-3 py-2 rounded-lg text-xs font-medium border transition-colors ${
-                                day.closed || !canCreateTrainer
-                                  ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                                  : isMarked
-                                    ? "bg-purple-600 text-white border-purple-600"
-                                    : "bg-white text-gray-700 border-gray-200 hover:bg-purple-50 hover:border-purple-200"
-                              }`}
-                            >
-                              Shift {shiftNumber}
-                            </button>
+                            <div key={session.sessionNumber} className="rounded-xl border border-gray-200 bg-gray-50 p-3 space-y-3">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-sm font-semibold text-gray-900">{session.label}</p>
+                                <span className="text-xs text-gray-500">{existingSession?.worked_minutes ? formatHoursLabel(existingSession.worked_minutes) : "0 hrs"}</span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-3">
+                                <AttendanceTimePicker
+                                  label="Check In"
+                                  parts={draft.checkInParts}
+                                  disabled={attendanceSaving || !canCreateTrainer}
+                                  onPartChange={(part, value) => updateSessionTimePart(day.attendance_date, session.sessionNumber, "checkInParts", part, value)}
+                                  onClear={() => clearSessionTime(day.attendance_date, session.sessionNumber, "checkInParts")}
+                                />
+                                <AttendanceTimePicker
+                                  label="Check Out"
+                                  parts={draft.checkOutParts}
+                                  disabled={attendanceSaving || !canCreateTrainer}
+                                  onPartChange={(part, value) => updateSessionTimePart(day.attendance_date, session.sessionNumber, "checkOutParts", part, value)}
+                                  onClear={() => clearSessionTime(day.attendance_date, session.sessionNumber, "checkOutParts")}
+                                />
+                              </div>
+                            </div>
                           );
                         })}
                       </div>
+
+                      {canCreateTrainer && (
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => resetAttendanceDay(day)}
+                            disabled={attendanceSaving}
+                            className="px-3 py-2 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+                          >
+                            Reset
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => saveAttendanceDay(day)}
+                            disabled={attendanceSaving}
+                            className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-3 py-2 text-xs font-medium text-white hover:bg-purple-700 disabled:opacity-60"
+                          >
+                            <Save className="w-3.5 h-3.5" />
+                            Save Day
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

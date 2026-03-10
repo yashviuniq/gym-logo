@@ -1,14 +1,55 @@
 "use client";
 
-export default function RenewalHistoryModal({ member, renewalHistory, onClose }) {
-    const totalPaid = member?.totalPaid ?? renewalHistory.reduce(
+import { useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
+
+const PAYMENT_MODE_OPTIONS = ["cash", "upi", "card", "bank"];
+
+export default function RenewalHistoryModal({ member, renewalHistory, onClose, onPaymentModeUpdated }) {
+    const [paymentModeOverrides, setPaymentModeOverrides] = useState({});
+    const [savingPaymentId, setSavingPaymentId] = useState(null);
+
+    const historyItems = (renewalHistory || []).map((item) => ({
+        ...item,
+        paymentMode: item.paymentId && paymentModeOverrides[item.paymentId]
+            ? paymentModeOverrides[item.paymentId]
+            : item.paymentMode,
+    }));
+
+    const totalPaid = member?.totalPaid ?? historyItems.reduce(
         (sum, renewal) => sum + (renewal.paymentAmount || 0),
         0
     );
-    const totalDue = Math.max(0, member?.balance ?? renewalHistory.reduce(
+    const totalDue = Math.max(0, member?.balance ?? historyItems.reduce(
         (sum, renewal) => sum + (renewal.dueAmount || 0),
         0
     ));
+
+    const updatePaymentMode = async (renewalIndex, paymentId, nextMode) => {
+        if (!paymentId || !nextMode) return;
+
+        const previousMode = historyItems[renewalIndex]?.paymentMode || "cash";
+        if (previousMode === nextMode) return;
+
+        setSavingPaymentId(paymentId);
+        setPaymentModeOverrides((current) => ({ ...current, [paymentId]: nextMode }));
+
+        const { error } = await supabase
+            .from("payments")
+            .update({ payment_mode: nextMode })
+            .eq("id", paymentId);
+
+        if (error) {
+            console.error("Error updating payment mode:", error);
+            setPaymentModeOverrides((current) => ({ ...current, [paymentId]: previousMode }));
+            alert("Failed to update payment mode");
+            setSavingPaymentId(null);
+            return;
+        }
+
+        setSavingPaymentId(null);
+        onPaymentModeUpdated?.();
+    };
 
     return (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end">
@@ -45,8 +86,8 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose })
 
                     {/* Renewal Timeline */}
                     <div className="space-y-3">
-                        {renewalHistory && renewalHistory.length > 0 ? (
-                            renewalHistory.map((renewal, index) => (
+                        {historyItems && historyItems.length > 0 ? (
+                            historyItems.map((renewal, index) => (
                                 <div
                                     key={index}
                                     className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition"
@@ -54,7 +95,7 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose })
                                     <div className="flex items-start justify-between mb-3">
                                         <div className="flex items-center gap-2">
                                             <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                                                {renewalHistory.length - index}
+                                                {historyItems.length - index}
                                             </div>
                                             <div>
                                                 <p className="font-semibold text-gray-900">
@@ -102,11 +143,40 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose })
                                     </div>
 
                                     {renewal.paymentAmount > 0 && (
-                                        <div className="bg-gray-50 rounded-lg p-2 text-sm">
-                                            <p className="text-xs text-gray-600">Payment Mode</p>
-                                            <p className="font-medium text-gray-900 capitalize">
-                                                {renewal.paymentMode}
-                                            </p>
+                                        <div className="bg-gray-50 rounded-lg p-3 text-sm space-y-2">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <div>
+                                                    <p className="text-xs text-gray-600">Payment Mode</p>
+                                                    <p className="font-medium text-gray-900 capitalize">
+                                                        {renewal.paymentMode}
+                                                    </p>
+                                                </div>
+                                                {renewal.paymentId && (
+                                                    <span className="text-[11px] text-gray-400">
+                                                        {savingPaymentId === renewal.paymentId ? "Updating..." : "Tap to change"}
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {renewal.paymentId && (
+                                                <div className="grid grid-cols-4 gap-2">
+                                                    {PAYMENT_MODE_OPTIONS.map((mode) => (
+                                                        <button
+                                                            key={mode}
+                                                            type="button"
+                                                            onClick={() => updatePaymentMode(index, renewal.paymentId, mode)}
+                                                            disabled={savingPaymentId === renewal.paymentId}
+                                                            className={`py-2 text-xs font-medium rounded-lg capitalize transition-all ${
+                                                                renewal.paymentMode === mode
+                                                                    ? "bg-blue-600 text-white"
+                                                                    : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-100"
+                                                            } ${savingPaymentId === renewal.paymentId ? "opacity-60 cursor-not-allowed" : ""}`}
+                                                        >
+                                                            {mode}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     )}
 
@@ -152,13 +222,13 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose })
                     </div>
 
                     {/* Summary Stats */}
-                    {renewalHistory && renewalHistory.length > 0 && (
+                    {historyItems && historyItems.length > 0 && (
                         <div className="mt-4 pt-4 border-t border-gray-200">
                             <div className="grid grid-cols-3 gap-3">
                                 <div className="bg-blue-50 rounded-lg p-3 text-center">
                                     <p className="text-xs text-blue-600 mb-1">Total Renewals</p>
                                     <p className="text-xl font-bold text-blue-700">
-                                        {renewalHistory.length-1}
+                                        {historyItems.length-1}
                                     </p>
                                 </div>
                                 <div className="bg-green-50 rounded-lg p-3 text-center">

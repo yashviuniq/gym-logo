@@ -24,8 +24,10 @@ import {
   CheckCircle,
   IndianRupee,
   CalendarDays,
-  Wallet
+  Wallet,
+  Clock,
 } from "lucide-react";
+import { formatHoursLabel } from "@/lib/utils/trainerAttendance";
 
 export default function TrainersPage() {
   const router = useRouter();
@@ -288,7 +290,16 @@ export default function TrainersPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+              <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
+                <div className="flex items-center gap-2 text-gray-700 text-xs font-medium uppercase tracking-wide">
+                  <Clock className="w-4 h-4" />
+                  Worked Hours
+                </div>
+                <p className="mt-2 text-lg font-bold text-gray-900">
+                  {formatHoursLabel(Number(payrollData.summary?.total_worked_hours || 0) * 60)}
+                </p>
+              </div>
               <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3">
                 <div className="flex items-center gap-2 text-emerald-700 text-xs font-medium uppercase tracking-wide">
                   <IndianRupee className="w-4 h-4" />
@@ -323,7 +334,7 @@ export default function TrainersPage() {
                 <thead className="bg-gray-50 text-gray-600">
                   <tr>
                     <th className="px-4 py-3 text-left font-medium">Trainer</th>
-                    <th className="px-4 py-3 text-left font-medium">Attendance</th>
+                    <th className="px-4 py-3 text-left font-medium">Hours</th>
                     <th className="px-4 py-3 text-left font-medium">Salary Earned</th>
                     <th className="px-4 py-3 text-left font-medium">PT</th>
                     <th className="px-4 py-3 text-left font-medium">Total</th>
@@ -354,8 +365,8 @@ export default function TrainersPage() {
                           </button>
                         </td>
                         <td className="px-4 py-3 text-gray-700">
-                          <p>{Number(row.attendance_days || 0).toLocaleString("en-IN")} / {Number(row.working_days || 0).toLocaleString("en-IN")} days</p>
-                          <p className="text-xs text-gray-500">{row.attended_shifts || 0} shifts</p>
+                          <p>{formatHoursLabel(Number(row.worked_hours || 0) * 60)} / {formatHoursLabel(Number(row.expected_hours || 0) * 60)}</p>
+                          <p className="text-xs text-gray-500">{Number(row.working_days || 0).toLocaleString("en-IN")} working days</p>
                         </td>
                         <td className="px-4 py-3 font-medium text-emerald-700">₹{Number(row.salary_earned || 0).toLocaleString("en-IN")}</td>
                         <td className="px-4 py-3 font-medium text-blue-700">₹{Number(row.pt_charges || 0).toLocaleString("en-IN")}</td>

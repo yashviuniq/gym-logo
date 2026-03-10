@@ -235,6 +235,8 @@ export default function MemberDetailPage() {
         const renewalEventDate = payment?.paid_at || (m.start_date ? `${m.start_date}T00:00:00` : m.created_at);
 
         return {
+          paymentId: payment?.id || null,
+          membershipId: m.id,
           planName: m.membership_plans?.name || "Unknown",
           duration: m.membership_plans?.duration_days || 0,
           planPrice,
@@ -1409,6 +1411,7 @@ export default function MemberDetailPage() {
           member={member}
           renewalHistory={renewalHistory}
           onClose={() => setShowHistoryModal(false)}
+          onPaymentModeUpdated={() => fetchMemberDetails(params.id, selectedGym?.id)}
         />
       )}
 

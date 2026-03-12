@@ -14,7 +14,7 @@ export default function AttendanceTimePicker({
   onClear,
 }) {
   return (
-    <div className="space-y-1">
+    <div className="min-w-0 rounded-xl border border-gray-200 bg-white p-2.5 sm:border-0 sm:bg-transparent sm:p-0 space-y-2">
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs font-medium text-gray-600">{label}</span>
         <button
@@ -26,12 +26,12 @@ export default function AttendanceTimePicker({
           Clear
         </button>
       </div>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2 min-w-0 sm:grid-cols-3">
         <select
           value={parts?.hour || ""}
           onChange={(e) => onPartChange("hour", e.target.value)}
           disabled={disabled}
-          className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-2 text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+          className="w-full min-w-0 rounded-lg border border-gray-200 bg-white px-2 py-2 text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent"
         >
           <option value="">Hour</option>
           {ATTENDANCE_HOUR_OPTIONS.map((hour) => (
@@ -43,7 +43,7 @@ export default function AttendanceTimePicker({
           value={parts?.minute || ""}
           onChange={(e) => onPartChange("minute", e.target.value)}
           disabled={disabled}
-          className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-2 text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+          className="w-full min-w-0 rounded-lg border border-gray-200 bg-white px-2 py-2 text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent"
         >
           <option value="">Min</option>
           {ATTENDANCE_MINUTE_OPTIONS.map((minute) => (
@@ -55,7 +55,7 @@ export default function AttendanceTimePicker({
           value={parts?.meridiem || ""}
           onChange={(e) => onPartChange("meridiem", e.target.value)}
           disabled={disabled}
-          className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-2 text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+          className="col-span-2 w-full min-w-0 rounded-lg border border-gray-200 bg-white px-2 py-2 text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent sm:col-span-1"
         >
           <option value="">AM/PM</option>
           {ATTENDANCE_MERIDIEM_OPTIONS.map((meridiem) => (

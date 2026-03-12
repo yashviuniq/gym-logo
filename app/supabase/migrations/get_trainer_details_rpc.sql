@@ -63,6 +63,10 @@ BEGIN
       'plan_name', tp.name,
       'plan_price', tp.price,
       'plan_duration_days', tp.duration_days,
+      'plan_total_amount', tma.plan_total_amount,
+      'total_paid_amount', tma.total_paid_amount,
+      'pending_amount', tma.pending_amount,
+      'next_payment_date', tma.next_payment_date,
       'member_name', m.full_name,
       'member_phone', m.phone,
       'member_profile_image', m.profile_image,
@@ -80,12 +84,7 @@ BEGIN
         ORDER BY ms.created_at DESC
         LIMIT 1
       ),
-      'paid_amount', (
-        SELECT te.total_amount
-        FROM trainer_earnings te
-        WHERE te.assignment_id = tma.id
-        LIMIT 1
-      )
+      'paid_amount', COALESCE(tma.total_paid_amount, 0)
     ) ORDER BY tma.assigned_at DESC
   ), '[]'::jsonb)
   INTO v_assigned_members

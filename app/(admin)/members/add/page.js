@@ -547,22 +547,25 @@ export default function AddMemberPage() {
                           className="hidden"
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
-                            if (file) {
-                              const validationError = validateMemberImage(file);
-                              if (validationError) {
-                                alert(validationError);
-                                return;
-                              }
+                            if (!file) return;
 
-                              try {
-                                const compressedFile = await compressMemberImage(file);
-                                const imageDataUrl = await fileToDataUrl(compressedFile);
-                                updateForm("profileImage", imageDataUrl);
-                              } catch (error) {
-                                console.error("Compression failed", error);
-                                alert("Could not compress image. Please try another photo.");
-                              }
+                            const validationError = validateMemberImage(file);
+                            if (validationError) {
+                              showError(validationError);
+                              e.target.value = "";
+                              return;
                             }
+
+                            try {
+                              const compressedFile = await compressMemberImage(file);
+                              const previewDataUrl = await fileToDataUrl(compressedFile);
+                              updateForm("profileImage", previewDataUrl);
+                            } catch (error) {
+                              console.error("Error compressing member image:", error);
+                              showError("Could not compress image. Please try another photo.");
+                            }
+
+                            e.target.value = "";
                           }}
                         />
                       </label>

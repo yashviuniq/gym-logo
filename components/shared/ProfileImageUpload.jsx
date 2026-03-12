@@ -13,7 +13,9 @@ export default function ProfileImageUpload({
   onImageChange, 
   memberId,
   size = "lg", // sm, md, lg
-  editable = true 
+  editable = true,
+  showHint = true,
+  align = "center",
 }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
@@ -31,6 +33,8 @@ export default function ProfileImageUpload({
     md: "w-5 h-5",
     lg: "w-6 h-6",
   };
+
+  const alignmentClass = align === "left" ? "items-start text-left" : "items-center text-center";
 
   const handleFileSelect = async (e) => {
     const file = e.target.files?.[0];
@@ -169,7 +173,7 @@ export default function ProfileImageUpload({
   };
 
   return (
-    <div className="flex flex-col items-center">
+    <div className={`flex flex-col ${alignmentClass}`}>
       <div className="relative">
         {/* Profile Image */}
         <div
@@ -229,8 +233,8 @@ export default function ProfileImageUpload({
       />
 
       {/* Upload hint */}
-      {editable && (
-        <p className="text-xs text-gray-500 mt-2 text-center">
+      {editable && showHint && (
+        <p className={`text-xs text-gray-500 mt-2 ${align === "left" ? "text-left" : "text-center"}`}>
           {uploading ? "Uploading..." : "Tap to change photo"}
           <br />
           <span className="text-gray-400">Compressed under 100KB • JPG, PNG, WebP</span>
@@ -239,7 +243,7 @@ export default function ProfileImageUpload({
 
       {/* Error message */}
       {error && (
-        <p className="text-xs text-red-500 mt-2 text-center">{error}</p>
+        <p className={`text-xs text-red-500 mt-2 ${align === "left" ? "text-left" : "text-center"}`}>{error}</p>
       )}
     </div>
   );

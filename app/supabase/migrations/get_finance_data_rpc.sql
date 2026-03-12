@@ -15,6 +15,7 @@ DECLARE
   v_members_with_dues JSONB;
   v_expenses_total NUMERIC;
   v_payments_with_next_date JSONB;
+  v_pending_trainer_installments JSONB;
 BEGIN
   -- 1. Fetch payments in period with member info and resolved collector names
   --    Replicates the OR condition: (paid_at in range) OR (paid_at IS NULL AND created_at in range)
@@ -100,12 +101,39 @@ BEGIN
     AND pp.next_payment_date IS NOT NULL
     AND pp.remaining_amount > 0;
 
+  -- 5. Fetch pending trainer installments from active PT assignments
+  SELECT COALESCE(jsonb_agg(
+    jsonb_build_object(
+      'assignment_id', tma.id,
+      'member_id', m.id,
+      'member_full_name', m.full_name,
+      'member_phone', m.phone,
+      'trainer_id', tma.trainer_id,
+      'trainer_full_name', TRIM(COALESCE(pr.first_name, '') || ' ' || COALESCE(pr.last_name, '')),
+      'plan_name', tp.name,
+      'plan_total_amount', tma.plan_total_amount,
+      'total_paid_amount', tma.total_paid_amount,
+      'pending_amount', tma.pending_amount,
+      'next_payment_date', tma.next_payment_date,
+      'plan_end_date', tma.plan_end_date
+    ) ORDER BY COALESCE(tma.next_payment_date, tma.plan_end_date, CURRENT_DATE) ASC, tma.assigned_at DESC
+  ), '[]'::jsonb)
+  INTO v_pending_trainer_installments
+  FROM trainer_member_assignments tma
+  JOIN members m ON m.id = tma.member_id
+  LEFT JOIN profiles pr ON pr.id = tma.trainer_id
+  LEFT JOIN trainer_plans tp ON tp.id = tma.trainer_plan_id
+  WHERE tma.gym_id = p_gym_id
+    AND tma.is_active = true
+    AND COALESCE(tma.pending_amount, 0) > 0;
+
   -- Build final result
   v_result := jsonb_build_object(
     'payments', v_payments,
     'members_with_dues', v_members_with_dues,
     'expenses_total', v_expenses_total,
-    'payments_with_next_date', v_payments_with_next_date
+    'payments_with_next_date', v_payments_with_next_date,
+    'pending_trainer_installments', v_pending_trainer_installments
   );
 
   RETURN v_result;

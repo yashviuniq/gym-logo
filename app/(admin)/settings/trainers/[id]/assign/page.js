@@ -26,6 +26,27 @@ import {
   X
 } from "lucide-react";
 
+const PAYMENT_MODE_OPTIONS = ["cash", "upi", "card", "bank"];
+
+const roundCurrency = (value) => Math.round((Number(value) || 0) * 100) / 100;
+
+const getDefaultPlanStartDate = (planEndDate) => {
+  const baseDate = new Date();
+  baseDate.setHours(0, 0, 0, 0);
+
+  if (planEndDate) {
+    const endDate = new Date(`${planEndDate}T00:00:00`);
+    endDate.setHours(0, 0, 0, 0);
+
+    if (endDate >= baseDate) {
+      endDate.setDate(endDate.getDate() + 1);
+      return endDate.toISOString().split("T")[0];
+    }
+  }
+
+  return baseDate.toISOString().split("T")[0];
+};
+
 export default function AssignMembersPage({ params }) {
   const router = useRouter();
   const { id } = use(params);
@@ -52,6 +73,7 @@ export default function AssignMembersPage({ params }) {
   const [assignedMemberIds, setAssignedMemberIds] = useState(new Set());
   const [memberTrainerMap, setMemberTrainerMap] = useState({});
   const [existingAssignments, setExistingAssignments] = useState({});
+  const [currentActiveAssignments, setCurrentActiveAssignments] = useState({});
 
   // Per-member configuration
   const [memberConfigs, setMemberConfigs] = useState({});
@@ -153,12 +175,36 @@ export default function AssignMembersPage({ params }) {
       // Fetch ALL active assignments (for other-trainer warnings)
       const { data: allAssignments } = await supabase
         .from("trainer_member_assignments")
-        .select(`member_id, trainer_id, profiles:trainer_id (first_name, last_name)`)
+        .select(`
+          member_id,
+          trainer_id,
+          plan_start_date,
+          plan_end_date,
+          trainer_plan_id,
+          plan_total_amount,
+          total_paid_amount,
+          pending_amount,
+          next_payment_date,
+          profiles:trainer_id (first_name, last_name)
+        `)
         .eq("gym_id", selectedGym.id)
         .eq("is_active", true);
 
       const trainerMap = {};
+      const currentAssignmentMap = {};
       (allAssignments || []).forEach((a) => {
+        currentAssignmentMap[a.member_id] = {
+          trainerId: a.trainer_id,
+          trainerName: `${a.profiles?.first_name || ""} ${a.profiles?.last_name || ""}`.trim() || "Unknown",
+          planStartDate: a.plan_start_date,
+          planEndDate: a.plan_end_date,
+          trainerPlanId: a.trainer_plan_id,
+          planTotalAmount: a.plan_total_amount ? parseFloat(a.plan_total_amount) : 0,
+          totalPaidAmount: a.total_paid_amount ? parseFloat(a.total_paid_amount) : 0,
+          pendingAmount: a.pending_amount ? parseFloat(a.pending_amount) : 0,
+          nextPaymentDate: a.next_payment_date || null,
+        };
+
         if (a.trainer_id !== trainerData.profile_id) {
           const name = `${a.profiles?.first_name || ""} ${a.profiles?.last_name || ""}`.trim() || "Unknown";
           if (!trainerMap[a.member_id]) trainerMap[a.member_id] = [];
@@ -166,6 +212,7 @@ export default function AssignMembersPage({ params }) {
         }
       });
       setMemberTrainerMap(trainerMap);
+      setCurrentActiveAssignments(currentAssignmentMap);
     } catch (err) {
       console.error("Error fetching data:", err);
       showError("Failed to load data");
@@ -240,6 +287,9 @@ export default function AssignMembersPage({ params }) {
     paymentMode: "cash",
     useCustomPrice: false,
     customPrice: "",
+    customStartDate: "",
+    amountReceived: "",
+    nextPaymentDate: "",
     confirmed: false,
   });
 
@@ -375,7 +425,6 @@ export default function AssignMembersPage({ params }) {
 
         // Build assignment data
         const selectedPlan = trainerPlans.find((p) => p.id === config.planId);
-        const now = new Date();
         const assignmentData = {
           gym_id: selectedGym.id,
           trainer_id: trainer.profileId,
@@ -385,11 +434,36 @@ export default function AssignMembersPage({ params }) {
         };
 
         if (selectedPlan) {
+          const planStartDate = config.customStartDate || getDefaultPlanStartDate(currentActiveAssignments[memberId]?.planEndDate);
+          const planTotalAmount = roundCurrency(
+            config.useCustomPrice && config.customPrice
+              ? parseFloat(config.customPrice)
+              : selectedPlan.price
+          );
+          const receivedAmountValue = roundCurrency(config.amountReceived);
+          const pendingAmount = roundCurrency(Math.max(0, planTotalAmount - receivedAmountValue));
+
+          if (receivedAmountValue < 0 || receivedAmountValue > planTotalAmount) {
+            showError(`Amount received must be between ₹0 and ₹${planTotalAmount.toLocaleString("en-IN")}`);
+            setSaving(false);
+            return;
+          }
+
+          if (pendingAmount > 0 && !config.nextPaymentDate) {
+            showError("Please select the next due date for the remaining PT amount");
+            setSaving(false);
+            return;
+          }
+
           assignmentData.trainer_plan_id = selectedPlan.id;
-          assignmentData.plan_start_date = now.toISOString().split("T")[0];
-          const endDate = new Date(now);
+          assignmentData.plan_start_date = planStartDate;
+          const endDate = new Date(`${planStartDate}T00:00:00`);
           endDate.setDate(endDate.getDate() + selectedPlan.duration_days);
           assignmentData.plan_end_date = endDate.toISOString().split("T")[0];
+          assignmentData.plan_total_amount = planTotalAmount;
+          assignmentData.total_paid_amount = receivedAmountValue;
+          assignmentData.pending_amount = pendingAmount;
+          assignmentData.next_payment_date = pendingAmount > 0 ? config.nextPaymentDate : null;
         }
 
         const { data: assignmentResult, error: upsertError } = await supabase
@@ -434,34 +508,38 @@ export default function AssignMembersPage({ params }) {
 
         // Handle payment if plan selected
         if (selectedPlan) {
-          const totalAmount =
-            config.useCustomPrice && config.customPrice
-              ? parseFloat(config.customPrice)
-              : selectedPlan.price;
-          const gymAmount = Math.round((totalAmount / 2) * 100) / 100;
-          const trainerAmount = Math.round((totalAmount - gymAmount) * 100) / 100;
+          const receivedAmountValue = roundCurrency(config.amountReceived);
 
-          await supabase.from("payments").insert({
-            gym_id: selectedGym.id,
-            member_id: memberId,
-            amount: gymAmount,
-            payment_mode: config.paymentMode,
-            status: "paid",
-            paid_at: new Date().toISOString(),
-          });
+          if (receivedAmountValue > 0) {
+            const gymAmount = roundCurrency(receivedAmountValue / 2);
+            const trainerAmount = roundCurrency(receivedAmountValue - gymAmount);
+            const paymentTimestamp = new Date().toISOString();
 
-          await supabase.from("trainer_earnings").insert({
-            gym_id: selectedGym.id,
-            trainer_id: trainer.profileId,
-            member_id: memberId,
-            trainer_plan_id: selectedPlan.id,
-            assignment_id: assignmentResult?.id || null,
-            total_amount: totalAmount,
-            trainer_amount: trainerAmount,
-            gym_amount: gymAmount,
-            payment_mode: config.paymentMode,
-            notes: `Plan: ${selectedPlan.name} (${formatDuration(selectedPlan.duration_days)})`,
-          });
+            await supabase.from("payments").insert({
+              gym_id: selectedGym.id,
+              member_id: memberId,
+              amount: gymAmount,
+              payment_mode: config.paymentMode,
+              status: "paid",
+              paid_at: paymentTimestamp,
+              created_at: paymentTimestamp,
+              notes: `PT installment - ${selectedPlan.name}`,
+            });
+
+            await supabase.from("trainer_earnings").insert({
+              gym_id: selectedGym.id,
+              trainer_id: trainer.profileId,
+              member_id: memberId,
+              trainer_plan_id: selectedPlan.id,
+              assignment_id: assignmentResult?.id || null,
+              total_amount: receivedAmountValue,
+              trainer_amount: trainerAmount,
+              gym_amount: gymAmount,
+              payment_mode: config.paymentMode,
+              notes: `PT installment - ${selectedPlan.name} (${formatDuration(selectedPlan.duration_days)})`,
+              created_at: paymentTimestamp,
+            });
+          }
         }
       }
 
@@ -694,6 +772,7 @@ export default function AssignMembersPage({ params }) {
                       config={getMemberConfig(member.id)}
                       isAssigned={isAssigned}
                       existingAssignment={existingAssignments[member.id]}
+                      currentActiveAssignment={currentActiveAssignments[member.id]}
                       trainerPlans={trainerPlans}
                       plansLoading={plansLoading}
                       trainerAvailableDays={trainerAvailableDays}
@@ -768,6 +847,7 @@ function MemberConfigPanel({
   config,
   isAssigned,
   existingAssignment,
+  currentActiveAssignment,
   trainerPlans,
   plansLoading,
   trainerAvailableDays,
@@ -785,7 +865,23 @@ function MemberConfigPanel({
   trainerId,
 }) {
   const router = useRouter();
-  const { selectedSlots, planId: selectedPlanId, paymentMode, useCustomPrice, customPrice } = config;
+  const {
+    selectedSlots,
+    planId: selectedPlanId,
+    paymentMode,
+    useCustomPrice,
+    customPrice,
+    customStartDate,
+    amountReceived,
+    nextPaymentDate,
+  } = config;
+  const selectedPlan = trainerPlans.find((plan) => plan.id === selectedPlanId);
+  const resolvedStartDate = customStartDate || getDefaultPlanStartDate(currentActiveAssignment?.planEndDate);
+  const planTotalAmount = roundCurrency(
+    useCustomPrice && customPrice ? parseFloat(customPrice) : selectedPlan?.price || 0
+  );
+  const receivedAmountValue = roundCurrency(amountReceived);
+  const pendingAmount = roundCurrency(Math.max(0, planTotalAmount - receivedAmountValue));
 
   // Available slots for active day
   const activeDaySlots = activeDay ? trainerAvailableTimeSlots[activeDay] || [] : [];
@@ -878,7 +974,17 @@ function MemberConfigPanel({
                 return (
                   <div
                     key={plan.id}
-                    onClick={() => onUpdateConfig({ planId: isSelected ? null : plan.id })}
+                    onClick={() => {
+                      const nextSelected = isSelected ? null : plan.id;
+                      onUpdateConfig({
+                        planId: nextSelected,
+                        useCustomPrice: false,
+                        customPrice: nextSelected ? plan.price.toString() : "",
+                        customStartDate: nextSelected ? getDefaultPlanStartDate(currentActiveAssignment?.planEndDate) : "",
+                        amountReceived: nextSelected ? plan.price.toString() : "",
+                        nextPaymentDate: "",
+                      });
+                    }}
                     className={`p-3 rounded-xl border-2 cursor-pointer transition-all ${
                       isSelected
                         ? "border-orange-500 bg-gradient-to-r from-orange-50 to-amber-50 shadow-sm"
@@ -922,6 +1028,28 @@ function MemberConfigPanel({
           {/* Payment Split + Mode (when plan selected) */}
           {selectedPlanId && (
             <div className="mt-3 space-y-3">
+              <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+                <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
+                  <CalendarDays className="w-4 h-4 text-orange-500" />
+                  Start Date
+                </div>
+                <input
+                  type="date"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] outline-none text-sm"
+                  value={resolvedStartDate}
+                  onChange={(e) => onUpdateConfig({ customStartDate: e.target.value })}
+                />
+                {selectedPlan && (
+                  <p className="text-xs text-blue-600">
+                    Validity: {new Date(`${resolvedStartDate}T00:00:00`).toLocaleDateString("en-IN")} to {(() => {
+                      const endDate = new Date(`${resolvedStartDate}T00:00:00`);
+                      endDate.setDate(endDate.getDate() + selectedPlan.duration_days);
+                      return endDate.toLocaleDateString("en-IN");
+                    })()}
+                  </p>
+                )}
+              </div>
+
               {/* Custom Price Toggle */}
               <div className="bg-gray-50 rounded-xl p-3 space-y-2">
                 <div className="flex items-center justify-between">
@@ -966,41 +1094,63 @@ function MemberConfigPanel({
                 )}
               </div>
 
+              <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+                <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
+                  <Tag className="w-4 h-4 text-green-600" />
+                  Amount Received
+                </div>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9]*\.?[0-9]*"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] outline-none text-sm"
+                  placeholder="Enter amount received"
+                  value={amountReceived}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                      onUpdateConfig({ amountReceived: value });
+                    }
+                  }}
+                />
+                <p className="text-xs text-gray-500">Plan amount: ₹{planTotalAmount.toLocaleString("en-IN")}</p>
+              </div>
+
+              {pendingAmount > 0 && (
+                <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
+                    <CalendarDays className="w-4 h-4 text-blue-600" />
+                    Next Due Date
+                  </div>
+                  <input
+                    type="date"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] outline-none text-sm"
+                    value={nextPaymentDate}
+                    onChange={(e) => onUpdateConfig({ nextPaymentDate: e.target.value })}
+                    min={resolvedStartDate}
+                  />
+                </div>
+              )}
+
               {/* Payment Split */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-3">
-                <p className="text-xs font-semibold text-blue-800 mb-2">Payment Split:</p>
-                {(() => {
-                  const plan = trainerPlans.find((p) => p.id === selectedPlanId);
-                  if (!plan) return null;
-                  const effectivePrice =
-                    useCustomPrice && customPrice ? parseFloat(customPrice) : plan.price;
-                  const gymAmt = Math.round((effectivePrice / 2) * 100) / 100;
-                  const trainerAmt = Math.round((effectivePrice - gymAmt) * 100) / 100;
-                  return (
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1 bg-white rounded-lg p-2 text-center border border-blue-100">
-                        <p className="text-[10px] text-gray-500 uppercase">Gym</p>
-                        <p className="text-sm font-bold text-blue-700">
-                          ₹{gymAmt.toLocaleString("en-IN")}
-                        </p>
-                      </div>
-                      <div className="text-gray-400 text-xs">+</div>
-                      <div className="flex-1 bg-white rounded-lg p-2 text-center border border-orange-100">
-                        <p className="text-[10px] text-gray-500 uppercase">Trainer</p>
-                        <p className="text-sm font-bold text-orange-700">
-                          ₹{trainerAmt.toLocaleString("en-IN")}
-                        </p>
-                      </div>
-                      <div className="text-gray-400 text-xs">=</div>
-                      <div className="flex-1 bg-white rounded-lg p-2 text-center border border-green-100">
-                        <p className="text-[10px] text-gray-500 uppercase">Total</p>
-                        <p className="text-sm font-bold text-green-700">
-                          ₹{effectivePrice.toLocaleString("en-IN")}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })()}
+                <p className="text-xs font-semibold text-blue-800 mb-2">Payment Summary:</p>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 bg-white rounded-lg p-2 text-center border border-blue-100">
+                    <p className="text-[10px] text-gray-500 uppercase">Collected</p>
+                    <p className="text-sm font-bold text-blue-700">₹{receivedAmountValue.toLocaleString("en-IN")}</p>
+                  </div>
+                  <div className="text-gray-400 text-xs">+</div>
+                  <div className="flex-1 bg-white rounded-lg p-2 text-center border border-orange-100">
+                    <p className="text-[10px] text-gray-500 uppercase">Remaining</p>
+                    <p className="text-sm font-bold text-orange-700">₹{pendingAmount.toLocaleString("en-IN")}</p>
+                  </div>
+                  <div className="text-gray-400 text-xs">=</div>
+                  <div className="flex-1 bg-white rounded-lg p-2 text-center border border-green-100">
+                    <p className="text-[10px] text-gray-500 uppercase">Contract</p>
+                    <p className="text-sm font-bold text-green-700">₹{planTotalAmount.toLocaleString("en-IN")}</p>
+                  </div>
+                </div>
               </div>
 
               {/* Payment Mode */}
@@ -1009,7 +1159,7 @@ function MemberConfigPanel({
                   Payment Mode
                 </label>
                 <div className="flex gap-2">
-                  {["cash", "upi", "card", "bank"].map((mode) => (
+                  {PAYMENT_MODE_OPTIONS.map((mode) => (
                     <button
                       key={mode}
                       type="button"

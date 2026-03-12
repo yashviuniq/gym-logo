@@ -10,6 +10,36 @@ const preventScrollChange = (e) => {
   e.currentTarget.blur();
 };
 
+const getDefaultStartDate = (validTill) => {
+    let currentEndDate;
+
+    if (validTill && validTill !== "N/A") {
+        const parts = validTill.split('/');
+        if (parts.length === 3) {
+            const day = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10) - 1;
+            const year = parseInt(parts[2], 10);
+            currentEndDate = new Date(year, month, day);
+        } else {
+            currentEndDate = new Date();
+        }
+    } else {
+        currentEndDate = new Date();
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    currentEndDate.setHours(0, 0, 0, 0);
+
+    if (currentEndDate < today) {
+        return today.toISOString().split("T")[0];
+    }
+
+    const startDate = new Date(currentEndDate);
+    startDate.setDate(startDate.getDate() + 1);
+    return startDate.toISOString().split("T")[0];
+};
+
 export default function RenewMembershipModal({ member, gymId, gymData, onClose, onRenew }) {
     const [membershipPlans, setMembershipPlans] = useState([]);
     const [selectedPlan, setSelectedPlan] = useState(null);
@@ -21,6 +51,7 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
     const [loading, setLoading] = useState(false);
     const [loadingPlans, setLoadingPlans] = useState(true);
     const [customStartDate, setCustomStartDate] = useState("");
+    const [nextPaymentDate, setNextPaymentDate] = useState("");
 
     // Fetch membership plans from database
     useEffect(() => {
@@ -54,49 +85,23 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
         fetchPlans();
     }, [gymId, member.gymId]);
 
-    // Auto-compute default start date based on member's current membership
-    useEffect(() => {
-        if (customStartDate) return; // Don't overwrite if user already set a date
-        let currentEndDate;
-        if (member.validTill && member.validTill !== "N/A") {
-            const parts = member.validTill.split('/');
-            if (parts.length === 3) {
-                const day = parseInt(parts[0], 10);
-                const month = parseInt(parts[1], 10) - 1;
-                const year = parseInt(parts[2], 10);
-                currentEndDate = new Date(year, month, day);
-            } else {
-                currentEndDate = new Date();
-            }
-        } else {
-            currentEndDate = new Date();
-        }
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        currentEndDate.setHours(0, 0, 0, 0);
-        let startDate;
-        if (currentEndDate < today) {
-            startDate = today;
-        } else {
-            startDate = new Date(currentEndDate);
-            startDate.setDate(startDate.getDate() + 1);
-        }
-        setCustomStartDate(startDate.toISOString().split("T")[0]);
-    }, [member.validTill]);
-
     const plan = membershipPlans.find((p) => p.id === selectedPlan);
+    const defaultStartDate = getDefaultStartDate(member.validTill);
     const finalPrice = useCustomPrice && customPrice ? parseFloat(customPrice) : plan?.price || 0;
+    const paymentAmountNum = parseFloat(paymentAmount) || 0;
+    const dueForMembership = Math.max(0, finalPrice - paymentAmountNum);
 
     const calculateNewEndDate = () => {
-        if (!plan || !plan.duration_days || !customStartDate) return null;
-        const startDate = new Date(customStartDate + 'T00:00:00');
+        const startDateValue = getStartDate();
+        if (!plan || !plan.duration_days || !startDateValue) return null;
+        const startDate = new Date(startDateValue + 'T00:00:00');
         const newEndDate = new Date(startDate);
         newEndDate.setDate(newEndDate.getDate() + plan.duration_days);
         return newEndDate.toISOString().split("T")[0];
     };
 
     const getStartDate = () => {
-        return customStartDate;
+        return customStartDate || defaultStartDate;
     };
 
     const handleSubmit = async (e) => {
@@ -107,9 +112,20 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
             const targetGymId = gymId || member.gymId;
             const newEndDate = calculateNewEndDate();
             const startDate = getStartDate();
+
+            if (!startDate || !newEndDate) {
+                alert("Please select a valid renewal start date and plan.");
+                setLoading(false);
+                return;
+            }
+
             const renewalEventTimestamp = new Date(startDate + 'T00:00:00').toISOString();
-            const paymentAmountNum = parseFloat(paymentAmount) || 0;
-            const dueForMembership = Math.max(0, finalPrice - paymentAmountNum);
+
+            if (dueForMembership > 0 && !nextPaymentDate) {
+                alert("Please select the next payment date for the pending amount.");
+                setLoading(false);
+                return;
+            }
 
             // 1. Create new membership record
             const membershipInsert = {
@@ -215,8 +231,30 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
                 }
             }
 
+            if (dueForMembership > 0) {
+                const { error: pendingPaymentError } = await supabase
+                    .from("payments")
+                    .insert({
+                        gym_id: targetGymId,
+                        member_id: member.id,
+                        membership_id: membership.id,
+                        amount: dueForMembership,
+                        payment_mode: paymentMode,
+                        status: "pending",
+                        next_payment_date: nextPaymentDate,
+                        remaining_amount: dueForMembership,
+                        notes: notes || null,
+                        created_at: renewalEventTimestamp,
+                    });
+
+                if (pendingPaymentError) {
+                    console.error("Error creating pending payment:", pendingPaymentError);
+                    alert("Membership renewed, but failed to save next payment date.");
+                }
+            }
+
             // 4. Update member balance (add due amount if partial payment)
-            const dueAmount = finalPrice - paymentAmountNum;
+            const dueAmount = dueForMembership;
             const currentBalance = member.balance || member.dueAmount || 0;
             const newBalance = currentBalance + dueAmount;
 
@@ -234,6 +272,7 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
                 paymentAmount: paymentAmountNum,
                 paymentMode,
                 notes,
+                nextPaymentDate: dueForMembership > 0 ? nextPaymentDate : null,
                 newEndDate,
                 renewedAt: renewalEventTimestamp,
             };
@@ -368,7 +407,7 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
                             <input
                                 type="date"
                                 className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] outline-none text-sm"
-                                value={customStartDate}
+                                value={getStartDate()}
                                 onChange={(e) => setCustomStartDate(e.target.value)}
                             />
                         </div>
@@ -434,10 +473,29 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
                                
                                 {paymentAmount && parseFloat(paymentAmount) < finalPrice && (
                                     <p className="text-sm text-orange-500 mt-1">
-                                        Due amount: ₹{finalPrice - parseFloat(paymentAmount)}
+                                        Due amount: ₹{dueForMembership}
                                     </p>
                                 )}
                             </div>
+
+                            {dueForMembership > 0 && (
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Next Payment Date *
+                                    </label>
+                                    <input
+                                        type="date"
+                                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] outline-none text-sm"
+                                        value={nextPaymentDate}
+                                        onChange={(e) => setNextPaymentDate(e.target.value)}
+                                        min={getStartDate() || new Date().toISOString().split("T")[0]}
+                                        required={dueForMembership > 0}
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Schedule when the remaining ₹{dueForMembership} should be collected.
+                                    </p>
+                                </div>
+                            )}
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -490,7 +548,7 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-gray-600">Current Due:</span>
-                                    <span className="font-medium text-orange-600">₹{finalPrice - parseFloat(paymentAmount)}</span>
+                                    <span className="font-medium text-orange-600">₹{dueForMembership}</span>
                                 </div>
                                 {(member.dueAmount > 0 || member.balance > 0) && (
                                     <div className="flex justify-between">
@@ -500,11 +558,11 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
                                 )}
                                 <div className="flex justify-between pt-2 border-t border-green-200">
                                     <span className="font-semibold text-gray-900">Total Balance:</span>
-                                    <span className={`font-bold ${(finalPrice - parseFloat(paymentAmount) + (member.dueAmount || member.balance || 0)) > 0
+                                    <span className={`font-bold ${(dueForMembership + (member.dueAmount || member.balance || 0)) > 0
                                             ? "text-red-600"
                                             : "text-green-600"
                                         }`}>
-                                        ₹{finalPrice - parseFloat(paymentAmount) + (member.dueAmount || member.balance || 0)}
+                                        ₹{dueForMembership + (member.dueAmount || member.balance || 0)}
                                     </span>
                                 </div>
                             </div>

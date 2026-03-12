@@ -476,7 +476,7 @@ export default function TrainerAttendanceQuickPage() {
                       </div>
                       <button
                         onClick={() => router.push(`/settings/trainers/${selectedTrainer.gymTrainerId}?tab=attendance`)}
-                        className="text-sm font-medium text-violet-700 bg-violet-50 px-3 py-2 rounded-lg hover:bg-violet-100"
+                        className="w-full sm:w-auto text-sm font-medium text-violet-700 bg-violet-50 px-3 py-2 rounded-lg hover:bg-violet-100"
                       >
                         Open Full Trainer Page
                       </button>
@@ -487,7 +487,7 @@ export default function TrainerAttendanceQuickPage() {
                     ) : (
                       <div className="space-y-2 max-h-112 overflow-y-auto pr-1">
                         {visibleDays.map((day) => (
-                          <div key={day.attendance_date} className="rounded-xl border border-gray-100 px-3 py-3 space-y-3">
+                          <div key={day.attendance_date} className="rounded-xl border border-gray-100 px-3 py-3 sm:px-4 space-y-3">
                             <div className="flex items-start justify-between gap-3 flex-wrap">
                               <div>
                                 <p className="font-medium text-gray-900">
@@ -520,12 +520,12 @@ export default function TrainerAttendanceQuickPage() {
                                 };
                                 const existingSession = (day.sessions || []).find((item) => item.session_number === session.sessionNumber);
                                 return (
-                                  <div key={session.sessionNumber} className="rounded-xl border border-gray-200 bg-gray-50 p-3 space-y-3">
+                                  <div key={session.sessionNumber} className="rounded-xl border border-gray-200 bg-gray-50 p-3 sm:p-4 space-y-3">
                                     <div className="flex items-center justify-between gap-2">
                                       <p className="text-sm font-semibold text-gray-900">{session.label}</p>
                                       <span className="text-xs text-gray-500">{existingSession?.worked_minutes ? formatHoursLabel(existingSession.worked_minutes) : "0 hrs"}</span>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                       <AttendanceTimePicker
                                         label="Check In"
                                         parts={draft.checkInParts}
@@ -546,12 +546,12 @@ export default function TrainerAttendanceQuickPage() {
                               })}
                             </div>
 
-                            <div className="flex items-center justify-end gap-2">
+                            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2">
                               <button
                                 type="button"
                                 onClick={() => resetAttendanceDay(day)}
                                 disabled={attendanceSaving}
-                                className="px-3 py-2 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+                                className="w-full sm:w-auto px-3 py-2 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-60"
                               >
                                 Reset
                               </button>
@@ -559,7 +559,7 @@ export default function TrainerAttendanceQuickPage() {
                                 type="button"
                                 onClick={() => saveAttendanceDay(day)}
                                 disabled={attendanceSaving}
-                                className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-3 py-2 text-xs font-medium text-white hover:bg-violet-700 disabled:opacity-60"
+                                className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-lg bg-violet-600 px-3 py-2 text-xs font-medium text-white hover:bg-violet-700 disabled:opacity-60"
                               >
                                 <Save className="w-3.5 h-3.5" />
                                 Save Day

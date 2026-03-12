@@ -11,6 +11,27 @@ import {
 import { useToast } from "@/contexts/ToastContext";
 import { DAYS_OF_WEEK } from "@/lib/constants/trainerSchedule";
 
+const PAYMENT_MODE_OPTIONS = ["cash", "upi", "card", "bank"];
+
+const roundCurrency = (value) => Math.round((Number(value) || 0) * 100) / 100;
+
+const getDefaultPlanStartDate = (planEndDate) => {
+  const baseDate = new Date();
+  baseDate.setHours(0, 0, 0, 0);
+
+  if (planEndDate) {
+    const endDate = new Date(`${planEndDate}T00:00:00`);
+    endDate.setHours(0, 0, 0, 0);
+
+    if (endDate >= baseDate) {
+      endDate.setDate(endDate.getDate() + 1);
+      return endDate.toISOString().split("T")[0];
+    }
+  }
+
+  return baseDate.toISOString().split("T")[0];
+};
+
 export default function AssignTrainerModal({ isOpen, onClose, memberId, selectedGym, onSuccess, currentTrainerId }) {
   const router = useRouter();
   const [trainers, setTrainers] = useState([]);
@@ -34,6 +55,8 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
   const [useCustomPrice, setUseCustomPrice] = useState(false);
   const [customPrice, setCustomPrice] = useState("");
   const [customStartDate, setCustomStartDate] = useState("");
+  const [amountReceived, setAmountReceived] = useState("");
+  const [nextPaymentDate, setNextPaymentDate] = useState("");
 
   // Current booking info for the member (if already booked with a trainer)
   const [currentBooking, setCurrentBooking] = useState(null);
@@ -55,6 +78,8 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
       setUseCustomPrice(false);
       setCustomPrice("");
       setCustomStartDate("");
+      setAmountReceived("");
+      setNextPaymentDate("");
     }
   }, [isOpen, selectedGym?.id, currentTrainerId]);
 
@@ -87,25 +112,6 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
       setCustomStartDate("");
     }
   }, [selectedTrainerId, selectedGym?.id]);
-
-  useEffect(() => {
-    if (!selectedPlanId || customStartDate) return;
-
-    let baseDate = new Date();
-    baseDate.setHours(0, 0, 0, 0);
-
-    if (currentAssignment?.planEndDate) {
-      const currentEndDate = new Date(currentAssignment.planEndDate);
-      currentEndDate.setHours(0, 0, 0, 0);
-
-      if (currentEndDate >= baseDate) {
-        baseDate = new Date(currentEndDate);
-        baseDate.setDate(baseDate.getDate() + 1);
-      }
-    }
-
-    setCustomStartDate(baseDate.toISOString().split("T")[0]);
-  }, [selectedPlanId, currentAssignment?.planEndDate, customStartDate]);
 
   const calculatePlanEndDate = useCallback(() => {
     const selectedPlan = trainerPlans.find((plan) => plan.id === selectedPlanId);
@@ -190,6 +196,10 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
           trainer_plan_id,
           plan_start_date,
           plan_end_date,
+          plan_total_amount,
+          total_paid_amount,
+          pending_amount,
+          next_payment_date,
           trainer_plans:trainer_plan_id (
             id,
             name,
@@ -203,21 +213,21 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
         .maybeSingle();
 
       if (!assignError && assignData) {
-        // Also fetch paid amount from trainer_earnings
-        let paidAmount = null;
-        if (assignData.id) {
-          const { data: earningsData } = await supabase
-            .from("trainer_earnings")
-            .select("total_amount")
-            .eq("assignment_id", assignData.id)
-            .maybeSingle();
-          if (earningsData) paidAmount = parseFloat(earningsData.total_amount);
-        }
-
         const planEndDate = assignData.plan_end_date ? new Date(assignData.plan_end_date) : null;
         const daysRemaining = planEndDate ? Math.ceil((planEndDate - new Date()) / (1000 * 60 * 60 * 24)) : null;
 
+        const planTotalAmount = assignData.plan_total_amount != null
+          ? parseFloat(assignData.plan_total_amount)
+          : (assignData.trainer_plans?.price ? parseFloat(assignData.trainer_plans.price) : 0);
+        const totalPaidAmount = assignData.total_paid_amount != null
+          ? parseFloat(assignData.total_paid_amount)
+          : 0;
+        const pendingAmount = assignData.pending_amount != null
+          ? parseFloat(assignData.pending_amount)
+          : Math.max(0, planTotalAmount - totalPaidAmount);
+
         setCurrentAssignment({
+          assignmentId: assignData.id,
           trainerId: assignData.trainer_id,
           planId: assignData.trainer_plan_id,
           planName: assignData.trainer_plans?.name || null,
@@ -226,8 +236,16 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
           planStartDate: assignData.plan_start_date,
           planEndDate: assignData.plan_end_date,
           daysRemaining,
-          paidAmount,
+          planTotalAmount,
+          totalPaidAmount,
+          pendingAmount,
+          nextPaymentDate: assignData.next_payment_date || "",
         });
+
+        if (assignData.trainer_id === currentTrainerId) {
+          setNextPaymentDate(assignData.next_payment_date || "");
+          setAmountReceived("");
+        }
       } else {
         setCurrentAssignment(null);
       }
@@ -306,6 +324,121 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
     return t?.gymTrainerId;
   };
 
+  const recordPtInstallment = async ({
+    assignmentId,
+    trainerId,
+    trainerPlanId,
+    installmentAmount,
+    planName,
+  }) => {
+    if (!installmentAmount || installmentAmount <= 0) return;
+
+    const totalAmount = roundCurrency(installmentAmount);
+    const gymAmount = roundCurrency(totalAmount / 2);
+    const trainerAmount = roundCurrency(totalAmount - gymAmount);
+    const paymentTimestamp = new Date().toISOString();
+
+    const { error: paymentError } = await supabase.from("payments").insert({
+      gym_id: selectedGym.id,
+      member_id: memberId,
+      amount: gymAmount,
+      payment_mode: paymentMode,
+      status: "paid",
+      paid_at: paymentTimestamp,
+      created_at: paymentTimestamp,
+      notes: `PT installment${planName ? ` - ${planName}` : ""}`,
+    });
+
+    if (paymentError) throw paymentError;
+
+    const { error: earningsError } = await supabase.from("trainer_earnings").insert({
+      gym_id: selectedGym.id,
+      trainer_id: trainerId,
+      member_id: memberId,
+      trainer_plan_id: trainerPlanId || null,
+      assignment_id: assignmentId,
+      total_amount: totalAmount,
+      trainer_amount: trainerAmount,
+      gym_amount: gymAmount,
+      payment_mode: paymentMode,
+      notes: `PT installment${planName ? ` - ${planName}` : ""}`,
+      created_at: paymentTimestamp,
+    });
+
+    if (earningsError) throw earningsError;
+  };
+
+  const handleRecordInstallment = async () => {
+    if (!currentAssignment?.assignmentId || !selectedGym?.id || !selectedTrainerId) return;
+
+    const planTotalAmount = roundCurrency(currentAssignment.planTotalAmount || currentAssignment.planPrice || 0);
+    const currentPaidAmount = roundCurrency(currentAssignment.totalPaidAmount || 0);
+    const outstandingBeforePayment = roundCurrency(
+      currentAssignment.pendingAmount != null
+        ? currentAssignment.pendingAmount
+        : Math.max(0, planTotalAmount - currentPaidAmount)
+    );
+    const receivedAmountValue = roundCurrency(amountReceived);
+
+    if (outstandingBeforePayment <= 0) {
+      showError("This PT plan is already fully paid");
+      return;
+    }
+
+    if (receivedAmountValue <= 0) {
+      showError("Enter the installment amount received");
+      return;
+    }
+
+    if (receivedAmountValue > outstandingBeforePayment) {
+      showError(`Amount cannot exceed pending PT due of ₹${outstandingBeforePayment.toLocaleString("en-IN")}`);
+      return;
+    }
+
+    const remainingAmount = roundCurrency(outstandingBeforePayment - receivedAmountValue);
+    const resolvedNextPaymentDate = remainingAmount > 0 ? nextPaymentDate : null;
+
+    if (remainingAmount > 0 && !resolvedNextPaymentDate) {
+      showError("Select the next due date for the remaining PT amount");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error: assignmentError } = await supabase
+        .from("trainer_member_assignments")
+        .update({
+          total_paid_amount: roundCurrency(currentPaidAmount + receivedAmountValue),
+          pending_amount: remainingAmount,
+          next_payment_date: resolvedNextPaymentDate,
+        })
+        .eq("id", currentAssignment.assignmentId);
+
+      if (assignmentError) throw assignmentError;
+
+      await recordPtInstallment({
+        assignmentId: currentAssignment.assignmentId,
+        trainerId: selectedTrainerId,
+        trainerPlanId: currentAssignment.planId,
+        installmentAmount: receivedAmountValue,
+        planName: currentAssignment.planName,
+      });
+
+      showSuccess(
+        remainingAmount > 0
+          ? `PT installment recorded. Remaining due: ₹${remainingAmount.toLocaleString("en-IN")}`
+          : "PT plan fully paid"
+      );
+      onSuccess?.();
+      onClose();
+    } catch (err) {
+      console.error("Error recording PT installment:", err);
+      showError("Failed to record PT installment");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!selectedTrainerId || !memberId || !selectedGym?.id) return;
 
@@ -339,7 +472,6 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
 
       // 2. Build assignment data with plan info
       const selectedPlan = trainerPlans.find((p) => p.id === selectedPlanId);
-      const now = new Date();
       const assignmentData = {
         gym_id: selectedGym.id,
         trainer_id: selectedTrainerId,
@@ -356,9 +488,29 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
           return;
         }
 
+        const planTotalAmount = roundCurrency(useCustomPrice && customPrice ? parseFloat(customPrice) : selectedPlan.price);
+        const receivedAmountValue = roundCurrency(amountReceived);
+        const pendingAmount = roundCurrency(Math.max(0, planTotalAmount - receivedAmountValue));
+
+        if (receivedAmountValue < 0 || receivedAmountValue > planTotalAmount) {
+          showError(`Amount received must be between ₹0 and ₹${planTotalAmount.toLocaleString("en-IN")}`);
+          setLoading(false);
+          return;
+        }
+
+        if (pendingAmount > 0 && !nextPaymentDate) {
+          showError("Please select the next due date for the remaining PT amount");
+          setLoading(false);
+          return;
+        }
+
         assignmentData.trainer_plan_id = selectedPlan.id;
         assignmentData.plan_start_date = customStartDate;
         assignmentData.plan_end_date = calculatePlanEndDate();
+        assignmentData.plan_total_amount = planTotalAmount;
+        assignmentData.total_paid_amount = receivedAmountValue;
+        assignmentData.pending_amount = pendingAmount;
+        assignmentData.next_payment_date = pendingAmount > 0 ? nextPaymentDate : null;
       }
 
       // Upsert the trainer-member assignment
@@ -422,39 +574,27 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
 
       // 4. Handle payment split if a plan was selected (50% gym, 50% trainer)
       if (selectedPlan) {
-        const totalAmount = useCustomPrice && customPrice ? parseFloat(customPrice) : selectedPlan.price;
-        const gymAmount = Math.round((totalAmount / 2) * 100) / 100;
-        const trainerAmount = Math.round((totalAmount - gymAmount) * 100) / 100;
+        const receivedAmountValue = roundCurrency(amountReceived);
 
-        // Insert into payments (gym's share goes to finance)
-        await supabase.from("payments").insert({
-          gym_id: selectedGym.id,
-          member_id: memberId,
-          amount: gymAmount,
-          payment_mode: paymentMode,
-          status: "paid",
-          paid_at: new Date().toISOString(),
-        });
-
-        // Insert trainer earnings record
-        await supabase.from("trainer_earnings").insert({
-          gym_id: selectedGym.id,
-          trainer_id: selectedTrainerId,
-          member_id: memberId,
-          trainer_plan_id: selectedPlan.id,
-          assignment_id: assignmentResult?.id || null,
-          total_amount: totalAmount,
-          trainer_amount: trainerAmount,
-          gym_amount: gymAmount,
-          payment_mode: paymentMode,
-          notes: `Plan: ${selectedPlan.name} (${formatDuration(selectedPlan.duration_days)})`,
-        });
+        if (receivedAmountValue > 0) {
+          await recordPtInstallment({
+            assignmentId: assignmentResult?.id || null,
+            trainerId: selectedTrainerId,
+            trainerPlanId: selectedPlan.id,
+            installmentAmount: receivedAmountValue,
+            planName: selectedPlan.name,
+          });
+        }
       }
 
-      const displayAmount = useCustomPrice && customPrice ? parseFloat(customPrice) : selectedPlan?.price;
+      const displayAmount = roundCurrency(useCustomPrice && customPrice ? parseFloat(customPrice) : selectedPlan?.price);
+      const receivedAmountValue = roundCurrency(amountReceived);
+      const pendingAmount = selectedPlan ? roundCurrency(Math.max(0, displayAmount - receivedAmountValue)) : 0;
       showSuccess(
         selectedPlan
-          ? `Trainer assigned with ${selectedPlan.name} plan (₹${displayAmount.toLocaleString("en-IN")})`
+          ? pendingAmount > 0
+            ? `Trainer assigned. PT paid: ₹${receivedAmountValue.toLocaleString("en-IN")}, due: ₹${pendingAmount.toLocaleString("en-IN")}`
+            : `Trainer assigned with ${selectedPlan.name} plan (₹${displayAmount.toLocaleString("en-IN")})`
           : "Trainer assigned successfully!"
       );
       onSuccess?.();
@@ -568,6 +708,33 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
 
   const selectedTrainer = trainers.find((t) => t.id === selectedTrainerId);
   const currentTrainer = trainers.find((t) => t.id === currentTrainerId);
+  const selectedPlan = trainerPlans.find((plan) => plan.id === selectedPlanId);
+  const isCurrentAssignmentSelected = Boolean(
+    currentAssignment?.planId &&
+    currentAssignment?.trainerId === selectedTrainerId &&
+    currentTrainerId === selectedTrainerId
+  );
+  const ptPlanName = isCurrentAssignmentSelected ? currentAssignment.planName : selectedPlan?.name;
+  const ptPlanDuration = isCurrentAssignmentSelected ? currentAssignment.planDuration : selectedPlan?.duration_days;
+  const ptPlanTotalAmount = roundCurrency(
+    isCurrentAssignmentSelected
+      ? currentAssignment.planTotalAmount || currentAssignment.planPrice || 0
+      : (useCustomPrice && customPrice ? parseFloat(customPrice) : selectedPlan?.price || 0)
+  );
+  const ptPaidAmount = roundCurrency(
+    isCurrentAssignmentSelected
+      ? currentAssignment.totalPaidAmount || 0
+      : 0
+  );
+  const ptOutstandingBeforePayment = roundCurrency(
+    isCurrentAssignmentSelected
+      ? (currentAssignment.pendingAmount != null
+          ? currentAssignment.pendingAmount
+          : Math.max(0, ptPlanTotalAmount - ptPaidAmount))
+      : ptPlanTotalAmount
+  );
+  const ptReceivedAmount = roundCurrency(amountReceived);
+  const ptOutstandingAfterPayment = roundCurrency(Math.max(0, ptOutstandingBeforePayment - ptReceivedAmount));
 
   // Get available slots for selected trainer
   const trainerDays = selectedTrainer?.availableDays || [];
@@ -825,12 +992,116 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
                           </p>
                         </div>
                         <div className="text-right flex-shrink-0">
-                          <p className="text-base font-bold text-gray-900">
-                            ₹{(currentAssignment.paidAmount || currentAssignment.planPrice || 0).toLocaleString("en-IN")}
-                          </p>
-                          <p className="text-[10px] text-green-600 font-medium">Paid</p>
+                            <p className="text-base font-bold text-gray-900">
+                              ₹{Number(currentAssignment.planTotalAmount || currentAssignment.planPrice || 0).toLocaleString("en-IN")}
+                            </p>
+                            <p className="text-[10px] text-gray-500 font-medium">Plan total</p>
                         </div>
                       </div>
+                        <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                          <div className="rounded-lg border border-green-100 bg-white p-2">
+                            <p className="text-[10px] uppercase tracking-wide text-gray-500">Paid</p>
+                            <p className="mt-1 text-sm font-bold text-green-700">₹{Number(currentAssignment.totalPaidAmount || 0).toLocaleString("en-IN")}</p>
+                          </div>
+                          <div className="rounded-lg border border-amber-100 bg-white p-2">
+                            <p className="text-[10px] uppercase tracking-wide text-gray-500">Due</p>
+                            <p className="mt-1 text-sm font-bold text-amber-700">₹{Number(currentAssignment.pendingAmount || 0).toLocaleString("en-IN")}</p>
+                          </div>
+                          <div className="rounded-lg border border-blue-100 bg-white p-2">
+                            <p className="text-[10px] uppercase tracking-wide text-gray-500">Next Due</p>
+                            <p className="mt-1 text-xs font-bold text-blue-700">
+                              {currentAssignment.nextPaymentDate
+                                ? new Date(`${currentAssignment.nextPaymentDate}T00:00:00`).toLocaleDateString("en-IN")
+                                : "Cleared"}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="mt-3 space-y-3 border-t border-green-200 pt-3">
+                          <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+                            <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
+                              <IndianRupee className="w-4 h-4 text-green-600" />
+                              Record Installment
+                            </div>
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              pattern="[0-9]*\.?[0-9]*"
+                              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] outline-none text-sm"
+                              placeholder="Enter amount received"
+                              value={amountReceived}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                                  setAmountReceived(value);
+                                }
+                              }}
+                            />
+                            <p className="text-xs text-gray-500">
+                              Pending PT due: ₹{ptOutstandingBeforePayment.toLocaleString("en-IN")}
+                            </p>
+                          </div>
+
+                          {ptOutstandingAfterPayment > 0 && (
+                            <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+                              <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
+                                <CalendarDays className="w-4 h-4 text-blue-600" />
+                                Next Due Date
+                              </div>
+                              <input
+                                type="date"
+                                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] outline-none text-sm"
+                                value={nextPaymentDate}
+                                onChange={(e) => setNextPaymentDate(e.target.value)}
+                                min={new Date().toISOString().split("T")[0]}
+                              />
+                            </div>
+                          )}
+
+                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-3">
+                            <p className="text-xs font-semibold text-blue-800 mb-2">Installment Summary:</p>
+                            <div className="flex items-center gap-3">
+                              <div className="flex-1 bg-white rounded-lg p-2 text-center border border-blue-100">
+                                <p className="text-[10px] text-gray-500 uppercase">Collected</p>
+                                <p className="text-sm font-bold text-blue-700">₹{ptReceivedAmount.toLocaleString("en-IN")}</p>
+                              </div>
+                              <div className="text-gray-400 text-xs">+</div>
+                              <div className="flex-1 bg-white rounded-lg p-2 text-center border border-orange-100">
+                                <p className="text-[10px] text-gray-500 uppercase">Remaining</p>
+                                <p className="text-sm font-bold text-orange-700">₹{ptOutstandingAfterPayment.toLocaleString("en-IN")}</p>
+                              </div>
+                              <div className="text-gray-400 text-xs">=</div>
+                              <div className="flex-1 bg-white rounded-lg p-2 text-center border border-green-100">
+                                <p className="text-[10px] text-gray-500 uppercase">Contract</p>
+                                <p className="text-sm font-bold text-green-700">₹{ptPlanTotalAmount.toLocaleString("en-IN")}</p>
+                              </div>
+                            </div>
+                            {ptPlanDuration ? (
+                              <p className="mt-2 text-[11px] text-blue-700">
+                                {ptPlanName} • {formatDuration(ptPlanDuration)}
+                              </p>
+                            ) : null}
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1.5">Payment Mode</label>
+                            <div className="flex gap-2">
+                              {PAYMENT_MODE_OPTIONS.map((mode) => (
+                                <button
+                                  key={mode}
+                                  type="button"
+                                  onClick={() => setPaymentMode(mode)}
+                                  className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all border ${
+                                    paymentMode === mode
+                                      ? "border-blue-500 bg-blue-50 text-blue-700"
+                                      : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                                  }`}
+                                >
+                                  {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
                     </div>
                   </div>
                 ) : (
@@ -888,7 +1159,15 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
                       return (
                         <div
                           key={plan.id}
-                          onClick={() => setSelectedPlanId(isSelected ? null : plan.id)}
+                          onClick={() => {
+                            const nextSelected = isSelected ? null : plan.id;
+                            setSelectedPlanId(nextSelected);
+                            setUseCustomPrice(false);
+                            setCustomPrice(nextSelected ? plan.price.toString() : "");
+                            setCustomStartDate(nextSelected ? getDefaultPlanStartDate(currentAssignment?.planEndDate) : "");
+                            setAmountReceived(nextSelected ? plan.price.toString() : "");
+                            setNextPaymentDate("");
+                          }}
                           className={`p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
                             isSelected
                               ? "border-orange-500 bg-gradient-to-r from-orange-50 to-amber-50 shadow-sm"
@@ -933,6 +1212,7 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
                 {selectedPlanId && (
                   <div className="mt-3 space-y-3">
                     {/* Start Date */}
+                    {!isCurrentAssignmentSelected && (
                     <div className="bg-gray-50 rounded-xl p-3 space-y-2">
                       <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
                         <CalendarDays className="w-4 h-4 text-orange-500" />
@@ -950,8 +1230,10 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
                         </p>
                       )}
                     </div>
+                    )}
 
                     {/* Custom Price Toggle */}
+                    {!isCurrentAssignmentSelected && (
                     <div className="bg-gray-50 rounded-xl p-3 space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="font-medium text-gray-900 text-sm">Custom Price</span>
@@ -986,42 +1268,85 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
                         />
                       )}
                     </div>
+                    )}
+
+                    <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+                      <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
+                        <IndianRupee className="w-4 h-4 text-green-600" />
+                        {isCurrentAssignmentSelected ? "Record Installment" : "Amount Received"}
+                      </div>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        pattern="[0-9]*\.?[0-9]*"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] outline-none text-sm"
+                        placeholder="Enter amount received"
+                        value={amountReceived}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                            setAmountReceived(value);
+                          }
+                        }}
+                      />
+                      <p className="text-xs text-gray-500">
+                        {isCurrentAssignmentSelected
+                          ? `Pending PT due: ₹${ptOutstandingBeforePayment.toLocaleString("en-IN")}`
+                          : `Plan amount: ₹${ptPlanTotalAmount.toLocaleString("en-IN")}`}
+                      </p>
+                    </div>
+
+                    {ptOutstandingAfterPayment > 0 && (
+                      <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+                        <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
+                          <CalendarDays className="w-4 h-4 text-blue-600" />
+                          Next Due Date
+                        </div>
+                        <input
+                          type="date"
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] outline-none text-sm"
+                          value={nextPaymentDate}
+                          onChange={(e) => setNextPaymentDate(e.target.value)}
+                          min={isCurrentAssignmentSelected ? new Date().toISOString().split("T")[0] : customStartDate || getDefaultPlanStartDate(currentAssignment?.planEndDate)}
+                        />
+                      </div>
+                    )}
 
                     {/* Payment Split Info */}
                     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-3">
-                      <p className="text-xs font-semibold text-blue-800 mb-2">Payment Split:</p>
-                      {(() => {
-                        const plan = trainerPlans.find((p) => p.id === selectedPlanId);
-                        if (!plan) return null;
-                        const effectivePrice = useCustomPrice && customPrice ? parseFloat(customPrice) : plan.price;
-                        const gymAmt = Math.round((effectivePrice / 2) * 100) / 100;
-                        const trainerAmt = Math.round((effectivePrice - gymAmt) * 100) / 100;
-                        return (
+                      <p className="text-xs font-semibold text-blue-800 mb-2">
+                        {isCurrentAssignmentSelected ? "Installment Summary:" : "Payment Summary:"}
+                      </p>
+                      {ptPlanName && (
                           <div className="flex items-center gap-3">
                             <div className="flex-1 bg-white rounded-lg p-2 text-center border border-blue-100">
-                              <p className="text-[10px] text-gray-500 uppercase">Gym</p>
-                              <p className="text-sm font-bold text-blue-700">₹{gymAmt.toLocaleString("en-IN")}</p>
+                              <p className="text-[10px] text-gray-500 uppercase">Collected</p>
+                              <p className="text-sm font-bold text-blue-700">₹{ptReceivedAmount.toLocaleString("en-IN")}</p>
                             </div>
                             <div className="text-gray-400 text-xs">+</div>
                             <div className="flex-1 bg-white rounded-lg p-2 text-center border border-orange-100">
-                              <p className="text-[10px] text-gray-500 uppercase">Trainer</p>
-                              <p className="text-sm font-bold text-orange-700">₹{trainerAmt.toLocaleString("en-IN")}</p>
+                              <p className="text-[10px] text-gray-500 uppercase">Remaining</p>
+                              <p className="text-sm font-bold text-orange-700">₹{ptOutstandingAfterPayment.toLocaleString("en-IN")}</p>
                             </div>
                             <div className="text-gray-400 text-xs">=</div>
                             <div className="flex-1 bg-white rounded-lg p-2 text-center border border-green-100">
-                              <p className="text-[10px] text-gray-500 uppercase">Total</p>
-                              <p className="text-sm font-bold text-green-700">₹{effectivePrice.toLocaleString("en-IN")}</p>
+                              <p className="text-[10px] text-gray-500 uppercase">Contract</p>
+                              <p className="text-sm font-bold text-green-700">₹{ptPlanTotalAmount.toLocaleString("en-IN")}</p>
                             </div>
                           </div>
-                        );
-                      })()}
+                      )}
+                      {ptPlanDuration ? (
+                        <p className="mt-2 text-[11px] text-blue-700">
+                          {ptPlanName} • {formatDuration(ptPlanDuration)}
+                        </p>
+                      ) : null}
                     </div>
 
                     {/* Payment Mode */}
                     <div>
                       <label className="block text-xs font-medium text-gray-600 mb-1.5">Payment Mode</label>
                       <div className="flex gap-2">
-                        {["cash", "upi", "card", "bank"].map((mode) => (
+                        {PAYMENT_MODE_OPTIONS.map((mode) => (
                           <button
                             key={mode}
                             type="button"
@@ -1263,12 +1588,12 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
               </div>
             </div>
           ) : (
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col gap-3">
               {currentTrainerId && (
                 <button
                   onClick={handleRemoveTrainer}
                   disabled={loading}
-                  className="px-5 py-3 bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 text-red-600 rounded-xl font-medium hover:from-red-100 hover:to-rose-100 hover:border-red-300 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 order-2 sm:order-1"
+                  className="w-full px-5 py-3 bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 text-red-600 rounded-xl font-medium hover:from-red-100 hover:to-rose-100 hover:border-red-300 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -1277,33 +1602,49 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
                   )}
                 </button>
               )}
-              <div className={`flex gap-3 ${currentTrainerId ? 'order-1 sm:order-2' : ''} flex-1`}>
+              <div className={`grid gap-3 ${selectedTrainerId === currentTrainerId && currentAssignment?.planId ? 'grid-cols-1 sm:grid-cols-3' : currentTrainerId ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2'}`}>
                 <button
                   onClick={onClose}
                   disabled={loading}
-                  className="flex-1 px-5 py-3 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-xl font-medium hover:from-gray-200 hover:to-gray-300 transition-all duration-200 active:scale-[0.98] disabled:opacity-50"
+                  className="w-full px-5 py-3 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-xl font-medium hover:from-gray-200 hover:to-gray-300 transition-all duration-200 active:scale-[0.98] disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 {/* Show Update Schedule button when current trainer is selected and has assignment */}
                 {selectedTrainerId === currentTrainerId && currentAssignment?.planId ? (
-                  <button
-                    onClick={handleUpdateSchedule}
-                    disabled={
-                      loading ||
-                      (trainerDays.length > 0 && totalSelections === 0)
-                    }
-                    className="flex-1 px-5 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-green-200 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    {loading ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <>
-                        <CalendarDays className="w-4 h-4" />
-                        Update Schedule
-                      </>
-                    )}
-                  </button>
+                  <>
+                    <button
+                      onClick={handleUpdateSchedule}
+                      disabled={
+                        loading ||
+                        (trainerDays.length > 0 && totalSelections === 0)
+                      }
+                      className="w-full px-5 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-green-200 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                      {loading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <CalendarDays className="w-4 h-4" />
+                          Update Schedule
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={handleRecordInstallment}
+                      disabled={loading || ptOutstandingBeforePayment <= 0}
+                      className="w-full px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-blue-200 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                      {loading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <IndianRupee className="w-4 h-4" />
+                          {ptOutstandingBeforePayment > 0 ? "Record Payment" : "Fully Paid"}
+                        </>
+                      )}
+                    </button>
+                  </>
                 ) : (
                   <button
                     onClick={handleSave}
@@ -1313,7 +1654,7 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
                       selectedTrainerId === currentTrainerId ||
                       (trainerDays.length > 0 && totalSelections === 0)
                     }
-                    className="flex-1 px-5 py-3 mb-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-blue-200 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-blue-200 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {loading ? (
                       <Loader2 className="w-4 h-4 animate-spin" />

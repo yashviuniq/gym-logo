@@ -33,10 +33,22 @@ import {
   Wrench,
   Pill,
   Megaphone,
-  Package
+  Package,
+  IndianRupee
 } from "lucide-react";
 
 const EXPENSE_EXCEL_AMOUNT_FORMAT = "#,##0.##";
+
+const EXPENSE_CATEGORY_META = {
+  rent: { name: "Rent", icon: <Home className="w-4 h-4" /> },
+  electricity: { name: "Electricity", icon: <Zap className="w-4 h-4" /> },
+  salary: { name: "Salary", icon: <Briefcase className="w-4 h-4" /> },
+  equipment: { name: "Equipment", icon: <IndianRupee className="w-4 h-4" /> },
+  maintenance: { name: "Maintenance", icon: <Wrench className="w-4 h-4" /> },
+  supplements: { name: "Supplements", icon: <Pill className="w-4 h-4" /> },
+  marketing: { name: "Marketing", icon: <Megaphone className="w-4 h-4" /> },
+  other: { name: "Other", icon: <Package className="w-4 h-4" /> },
+};
 
 function getExpenseExportTitle(dateFilter, customStartDate, customEndDate) {
   const now = new Date();
@@ -142,6 +154,67 @@ function buildExpenseExportRows(expenses, exportTitle) {
   ];
 }
 
+function formatFinanceTransactionDate(dateString) {
+  const date = new Date(dateString);
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (date.toDateString() === today.toDateString()) {
+    return `Today, ${date.toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit"
+    })}`;
+  }
+
+  if (date.toDateString() === yesterday.toDateString()) {
+    return "Yesterday";
+  }
+
+  return date.toLocaleDateString("en-IN", {
+    month: "short",
+    day: "numeric"
+  });
+}
+
+function mapExpenseRecord(expense) {
+  return {
+    id: expense.id,
+    category: expense.category,
+    categoryName: EXPENSE_CATEGORY_META[expense.category]?.name || expense.category,
+    amount: parseFloat(expense.amount),
+    expenseDate: expense.expense_date,
+    date: new Date(expense.expense_date).toLocaleDateString("en-IN", {
+      month: "short",
+      day: "numeric"
+    }),
+    fullDate: new Date(expense.expense_date).toLocaleDateString("en-IN", {
+      weekday: "short",
+      month: "short",
+      day: "numeric"
+    }),
+    icon: EXPENSE_CATEGORY_META[expense.category]?.icon || <Package className="w-4 h-4" />,
+    notes: expense.notes,
+  };
+}
+
+function getStoredGym() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const storedGym = localStorage.getItem("selectedGym");
+  if (!storedGym) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(storedGym);
+  } catch {
+    return null;
+  }
+}
+
 export default function FinancePage() {
   const router = useRouter();
   const { canViewFinance } = useUserRole();
@@ -149,8 +222,8 @@ export default function FinancePage() {
   const [dateFilter, setDateFilter] = useState("month");
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
-  const [selectedGym, setSelectedGym] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [selectedGym] = useState(() => getStoredGym());
+  const [loading, setLoading] = useState(() => Boolean(getStoredGym()));
   const [financialData, setFinancialData] = useState({
     todayCollection: 0,
     monthlyRevenue: 0,
@@ -159,6 +232,7 @@ export default function FinancePage() {
   });
   const [recentTransactions, setRecentTransactions] = useState([]);
   const [pendingPayments, setPendingPayments] = useState([]);
+  const [pendingTrainerInstallments, setPendingTrainerInstallments] = useState([]);
   const [paymentModes, setPaymentModes] = useState([]);
   const lastFetchParamsRef = useRef(null);
 
@@ -235,6 +309,7 @@ export default function FinancePage() {
       const membersWithDues = result.members_with_dues || [];
       const expensesTotal = parseFloat(result.expenses_total || 0);
       const paymentsWithNextDate = result.payments_with_next_date || [];
+      const trainerInstallmentsPending = result.pending_trainer_installments || [];
 
       // All payments returned are already filtered by the selected period
       const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
@@ -273,7 +348,7 @@ export default function FinancePage() {
           type: payment.membership_id ? "membership" : "trainer",
           amount: payment.amount,
           mode: payment.payment_mode,
-          date: formatDate(payment.paid_at || payment.created_at),
+          date: formatFinanceTransactionDate(payment.paid_at || payment.created_at),
           status: payment.status,
           collectedBy: collectorName || null,
           collectedByFallback: payment.collected_by || null,
@@ -322,6 +397,30 @@ export default function FinancePage() {
       });
       setPendingPayments(pendingData);
 
+      const pendingTrainerData = trainerInstallmentsPending.map((assignment) => {
+        const dueDate = assignment.next_payment_date || assignment.plan_end_date || null;
+        const daysOverdue = dueDate
+          ? Math.ceil((new Date() - new Date(dueDate)) / (1000 * 60 * 60 * 24))
+          : 0;
+
+        return {
+          assignmentId: assignment.assignment_id,
+          memberId: assignment.member_id,
+          memberName: assignment.member_full_name || "Unknown",
+          memberPhone: assignment.member_phone || "",
+          trainerName: assignment.trainer_full_name || "Trainer",
+          planName: assignment.plan_name || "PT Plan",
+          planTotalAmount: parseFloat(assignment.plan_total_amount || 0),
+          totalPaidAmount: parseFloat(assignment.total_paid_amount || 0),
+          pendingAmount: parseFloat(assignment.pending_amount || 0),
+          nextPaymentDate: assignment.next_payment_date || null,
+          dueDate: dueDate ? new Date(dueDate).toLocaleDateString("en-IN") : "No due date",
+          daysOverdue: Math.max(0, daysOverdue),
+          isOverdue: daysOverdue > 0,
+        };
+      });
+      setPendingTrainerInstallments(pendingTrainerData);
+
     } catch (err) {
       console.error("Error fetching financial data:", err);
     }
@@ -329,38 +428,16 @@ export default function FinancePage() {
   }, [customEndDate, customStartDate, dateFilter]);
 
   useEffect(() => {
-    const storedGym = localStorage.getItem("selectedGym");
-    if (storedGym) {
-      const gym = JSON.parse(storedGym);
-      const fetchKey = `${gym.id}-${dateFilter}-${customStartDate}-${customEndDate}`;
-      if (lastFetchParamsRef.current === fetchKey) return;
-      lastFetchParamsRef.current = fetchKey;
-      setSelectedGym(gym);
-      fetchFinancialData(gym.id);
-    } else {
-      setLoading(false);
+    if (!selectedGym?.id) {
+      return;
     }
-  }, [customEndDate, customStartDate, dateFilter, fetchFinancialData]);
 
- const formatDate = (dateString) => {
-  const date = new Date(dateString);
-  const today = new Date();
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-
-  if (date.toDateString() === today.toDateString()) {
-    return "Today";
-  } 
-  else if (date.toDateString() === yesterday.toDateString()) {
-    return "Yesterday";
-  } 
-  else {
-    return date.toLocaleDateString("en-IN", { 
-      month: "short", 
-      day: "numeric" 
-    });
-  }
-};
+    const fetchKey = `${selectedGym.id}-${dateFilter}-${customStartDate}-${customEndDate}`;
+    if (lastFetchParamsRef.current === fetchKey) return;
+    lastFetchParamsRef.current = fetchKey;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchFinancialData(selectedGym.id);
+  }, [customEndDate, customStartDate, dateFilter, fetchFinancialData, selectedGym]);
 
   const formatCurrency = (amount) => {
     // If user can't view finance, mask the values
@@ -382,7 +459,7 @@ export default function FinancePage() {
       case 'cash': return <Wallet className="w-4 h-4" />;
       case 'upi': return <CreditCard className="w-4 h-4" />;
       case 'card': return <CreditCard className="w-4 h-4" />;
-      default: return <DollarSign className="w-4 h-4" />;
+      default: return <IndianRupee className="w-4 h-4" />;
     }
   };
 
@@ -397,7 +474,7 @@ export default function FinancePage() {
         <main className="px-4 py-4">
           <div className="text-center py-12">
             <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-              <DollarSign className="w-10 h-10 text-white" />
+              <IndianRupee className="w-5 h-5 text-emerald-700" />
             </div>
             <h2 className="text-lg font-bold text-gray-900 mb-2">No Gym Selected</h2>
             <p className="text-gray-500 text-sm mb-6 px-4">
@@ -490,7 +567,7 @@ export default function FinancePage() {
                 </p>
               </div>
               <div className="w-10 h-10 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-lg flex items-center justify-center">
-                <DollarSign className="w-5 h-5 text-emerald-600" />
+                <IndianRupee className="w-5 h-5" />
               </div>
             </div>
           </div>
@@ -542,7 +619,7 @@ export default function FinancePage() {
                   ? 'bg-gradient-to-br from-emerald-50 to-emerald-100'
                   : 'bg-gradient-to-br from-red-50 to-red-100'
               }`}>
-                <DollarSign className={`w-5 h-5 ${
+                 <IndianRupee className={`w-5 h-5 ${
                   (financialData.monthlyRevenue - financialData.monthlyExpenses) >= 0
                     ? 'text-emerald-600'
                     : 'text-red-600'
@@ -682,7 +759,7 @@ export default function FinancePage() {
                               ? "bg-gradient-to-br from-purple-50 to-purple-100"
                               : "bg-gradient-to-br from-emerald-50 to-emerald-100"
                           }`}>
-                            <DollarSign className={`w-5 h-5 ${txn.collectedBy ? "text-purple-600" : "text-emerald-600"}`} />
+                            <IndianRupee className={`w-5 h-5 ${txn.collectedBy ? "text-purple-600" : "text-emerald-600"}`} />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2 mb-1.5">
@@ -852,6 +929,122 @@ Best regards,
                 )}
               </div>
             </div>
+
+            <div className="bg-white rounded-xl border border-gray-200 p-3 shadow-sm mx-1">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="font-semibold text-gray-900 text-sm">Pending Trainer Installments</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {pendingTrainerInstallments.length} PT assignments with balance left
+                  </p>
+                </div>
+                <span className="text-xs font-semibold text-violet-600">
+                  {formatCurrency(pendingTrainerInstallments.reduce((sum, item) => sum + item.pendingAmount, 0))}
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                {pendingTrainerInstallments.length === 0 ? (
+                  <div className="text-center py-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                      <Users className="w-6 h-6 text-gray-400" />
+                    </div>
+                    <p className="text-gray-500 text-sm">No pending trainer installments</p>
+                  </div>
+                ) : (
+                  pendingTrainerInstallments.map((item) => (
+                    <div
+                      key={item.assignmentId}
+                      className="bg-gradient-to-br from-violet-50 to-indigo-100 border border-violet-200 rounded-lg p-3 hover:shadow-sm transition-all"
+                    >
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 text-sm truncate">{item.memberName}</p>
+                          <div className="flex items-center gap-1 mt-1">
+                            <Phone className="w-3 h-3 text-gray-400" />
+                            <span className="text-xs text-gray-500">{item.memberPhone}</span>
+                          </div>
+                          <p className="text-xs text-violet-700 font-medium mt-1">
+                            {item.planName} with {item.trainerName}
+                          </p>
+                          <div className="mt-2 grid grid-cols-3 gap-2 text-center">
+                            <div className="rounded-md bg-white/80 border border-violet-100 px-2 py-1.5">
+                              <p className="text-[10px] uppercase tracking-wide text-gray-500">Paid</p>
+                              <p className="mt-1 text-xs font-bold text-green-700">₹{item.totalPaidAmount.toLocaleString("en-IN")}</p>
+                            </div>
+                            <div className="rounded-md bg-white/80 border border-violet-100 px-2 py-1.5">
+                              <p className="text-[10px] uppercase tracking-wide text-gray-500">Due</p>
+                              <p className="mt-1 text-xs font-bold text-violet-700">₹{item.pendingAmount.toLocaleString("en-IN")}</p>
+                            </div>
+                            <div className="rounded-md bg-white/80 border border-violet-100 px-2 py-1.5">
+                              <p className="text-[10px] uppercase tracking-wide text-gray-500">Plan</p>
+                              <p className="mt-1 text-xs font-bold text-gray-900">₹{item.planTotalAmount.toLocaleString("en-IN")}</p>
+                            </div>
+                          </div>
+                        </div>
+                        <p className="text-lg font-bold text-violet-700 shrink-0">
+                          {formatCurrency(item.pendingAmount)}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-col gap-2 mt-3 sm:flex-row sm:items-center sm:justify-between">
+                        <span
+                          className={`px-2.5 py-1 text-xs rounded-lg font-medium w-fit ${
+                            item.isOverdue
+                              ? "bg-gradient-to-br from-red-50 to-red-100 text-red-700 border border-red-200"
+                              : "bg-gradient-to-br from-violet-50 to-indigo-100 text-violet-700 border border-violet-200"
+                          }`}
+                        >
+                          {item.isOverdue
+                            ? `${item.daysOverdue} days overdue`
+                            : item.nextPaymentDate
+                              ? `Due: ${new Date(item.nextPaymentDate).toLocaleDateString("en-IN")}`
+                              : `Due: ${item.dueDate}`}
+                        </span>
+
+                        <div className="flex items-center gap-2 self-stretch sm:self-auto">
+                          <button
+                            onClick={() => {
+                              const gymName = selectedGym?.name || "Our Gym";
+                              const dueDateText = item.nextPaymentDate
+                                ? new Date(item.nextPaymentDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+                                : item.dueDate;
+                              const message = `Dear ${item.memberName},
+
+Greetings from *${gymName}*! 🏋️
+
+This is a reminder for your pending *trainer installment*.
+
+💳 *Pending PT Amount:* ${formatCurrency(item.pendingAmount)}
+👤 *Trainer:* ${item.trainerName}
+📋 *Plan:* ${item.planName}
+${item.isOverdue ? `⏰ *Overdue by:* ${item.daysOverdue} days` : `📅 *Next Due Date:* ${dueDateText}`}
+
+Please clear the installment to continue your PT plan smoothly.
+
+Thank you,
+*${gymName} Team*`;
+                              window.open(`https://wa.me/91${item.memberPhone}?text=${encodeURIComponent(message)}`);
+                            }}
+                            className="px-3 py-1.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-lg active:scale-95 transition-transform flex items-center gap-1"
+                            style={{ minHeight: '32px' }}
+                          >
+                            Remind
+                          </button>
+                          <button
+                            onClick={() => router.push(`/members/${item.memberId}`)}
+                            className="px-3 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-xs font-medium rounded-lg active:scale-95 transition-transform flex items-center gap-1"
+                            style={{ minHeight: '32px' }}
+                          >
+                            Collect
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
         )}
 
@@ -894,17 +1087,6 @@ function ExpensesSection({ router, selectedGym, dateFilter, customStartDate, cus
   const [exporting, setExporting] = useState(false);
   const [overallExporting, setOverallExporting] = useState(false);
 
-  const expenseCategories = {
-    rent: { name: "Rent", icon: <Home className="w-4 h-4" /> },
-    electricity: { name: "Electricity", icon: <Zap className="w-4 h-4" /> },
-    salary: { name: "Salary", icon: <Briefcase className="w-4 h-4" /> },
-    equipment: { name: "Equipment", icon: <DollarSign className="w-4 h-4" /> },
-    maintenance: { name: "Maintenance", icon: <Wrench className="w-4 h-4" /> },
-    supplements: { name: "Supplements", icon: <Pill className="w-4 h-4" /> },
-    marketing: { name: "Marketing", icon: <Megaphone className="w-4 h-4" /> },
-    other: { name: "Other", icon: <Package className="w-4 h-4" /> },
-  };
-
   const fetchExpenses = useCallback(async (gymId) => {
     try {
       setLoading(true);
@@ -943,24 +1125,7 @@ function ExpensesSection({ router, selectedGym, dateFilter, customStartDate, cus
 
       if (error) throw error;
 
-      const formattedExpenses = (data || []).map(expense => ({
-        id: expense.id,
-        category: expense.category,
-        categoryName: expenseCategories[expense.category]?.name || expense.category,
-        amount: parseFloat(expense.amount),
-        expenseDate: expense.expense_date,
-        date: new Date(expense.expense_date).toLocaleDateString("en-IN", {
-          month: "short",
-          day: "numeric"
-        }),
-        fullDate: new Date(expense.expense_date).toLocaleDateString("en-IN", {
-          weekday: "short",
-          month: "short",
-          day: "numeric"
-        }),
-        icon: expenseCategories[expense.category]?.icon || <Package className="w-4 h-4" />,
-        notes: expense.notes,
-      }));
+      const formattedExpenses = (data || []).map(mapExpenseRecord);
 
       setExpenses(formattedExpenses);
       
@@ -972,25 +1137,6 @@ function ExpensesSection({ router, selectedGym, dateFilter, customStartDate, cus
       setLoading(false);
     }
   }, [customEndDate, customStartDate, dateFilter]);
-
-  const mapExpenseRecord = useCallback((expense) => ({
-    id: expense.id,
-    category: expense.category,
-    categoryName: expenseCategories[expense.category]?.name || expense.category,
-    amount: parseFloat(expense.amount),
-    expenseDate: expense.expense_date,
-    date: new Date(expense.expense_date).toLocaleDateString("en-IN", {
-      month: "short",
-      day: "numeric"
-    }),
-    fullDate: new Date(expense.expense_date).toLocaleDateString("en-IN", {
-      weekday: "short",
-      month: "short",
-      day: "numeric"
-    }),
-    icon: expenseCategories[expense.category]?.icon || <Package className="w-4 h-4" />,
-    notes: expense.notes,
-  }), [expenseCategories]);
 
   useEffect(() => {
     if (selectedGym) {

@@ -129,16 +129,23 @@ BEGIN
 
   -- 7. Fetch assigned trainer with profile
   SELECT jsonb_build_object(
+    'assignment_id', tma.id,
     'trainer_id', tma.trainer_id,
     'plan_end_date', tma.plan_end_date,
     'plan_start_date', tma.plan_start_date,
     'trainer_plan_id', tma.trainer_plan_id,
+    'plan_name', tp.name,
+    'plan_total_amount', tma.plan_total_amount,
+    'total_paid_amount', tma.total_paid_amount,
+    'pending_amount', tma.pending_amount,
+    'next_payment_date', tma.next_payment_date,
     'first_name', pr.first_name,
     'last_name', pr.last_name,
     'phone', pr.phone
   )
   INTO v_trainer
   FROM trainer_member_assignments tma
+  LEFT JOIN trainer_plans tp ON tp.id = tma.trainer_plan_id
   LEFT JOIN profiles pr ON pr.id = tma.trainer_id
   WHERE tma.member_id = p_member_id
     AND tma.is_active = true

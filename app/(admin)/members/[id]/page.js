@@ -299,12 +299,18 @@ export default function MemberDetailPage() {
         }
 
         setAssignedTrainer({
+          assignmentId: trainerData.assignment_id,
           trainerId: trainerData.trainer_id,
           name: `${trainerData.first_name || ""} ${trainerData.last_name || ""}`.trim(),
           phone: trainerData.phone,
+          planName: trainerData.plan_name || null,
           planEndDate: trainerData.plan_end_date,
           planStartDate: trainerData.plan_start_date,
           trainerPlanId: trainerData.trainer_plan_id,
+          planTotalAmount: Number(trainerData.plan_total_amount || 0),
+          totalPaidAmount: Number(trainerData.total_paid_amount || 0),
+          pendingAmount: Number(trainerData.pending_amount || 0),
+          nextPaymentDate: trainerData.next_payment_date || null,
           trainerPlanDaysRemaining: trainerPlanDaysRemaining,
           schedule: trainerSchedule,
         });
@@ -378,7 +384,19 @@ export default function MemberDetailPage() {
     try {
       const { data, error } = await supabase
         .from("trainer_member_assignments")
-        .select(`trainer_id, plan_end_date, plan_start_date, trainer_plan_id, profiles:trainer_id (id, first_name, last_name, phone)`)
+        .select(`
+          id,
+          trainer_id,
+          plan_end_date,
+          plan_start_date,
+          trainer_plan_id,
+          plan_total_amount,
+          total_paid_amount,
+          pending_amount,
+          next_payment_date,
+          profiles:trainer_id (id, first_name, last_name, phone),
+          trainer_plans:trainer_plan_id (id, name)
+        `)
         .eq("member_id", memberId)
         .eq("is_active", true)
         .maybeSingle();
@@ -418,12 +436,18 @@ export default function MemberDetailPage() {
         }
 
         setAssignedTrainer({
+          assignmentId: data.id,
           trainerId: data.trainer_id,
           name: `${data.profiles?.first_name || ""} ${data.profiles?.last_name || ""}`.trim(),
           phone: data.profiles?.phone,
+          planName: data.trainer_plans?.name || null,
           planEndDate: data.plan_end_date,
           planStartDate: data.plan_start_date,
           trainerPlanId: data.trainer_plan_id,
+          planTotalAmount: Number(data.plan_total_amount || 0),
+          totalPaidAmount: Number(data.total_paid_amount || 0),
+          pendingAmount: Number(data.pending_amount || 0),
+          nextPaymentDate: data.next_payment_date || null,
           trainerPlanDaysRemaining: trainerPlanDaysRemaining,
           schedule: trainerSchedule,
         });
@@ -610,32 +634,34 @@ export default function MemberDetailPage() {
       <main className="px-3 py-3 space-y-4">
         {/* Profile Header */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-          <div className="flex items-start gap-4 mb-4">
-            <div className="flex-shrink-0">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="shrink-0 self-start">
               <ProfileImageUpload
                 currentImage={member.profileImage}
                 onImageChange={(url) => setMember(prev => ({ ...prev, profileImage: url }))}
                 memberId={member.id}
-                size="md"
+                size="lg"
                 editable={true}
+                showHint={false}
+                align="left"
               />
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap mb-1">
-                <h2 className="text-xl font-bold text-gray-900 break-words min-w-0">
+            <div className="flex-1 min-w-0 self-center">
+              <div className="space-y-2">
+                <h2 className="text-2xl font-bold text-gray-900 leading-tight wrap-break-word">
                   {member.name}
                 </h2>
-                <div className={`px-2.5 py-1 rounded-lg border ${statusConfig.color} ${statusConfig.text} flex items-center gap-1.5 shrink-0`}>
+                <div className={`inline-flex px-2.5 py-1 rounded-lg border ${statusConfig.color} ${statusConfig.text} items-center gap-1.5`}>
                   {statusConfig.icon}
                   <span className="text-xs font-medium">{statusConfig.label}</span>
                 </div>
               </div>
-              <div className="flex items-center gap-2 mt-1">
+              <div className="flex items-center gap-2 mt-3 min-w-0">
                 <Phone className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                <span className="text-gray-600 text-sm">{member.phone}</span>
+                <span className="text-gray-600 text-sm min-w-0">{member.phone}</span>
               </div>
               {member.email && (
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-2 mt-2 min-w-0">
                   <Mail className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                   <span className="text-gray-600 text-sm break-all">{member.email}</span>
                 </div>
@@ -684,46 +710,64 @@ export default function MemberDetailPage() {
 
         {/* Scheduled Membership Alert */}
         {/* Pending Payments Alert */}
-        {pendingPayments.length > 0 && (
-          <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">
+       
+
+        {/* Due Amount Alert */}
+        {assignedTrainer?.pendingAmount > 0 && (
+          <div className="bg-gradient-to-r from-violet-50 to-indigo-50 border border-violet-200 rounded-xl p-4">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                <AlertTriangle className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-lg flex items-center justify-center shrink-0">
+                <Users className="w-5 h-5 text-white" />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <h4 className="font-semibold text-gray-900 mb-1">
-                  {pendingPayments.length} Pending Payment{pendingPayments.length > 1 ? 's' : ''}
+                  Trainer Installment Pending
                 </h4>
                 <p className="text-sm text-gray-600 mb-3">
-                  This member has {pendingPayments.length} payment{pendingPayments.length > 1 ? 's' : ''} waiting to be resolved.
+                  ₹{Number(assignedTrainer.pendingAmount || 0).toLocaleString("en-IN")} left for trainer installment collection.
                 </p>
-                <div className="space-y-2">
-                  {pendingPayments.map((payment) => (
-                    <div 
-                      key={payment.id}
-                      className="bg-white rounded-lg p-3 border border-amber-200 flex items-center justify-between"
-                    >
-                      <div>
-                        <p className="font-semibold text-gray-900">₹{payment.amount}</p>
-                        <p className="text-xs text-gray-500">
-                          Created: {new Date(payment.created_at).toLocaleDateString("en-IN")}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => handleResolvePendingPayment(payment)}
-                        className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm font-medium rounded-lg hover:shadow-lg transition-all duration-300"
-                      >
-                        Resolve
-                      </button>
+                <div className="bg-white rounded-lg p-4 border border-violet-200">
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div>
+                      <p className="text-[11px] text-gray-500 uppercase tracking-wide">Paid</p>
+                      <p className="mt-1 text-sm font-bold text-green-700">₹{Number(assignedTrainer.totalPaidAmount || 0).toLocaleString("en-IN")}</p>
                     </div>
-                  ))}
+                    <div>
+                      <p className="text-[11px] text-gray-500 uppercase tracking-wide">Due</p>
+                      <p className="mt-1 text-sm font-bold text-violet-700">₹{Number(assignedTrainer.pendingAmount || 0).toLocaleString("en-IN")}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-gray-500 uppercase tracking-wide">Plan</p>
+                      <p className="mt-1 text-sm font-bold text-gray-900">₹{Number(assignedTrainer.planTotalAmount || 0).toLocaleString("en-IN")}</p>
+                    </div>
+                  </div>
+                  {assignedTrainer.nextPaymentDate && (
+                    <div className="mt-3 p-3 bg-gradient-to-r from-violet-50 to-indigo-50 border border-violet-200 rounded-lg">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Calendar className="w-4 h-4 text-violet-600" />
+                        <p className="text-sm font-semibold text-violet-800">Next Trainer Due</p>
+                      </div>
+                      <p className="text-sm text-violet-700">
+                        Collect on <span className="font-bold">{new Date(`${assignedTrainer.nextPaymentDate}T00:00:00`).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric"
+                        })}</span>
+                      </p>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => setShowAssignTrainerModal(true)}
+                    className="w-full mt-3 px-4 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all duration-300"
+                  >
+                    Collect Trainer Installment
+                  </button>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Due Amount Alert */}
         {member.dueAmount > 0 && (
           <div className="bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-xl p-4">
             <div className="flex items-start gap-3">
@@ -1246,6 +1290,31 @@ export default function MemberDetailPage() {
                     </div>
                   )}
 
+                  {(assignedTrainer.planName || assignedTrainer.planTotalAmount > 0) && (
+                    <div className="mt-2 pt-2 border-t border-purple-200">
+                      <p className="text-xs font-semibold text-purple-700 mb-2">PT Payment Status</p>
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div className="rounded-lg border border-green-100 bg-white/80 p-2">
+                          <p className="text-[10px] uppercase tracking-wide text-gray-500">Paid</p>
+                          <p className="mt-1 text-xs font-bold text-green-700">₹{Number(assignedTrainer.totalPaidAmount || 0).toLocaleString("en-IN")}</p>
+                        </div>
+                        <div className="rounded-lg border border-amber-100 bg-white/80 p-2">
+                          <p className="text-[10px] uppercase tracking-wide text-gray-500">Due</p>
+                          <p className="mt-1 text-xs font-bold text-amber-700">₹{Number(assignedTrainer.pendingAmount || 0).toLocaleString("en-IN")}</p>
+                        </div>
+                        <div className="rounded-lg border border-blue-100 bg-white/80 p-2">
+                          <p className="text-[10px] uppercase tracking-wide text-gray-500">Plan</p>
+                          <p className="mt-1 text-xs font-bold text-blue-700">₹{Number(assignedTrainer.planTotalAmount || 0).toLocaleString("en-IN")}</p>
+                        </div>
+                      </div>
+                      {assignedTrainer.nextPaymentDate && Number(assignedTrainer.pendingAmount || 0) > 0 && (
+                        <p className="mt-2 text-[11px] text-purple-700">
+                          Next PT due on {new Date(`${assignedTrainer.nextPaymentDate}T00:00:00`).toLocaleDateString("en-IN")}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                   {/* Training Schedule */}
                   {assignedTrainer.schedule && assignedTrainer.schedule.length > 0 && (
                     <div className="mt-2 pt-2 border-t border-purple-200">
@@ -1357,23 +1426,11 @@ export default function MemberDetailPage() {
                       <span className={`px-2.5 py-1 text-xs rounded-lg border ${
                         payment.status === 'paid' 
                           ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                          : 'bg-amber-50 text-amber-700 border-amber-200'
+                          : 'bg-amber-50 text-emerald-700 border-emerald-200'
                       }`}>
-                        {payment.status}
+                        paid
                       </span>
-                      {payment.status === 'pending' && (
-                        <button
-                          onClick={() => {
-                            const pendingPayment = pendingPayments.find(p => p.id === payment.id);
-                            if (pendingPayment) {
-                              handleResolvePendingPayment(pendingPayment);
-                            }
-                          }}
-                          className="px-3 py-1 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-medium rounded-lg hover:shadow-lg transition-all duration-300"
-                        >
-                          Resolve
-                        </button>
-                      )}
+                     
                     </div>
                   </div>
                 ))

@@ -6,6 +6,7 @@ import Header from "@/components/layout/Header";
 import AttendanceTimePicker from "@/components/shared/AttendanceTimePicker";
 import { supabase } from "@/lib/supabaseClient";
 import { useUserRole } from "@/lib/hooks/useUserRole";
+import { useToast } from "@/contexts/ToastContext";
 import {
   User,
   Mail,
@@ -60,11 +61,33 @@ const formatLocalDate = (date) => {
 
 const formatLocalMonth = (date) => formatLocalDate(date).slice(0, 7);
 
+const calculateAssignmentEndDate = (startDate, durationDays) => {
+  if (!startDate || !durationDays) return null;
+
+  const endDate = new Date(`${startDate}T00:00:00`);
+  if (Number.isNaN(endDate.getTime())) return null;
+
+  endDate.setDate(endDate.getDate() + Number(durationDays));
+  return endDate.toISOString().split("T")[0];
+};
+
+const calculateDaysRemaining = (endDateValue) => {
+  if (!endDateValue) return null;
+
+  const planEndDate = new Date(`${endDateValue}T00:00:00`);
+  if (Number.isNaN(planEndDate.getTime())) return null;
+
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  return Math.ceil((planEndDate - now) / (1000 * 60 * 60 * 24));
+};
+
 export default function TrainerDetailsPage({ params }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { id } = use(params);
   const { canCreateTrainer } = useUserRole();
+  const { showSuccess, showError } = useToast();
   const [trainer, setTrainer] = useState(null);
   const [assignedMembers, setAssignedMembers] = useState([]);
   const [activityLog, setActivityLog] = useState([]);
@@ -89,6 +112,9 @@ export default function TrainerDetailsPage({ params }) {
   const [attendanceSaving, setAttendanceSaving] = useState(false);
   const [attendanceData, setAttendanceData] = useState({ month: null, summary: null, attendance_days: [], pt_sessions: [] });
   const [attendanceDrafts, setAttendanceDrafts] = useState({});
+  const [editingAssignmentId, setEditingAssignmentId] = useState(null);
+  const [editingAssignmentStartDate, setEditingAssignmentStartDate] = useState("");
+  const [assignmentUpdating, setAssignmentUpdating] = useState(false);
 
   useEffect(() => {
     const storedGym = localStorage.getItem("selectedGym");
@@ -194,10 +220,10 @@ export default function TrainerDetailsPage({ params }) {
 
       // Map assigned members
       const members = (assigned_members || []).map(a => {
-        const planEndDate = a.plan_end_date ? new Date(a.plan_end_date) : null;
-        const now = new Date();
-        const daysRemaining = planEndDate ? Math.ceil((planEndDate - now) / (1000 * 60 * 60 * 24)) : null;
-        const paidAmount = a.paid_amount ? parseFloat(a.paid_amount) : null;
+        const daysRemaining = calculateDaysRemaining(a.plan_end_date);
+        const paidAmount = a.paid_amount ? parseFloat(a.paid_amount) : 0;
+        const planTotalAmount = a.plan_total_amount ? parseFloat(a.plan_total_amount) : (a.plan_price ? parseFloat(a.plan_price) : 0);
+        const pendingAmount = a.pending_amount ? parseFloat(a.pending_amount) : Math.max(0, planTotalAmount - paidAmount);
 
         return {
           assignmentId: a.assignment_id,
@@ -211,8 +237,13 @@ export default function TrainerDetailsPage({ params }) {
           membershipEnd: a.membership_end_date,
           planName: a.plan_name || null,
           planPrice: a.plan_price ? parseFloat(a.plan_price) : null,
+          planTotalAmount,
           paidAmount,
+          pendingAmount,
+          nextPaymentDate: a.next_payment_date || null,
+          planStartDate: a.plan_start_date || null,
           planEndDate: a.plan_end_date,
+          planDurationDays: a.plan_duration_days || null,
           daysRemaining,
         };
       });
@@ -374,6 +405,66 @@ export default function TrainerDetailsPage({ params }) {
       alert("Failed to unassign member");
     } finally {
       setUnassigning(false);
+    }
+  };
+
+  const startEditingAssignment = (member) => {
+    setEditingAssignmentId(member.assignmentId);
+    setEditingAssignmentStartDate(member.planStartDate || "");
+  };
+
+  const cancelEditingAssignment = () => {
+    setEditingAssignmentId(null);
+    setEditingAssignmentStartDate("");
+  };
+
+  const saveAssignmentDates = async (member) => {
+    if (!member?.assignmentId || !editingAssignmentStartDate) {
+      showError("Please select a valid start date");
+      return;
+    }
+
+    if (!member.planDurationDays) {
+      showError("This assignment does not have a trainer plan duration");
+      return;
+    }
+
+    const nextEndDate = calculateAssignmentEndDate(editingAssignmentStartDate, member.planDurationDays);
+    if (!nextEndDate) {
+      showError("Could not calculate end date for this plan");
+      return;
+    }
+
+    setAssignmentUpdating(true);
+    try {
+      const { error } = await supabase
+        .from("trainer_member_assignments")
+        .update({
+          plan_start_date: editingAssignmentStartDate,
+          plan_end_date: nextEndDate,
+        })
+        .eq("id", member.assignmentId);
+
+      if (error) throw error;
+
+      setAssignedMembers((current) => current.map((item) => {
+        if (item.assignmentId !== member.assignmentId) return item;
+
+        return {
+          ...item,
+          planStartDate: editingAssignmentStartDate,
+          planEndDate: nextEndDate,
+          daysRemaining: calculateDaysRemaining(nextEndDate),
+        };
+      }));
+
+      cancelEditingAssignment();
+      showSuccess("Trainer assignment dates updated");
+    } catch (error) {
+      console.error("Error updating assignment dates:", error);
+      showError("Failed to update assignment start date");
+    } finally {
+      setAssignmentUpdating(false);
     }
   };
 
@@ -784,10 +875,16 @@ export default function TrainerDetailsPage({ params }) {
                         <Tag className="w-3 h-3 text-orange-500" />
                         <span className="font-medium text-gray-700">{member.planName}</span>
                       </div>
-                      {(member.paidAmount || member.planPrice) && (
+                      {(member.paidAmount || member.planTotalAmount || member.planPrice) && (
                         <div className="flex items-center gap-1 text-xs">
                           <IndianRupee className="w-3 h-3 text-green-600" />
-                          <span className="font-semibold text-green-700">₹{(member.paidAmount || member.planPrice).toLocaleString("en-IN")}</span>
+                          <span className="font-semibold text-green-700">Paid ₹{Number(member.paidAmount || 0).toLocaleString("en-IN")}</span>
+                        </div>
+                      )}
+                      {member.pendingAmount > 0 && (
+                        <div className="flex items-center gap-1 text-xs">
+                          <IndianRupee className="w-3 h-3 text-amber-600" />
+                          <span className="font-semibold text-amber-700">Due ₹{Number(member.pendingAmount || 0).toLocaleString("en-IN")}</span>
                         </div>
                       )}
                       {member.daysRemaining !== null && (
@@ -804,6 +901,79 @@ export default function TrainerDetailsPage({ params }) {
                               ? "Expired"
                               : `${member.daysRemaining} day${member.daysRemaining !== 1 ? "s" : ""} left`}
                           </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {member.nextPaymentDate && member.pendingAmount > 0 && (
+                    <div className="mt-1.5 text-xs text-amber-700 font-medium">
+                      Next PT due: {new Date(`${member.nextPaymentDate}T00:00:00`).toLocaleDateString("en-IN")}
+                    </div>
+                  )}
+
+                  {member.planName && member.planDurationDays && (
+                    <div className="mt-2 rounded-lg border border-gray-200 bg-gray-50 p-3 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div>
+                          <p className="text-xs text-gray-600">Plan Dates</p>
+                          <p className="text-sm font-medium text-gray-900">
+                            {member.planStartDate ? formatDate(member.planStartDate) : "N/A"} to {member.planEndDate ? formatDate(member.planEndDate) : "N/A"}
+                          </p>
+                        </div>
+                        {editingAssignmentId !== member.assignmentId && (
+                          <button
+                            type="button"
+                            onClick={() => startEditingAssignment(member)}
+                            className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                          >
+                            Update Start Date
+                          </button>
+                        )}
+                      </div>
+
+                      {editingAssignmentId === member.assignmentId && (
+                        <div className="space-y-3 border-t border-gray-200 pt-3">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1">Start Date</label>
+                              <input
+                                type="date"
+                                value={editingAssignmentStartDate}
+                                onChange={(e) => setEditingAssignmentStartDate(e.target.value)}
+                                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1">End Date</label>
+                              <div className="w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-700">
+                                {editingAssignmentStartDate
+                                  ? formatDate(calculateAssignmentEndDate(editingAssignmentStartDate, member.planDurationDays))
+                                  : "Select start date"}
+                              </div>
+                              <p className="mt-1 text-[11px] text-gray-500">
+                                Auto-calculated for {formatDuration(member.planDurationDays)}.
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={cancelEditingAssignment}
+                              disabled={assignmentUpdating}
+                              className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => saveAssignmentDates(member)}
+                              disabled={assignmentUpdating}
+                              className="flex-1 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-60"
+                            >
+                              {assignmentUpdating ? "Saving..." : "Save Dates"}
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>

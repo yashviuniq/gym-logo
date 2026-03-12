@@ -562,7 +562,7 @@ export default function FinancePage() {
                 <p className="text-xs text-gray-500 font-medium">
                   {dateFilter === "custom" ? "Period Collection" : "Today's Collection"}
                 </p>
-                <p className="text-xl font-bold text-emerald-600 mt-0.5">
+                <p className="text-xl font-bold  text-emerald-600 mt-0.5">
                   {formatCurrency(financialData.todayCollection)}
                 </p>
               </div>

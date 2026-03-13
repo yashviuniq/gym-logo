@@ -160,12 +160,16 @@ export default function ShareReceiptModal({ member, gymData, onClose }) {
   const handleWhatsAppShare = () => {
     if (!receipt) return;
 
+    const resolvedBalanceAmount =
+      receipt.balance_amount ?? member?.dueAmount ?? member?.balance ?? 0;
+
     shareReceiptOnWhatsApp({
       memberName: member.name,
       memberPhone: member.phone,
       gymName: gymData?.name || "Gym",
       planName: receipt.plan_name || member.plan,
       amount: receipt.amount,
+      balanceAmount: resolvedBalanceAmount,
       validityEnd: receipt.validity_end || member.validTill,
       receiptUrl: receipt.receipt_url
     });

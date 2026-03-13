@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
 import { DashboardPageSkeleton } from "@/components/shared/Skeleton";
+import MessagingDashboard from "@/components/shared/MessagingDashboard";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 import { useUserRole } from "@/lib/hooks/useUserRole";
 import { hasPermission, PERMISSIONS } from "@/lib/constants/permissions";
@@ -31,7 +32,8 @@ import {
   X,
   XCircle,
   ClipboardList,
-  UserCheck
+  UserCheck,
+  MessageCircle
 } from "lucide-react";
 
 export default function AdminDashboard() {
@@ -631,6 +633,7 @@ export default function AdminDashboard() {
             {[
               { label: "Add Member", icon: <UserPlus className="w-4 h-4" />, href: "/members/add", color: "bg-blue-500", permission: PERMISSIONS.MEMBERS },
               { label: "Attendance", icon: <CheckCircle className="w-4 h-4" />, href: "/attendance", color: "bg-green-500", permission: PERMISSIONS.ATTENDANCE },
+              { label: "Messaging", icon: <MessageCircle className="w-4 h-4" />, href: "/messaging", color: "bg-emerald-500", permission: PERMISSIONS.MEMBERS },
               { label: "Trainer Att.", icon: <UserCheck className="w-4 h-4" />, href: "/settings/trainers/attendance", color: "bg-violet-500", permission: PERMISSIONS.SETTINGS, adminOnly: true },
               { label: "Payment", icon: <CreditCard className="w-4 h-4" />, href: "/finance", color: "bg-indigo-500", permission: PERMISSIONS.FINANCE },
               { label: "Members", icon: <Users className="w-4 h-4" />, href: "/members", color: "bg-blue-600", permission: PERMISSIONS.MEMBERS },
@@ -873,6 +876,11 @@ className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-medi
             )}
           </div>
         </div>
+
+        {/* Quick Messaging Dashboard */}
+        {hasPermission(permissions, PERMISSIONS.MEMBERS) && selectedGym?.id && (
+          <MessagingDashboard gymId={selectedGym.id} />
+        )}
       </main>
 
       {/* Today's Attendance Modal */}

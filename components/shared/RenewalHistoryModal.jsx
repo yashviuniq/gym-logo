@@ -222,43 +222,9 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
             return;
         }
 
-        if (recalculatedDue > 0) {
-            if ((pendingPayments || []).length > 0) {
-                const { error: pendingUpdateError } = await supabase
-                    .from("payments")
-                    .update({
-                        amount: recalculatedDue,
-                        remaining_amount: recalculatedDue,
-                    })
-                    .in("id", pendingPayments.map((payment) => payment.id));
-
-                if (pendingUpdateError) {
-                    console.error("Error updating pending renewal payment:", pendingUpdateError);
-                    showError("Renewal updated, but failed to sync pending amount");
-                    setSavingMembershipId(null);
-                    return;
-                }
-            } else {
-                const { error: pendingInsertError } = await supabase
-                    .from("payments")
-                    .insert({
-                        gym_id: member.gymId,
-                        member_id: member.id,
-                        membership_id: renewal.membershipId,
-                        amount: recalculatedDue,
-                        payment_mode: renewal.paymentMode || "cash",
-                        status: "pending",
-                        remaining_amount: recalculatedDue,
-                    });
-
-                if (pendingInsertError) {
-                    console.error("Error creating pending renewal payment:", pendingInsertError);
-                    showError("Renewal updated, but failed to create pending amount");
-                    setSavingMembershipId(null);
-                    return;
-                }
-            }
-        } else if ((pendingPayments || []).length > 0) {
+        // Match /members/add behavior: due is tracked in member/membership only,
+        // not as separate pending payment rows in payment history.
+        if ((pendingPayments || []).length > 0) {
             const { error: pendingDeleteError } = await supabase
                 .from("payments")
                 .delete()

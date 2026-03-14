@@ -193,7 +193,9 @@ export default function MemberDetailPage() {
           checkIn: a.check_in_time,
           checkOut: a.check_out_time || "-"
         })),
-        payments: paymentsData.map(p => ({
+        payments: paymentsData
+          .filter((p) => p.status === "paid")
+          .map(p => ({
           id: p.id,
           date: new Date(p.paid_at || p.created_at).toLocaleDateString("en-IN"),
           amount: p.amount,
@@ -1426,9 +1428,9 @@ export default function MemberDetailPage() {
                       <span className={`px-2.5 py-1 text-xs rounded-lg border ${
                         payment.status === 'paid' 
                           ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                          : 'bg-amber-50 text-emerald-700 border-emerald-200'
+                          : 'bg-amber-50 text-amber-700 border-amber-200'
                       }`}>
-                        paid
+                        {(payment.status || 'unknown').toLowerCase()}
                       </span>
                      
                     </div>

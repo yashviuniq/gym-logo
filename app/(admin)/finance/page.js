@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
@@ -233,8 +233,46 @@ export default function FinancePage() {
   const [recentTransactions, setRecentTransactions] = useState([]);
   const [pendingPayments, setPendingPayments] = useState([]);
   const [pendingTrainerInstallments, setPendingTrainerInstallments] = useState([]);
+  const [pendingSearchInput, setPendingSearchInput] = useState("");
+  const [pendingSearch, setPendingSearch] = useState("");
   const [paymentModes, setPaymentModes] = useState([]);
   const lastFetchParamsRef = useRef(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPendingSearch(pendingSearchInput.trim().toLowerCase());
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [pendingSearchInput]);
+
+  const filteredPendingPayments = useMemo(() => {
+    if (!pendingSearch) return pendingPayments;
+
+    return pendingPayments.filter((member) => {
+      const name = String(member.name || "").toLowerCase();
+      const phone = String(member.phone || "").toLowerCase();
+      return name.includes(pendingSearch) || phone.includes(pendingSearch);
+    });
+  }, [pendingPayments, pendingSearch]);
+
+  const filteredPendingTrainerInstallments = useMemo(() => {
+    if (!pendingSearch) return pendingTrainerInstallments;
+
+    return pendingTrainerInstallments.filter((item) => {
+      const memberName = String(item.memberName || "").toLowerCase();
+      const memberPhone = String(item.memberPhone || "").toLowerCase();
+      const trainerName = String(item.trainerName || "").toLowerCase();
+      const planName = String(item.planName || "").toLowerCase();
+
+      return (
+        memberName.includes(pendingSearch) ||
+        memberPhone.includes(pendingSearch) ||
+        trainerName.includes(pendingSearch) ||
+        planName.includes(pendingSearch)
+      );
+    });
+  }, [pendingTrainerInstallments, pendingSearch]);
 
   const fetchFinancialData = useCallback(async (gymId) => {
     setLoading(true);
@@ -803,11 +841,25 @@ export default function FinancePage() {
         {activeTab === "pending" && (
           <div className="space-y-3 pb-20">
             <div className="bg-white rounded-xl border border-gray-200 p-3 shadow-sm mx-1">
+              <label className="text-xs font-medium text-gray-600 mb-2 block">Search Pending</label>
+              <div className="relative">
+                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={pendingSearchInput}
+                  onChange={(e) => setPendingSearchInput(e.target.value)}
+                  placeholder="Search by member, phone, trainer, plan"
+                  className="w-full pl-9 pr-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-gray-200 p-3 shadow-sm mx-1">
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <h3 className="font-semibold text-gray-900 text-sm">Pending Payments</h3>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    {pendingPayments.length} members with dues
+                    {filteredPendingPayments.length} members with dues
                   </p>
                 </div>
                 <span className="text-xs font-semibold text-amber-600">
@@ -816,15 +868,17 @@ export default function FinancePage() {
               </div>
               
               <div className="space-y-2">
-                {pendingPayments.length === 0 ? (
+                {filteredPendingPayments.length === 0 ? (
                   <div className="text-center py-4">
                     <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
                       <Clock className="w-6 h-6 text-gray-400" />
                     </div>
-                    <p className="text-gray-500 text-sm">No pending payments</p>
+                    <p className="text-gray-500 text-sm">
+                      {pendingSearch ? "No matching pending payments" : "No pending payments"}
+                    </p>
                   </div>
                 ) : (
-                  pendingPayments.map((member) => (
+                  filteredPendingPayments.map((member) => (
                     <div
                       key={member.id}
                       className="bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200 rounded-lg p-3 hover:shadow-sm transition-all"
@@ -935,7 +989,7 @@ Best regards,
                 <div>
                   <h3 className="font-semibold text-gray-900 text-sm">Pending Trainer Installments</h3>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    {pendingTrainerInstallments.length} PT assignments with balance left
+                    {filteredPendingTrainerInstallments.length} PT assignments with balance left
                   </p>
                 </div>
                 <span className="text-xs font-semibold text-violet-600">
@@ -944,15 +998,17 @@ Best regards,
               </div>
 
               <div className="space-y-2">
-                {pendingTrainerInstallments.length === 0 ? (
+                {filteredPendingTrainerInstallments.length === 0 ? (
                   <div className="text-center py-4">
                     <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
                       <Users className="w-6 h-6 text-gray-400" />
                     </div>
-                    <p className="text-gray-500 text-sm">No pending trainer installments</p>
+                    <p className="text-gray-500 text-sm">
+                      {pendingSearch ? "No matching pending trainer installments" : "No pending trainer installments"}
+                    </p>
                   </div>
                 ) : (
-                  pendingTrainerInstallments.map((item) => (
+                  filteredPendingTrainerInstallments.map((item) => (
                     <div
                       key={item.assignmentId}
                       className="bg-gradient-to-br from-violet-50 to-indigo-100 border border-violet-200 rounded-lg p-3 hover:shadow-sm transition-all"

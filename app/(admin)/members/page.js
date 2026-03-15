@@ -138,7 +138,7 @@ export default function MembersPage() {
   const [showRenewModal, setShowRenewModal] = useState(false);
   const [showShareReceiptModal, setShowShareReceiptModal] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
-  const [exporting, setExporting] = useState(false);
+  const [exportingType, setExportingType] = useState(null);
 
   // Refresh trigger for manual refreshes (delete, renew, etc.)
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -537,6 +537,209 @@ export default function MembersPage() {
     }
   };
 
+  // ─── Export Members Excel (fetches its own data directly) ───
+  const exportMembersExcel = async () => {
+    try {
+      const XLSX = await import("xlsx");
+
+      if (!selectedGym) {
+        alert("No gym selected!");
+        return;
+      }
+
+      const gym = selectedGym;
+
+      const { data: membersData, error: membersError } = await supabase
+        .from("members")
+        .select(`
+          id,
+          full_name,
+          phone,
+          email,
+          join_date,
+          created_at,
+          balance,
+          memberships (
+            id,
+            status,
+            start_date,
+            end_date,
+            membership_plans (
+              name,
+              price
+            )
+          )
+        `)
+        .eq("gym_id", gym.id);
+
+      if (membersError) throw membersError;
+
+      if (!membersData || membersData.length === 0) {
+        alert("No members found to export!");
+        return;
+      }
+
+      const { data: payments, error: paymentsError } = await supabase
+        .from("payments")
+        .select("member_id, amount, status")
+        .eq("gym_id", gym.id);
+
+      if (paymentsError) throw paymentsError;
+
+      const formatDate = (dateValue) => {
+        if (!dateValue) return "";
+        const parsed = new Date(dateValue);
+        if (Number.isNaN(parsed.getTime())) return "";
+        return parsed.toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        });
+      };
+
+      const getMonthsFromRange = (startDate, endDate) => {
+        if (!startDate || !endDate) return "";
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return "";
+        const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+        if (days <= 0) return "";
+        return Math.max(1, Math.round(days / 30));
+      };
+
+      const normalizePhone = (phone) => {
+        if (!phone) return "";
+        let cleaned = `${phone}`.replace(/\D/g, "");
+        if (cleaned.startsWith("0")) cleaned = cleaned.slice(1);
+        if (cleaned.length === 10 && !cleaned.startsWith("91")) {
+          cleaned = `91${cleaned}`;
+        }
+        return cleaned;
+      };
+
+      const rows = (membersData || []).map((member, index) => {
+        const memberPayments =
+          payments?.filter((payment) => payment.member_id === member.id && payment.status === "paid") || [];
+        const totalPaid = Math.round(
+          memberPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0)
+        );
+
+        const dueAmount = Math.max(0, Math.round(member.balance || 0));
+        const sortedMemberships = [...(member.memberships || [])].sort((a, b) => {
+          const dateA = new Date(a?.end_date || 0).getTime();
+          const dateB = new Date(b?.end_date || 0).getTime();
+          return dateB - dateA;
+        });
+        const latestMembership = sortedMemberships[0] || null;
+        const admissionType = sortedMemberships.length > 1 ? "Renewal" : "New Admission";
+        const memberName = member.full_name || "N/A";
+        const firstName = memberName.split(" ")[0] || "Member";
+        const message =
+          dueAmount > 0
+            ? `Hi ${firstName}, your payment of Rs ${dueAmount.toLocaleString("en-IN")} is pending. Please pay on time. - ${gym.name || "Gym"}`
+            : `Hi ${firstName}, thank you for your payment. - ${gym.name || "Gym"}`;
+        const whatsappPhone = normalizePhone(member.phone);
+        const whatsappLink = whatsappPhone
+          ? `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(message)}`
+          : "";
+
+        return {
+          "Sr No": index + 1,
+          Name: memberName,
+          "Admission Type": admissionType,
+          "Mobile No": member.phone || "",
+          "Date of Admission": formatDate(member.join_date || member.created_at),
+          Months: getMonthsFromRange(
+            latestMembership?.start_date || member.join_date,
+            latestMembership?.end_date || null
+          ),
+          "Due Date": formatDate(latestMembership?.end_date),
+          "Fees Paid": totalPaid,
+          "Fees Remaining": dueAmount,
+          Message: message,
+          "Whatsapp Link": whatsappLink,
+        };
+      });
+
+      // Prioritize members with pending dues at the top, then by paid amount.
+      rows.sort((leftRow, rightRow) => {
+        if (rightRow["Fees Remaining"] !== leftRow["Fees Remaining"]) {
+          return rightRow["Fees Remaining"] - leftRow["Fees Remaining"];
+        }
+        return rightRow["Fees Paid"] - leftRow["Fees Paid"];
+      });
+      rows.forEach((row, index) => {
+        row["Sr No"] = index + 1;
+      });
+
+      const summary = [
+        ["Gym", gym.name || "Gym"],
+        ["Generated On", new Date().toLocaleString("en-IN")],
+        ["Total Members", rows.length],
+        ["Total Fees Paid", rows.reduce((sum, row) => sum + (row["Fees Paid"] || 0), 0)],
+        ["Total Fees Remaining", rows.reduce((sum, row) => sum + (row["Fees Remaining"] || 0), 0)],
+        [],
+      ];
+
+      const headers = [
+        "Sr No",
+        "Name",
+        "Admission Type",
+        "Mobile No",
+        "Date of Admission",
+        "Months",
+        "Due Date",
+        "Fees Paid",
+        "Fees Remaining",
+        "Message",
+        "Whatsapp Link",
+      ];
+      const dataRows = rows.map((row) => headers.map((header) => row[header]));
+      const worksheet = XLSX.utils.aoa_to_sheet([...summary, headers, ...dataRows]);
+
+      const dataStartRow = summary.length + 2;
+      rows.forEach((row, rowIndex) => {
+        const link = row["Whatsapp Link"];
+        if (!link) return;
+        const cellRef = XLSX.utils.encode_cell({
+          r: dataStartRow + rowIndex - 1,
+          c: headers.indexOf("Whatsapp Link"),
+        });
+        if (worksheet[cellRef]) {
+          worksheet[cellRef].v = "Open Chat";
+          worksheet[cellRef].l = { Target: link, Tooltip: "Open WhatsApp" };
+        }
+      });
+
+      worksheet["!cols"] = [
+        { wch: 8 },
+        { wch: 28 },
+        { wch: 16 },
+        { wch: 14 },
+        { wch: 16 },
+        { wch: 8 },
+        { wch: 14 },
+        { wch: 12 },
+        { wch: 14 },
+        { wch: 70 },
+        { wch: 18 },
+      ];
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Member Analytics");
+
+      const fileName = `${gym.name?.replace(/\s+/g, "_") || "Gym"}_Members_Analytics_${new Date()
+        .toISOString()
+        .split("T")[0]}.xlsx`;
+      XLSX.writeFile(workbook, fileName);
+
+      alert("Excel exported successfully!");
+    } catch (error) {
+      console.error("Error exporting Excel:", error);
+      alert("Failed to export Excel. Please try again.");
+    }
+  };
+
   // ─── Helper functions ────────────────────────────────────────
   const getStatusConfig = (status) => {
     switch (status) {
@@ -786,28 +989,53 @@ Best regards,
               Add New Member
             </button>
             {canViewFinance && (
-              <button
-                onClick={async () => {
-                  setExporting(true);
-                  try {
-                    await exportMembersPDF();
-                  } finally {
-                    setExporting(false);
-                  }
-                }}
-                disabled={exporting}
-                className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50"
-                style={{ minHeight: "44px" }}
-              >
-                {exporting ? (
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                ) : (
-                  <Download className="w-5 h-5" />
-                )}
-                <span className="text-sm">
-                  {exporting ? "Exporting..." : "Export Member Analytics"}
-                </span>
-              </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button
+                  onClick={async () => {
+                    setExportingType("pdf");
+                    try {
+                      await exportMembersPDF();
+                    } finally {
+                      setExportingType(null);
+                    }
+                  }}
+                  disabled={exportingType !== null}
+                  className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50"
+                  style={{ minHeight: "44px" }}
+                >
+                  {exportingType === "pdf" ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  ) : (
+                    <Download className="w-5 h-5" />
+                  )}
+                  <span className="text-sm">
+                    {exportingType === "pdf" ? "Exporting PDF..." : "Export Analytics PDF"}
+                  </span>
+                </button>
+
+                <button
+                  onClick={async () => {
+                    setExportingType("excel");
+                    try {
+                      await exportMembersExcel();
+                    } finally {
+                      setExportingType(null);
+                    }
+                  }}
+                  disabled={exportingType !== null}
+                  className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50"
+                  style={{ minHeight: "44px" }}
+                >
+                  {exportingType === "excel" ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  ) : (
+                    <Download className="w-5 h-5" />
+                  )}
+                  <span className="text-sm">
+                    {exportingType === "excel" ? "Exporting Excel..." : "Export Analytics Excel"}
+                  </span>
+                </button>
+              </div>
             )}
           </div>
         </div>

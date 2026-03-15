@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
 import { supabase } from "@/lib/supabaseClient";
@@ -26,8 +26,23 @@ import {
   CalendarDays,
   Wallet,
   Clock,
+  Download,
 } from "lucide-react";
 import { formatHoursLabel } from "@/lib/utils/trainerAttendance";
+
+function formatTrainerExportDate(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("en-GB").replace(/\//g, "-");
+}
+
+function getTrainerExportMonthKey(value) {
+  if (!value) return "UNSCHEDULED";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "UNSCHEDULED";
+  return date.toLocaleDateString("en-IN", { month: "long" }).toUpperCase();
+}
 
 export default function TrainersPage() {
   const router = useRouter();
@@ -40,6 +55,7 @@ export default function TrainersPage() {
   const [deleting, setDeleting] = useState(false);
   const [payrollMonth, setPayrollMonth] = useState(new Date().toISOString().slice(0, 7));
   const [payrollLoading, setPayrollLoading] = useState(false);
+  const [exportingOverallTrainerExcel, setExportingOverallTrainerExcel] = useState(false);
   const [payrollData, setPayrollData] = useState({ summary: null, trainers: [] });
   const [stats, setStats] = useState({
     total: 0,
@@ -56,18 +72,7 @@ export default function TrainersPage() {
     }
   }, []);
 
-  useEffect(() => {
-    if (selectedGym?.id) {
-      fetchTrainers();
-      if (canCreateTrainer) {
-        fetchPayroll();
-      } else {
-        setPayrollData({ summary: null, trainers: [] });
-      }
-    }
-  }, [selectedGym?.id, payrollMonth, canCreateTrainer]);
-
-  const fetchTrainers = async () => {
+  const fetchTrainers = useCallback(async () => {
     if (!selectedGym?.id) return;
     setLoading(true);
 
@@ -117,9 +122,9 @@ export default function TrainersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedGym?.id]);
 
-  const fetchPayroll = async () => {
+  const fetchPayroll = useCallback(async () => {
     if (!selectedGym?.id) return;
 
     setPayrollLoading(true);
@@ -151,7 +156,18 @@ export default function TrainersPage() {
     } finally {
       setPayrollLoading(false);
     }
-  };
+  }, [selectedGym?.id, payrollMonth]);
+
+  useEffect(() => {
+    if (!selectedGym?.id) return;
+
+    fetchTrainers();
+    if (canCreateTrainer) {
+      fetchPayroll();
+    } else {
+      setPayrollData({ summary: null, trainers: [] });
+    }
+  }, [selectedGym?.id, canCreateTrainer, fetchTrainers, fetchPayroll]);
 
   const handleDeleteTrainer = async (trainer) => {
     setDeleting(true);
@@ -219,6 +235,245 @@ export default function TrainersPage() {
     trainer.specialization?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleExportOverallTrainerExcel = async () => {
+    if (!selectedGym?.id || !selectedGym?.name) {
+      alert("Please select a gym first");
+      return;
+    }
+
+    setExportingOverallTrainerExcel(true);
+    try {
+      const XLSX = await import("xlsx");
+
+      const { data: assignmentsData, error: assignmentsError } = await supabase
+        .from("trainer_member_assignments")
+        .select(
+          "id, member_id, trainer_id, plan_start_date, plan_end_date, assigned_at, plan_total_amount, total_paid_amount, pending_amount, next_payment_date"
+        )
+        .eq("gym_id", selectedGym.id)
+        .order("plan_start_date", { ascending: true, nullsFirst: false })
+        .order("assigned_at", { ascending: true });
+
+      if (assignmentsError) throw assignmentsError;
+
+      const assignments = assignmentsData || [];
+      if (assignments.length === 0) {
+        alert("No trainer plan assignments found to export");
+        return;
+      }
+
+      const memberIds = Array.from(new Set(assignments.map((item) => item.member_id).filter(Boolean)));
+      const trainerIds = Array.from(new Set(assignments.map((item) => item.trainer_id).filter(Boolean)));
+      const assignmentIds = Array.from(new Set(assignments.map((item) => item.id).filter(Boolean)));
+
+      const [{ data: membersData, error: membersError }, { data: profilesData, error: profilesError }, { data: earningsData, error: earningsError }] = await Promise.all([
+        memberIds.length
+          ? supabase
+              .from("members")
+              .select("id, full_name")
+              .eq("gym_id", selectedGym.id)
+              .in("id", memberIds)
+          : Promise.resolve({ data: [], error: null }),
+        trainerIds.length
+          ? supabase
+              .from("profiles")
+              .select("id, first_name, last_name")
+              .in("id", trainerIds)
+          : Promise.resolve({ data: [], error: null }),
+        assignmentIds.length
+          ? supabase
+              .from("trainer_earnings")
+              .select("assignment_id, member_id, trainer_id, total_amount, created_at")
+              .eq("gym_id", selectedGym.id)
+              .in("assignment_id", assignmentIds)
+              .order("created_at", { ascending: true })
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+
+      if (membersError) throw membersError;
+      if (profilesError) throw profilesError;
+      if (earningsError) throw earningsError;
+
+      const membersById = (membersData || []).reduce((acc, member) => {
+        acc[member.id] = member.full_name || "Member";
+        return acc;
+      }, {});
+
+      const trainersById = (profilesData || []).reduce((acc, profile) => {
+        const fullName = `${profile.first_name || ""} ${profile.last_name || ""}`.trim();
+        acc[profile.id] = fullName || "Trainer";
+        return acc;
+      }, {});
+
+      const earningsByAssignmentId = (earningsData || []).reduce((acc, earning) => {
+        if (!acc[earning.assignment_id]) {
+          acc[earning.assignment_id] = [];
+        }
+        acc[earning.assignment_id].push(earning);
+        return acc;
+      }, {});
+
+      const detailRows = [];
+      assignments.forEach((assignment) => {
+        const startDateRaw = assignment.plan_start_date || assignment.assigned_at || null;
+        const dueDateRaw = assignment.next_payment_date || assignment.plan_end_date || null;
+        const monthKey = getTrainerExportMonthKey(startDateRaw);
+        const trainerName = trainersById[assignment.trainer_id] || "Trainer";
+        const clientName = membersById[assignment.member_id] || "Member";
+        const amount = Number(assignment.plan_total_amount || 0);
+        const balance = Number(assignment.pending_amount || 0);
+        const assignmentPayments = earningsByAssignmentId[assignment.id] || [];
+
+        if (assignmentPayments.length === 0) {
+          detailRows.push({
+            monthKey,
+            sortDate: startDateRaw ? new Date(startDateRaw).getTime() : Number.MAX_SAFE_INTEGER,
+            trainerName,
+            clientName,
+            amount,
+            startDate: formatTrainerExportDate(startDateRaw),
+            dueDate: formatTrainerExportDate(dueDateRaw),
+            balance,
+            status: balance > 0 ? "PENDING" : "PAID",
+            payment: "",
+            time: "",
+          });
+          return;
+        }
+
+        assignmentPayments.forEach((payment) => {
+          detailRows.push({
+            monthKey,
+            sortDate: startDateRaw ? new Date(startDateRaw).getTime() : Number.MAX_SAFE_INTEGER,
+            trainerName,
+            clientName,
+            amount,
+            startDate: formatTrainerExportDate(startDateRaw),
+            dueDate: formatTrainerExportDate(dueDateRaw),
+            balance,
+            status: balance > 0 ? "PARTIAL" : "PAID",
+            payment: Number(payment.total_amount || 0),
+            time: formatTrainerExportDate(payment.created_at),
+          });
+        });
+      });
+
+      detailRows.sort((leftRow, rightRow) => {
+        if (leftRow.sortDate !== rightRow.sortDate) return leftRow.sortDate - rightRow.sortDate;
+        if (leftRow.trainerName !== rightRow.trainerName) return leftRow.trainerName.localeCompare(rightRow.trainerName);
+        return leftRow.clientName.localeCompare(rightRow.clientName);
+      });
+
+      const groupedRows = new Map();
+      detailRows.forEach((row) => {
+        if (!groupedRows.has(row.monthKey)) groupedRows.set(row.monthKey, []);
+        groupedRows.get(row.monthKey).push(row);
+      });
+
+      const header = [
+        "TRAINER NAME",
+        "CLIENT NAME",
+        "AMOUNT",
+        "START DATE",
+        "DUE DATE",
+        "BALANCE",
+        "STATUS",
+        "PAYMENT",
+        "TIME",
+      ];
+
+      const rows = [];
+      const monthHeaderRows = [];
+      const columnHeaderRows = [];
+
+      groupedRows.forEach((monthRows, monthKey) => {
+        rows.push([monthKey]);
+        monthHeaderRows.push(rows.length);
+        rows.push(header);
+        columnHeaderRows.push(rows.length);
+
+        monthRows.forEach((row) => {
+          rows.push([
+            row.trainerName,
+            row.clientName,
+            row.amount,
+            row.startDate,
+            row.dueDate,
+            row.balance,
+            row.status,
+            row.payment,
+            row.time,
+          ]);
+        });
+
+        rows.push([]);
+      });
+
+      const sheet = XLSX.utils.aoa_to_sheet(rows);
+      sheet["!cols"] = [
+        { wch: 20 },
+        { wch: 24 },
+        { wch: 12 },
+        { wch: 14 },
+        { wch: 14 },
+        { wch: 12 },
+        { wch: 12 },
+        { wch: 12 },
+        { wch: 14 },
+      ];
+
+      monthHeaderRows.forEach((rowNum) => {
+        const cellRef = `A${rowNum}`;
+        if (!sheet[cellRef]) return;
+        sheet[cellRef].s = {
+          font: { bold: true, color: { rgb: "111827" }, sz: 12 },
+          fill: { fgColor: { rgb: "FFF200" } },
+          alignment: { horizontal: "center", vertical: "center" },
+        };
+      });
+
+      columnHeaderRows.forEach((rowNum) => {
+        for (let colIndex = 0; colIndex < header.length; colIndex += 1) {
+          const ref = XLSX.utils.encode_cell({ r: rowNum - 1, c: colIndex });
+          if (!sheet[ref]) continue;
+          sheet[ref].s = {
+            font: { bold: true, color: { rgb: "1F2937" }, sz: 11 },
+            fill: { fgColor: { rgb: "DCEEFF" } },
+            alignment: { horizontal: "center", vertical: "center" },
+          };
+        }
+      });
+
+      for (let row = 1; row <= rows.length; row += 1) {
+        const amountRef = `C${row}`;
+        const balanceRef = `F${row}`;
+        const paymentRef = `H${row}`;
+        if (sheet[amountRef] && typeof sheet[amountRef].v === "number") {
+          sheet[amountRef].z = "#,##0";
+        }
+        if (sheet[balanceRef] && typeof sheet[balanceRef].v === "number") {
+          sheet[balanceRef].z = "#,##0";
+        }
+        if (sheet[paymentRef] && typeof sheet[paymentRef].v === "number") {
+          sheet[paymentRef].z = "#,##0";
+        }
+      }
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, sheet, "TRAINER+PT");
+
+      const safeGymName = (selectedGym.name || "Gym").replace(/\s+/g, "_");
+      XLSX.writeFile(workbook, `${safeGymName}_Trainer_PT_Overall_${new Date().toISOString().split("T")[0]}.xlsx`);
+
+      alert("Overall trainer Excel exported successfully");
+    } catch (error) {
+      console.error("Error exporting overall trainer excel:", error);
+      alert("Failed to export overall trainer Excel. Please try again.");
+    } finally {
+      setExportingOverallTrainerExcel(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       <Header title="Trainer Management" />
@@ -279,14 +534,24 @@ export default function TrainersPage() {
                 <h3 className="font-semibold text-gray-900">Monthly Payroll Dashboard</h3>
                 <p className="text-xs text-gray-500">Attendance-based salary, PT charges, and total payable by trainer.</p>
               </div>
-              <div className="relative">
-                <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="month"
-                  value={payrollMonth}
-                  onChange={(e) => setPayrollMonth(e.target.value)}
-                  className="pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleExportOverallTrainerExcel}
+                  disabled={exportingOverallTrainerExcel || payrollLoading}
+                  className="px-3 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-sm font-medium flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <Download className="w-4 h-4" />
+                  {exportingOverallTrainerExcel ? "Exporting..." : "Overall Excel"}
+                </button>
+                <div className="relative">
+                  <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="month"
+                    value={payrollMonth}
+                    onChange={(e) => setPayrollMonth(e.target.value)}
+                    className="pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
               </div>
             </div>
 

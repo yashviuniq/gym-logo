@@ -34,7 +34,11 @@ import {
   Pill,
   Megaphone,
   Package,
-  IndianRupee
+  IndianRupee,
+  X,
+  Pencil,
+  Save,
+  Loader2
 } from "lucide-react";
 
 const EXPENSE_EXCEL_AMOUNT_FORMAT = "#,##0.##";
@@ -177,6 +181,28 @@ function formatFinanceTransactionDate(dateString) {
   });
 }
 
+function getDateInputValue(value) {
+  if (!value) return "";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return parsed.toISOString().split("T")[0];
+}
+
+function mergeDateWithOriginalTime(dateValue, originalDateTime) {
+  if (!dateValue) return null;
+  const fallbackTime = "12:00:00.000Z";
+
+  if (originalDateTime) {
+    const original = new Date(originalDateTime);
+    if (!Number.isNaN(original.getTime())) {
+      const timePart = original.toISOString().split("T")[1] || fallbackTime;
+      return `${dateValue}T${timePart}`;
+    }
+  }
+
+  return `${dateValue}T${fallbackTime}`;
+}
+
 function mapExpenseRecord(expense) {
   return {
     id: expense.id,
@@ -218,6 +244,7 @@ function getStoredGym() {
 export default function FinancePage() {
   const router = useRouter();
   const { canViewFinance } = useUserRole();
+  const { showSuccess, showError } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
   const [dateFilter, setDateFilter] = useState("month");
   const [customStartDate, setCustomStartDate] = useState("");
@@ -236,6 +263,16 @@ export default function FinancePage() {
   const [pendingSearchInput, setPendingSearchInput] = useState("");
   const [pendingSearch, setPendingSearch] = useState("");
   const [paymentModes, setPaymentModes] = useState([]);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [transactionDetailsLoading, setTransactionDetailsLoading] = useState(false);
+  const [transactionEditMode, setTransactionEditMode] = useState(false);
+  const [transactionSaving, setTransactionSaving] = useState(false);
+  const [transactionEditValues, setTransactionEditValues] = useState({
+    amount: "",
+    paymentMode: "cash",
+    paidDate: "",
+    notes: "",
+  });
   const lastFetchParamsRef = useRef(null);
 
   useEffect(() => {
@@ -383,10 +420,13 @@ export default function FinancePage() {
         return {
           id: payment.id,
           name: payment.member_full_name || "Unknown",
+          memberPhone: payment.member_phone || "",
           type: payment.membership_id ? "membership" : "trainer",
           amount: payment.amount,
           mode: payment.payment_mode,
           date: formatFinanceTransactionDate(payment.paid_at || payment.created_at),
+          paidAtRaw: payment.paid_at || null,
+          createdAtRaw: payment.created_at,
           status: payment.status,
           collectedBy: collectorName || null,
           collectedByFallback: payment.collected_by || null,
@@ -498,6 +538,139 @@ export default function FinancePage() {
       case 'upi': return <CreditCard className="w-4 h-4" />;
       case 'card': return <CreditCard className="w-4 h-4" />;
       default: return <IndianRupee className="w-4 h-4" />;
+    }
+  };
+
+  const closeTransactionModal = () => {
+    setSelectedTransaction(null);
+    setTransactionEditMode(false);
+    setTransactionDetailsLoading(false);
+    setTransactionSaving(false);
+    setTransactionEditValues({
+      amount: "",
+      paymentMode: "cash",
+      paidDate: "",
+      notes: "",
+    });
+  };
+
+  const handleTransactionClick = async (txn) => {
+    if (!txn?.id) return;
+
+    setSelectedTransaction(txn);
+    setTransactionEditMode(false);
+    setTransactionDetailsLoading(true);
+
+    try {
+      const { data, error } = await supabase
+        .from("payments")
+        .select(`
+          id,
+          amount,
+          payment_mode,
+          status,
+          paid_at,
+          created_at,
+          notes,
+          next_payment_date,
+          remaining_amount,
+          membership_id,
+          collected_by_name,
+          members (
+            full_name,
+            phone
+          )
+        `)
+        .eq("id", txn.id)
+        .single();
+
+      if (error) throw error;
+
+      const detailedTxn = {
+        ...txn,
+        name: data?.members?.full_name || txn.name,
+        memberPhone: data?.members?.phone || txn.memberPhone || "",
+        amount: Number(data?.amount || txn.amount || 0),
+        mode: data?.payment_mode || txn.mode || "cash",
+        status: data?.status || txn.status || "paid",
+        paidAtRaw: data?.paid_at || txn.paidAtRaw || null,
+        createdAtRaw: data?.created_at || txn.createdAtRaw || null,
+        notes: data?.notes || "",
+        nextPaymentDate: data?.next_payment_date || null,
+        remainingAmount: Number(data?.remaining_amount || 0),
+        membershipId: data?.membership_id || null,
+        collectedBy: data?.collected_by_name || txn.collectedBy || null,
+      };
+
+      setSelectedTransaction(detailedTxn);
+      setTransactionEditValues({
+        amount: String(detailedTxn.amount || ""),
+        paymentMode: detailedTxn.mode || "cash",
+        paidDate: getDateInputValue(detailedTxn.paidAtRaw || detailedTxn.createdAtRaw),
+        notes: detailedTxn.notes || "",
+      });
+    } catch (error) {
+      console.error("Error loading transaction details:", error);
+      showError("Failed to load transaction details");
+    } finally {
+      setTransactionDetailsLoading(false);
+    }
+  };
+
+  const handleSaveTransactionEdit = async () => {
+    if (!selectedTransaction?.id || !selectedGym?.id) return;
+
+    const parsedAmount = Number(transactionEditValues.amount);
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      showError("Please enter a valid amount");
+      return;
+    }
+
+    if (!transactionEditValues.paidDate) {
+      showError("Please select a valid payment date");
+      return;
+    }
+
+    try {
+      setTransactionSaving(true);
+
+      const updatedPaidAt = mergeDateWithOriginalTime(
+        transactionEditValues.paidDate,
+        selectedTransaction.paidAtRaw || selectedTransaction.createdAtRaw
+      );
+
+      const payload = {
+        amount: parsedAmount,
+        payment_mode: transactionEditValues.paymentMode,
+        paid_at: updatedPaidAt,
+        notes: transactionEditValues.notes.trim() || null,
+      };
+
+      const { error } = await supabase
+        .from("payments")
+        .update(payload)
+        .eq("id", selectedTransaction.id)
+        .eq("gym_id", selectedGym.id);
+
+      if (error) throw error;
+
+      showSuccess("Transaction updated successfully");
+      setTransactionEditMode(false);
+      await fetchFinancialData(selectedGym.id);
+
+      setSelectedTransaction((current) => current ? ({
+        ...current,
+        amount: parsedAmount,
+        mode: transactionEditValues.paymentMode,
+        paidAtRaw: updatedPaidAt,
+        notes: transactionEditValues.notes.trim(),
+        date: formatFinanceTransactionDate(updatedPaidAt),
+      }) : current);
+    } catch (error) {
+      console.error("Error updating transaction:", error);
+      showError("Failed to update transaction");
+    } finally {
+      setTransactionSaving(false);
     }
   };
 
@@ -789,7 +962,8 @@ export default function FinancePage() {
                     recentTransactions.map((txn) => (
                       <div
                         key={txn.id}
-                        className="p-3 hover:bg-gray-50 rounded-lg transition-all active:scale-95"
+                        onClick={() => handleTransactionClick(txn)}
+                        className="p-3 hover:bg-gray-50 rounded-lg transition-all active:scale-95 cursor-pointer"
                       >
                         <div className="flex items-start gap-3">
                           <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
@@ -1128,6 +1302,156 @@ Thank you,
       </button>
 
       {/* Export FAB */}
+      {selectedTransaction && (
+        <div className="fixed inset-0 z-50 mb-15 bg-black/50 flex items-end sm:items-center sm:justify-center p-3">
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="text-base font-semibold text-gray-900">Transaction Details</h3>
+              <button
+                onClick={closeTransactionModal}
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {transactionDetailsLoading ? (
+              <div className="p-6 flex items-center justify-center gap-2 text-gray-600 text-sm">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Loading details...
+              </div>
+            ) : (
+              <div className="p-4 space-y-4">
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+                  <p className="text-sm font-semibold text-gray-900">{selectedTransaction.name}</p>
+                  <p className="text-xs text-gray-500 mt-1">{selectedTransaction.memberPhone || "Phone not available"}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-lg border border-gray-200 p-3">
+                    <p className="text-xs text-gray-500">Type</p>
+                    <p className="text-sm font-medium text-gray-900 capitalize">{selectedTransaction.type}</p>
+                  </div>
+                  <div className="rounded-lg border border-gray-200 p-3">
+                    <p className="text-xs text-gray-500">Status</p>
+                    <p className="text-sm font-medium text-gray-900 capitalize">{selectedTransaction.status || "paid"}</p>
+                  </div>
+                  <div className="rounded-lg border border-gray-200 p-3">
+                    <p className="text-xs text-gray-500">Created</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {selectedTransaction.createdAtRaw
+                        ? new Date(selectedTransaction.createdAtRaw).toLocaleString("en-IN")
+                        : "N/A"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-gray-200 p-3">
+                    <p className="text-xs text-gray-500">Paid Date</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {selectedTransaction.paidAtRaw
+                        ? new Date(selectedTransaction.paidAtRaw).toLocaleString("en-IN")
+                        : "N/A"}
+                    </p>
+                  </div>
+                </div>
+
+                {transactionEditMode ? (
+                  <div className="space-y-3 rounded-xl border border-blue-200 bg-blue-50 p-3">
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Amount</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={transactionEditValues.amount}
+                        onChange={(e) => setTransactionEditValues((prev) => ({ ...prev, amount: e.target.value }))}
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Payment Mode</label>
+                        <select
+                          value={transactionEditValues.paymentMode}
+                          onChange={(e) => setTransactionEditValues((prev) => ({ ...prev, paymentMode: e.target.value }))}
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                          <option value="cash">Cash</option>
+                          <option value="upi">UPI</option>
+                          <option value="card">Card</option>
+                          <option value="bank">Bank</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Payment Date</label>
+                        <input
+                          type="date"
+                          value={transactionEditValues.paidDate}
+                          onChange={(e) => setTransactionEditValues((prev) => ({ ...prev, paidDate: e.target.value }))}
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Notes</label>
+                      <textarea
+                        rows={2}
+                        value={transactionEditValues.notes}
+                        onChange={(e) => setTransactionEditValues((prev) => ({ ...prev, notes: e.target.value }))}
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                        placeholder="Optional notes"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-gray-200 p-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-gray-500">Amount</p>
+                      <p className="text-lg font-bold text-emerald-600">+{formatCurrency(selectedTransaction.amount)}</p>
+                    </div>
+                    <div className="mt-2 text-xs text-gray-500">
+                      Mode: <span className="font-medium text-gray-800 uppercase">{selectedTransaction.mode || "cash"}</span>
+                    </div>
+                    {selectedTransaction.notes ? (
+                      <div className="mt-2 text-xs text-gray-600">Notes: {selectedTransaction.notes}</div>
+                    ) : null}
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2">
+                  {transactionEditMode ? (
+                    <>
+                      <button
+                        onClick={() => setTransactionEditMode(false)}
+                        disabled={transactionSaving}
+                        className="flex-1 rounded-lg border border-gray-300 py-2 text-sm font-medium text-gray-700"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleSaveTransactionEdit}
+                        disabled={transactionSaving}
+                        className="flex-1 rounded-lg bg-blue-600 py-2 text-sm font-semibold text-white flex items-center justify-center gap-1 disabled:opacity-60"
+                      >
+                        {transactionSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                        {transactionSaving ? "Saving..." : "Save Changes"}
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => setTransactionEditMode(true)}
+                      className="w-full rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 py-2 text-sm font-semibold text-white flex items-center justify-center gap-1"
+                    >
+                      <Pencil className="w-4 h-4" />
+                      Edit Transaction
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       
     </div>
   );
@@ -1407,3 +1731,4 @@ function ExpensesSection({ router, selectedGym, dateFilter, customStartDate, cus
     </div>
   );
 }
+

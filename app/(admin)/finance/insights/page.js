@@ -59,6 +59,21 @@ function formatExcelDate(value) {
   });
 }
 
+function formatExcelDateTime(value) {
+  if (!value) return "-";
+
+  const date = new Date(value.length <= 10 ? `${value}T00:00:00` : value);
+  if (Number.isNaN(date.getTime())) return "-";
+
+  return date.toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 // ─── Week/Day Breakdown Helpers ───────────────────────────────
 
 function getWeeksForMonth(month, year) {
@@ -374,6 +389,7 @@ export default function FinanceInsightsPage() {
   const [exporting, setExporting] = useState(false);
   const [pdfExporting, setPdfExporting] = useState(false);
   const [overallPdfExporting, setOverallPdfExporting] = useState(false);
+  const [overallExcelExporting, setOverallExcelExporting] = useState(false);
   const [drillDown, setDrillDown] = useState(null); // null | "new_joins" | "revenue" | "renewals"
 
   // Week & Day drill-down state
@@ -944,6 +960,250 @@ export default function FinanceInsightsPage() {
   }
 };
 
+  const handleExportOverallExcel = async () => {
+    if (!selectedGym?.id || !selectedGym?.name || !data) return;
+
+    setOverallExcelExporting(true);
+    try {
+      const XLSX = await import("xlsx");
+      const workbook = XLSX.utils.book_new();
+
+      const years = getReportYears(now.getFullYear());
+      const yearlyHistory = [];
+      const detailedTransactions = [];
+      const dayRollupMap = new Map();
+
+      for (const year of years) {
+        const monthLimit = year === now.getFullYear() ? now.getMonth() + 1 : 12;
+        const monthResponses = await Promise.all(
+          Array.from({ length: monthLimit }, (_, monthIndex) =>
+            requestInsights(selectedGym.id, monthIndex, year)
+          )
+        );
+
+        const months = monthResponses.map((monthData, monthIndex) => {
+          const revenue = Number(monthData?.month_revenue || 0);
+          const newJoins = Number(monthData?.month_new_joins || 0);
+          const renewals = Number(monthData?.month_renewals || 0);
+          const activeMembers = Number(monthData?.month_active_members || 0);
+
+          const payments = monthData?.month_revenue_list || [];
+          payments.forEach((payment) => {
+            const dateValue = getPaymentDate(payment);
+            const date = new Date(dateValue);
+            if (Number.isNaN(date.getTime())) return;
+
+            const rowYear = date.getFullYear();
+            const rowMonthIndex = date.getMonth();
+            const rowMonth = MONTHS[rowMonthIndex];
+            const rowDay = date.getDate();
+            const rowDate = `${rowYear}-${String(rowMonthIndex + 1).padStart(2, "0")}-${String(rowDay).padStart(2, "0")}`;
+            const amount = Number(payment.amount || 0);
+
+            const dayKey = `${rowYear}-${String(rowMonthIndex + 1).padStart(2, "0")}-${String(rowDay).padStart(2, "0")}`;
+            const existingDay = dayRollupMap.get(dayKey);
+            if (existingDay) {
+              existingDay.txnCount += 1;
+              existingDay.revenue += amount;
+            } else {
+              dayRollupMap.set(dayKey, {
+                year: rowYear,
+                monthIndex: rowMonthIndex,
+                month: rowMonth,
+                day: rowDay,
+                date: rowDate,
+                txnCount: 1,
+                revenue: amount,
+              });
+            }
+
+            detailedTransactions.push({
+              year: rowYear,
+              monthIndex: rowMonthIndex,
+              month: rowMonth,
+              day: rowDay,
+              date: rowDate,
+              memberName: payment.member_name || "Unknown",
+              phone: payment.phone || "-",
+              amount,
+              paymentMode: payment.payment_mode || "-",
+              status: payment.status || "paid",
+              collectedBy: payment.collected_by_name || "-",
+              paidAt: formatExcelDateTime(dateValue),
+            });
+          });
+
+          return {
+            monthIndex,
+            monthName: MONTHS[monthIndex],
+            revenue,
+            newJoins,
+            renewals,
+            activeMembers,
+          };
+        });
+
+        yearlyHistory.push({
+          year,
+          totalRevenue: months.reduce((sum, month) => sum + month.revenue, 0),
+          totalNewJoins: months.reduce((sum, m) => sum + m.newJoins, 0),
+          totalRenewals: months.reduce((sum, m) => sum + m.renewals, 0),
+          months,
+        });
+      }
+
+      const overallSummary = summarizeOverallRevenueHistory(yearlyHistory);
+      const generatedAt = new Date().toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      const overviewRows = [
+        ["Overall Finance Report"],
+        ["Gym", selectedGym.name],
+        ["Generated At", generatedAt],
+        ["Reporting Range", `${REPORT_START_YEAR} - ${now.getFullYear()}`],
+        [],
+        ["KPI", "Value"],
+        ["All-Time Revenue", Number(data?.total_revenue_all_time || 0)],
+        ["Salary Paid", Number(data?.total_salary_paid_all_time || 0)],
+        ["Pending Dues", Number(data?.total_dues_all_time || 0)],
+        ["Net Profit", Number(data?.net_profit_all_time || 0)],
+        ["Average Monthly Revenue", Number(data?.avg_monthly_revenue || 0)],
+        ["Years Covered", overallSummary.yearsCovered],
+        ["Active Revenue Years", overallSummary.activeYears],
+      ];
+
+      const yearMonthRows = [
+        ["Year", "Month", "Revenue", "New Joins", "Renewals", "Active Members"],
+        ...yearlyHistory.flatMap((yearEntry) =>
+          yearEntry.months.map((monthEntry) => [
+            yearEntry.year,
+            monthEntry.monthName,
+            Number(monthEntry.revenue || 0),
+            Number(monthEntry.newJoins || 0),
+            Number(monthEntry.renewals || 0),
+            Number(monthEntry.activeMembers || 0),
+          ])
+        ),
+      ];
+
+      const dayRollupRows = [
+        ["Year", "Month", "Day", "Date", "Transactions", "Revenue"],
+        ...Array.from(dayRollupMap.values())
+          .sort((a, b) => {
+            if (a.year !== b.year) return a.year - b.year;
+            if (a.monthIndex !== b.monthIndex) return a.monthIndex - b.monthIndex;
+            return a.day - b.day;
+          })
+          .map((dayEntry) => [
+            dayEntry.year,
+            dayEntry.month,
+            dayEntry.day,
+            dayEntry.date,
+            dayEntry.txnCount,
+            Number(dayEntry.revenue || 0),
+          ]),
+      ];
+
+      const detailedRows = [
+        ["Year", "Month", "Day", "Date", "Member", "Phone", "Amount", "Mode", "Status", "Collected By", "Paid At"],
+        ...detailedTransactions
+          .sort((a, b) => {
+            if (a.year !== b.year) return a.year - b.year;
+            if (a.monthIndex !== b.monthIndex) return a.monthIndex - b.monthIndex;
+            if (a.day !== b.day) return a.day - b.day;
+            return a.memberName.localeCompare(b.memberName);
+          })
+          .map((tx) => [
+            tx.year,
+            tx.month,
+            tx.day,
+            tx.date,
+            tx.memberName,
+            tx.phone,
+            Number(tx.amount || 0),
+            tx.paymentMode,
+            tx.status,
+            tx.collectedBy,
+            tx.paidAt,
+          ]),
+      ];
+
+      const addSheet = (name, rows, cols = [], currencyColumns = [], currencyStartRow = 1) => {
+        const sheet = XLSX.utils.aoa_to_sheet(rows);
+        if (cols.length > 0) sheet["!cols"] = cols;
+        if (currencyColumns.length > 0) {
+          const range = XLSX.utils.decode_range(sheet["!ref"] || "A1");
+          for (let row = currencyStartRow; row <= range.e.r; row += 1) {
+            currencyColumns.forEach((columnIndex) => {
+              const cellRef = XLSX.utils.encode_cell({ r: row, c: columnIndex });
+              const cell = sheet[cellRef];
+              if (cell && typeof cell.v === "number") {
+                cell.z = EXCEL_CURRENCY_FORMAT;
+              }
+            });
+          }
+        }
+        XLSX.utils.book_append_sheet(workbook, sheet, name);
+      };
+
+      addSheet(
+        "Overview",
+        overviewRows,
+        [{ wch: 30 }, { wch: 24 }],
+        [1],
+        6
+      );
+
+      addSheet(
+        "Year-Month",
+        yearMonthRows,
+        [{ wch: 10 }, { wch: 12 }, { wch: 16 }, { wch: 12 }, { wch: 12 }, { wch: 14 }],
+        [2],
+        1
+      );
+
+      addSheet(
+        "Year-Month-Day",
+        dayRollupRows,
+        [{ wch: 10 }, { wch: 12 }, { wch: 8 }, { wch: 14 }, { wch: 14 }, { wch: 16 }],
+        [5],
+        1
+      );
+
+      addSheet(
+        "Transactions",
+        detailedRows,
+        [
+          { wch: 10 },
+          { wch: 12 },
+          { wch: 8 },
+          { wch: 14 },
+          { wch: 24 },
+          { wch: 16 },
+          { wch: 14 },
+          { wch: 12 },
+          { wch: 12 },
+          { wch: 20 },
+          { wch: 22 },
+        ],
+        [6],
+        1
+      );
+
+      XLSX.writeFile(workbook, `${getFinanceOverallExportBaseName(selectedGym.name)}.xlsx`);
+    } catch (error) {
+      console.error("Error exporting overall revenue Excel:", error);
+      window.alert("Failed to export overall Excel. Please try again.");
+    } finally {
+      setOverallExcelExporting(false);
+    }
+  };
+
 
   if (loading) {
     return (
@@ -1033,20 +1293,37 @@ export default function FinanceInsightsPage() {
             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
               All Time Overview
             </h2>
-            <button
-              onClick={handleExportOverallPdf}
-              disabled={overallPdfExporting || loading || monthLoading || !data}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-1.5 shrink-0"
-              title="Export overall multi-year revenue report"
-            >
-              {overallPdfExporting ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <FileText className="w-3.5 h-3.5" />
-              )}
-              <span className="hidden sm:inline">Export Overall PDF</span>
-              <span className="sm:hidden">Overall PDF</span>
-            </button>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={handleExportOverallExcel}
+                disabled={overallExcelExporting || loading || monthLoading || !data}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-1.5"
+                title="Export overall multi-year report as Excel"
+              >
+                {overallExcelExporting ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Download className="w-3.5 h-3.5" />
+                )}
+                <span className="hidden sm:inline">Export Overall Excel</span>
+                <span className="sm:hidden">Overall Excel</span>
+              </button>
+
+              <button
+                onClick={handleExportOverallPdf}
+                disabled={overallPdfExporting || loading || monthLoading || !data}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-1.5"
+                title="Export overall multi-year revenue report"
+              >
+                {overallPdfExporting ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <FileText className="w-3.5 h-3.5" />
+                )}
+                <span className="hidden sm:inline">Export Overall PDF</span>
+                <span className="sm:hidden">Overall PDF</span>
+              </button>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             {summaryCards.map((card, idx) => (

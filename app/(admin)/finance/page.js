@@ -165,10 +165,7 @@ function formatFinanceTransactionDate(dateString) {
   yesterday.setDate(yesterday.getDate() - 1);
 
   if (date.toDateString() === today.toDateString()) {
-    return `Today, ${date.toLocaleTimeString("en-IN", {
-      hour: "2-digit",
-      minute: "2-digit"
-    })}`;
+    return "Today";
   }
 
   if (date.toDateString() === yesterday.toDateString()) {

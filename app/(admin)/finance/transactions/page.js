@@ -121,32 +121,12 @@ export default function TransactionsPage() {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    const today = new Date();
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
+    if (Number.isNaN(date.getTime())) return "";
 
-    if (date.toDateString() === today.toDateString()) {
-      return `Today, ${date.toLocaleTimeString("en-IN", { 
-        hour: "2-digit", 
-        minute: "2-digit" 
-      })}`;
-    } else if (date.toDateString() === yesterday.toDateString()) {
-      return `Yesterday, ${date.toLocaleTimeString("en-IN", { 
-        hour: "2-digit", 
-        minute: "2-digit" 
-      })}`;
-    } else {
-      const dateStr = date.toLocaleDateString("en-IN", { 
-        month: "short", 
-        day: "numeric",
-        year: date.getFullYear() !== today.getFullYear() ? "numeric" : undefined
-      });
-      const timeStr = date.toLocaleTimeString("en-IN", { 
-        hour: "2-digit", 
-        minute: "2-digit" 
-      });
-      return `${dateStr}, ${timeStr}`;
-    }
+    return date.toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "long",
+    });
   };
 
   if (loading) {
@@ -249,9 +229,6 @@ export default function TransactionsPage() {
                     <p className="text-xs text-gray-500 capitalize">
                       {txn.type.replace("_", " ")} • {txn.mode} • {formatDate(txn.date)}
                     </p>
-                    {txn.collectedBy && (
-                      <p className="text-xs text-purple-600">by {txn.collectedBy}</p>
-                    )}
                   </div>
                 </div>
                 <div className="text-right">

@@ -378,13 +378,16 @@ export default function FinancePage() {
       }
 
       const payments = result.payments || [];
+      const paidPayments = payments.filter(
+        (payment) => String(payment.status || "").toLowerCase() === "paid"
+      );
       const membersWithDues = result.members_with_dues || [];
       const expensesTotal = parseFloat(result.expenses_total || 0);
       const paymentsWithNextDate = result.payments_with_next_date || [];
       const trainerInstallmentsPending = result.pending_trainer_installments || [];
 
-      // All payments returned are already filtered by the selected period
-      const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
+      // Revenue cards and transaction list should only include paid entries
+      const totalRevenue = paidPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
       // Today's collection: for "today" filter it equals totalRevenue;
       // for other filters, compute from today's subset
@@ -395,9 +398,9 @@ export default function FinancePage() {
         todayCollection = totalRevenue; // show full period total in the card
       } else {
         const todayStr = new Date().toDateString();
-        todayCollection = payments
+        todayCollection = paidPayments
           .filter(p => new Date(p.paid_at || p.created_at).toDateString() === todayStr)
-          .reduce((sum, p) => sum + p.amount, 0);
+          .reduce((sum, p) => sum + (p.amount || 0), 0);
       }
 
       setFinancialData({
@@ -408,7 +411,7 @@ export default function FinancePage() {
       });
 
       // Build recent transactions (collector_name resolved by RPC via profiles join)
-      const transformedTransactions = payments.slice(0, 10).map((payment) => {
+      const transformedTransactions = paidPayments.slice(0, 10).map((payment) => {
         let collectorName = payment.collector_name;
         if (!collectorName && payment.collected_by_name && !payment.collected_by_name.includes('@')) {
           collectorName = payment.collected_by_name;
@@ -432,9 +435,9 @@ export default function FinancePage() {
       setRecentTransactions(transformedTransactions);
 
       // Build payment mode stats
-      const modeStats = payments.reduce((acc, payment) => {
+      const modeStats = paidPayments.reduce((acc, payment) => {
         const mode = payment.payment_mode?.toUpperCase() || "UNKNOWN";
-        acc[mode] = (acc[mode] || 0) + payment.amount;
+        acc[mode] = (acc[mode] || 0) + (payment.amount || 0);
         return acc;
       }, {});
 

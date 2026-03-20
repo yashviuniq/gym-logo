@@ -47,8 +47,10 @@ const calculateExtendedTillDate = (startDate, durationDays) => {
 export default function RenewalHistoryModal({ member, renewalHistory, onClose, onPaymentModeUpdated }) {
     const [paymentModeOverrides, setPaymentModeOverrides] = useState({});
     const [renewalOverrides, setRenewalOverrides] = useState({});
+    const [deletedMembershipIds, setDeletedMembershipIds] = useState({});
     const [savingPaymentId, setSavingPaymentId] = useState(null);
     const [editingMembershipId, setEditingMembershipId] = useState(null);
+    const [deletingMembershipId, setDeletingMembershipId] = useState(null);
     const [editingValues, setEditingValues] = useState({
         renewedAt: "",
         customPrice: "",
@@ -57,13 +59,15 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
     const [savingMembershipId, setSavingMembershipId] = useState(null);
     const { showSuccess, showError } = useToast();
 
-    const historyItems = (renewalHistory || []).map((item) => ({
-        ...item,
-        ...renewalOverrides[item.membershipId],
-        paymentMode: item.paymentId && paymentModeOverrides[item.paymentId]
-            ? paymentModeOverrides[item.paymentId]
-            : item.paymentMode,
-    }));
+    const historyItems = (renewalHistory || [])
+        .filter((item) => !deletedMembershipIds[item.membershipId])
+        .map((item) => ({
+            ...item,
+            ...renewalOverrides[item.membershipId],
+            paymentMode: item.paymentId && paymentModeOverrides[item.paymentId]
+                ? paymentModeOverrides[item.paymentId]
+                : item.paymentMode,
+        }));
 
     const totalPaid = member?.totalPaid ?? historyItems.reduce(
         (sum, renewal) => sum + (renewal.paymentAmount || 0),
@@ -269,6 +273,67 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
         onPaymentModeUpdated?.();
     };
 
+    const deleteRenewalRecord = async (renewal) => {
+        if (!renewal?.membershipId) return;
+
+        const confirmed = window.confirm(
+            `Delete ${renewal.planName} renewal record? This will permanently remove this renewal history entry.`
+        );
+        if (!confirmed) return;
+
+        setDeletingMembershipId(renewal.membershipId);
+
+        const { error: paymentsDeleteError } = await supabase
+            .from("payments")
+            .delete()
+            .eq("membership_id", renewal.membershipId);
+
+        if (paymentsDeleteError) {
+            console.error("Error deleting linked payments:", paymentsDeleteError);
+            showError("Failed to delete linked payment records");
+            setDeletingMembershipId(null);
+            return;
+        }
+
+        const { error: membershipDeleteError } = await supabase
+            .from("memberships")
+            .delete()
+            .eq("id", renewal.membershipId);
+
+        if (membershipDeleteError) {
+            console.error("Error deleting renewal record:", membershipDeleteError);
+            showError("Failed to delete renewal record");
+            setDeletingMembershipId(null);
+            return;
+        }
+
+        const adjustedBalance = roundCurrency(
+            Math.max(0, (member.balance || 0) - roundCurrency(renewal.dueAmount || 0))
+        );
+
+        const { error: memberUpdateError } = await supabase
+            .from("members")
+            .update({ balance: adjustedBalance })
+            .eq("id", member.id);
+
+        if (memberUpdateError) {
+            console.error("Error syncing member balance after delete:", memberUpdateError);
+        }
+
+        setDeletedMembershipIds((current) => ({
+            ...current,
+            [renewal.membershipId]: true,
+        }));
+
+        if (editingMembershipId === renewal.membershipId) {
+            cancelEditingRenewal();
+        }
+
+        setDeletingMembershipId(null);
+        showSuccess("Renewal record deleted");
+        onPaymentModeUpdated?.();
+    };
+
     return (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end">
             <div className="bg-white w-full rounded-t-3xl max-h-[90vh] overflow-hidden flex flex-col">
@@ -331,6 +396,14 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
                                         <div className="text-right">
                                             <p className="font-bold text-gray-900">₹{renewal.planPrice || renewal.price}</p>
                                             <p className="text-xs text-gray-500">{renewal.duration} days</p>
+                                            <button
+                                                type="button"
+                                                onClick={() => deleteRenewalRecord(renewal)}
+                                                disabled={deletingMembershipId === renewal.membershipId}
+                                                className="mt-1 text-[11px] font-semibold text-red-600 hover:text-red-700 disabled:opacity-60"
+                                            >
+                                                {deletingMembershipId === renewal.membershipId ? "Deleting..." : "Delete"}
+                                            </button>
                                         </div>
                                     </div>
 

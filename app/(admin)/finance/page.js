@@ -160,21 +160,11 @@ function buildExpenseExportRows(expenses, exportTitle) {
 
 function formatFinanceTransactionDate(dateString) {
   const date = new Date(dateString);
-  const today = new Date();
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-
-  if (date.toDateString() === today.toDateString()) {
-    return "Today";
-  }
-
-  if (date.toDateString() === yesterday.toDateString()) {
-    return "Yesterday";
-  }
+  if (Number.isNaN(date.getTime())) return "";
 
   return date.toLocaleDateString("en-IN", {
-    month: "short",
-    day: "numeric"
+    day: "numeric",
+    month: "long"
   });
 }
 
@@ -991,12 +981,6 @@ export default function FinancePage() {
                                 <span className="text-gray-400">•</span>
                                 <span className="lowercase">{txn.mode}</span>
                               </div>
-                              
-                              {txn.collectedBy && (
-                                <p className="text-xs text-purple-600 font-medium">
-                                  by {txn.collectedBy}
-                                </p>
-                              )}
                               
                               <p className="text-xs text-gray-500">{txn.date}</p>
                             </div>

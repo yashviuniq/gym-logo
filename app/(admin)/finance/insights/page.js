@@ -410,6 +410,22 @@ export default function FinanceInsightsPage() {
   }, []);
 
   const requestInsights = useCallback(async (gymId, month, year) => {
+    let userId = null;
+    let userGymId = null;
+    const storedUser = localStorage.getItem("gymUser");
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        userId = parsedUser?.id || null;
+        userGymId = parsedUser?.gym_id || null;
+      } catch {
+        userId = null;
+        userGymId = null;
+      }
+    }
+
+    console.log("[TenantCheck] Finance insights request user.gym_id:", userGymId, "selectedGym.id:", gymId);
+
     const res = await fetch("/api/finance/insights", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -417,6 +433,7 @@ export default function FinanceInsightsPage() {
         p_gym_id: gymId,
         p_month: month + 1,
         p_year: year,
+        p_user_id: userId,
       }),
     });
 

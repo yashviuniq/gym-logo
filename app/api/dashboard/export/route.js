@@ -14,7 +14,7 @@ export async function POST(request) {
       return NextResponse.json({ error: "Missing p_gym_id" }, { status: 400 });
     }
 
-    const [dashboardRpc, expensesResult, assignmentsResult, earningsResult] = await Promise.all([
+    const [dashboardRpc, expensesResult, assignmentsResult, earningsResult, paymentsResult] = await Promise.all([
       supabaseAdmin.rpc("get_dashboard_data", { p_gym_id }),
       supabaseAdmin
         .from("expenses")
@@ -35,6 +35,14 @@ export async function POST(request) {
         .select("id, assignment_id, member_id, trainer_id, total_amount, payment_mode, created_at")
         .eq("gym_id", p_gym_id)
         .order("created_at", { ascending: true }),
+      supabaseAdmin
+        .from("payments")
+        .select(
+          "id, gym_id, member_id, amount, payment_mode, remaining_amount, paid_at, created_at, members(full_name, balance)"
+        )
+        .eq("gym_id", p_gym_id)
+        .order("paid_at", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: true }),
     ]);
 
     if (dashboardRpc.error) {
@@ -48,6 +56,9 @@ export async function POST(request) {
     }
     if (earningsResult.error) {
       return NextResponse.json({ error: earningsResult.error.message }, { status: 500 });
+    }
+    if (paymentsResult.error) {
+      return NextResponse.json({ error: paymentsResult.error.message }, { status: 500 });
     }
 
     const assignments = assignmentsResult.data || [];
@@ -80,6 +91,17 @@ export async function POST(request) {
     return NextResponse.json({
       data: {
         dashboard: dashboardRpc.data || {},
+        payments_export: (paymentsResult.data || []).map((payment) => ({
+          id: payment.id,
+          member_id: payment.member_id,
+          member_name: payment.members?.full_name || "Member",
+          amount: payment.amount,
+          payment_mode: payment.payment_mode,
+          remaining_amount: payment.remaining_amount,
+          member_balance: payment.members?.balance,
+          paid_at: payment.paid_at,
+          created_at: payment.created_at,
+        })),
         expenses: expensesResult.data || [],
         trainer_assignments: assignments,
         trainer_earnings: earningsResult.data || [],

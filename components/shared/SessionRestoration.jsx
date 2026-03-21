@@ -31,6 +31,7 @@ export default function SessionRestoration() {
           // Clear any stale data
           localStorage.removeItem('gymUser');
           localStorage.removeItem('gymUserExpiry');
+          localStorage.removeItem('selectedGym');
           localStorage.removeItem('member');
           // Mark restoration as complete (even though no session found)
           sessionStorage.setItem('sessionRestorationComplete', 'true');
@@ -67,6 +68,7 @@ export default function SessionRestoration() {
         sessionStorage.setItem('sessionRestorationComplete', 'true');
       } catch (error) {
         console.error('❌ Error restoring session:', error);
+        localStorage.removeItem('selectedGym');
         // Still mark as complete so app doesn't hang
         sessionStorage.setItem('sessionRestorationComplete', 'true');
       }

@@ -40,6 +40,12 @@ const getDefaultStartDate = (validTill) => {
     return startDate.toISOString().split("T")[0];
 };
 
+const getTodayString = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today.toISOString().split("T")[0];
+};
+
 export default function RenewMembershipModal({ member, gymId, gymData, onClose, onRenew }) {
     const [membershipPlans, setMembershipPlans] = useState([]);
     const [selectedPlan, setSelectedPlan] = useState(null);
@@ -51,6 +57,7 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
     const [loading, setLoading] = useState(false);
     const [loadingPlans, setLoadingPlans] = useState(true);
     const [customStartDate, setCustomStartDate] = useState("");
+    const [paymentDate, setPaymentDate] = useState(getTodayString());
     const [nextPaymentDate, setNextPaymentDate] = useState("");
 
     // Fetch membership plans from database
@@ -120,6 +127,15 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
             }
 
             const renewalEventTimestamp = new Date(startDate + 'T00:00:00').toISOString();
+            const paymentTimestamp = paymentDate
+                ? new Date(paymentDate + 'T00:00:00').toISOString()
+                : null;
+
+            if (paymentAmountNum > 0 && !paymentTimestamp) {
+                alert("Please select a valid payment date.");
+                setLoading(false);
+                return;
+            }
 
             if (dueForMembership > 0 && !nextPaymentDate) {
                 alert("Please select the next payment date for the pending amount.");
@@ -175,7 +191,7 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
                         amount: paymentAmountNum,
                         payment_mode: paymentMode,
                         status: "paid",
-                        paid_at: renewalEventTimestamp,
+                        paid_at: paymentTimestamp,
                         created_at: renewalEventTimestamp
                     })
                     .select("id")
@@ -216,7 +232,7 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
                             balanceAmount: Math.max(0, finalPrice - paymentAmountNum),
                             paymentMode: paymentMode,
                             paymentId: paymentId,
-                            paymentDate: new Date(renewalEventTimestamp)
+                            paymentDate: new Date(paymentTimestamp)
                         }).then(result => {
                             if (result.success) {
                                 console.log("Receipt generated:", result.receiptNumber);
@@ -476,6 +492,21 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
                                         Due amount: ₹{dueForMembership}
                                     </p>
                                 )}
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Payment Date
+                                </label>
+                                <input
+                                    type="date"
+                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] outline-none text-sm"
+                                    value={paymentDate}
+                                    onChange={(e) => setPaymentDate(e.target.value)}
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                    This date is saved as paid_at. Renewal start date is separate.
+                                </p>
                             </div>
 
                             {dueForMembership > 0 && (

@@ -97,6 +97,7 @@ export default function AddMemberPage() {
     joinDate: new Date().toISOString().split("T")[0],
     planId: null,
     startDate: new Date().toISOString().split("T")[0],
+    paymentDate: new Date().toISOString().split("T")[0],
     paymentAmount: "",
     paymentMode: "cash",
     notes: "",
@@ -251,6 +252,12 @@ export default function AddMemberPage() {
       const paymentAmount = Math.round(parseFloat(formData.paymentAmount) * 100) / 100;
       const balanceOwed = Math.round((finalPrice - paymentAmount) * 100) / 100;
 
+      if (paymentAmount > 0 && !formData.paymentDate) {
+        showError("Please select payment date");
+        setLoading(false);
+        return;
+      }
+
       // Validate next payment date for partial payments
       if (balanceOwed > 0 && !formData.nextPaymentDate) {
         showError("Please select a next payment date for partial payment");
@@ -378,7 +385,10 @@ export default function AddMemberPage() {
         // Payment
         p_payment_amount: paymentAmount,
         p_payment_mode: formData.paymentMode,
-        p_paid_at: new Date(formData.startDate + 'T00:00:00').toISOString(),
+        p_paid_at:
+          paymentAmount > 0 && formData.paymentDate
+            ? new Date(formData.paymentDate + 'T00:00:00').toISOString()
+            : null,
         p_payment_notes: formData.notes || null,
         p_collected_by: collectedBy,
         p_collected_by_name: collectedByName,
@@ -441,6 +451,7 @@ export default function AddMemberPage() {
           joinDate: new Date().toISOString().split("T")[0],
           planId: null,
           startDate: new Date().toISOString().split("T")[0],
+          paymentDate: new Date().toISOString().split("T")[0],
           paymentAmount: "",
           paymentMode: "cash",
           notes: "",
@@ -1074,6 +1085,25 @@ export default function AddMemberPage() {
                     }}
                   />
                 </div>
+              </div>
+
+              {/* Payment Date */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Payment Date
+                </label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input
+                    type="date"
+                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
+                    value={formData.paymentDate}
+                    onChange={(e) => updateForm("paymentDate", e.target.value)}
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Used for paid_at. Membership start date is kept separate.
+                </p>
               </div>
 
               {/* Payment Status Alerts */}

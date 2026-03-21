@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { Camera, Upload, X, User, Loader2 } from "lucide-react";
+import { Camera, X, User, Loader2 } from "lucide-react";
 import {
   compressMemberImage,
   validateMemberImage,
@@ -20,6 +20,7 @@ export default function ProfileImageUpload({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(currentImage);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const fileInputRef = useRef(null);
 
   const sizeClasses = {
@@ -172,15 +173,32 @@ export default function ProfileImageUpload({
     }
   };
 
+  const openImagePreview = () => {
+    if (!previewUrl || uploading) return;
+    setIsPreviewOpen(true);
+  };
+
+  const closeImagePreview = () => {
+    setIsPreviewOpen(false);
+  };
+
   return (
     <div className={`flex flex-col ${alignmentClass}`}>
       <div className="relative">
         {/* Profile Image */}
         <div
-          onClick={triggerFileInput}
+          onClick={openImagePreview}
           className={`${sizeClasses[size]} rounded-full overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold relative ${
-            editable && !uploading ? "cursor-pointer" : ""
+            previewUrl && !uploading ? "cursor-pointer" : ""
           }`}
+          role={previewUrl ? "button" : undefined}
+          tabIndex={previewUrl && !uploading ? 0 : -1}
+          onKeyDown={(event) => {
+            if ((event.key === "Enter" || event.key === " ") && previewUrl && !uploading) {
+              event.preventDefault();
+              openImagePreview();
+            }
+          }}
         >
           {previewUrl ? (
             <img
@@ -205,6 +223,7 @@ export default function ProfileImageUpload({
           <button
             type="button"
             onClick={triggerFileInput}
+            aria-label="Change profile photo"
             className="absolute -bottom-1 -right-1 w-8 h-8 bg-white rounded-full shadow-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all"
           >
             <Camera className="w-4 h-4 text-gray-600" />
@@ -235,7 +254,7 @@ export default function ProfileImageUpload({
       {/* Upload hint */}
       {editable && showHint && (
         <p className={`text-xs text-gray-500 mt-2 ${align === "left" ? "text-left" : "text-center"}`}>
-          {uploading ? "Uploading..." : "Tap to change photo"}
+          {uploading ? "Uploading..." : "Tap camera to change photo"}
           <br />
           <span className="text-gray-400">Compressed under 100KB • JPG, PNG, WebP</span>
         </p>
@@ -244,6 +263,34 @@ export default function ProfileImageUpload({
       {/* Error message */}
       {error && (
         <p className={`text-xs text-red-500 mt-2 ${align === "left" ? "text-left" : "text-center"}`}>{error}</p>
+      )}
+
+      {/* WhatsApp-style profile preview modal */}
+      {isPreviewOpen && previewUrl && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/85 flex items-center justify-center p-4"
+          onClick={closeImagePreview}
+        >
+          <button
+            type="button"
+            onClick={closeImagePreview}
+            aria-label="Close image preview"
+            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/50 border border-white/20 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+
+          <div
+            className="max-w-[92vw] max-h-[82vh]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <img
+              src={previewUrl}
+              alt="Profile preview"
+              className="max-w-full max-h-[82vh] object-contain rounded-xl shadow-2xl"
+            />
+          </div>
+        </div>
       )}
     </div>
   );

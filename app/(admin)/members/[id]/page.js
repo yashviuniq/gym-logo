@@ -866,83 +866,134 @@ export default function MemberDetailPage() {
           </button>
         </div>
 
-        {/* Diet & Workout Plan Assignment */}
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            onClick={() => setShowAssignDietModal(true)}
-            className="p-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 active:scale-95"
-          >
-            <Utensils className="w-4 h-4" />
-            <span>Assign Diet</span>
-          </button>
-          <button
-            onClick={() => setShowAssignWorkoutModal(true)}
-            className="p-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 active:scale-95"
-          >
-            <Dumbbell className="w-4 h-4" />
-            <span>Assign Workout</span>
-          </button>
-        </div>
-
-        {/* Trainer Assignment Button - hidden for trainers */}
-        {!isTrainer && (
-          <button
-            onClick={() => setShowAssignTrainerModal(true)}
-            className="w-full p-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 active:scale-95"
-          >
-            <Users className="w-4 h-4" />
-            <span>{assignedTrainer ? "Change Trainer" : "Assign Trainer"}</span>
-          </button>
-        )}
-
-        {/* Assign Amenity Button - hidden for trainers */}
-        {!isTrainer && (
-          <button
-            onClick={() => setShowAssignAmenityModal(true)}
-            className="w-full p-3 bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 active:scale-95"
-          >
-            <Package className="w-4 h-4" />
-            <span>Assign Amenity</span>
-          </button>
-        )}
-
-        {/* Edit and Delete Buttons */}
-        <div className={`grid ${isTrainer ? 'grid-cols-1' : 'grid-cols-2'} gap-3`}>
-          <button
-            onClick={() => router.push(`/members/edit?id=${member.id}`)}
-            className="p-3 bg-white border-2 border-gray-200 text-gray-700 rounded-xl font-semibold hover:border-gray-300 hover:shadow-sm transition-all duration-200 flex items-center justify-center gap-2 active:scale-95"
-          >
-            <Edit className="w-4 h-4" />
-            Edit Member
-          </button>
-          {!isTrainer && (
+        {/* Actions Section */}
+        <div className="bg-white rounded-xl border border-gray-300 shadow-sm p-3 space-y-2">
+          <p className="text-[11px] uppercase tracking-wide text-gray-600 font-semibold">Actions</p>
+          <div className={`grid gap-2 ${isTrainer ? "grid-cols-2" : "grid-cols-2"}`}>
             <button
-              onClick={handleDeleteMember}
-              className="p-3 bg-gradient-to-r from-red-50 to-pink-50 border-2 border-red-200 text-red-600 rounded-xl font-semibold hover:border-red-300 hover:shadow-sm transition-all duration-200 flex items-center justify-center gap-2 active:scale-95"
+              onClick={() => setShowAssignDietModal(true)}
+              className="px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-100 active:scale-95 transition-all flex items-center justify-between"
             >
-              <Trash2 className="w-4 h-4" />
-              Delete Member
+              <span className="flex items-center gap-2">
+                <span className="w-7 h-7 rounded-full bg-emerald-200 text-emerald-800 flex items-center justify-center">
+                  <Utensils className="w-3.5 h-3.5" />
+                </span>
+                Assign Diet
+              </span>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
             </button>
-          )}
+
+            <button
+              onClick={() => setShowAssignWorkoutModal(true)}
+              className="px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-100 active:scale-95 transition-all flex items-center justify-between"
+            >
+              <span className="flex items-center gap-2">
+                <span className="w-7 h-7 rounded-full bg-blue-200 text-blue-800 flex items-center justify-center">
+                  <Dumbbell className="w-3.5 h-3.5" />
+                </span>
+                Assign Workout
+              </span>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+            </button>
+
+            {!isTrainer && (
+              <button
+                onClick={() => setShowAssignTrainerModal(true)}
+                className="px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-100 active:scale-95 transition-all flex items-center justify-between"
+              >
+                <span className="flex items-center gap-2">
+                  <span className="w-7 h-7 rounded-full bg-violet-200 text-violet-800 flex items-center justify-center">
+                    <Users className="w-3.5 h-3.5" />
+                  </span>
+                  {assignedTrainer ? "Change Trainer" : "Assign Trainer"}
+                </span>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+              </button>
+            )}
+
+            {!isTrainer && (
+              <button
+                onClick={() => setShowAssignAmenityModal(true)}
+                className="px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-100 active:scale-95 transition-all flex items-center justify-between"
+              >
+                <span className="flex items-center gap-2">
+                  <span className="w-7 h-7 rounded-full bg-cyan-200 text-cyan-800 flex items-center justify-center">
+                    <Package className="w-3.5 h-3.5" />
+                  </span>
+                  Assign Amenity
+                </span>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Membership Actions */}
-        <div className={`grid gap-3 ${member.status === "active" ? "grid-cols-1" : "grid-cols-2"}`}>
-          {member.status !== "active" && (
+        {/* Member Controls Section */}
+        <div className="bg-white rounded-xl border border-gray-300 shadow-sm p-3 space-y-2">
+          <p className="text-[11px] uppercase tracking-wide text-gray-600 font-semibold">Member Controls</p>
+          <div className={`grid ${isTrainer ? 'grid-cols-1' : 'grid-cols-2'} gap-2`}>
+            <button
+              onClick={() => router.push(`/members/edit?id=${member.id}`)}
+              className="px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-100 active:scale-95 transition-all flex items-center justify-between"
+            >
+              <span className="flex items-center gap-2">
+                <span className="w-7 h-7 rounded-full bg-slate-300 text-slate-800 flex items-center justify-center">
+                  <Edit className="w-3.5 h-3.5" />
+                </span>
+                Edit Member
+              </span>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+            </button>
+
+            {!isTrainer && (
+              <button
+                onClick={handleDeleteMember}
+                className="px-3 py-2.5 bg-red-50 border border-red-300 rounded-lg text-sm font-medium text-red-700 hover:bg-red-100 active:bg-red-100 active:scale-95 transition-all flex items-center justify-between"
+              >
+                <span className="flex items-center gap-2">
+                  <span className="w-7 h-7 rounded-full bg-red-200 text-red-700 flex items-center justify-center">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </span>
+                  Delete Member
+                </span>
+                <ChevronRight className="w-3.5 h-3.5 text-red-400" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Membership Section */}
+        {member.status !== "active" && (
+          <div className="bg-white rounded-xl border border-gray-300 shadow-sm p-3">
             <button
               onClick={() => setShowRenewModal(true)}
-              className="p-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 active:scale-95"
+              className="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-100 active:scale-95 transition-all flex items-center justify-between"
             >
-              <RefreshCw className="w-4 h-4" />
-              Renew Membership
+              <span className="flex items-center gap-2">
+                <span className="w-7 h-7 rounded-full bg-emerald-200 text-emerald-800 flex items-center justify-center">
+                  <RefreshCw className="w-3.5 h-3.5" />
+                </span>
+                Renew Membership
+              </span>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
             </button>
-          )}
+          </div>
+        )}
+
+        {/* History Section */}
+        <div className="bg-white rounded-xl border border-gray-300 shadow-sm p-3">
+          <p className="text-[11px] uppercase tracking-wide text-gray-600 font-semibold mb-2">History</p>
           <button
             onClick={() => setShowHistoryModal(true)}
-            className="p-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 active:scale-95"
+            className="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-100 active:scale-95 transition-all flex items-center justify-between"
           >
-            <History className="w-4 h-4" />
-            View History
+            <span className="flex items-center gap-2">
+              <span className="w-7 h-7 rounded-full bg-blue-200 text-blue-800 flex items-center justify-center">
+                <History className="w-3.5 h-3.5" />
+              </span>
+              View History
+            </span>
+            <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
           </button>
         </div>
 

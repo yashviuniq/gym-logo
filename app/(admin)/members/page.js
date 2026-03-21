@@ -32,6 +32,8 @@ import {
   Share2,
   UserCheck,
   Download,
+  FileText,
+  FileSpreadsheet,
 } from "lucide-react";
 
 const PAGE_SIZE = 20;
@@ -978,18 +980,22 @@ Best regards,
             />
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-col gap-2">
+          {/* Compact Action Icons */}
+          <div className={`grid gap-2 ${canViewFinance ? "grid-cols-3" : "grid-cols-1"}`}>
             <button
               onClick={() => router.push("/members/add")}
-              className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2"
-              style={{ minHeight: "44px" }}
+              title="Add Member"
+              className="flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 active:bg-gray-100 active:scale-95 transition-all"
+              style={{ minHeight: "62px" }}
             >
-              <Plus className="w-5 h-5" />
-              Add New Member
+              <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+                <Plus className="w-4 h-4" />
+              </div>
+              <span className="text-[11px] font-medium text-gray-700">Add Member</span>
             </button>
+
             {canViewFinance && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <>
                 <button
                   onClick={async () => {
                     setExportingType("pdf");
@@ -1000,17 +1006,18 @@ Best regards,
                     }
                   }}
                   disabled={exportingType !== null}
-                  className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50"
-                  style={{ minHeight: "44px" }}
+                  title="Export PDF"
+                  className="flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 active:bg-gray-100 active:scale-95 transition-all disabled:opacity-50"
+                  style={{ minHeight: "62px" }}
                 >
-                  {exportingType === "pdf" ? (
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  ) : (
-                    <Download className="w-5 h-5" />
-                  )}
-                  <span className="text-sm">
-                    {exportingType === "pdf" ? "Exporting PDF..." : "Export Analytics PDF"}
-                  </span>
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                    {exportingType === "pdf" ? (
+                      <div className="w-4 h-4 border-2 border-emerald-300 border-t-emerald-700 rounded-full animate-spin"></div>
+                    ) : (
+                      <FileText className="w-4 h-4" />
+                    )}
+                  </div>
+                  <span className="text-[11px] font-medium text-gray-700">Export PDF</span>
                 </button>
 
                 <button
@@ -1023,19 +1030,20 @@ Best regards,
                     }
                   }}
                   disabled={exportingType !== null}
-                  className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50"
-                  style={{ minHeight: "44px" }}
+                  title="Export Excel"
+                  className="flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 active:bg-gray-100 active:scale-95 transition-all disabled:opacity-50"
+                  style={{ minHeight: "62px" }}
                 >
-                  {exportingType === "excel" ? (
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  ) : (
-                    <Download className="w-5 h-5" />
-                  )}
-                  <span className="text-sm">
-                    {exportingType === "excel" ? "Exporting Excel..." : "Export Analytics Excel"}
-                  </span>
+                  <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center">
+                    {exportingType === "excel" ? (
+                      <div className="w-4 h-4 border-2 border-blue-300 border-t-blue-700 rounded-full animate-spin"></div>
+                    ) : (
+                      <FileSpreadsheet className="w-4 h-4" />
+                    )}
+                  </div>
+                  <span className="text-[11px] font-medium text-gray-700">Export Excel</span>
                 </button>
-              </div>
+              </>
             )}
           </div>
         </div>

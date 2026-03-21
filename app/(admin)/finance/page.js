@@ -249,6 +249,7 @@ export default function FinancePage() {
   const [pendingTrainerInstallments, setPendingTrainerInstallments] = useState([]);
   const [pendingSearchInput, setPendingSearchInput] = useState("");
   const [pendingSearch, setPendingSearch] = useState("");
+  const [pendingSection, setPendingSection] = useState("members");
   const [paymentModes, setPaymentModes] = useState([]);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [transactionDetailsLoading, setTransactionDetailsLoading] = useState(false);
@@ -1021,6 +1022,46 @@ export default function FinancePage() {
               </div>
             </div>
 
+            <div className="bg-white rounded-xl border border-gray-200 p-2 shadow-sm mx-1">
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  {
+                    id: "members",
+                    label: "Pending Payments",
+                    hint: `${filteredPendingPayments.length} members`,
+                    amount: formatCurrency(financialData.pendingDues),
+                    activeClasses: "bg-amber-50 text-amber-900 border-amber-300 shadow-sm",
+                    inactiveClasses: "bg-white text-gray-700 border-gray-200 hover:bg-gray-50",
+                  },
+                  {
+                    id: "trainers",
+                    label: "Trainer Installments",
+                    hint: `${filteredPendingTrainerInstallments.length} PT assignments`,
+                    amount: formatCurrency(pendingTrainerInstallments.reduce((sum, item) => sum + item.pendingAmount, 0)),
+                    activeClasses: "bg-indigo-50 text-indigo-900 border-indigo-300 shadow-sm",
+                    inactiveClasses: "bg-white text-gray-700 border-gray-200 hover:bg-gray-50",
+                  },
+                ].map((section) => (
+                  <button
+                    key={section.id}
+                    onClick={() => setPendingSection(section.id)}
+                    className={`text-left rounded-lg border p-2.5 transition-all active:scale-[0.99] ${
+                      pendingSection === section.id ? section.activeClasses : section.inactiveClasses
+                    }`}
+                  >
+                    <p className="text-xs font-semibold">{section.label}</p>
+                    <p className={`mt-1 text-[11px] ${pendingSection === section.id ? "text-gray-700" : "text-gray-500"}`}>
+                      {section.hint}
+                    </p>
+                    <p className={`mt-1 text-sm font-bold ${pendingSection === section.id ? "text-gray-900" : "text-gray-800"}`}>
+                      {section.amount}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {pendingSection === "members" && (
             <div className="bg-white rounded-xl border border-gray-200 p-3 shadow-sm mx-1">
               <div className="flex items-center justify-between mb-3">
                 <div>
@@ -1150,7 +1191,9 @@ Best regards,
                 )}
               </div>
             </div>
+            )}
 
+            {pendingSection === "trainers" && (
             <div className="bg-white rounded-xl border border-gray-200 p-3 shadow-sm mx-1">
               <div className="flex items-center justify-between mb-3">
                 <div>
@@ -1268,6 +1311,7 @@ Thank you,
                 )}
               </div>
             </div>
+            )}
           </div>
         )}
 

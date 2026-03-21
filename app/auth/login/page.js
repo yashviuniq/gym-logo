@@ -82,6 +82,7 @@ export default function LoginPage() {
         // Set session expiry to 30 days for PWA
         const expiryTime = Date.now() + (30 * 24 * 60 * 60 * 1000);
         await saveSession(SESSION_KEYS.EXPIRY, expiryTime.toString());
+        localStorage.removeItem("selectedGym");
         
         router.push("/admin/dashboard");
         
@@ -125,6 +126,7 @@ export default function LoginPage() {
         // Set session expiry to 30 days for PWA
         const expiryTime = Date.now() + (30 * 24 * 60 * 60 * 1000);
         await saveSession(SESSION_KEYS.EXPIRY, expiryTime.toString());
+        localStorage.removeItem("selectedGym");
         
         // Save trainer login timestamp (used to detect credential changes by admin)
         localStorage.setItem("trainer_login_at", Date.now().toString());
@@ -183,6 +185,7 @@ export default function LoginPage() {
         // Set session expiry to 30 days for PWA
         const expiryTime = Date.now() + (30 * 24 * 60 * 60 * 1000);
         await saveSession(SESSION_KEYS.EXPIRY, expiryTime.toString());
+        localStorage.removeItem("selectedGym");
         
         router.push("/user/dashboard");
       }

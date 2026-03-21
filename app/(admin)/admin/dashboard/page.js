@@ -85,16 +85,30 @@ export default function AdminDashboard() {
         if (["owner", "admin", "trainer"].includes(userData.role)) {
           setUser(userData);
           setLoading(false);
-          
-          // First check if there's already a selected gym in localStorage
-          const storedGym = localStorage.getItem("selectedGym");
-          if (storedGym) {
-            const gymData = JSON.parse(storedGym);
-            setGyms([gymData]);
-            setSelectedGym(gymData);
+
+          const storedGymRaw = localStorage.getItem("selectedGym");
+          let storedGymData = null;
+          if (storedGymRaw) {
+            try {
+              storedGymData = JSON.parse(storedGymRaw);
+            } catch {
+              localStorage.removeItem("selectedGym");
+            }
+          }
+
+          console.log("[TenantCheck] user.gym_id:", userData.gym_id || null, "selectedGym.id:", storedGymData?.id || null);
+
+          if (userData.gym_id && storedGymData?.id === userData.gym_id) {
+            setGyms([storedGymData]);
+            setSelectedGym(storedGymData);
             setLoadingGyms(false);
-            fetchDashboardData(gymData.id);
+            fetchDashboardData(storedGymData.id);
             return;
+          }
+
+          if (storedGymData?.id && userData.gym_id && storedGymData.id !== userData.gym_id) {
+            console.warn("[TenantCheck] Ignoring stale selectedGym because it does not match user.gym_id");
+            localStorage.removeItem("selectedGym");
           }
           
           // For admin/owner/trainer with gym_id, fetch that specific gym
@@ -250,14 +264,28 @@ export default function AdminDashboard() {
   const fetchDashboardData = async (gymId) => {
     setDataLoading(true);
     try {
+      let userId = user?.id || null;
+      if (!userId) {
+        const rawUser = localStorage.getItem("gymUser");
+        if (rawUser) {
+          try {
+            userId = JSON.parse(rawUser).id || null;
+          } catch {
+            userId = null;
+          }
+        }
+      }
+
+      console.log("[TenantCheck] Dashboard API request userId:", userId, "requested gymId:", gymId);
+
       // Single RPC call replaces 3 separate queries
-      // Use same-origin API proxy to avoid CORS issues, fallback to direct Supabase
+      // Use same-origin API proxy so backend can validate tenant isolation
       let result, rpcError;
       try {
         const res = await fetch('/api/dashboard/data', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ p_gym_id: gymId }),
+          body: JSON.stringify({ p_gym_id: gymId, p_user_id: userId }),
         });
         const json = await res.json();
         if (!res.ok) {
@@ -266,10 +294,7 @@ export default function AdminDashboard() {
           result = json.data;
         }
       } catch (apiErr) {
-        console.warn("API proxy failed, falling back to direct Supabase:", apiErr);
-        const rpcResult = await supabase.rpc('get_dashboard_data', { p_gym_id: gymId });
-        result = rpcResult.data;
-        rpcError = rpcResult.error;
+        rpcError = { message: apiErr?.message || "API request failed" };
       }
 
       if (rpcError || !result) {
@@ -457,7 +482,7 @@ export default function AdminDashboard() {
       const payload = json.data || {};
       const dashboard = payload.dashboard || {};
       const members = dashboard.members || [];
-      const payments = dashboard.payments || [];
+      const payments = payload.payments_export || dashboard.payments || [];
       const attendance = dashboard.attendance || [];
       const expenses = payload.expenses || [];
       const trainerAssignments = payload.trainer_assignments || [];
@@ -571,13 +596,17 @@ export default function AdminDashboard() {
         .sort((a, b) => new Date(a.paid_at || a.created_at) - new Date(b.paid_at || b.created_at))
         .map((payment) => {
           const date = payment.paid_at || payment.created_at;
+          const paymentMode = String(payment.payment_mode || payment.mode || "cash").toUpperCase();
+          const balance = Number(
+            payment.remaining_amount ?? payment.member_balance ?? payment.balance ?? 0
+          );
           return [
             formatExportDate(date),
             formatExportMonth(date),
             payment.member_name || "Member",
             Number(payment.amount || 0),
-            String(payment.payment_mode || "").toUpperCase(),
-            Number(payment.remaining_amount || 0),
+            paymentMode,
+            balance,
           ];
         });
 

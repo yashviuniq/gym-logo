@@ -335,14 +335,30 @@ export default function FinancePage() {
       const startISO = periodStart.toISOString();
       const endISO = periodEnd.toISOString();
 
+      let userId = null;
+      let userGymId = null;
+      const storedUser = localStorage.getItem("gymUser");
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          userId = parsedUser?.id || null;
+          userGymId = parsedUser?.gym_id || null;
+        } catch {
+          userId = null;
+          userGymId = null;
+        }
+      }
+
+      console.log("[TenantCheck] Finance request user.gym_id:", userGymId, "selectedGym.id:", gymId);
+
       // Single RPC call replaces 5-6 separate queries
-      // Use same-origin API proxy to avoid CORS issues, fallback to direct Supabase
+      // Use same-origin API proxy so backend can validate tenant isolation
       let result, rpcError;
       try {
         const res = await fetch('/api/finance/data', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ p_gym_id: gymId, p_period_start: startISO, p_period_end: endISO }),
+          body: JSON.stringify({ p_gym_id: gymId, p_period_start: startISO, p_period_end: endISO, p_user_id: userId }),
         });
         const json = await res.json();
         if (!res.ok) {
@@ -351,14 +367,7 @@ export default function FinancePage() {
           result = json.data;
         }
       } catch (apiErr) {
-        console.warn("API proxy failed, falling back to direct Supabase:", apiErr);
-        const rpcResult = await supabase.rpc('get_finance_data', {
-          p_gym_id: gymId,
-          p_period_start: startISO,
-          p_period_end: endISO
-        });
-        result = rpcResult.data;
-        rpcError = rpcResult.error;
+        rpcError = { message: apiErr?.message || "API request failed" };
       }
 
       if (rpcError || !result) {

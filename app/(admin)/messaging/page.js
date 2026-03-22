@@ -290,15 +290,10 @@ export default function WhatsAppMessagingPage() {
     setMembersLoading(true);
     try {
       if (selectedCategory === "pending") {
-        let userId = null;
-        const storedUser = localStorage.getItem("gymUser");
-        if (storedUser) {
-          try {
-            const parsedUser = JSON.parse(storedUser);
-            userId = parsedUser?.id || null;
-          } catch {
-            userId = null;
-          }
+        const { data: authData } = await supabase.auth.getUser();
+        const currentUserId = authData?.user?.id || null;
+        if (!currentUserId) {
+          throw new Error("Session expired");
         }
 
         const now = new Date();
@@ -307,12 +302,14 @@ export default function WhatsAppMessagingPage() {
 
         const res = await fetch("/api/finance/data", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "x-user-id": String(currentUserId),
+          },
           body: JSON.stringify({
             p_gym_id: selectedGym.id,
             p_period_start: periodStart,
             p_period_end: periodEnd,
-            p_user_id: userId,
           }),
         });
 

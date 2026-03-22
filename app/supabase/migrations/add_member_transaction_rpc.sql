@@ -41,6 +41,8 @@ DECLARE
   v_membership_id UUID;
   v_payment_id UUID;
   v_result JSONB;
+  v_collector_gym_id UUID;
+  v_collector_name TEXT;
 BEGIN
   -- 1. Check for existing member with same phone in same gym
   PERFORM 1 FROM members WHERE gym_id = p_gym_id AND phone = p_phone;
@@ -76,6 +78,22 @@ BEGIN
 
   -- 4. Insert payment (only if amount > 0)
   IF p_payment_amount > 0 THEN
+    IF p_collected_by IS NOT NULL THEN
+      SELECT
+        pr.gym_id,
+        NULLIF(TRIM(COALESCE(pr.first_name, '') || ' ' || COALESCE(pr.last_name, '')), '')
+      INTO v_collector_gym_id, v_collector_name
+      FROM profiles pr
+      WHERE pr.id = p_collected_by;
+
+      IF v_collector_gym_id IS NULL OR v_collector_gym_id <> p_gym_id THEN
+        RAISE EXCEPTION 'INVALID_COLLECTOR_GYM';
+      END IF;
+    ELSE
+      v_collector_gym_id := NULL;
+      v_collector_name := NULL;
+    END IF;
+
     INSERT INTO payments (
       gym_id, member_id, membership_id, amount, payment_mode,
       status, paid_at, notes, updated_by,
@@ -84,7 +102,7 @@ BEGIN
     ) VALUES (
       p_gym_id, v_member_id, v_membership_id, p_payment_amount, p_payment_mode::payment_mode,
       'paid'::payment_status, p_paid_at, p_payment_notes, p_created_by,
-      p_collected_by, p_collected_by_name,
+      p_collected_by, COALESCE(v_collector_name, p_collected_by_name),
       p_next_payment_date, p_remaining_amount
     )
     RETURNING id INTO v_payment_id;

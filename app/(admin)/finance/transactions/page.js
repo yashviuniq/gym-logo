@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
+import { useAuth } from "@/lib/hooks/useAuth";
 
 function getStoredGym() {
   if (typeof window === "undefined") {
@@ -25,6 +25,7 @@ function getStoredGym() {
 
 export default function TransactionsPage() {
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const initialGym = getStoredGym();
   const [filterMode, setFilterMode] = useState("all");
   const [filterType, setFilterType] = useState("all");
@@ -34,66 +35,35 @@ export default function TransactionsPage() {
 
   async function fetchTransactions(gymId) {
     try {
-      const { data: payments, error } = await supabase
-        .from("payments")
-        .select(`
-          id,
-          amount,
-          payment_mode,
-          status,
-          paid_at,
-          created_at,
-          collected_by,
-          collected_by_name,
-          collector:profiles!collected_by(
-            first_name,
-            last_name
-          ),
-          members (
-            id,
-            full_name,
-            phone
-          )
-        `)
-        .eq("gym_id", gymId)
-        .order("created_at", { ascending: false })
-        .limit(100);
+      if (authLoading || !user?.id) {
+        setTransactions([]);
+        return;
+      }
 
-      if (error) {
-        console.error("Error fetching transactions:", error);
+      const response = await fetch("/api/finance/transactions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-id": String(user.id),
+        },
+        body: JSON.stringify({
+          p_gym_id: gymId,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok || result.error) {
+        console.error("Error fetching transactions:", result.error);
         setTransactions([]);
       } else {
-        const transformedTransactions = payments.map((payment) => {
-          // Resolve collector name: prefer collected_by_name, then profiles join, then null
-          let collectorName = null;
-          if (payment.collected_by_name && !payment.collected_by_name.includes('@')) {
-            collectorName = payment.collected_by_name;
-          } else if (payment.collector) {
-            const fn = payment.collector.first_name || "";
-            const ln = payment.collector.last_name || "";
-            const fullName = `${fn} ${ln}`.trim();
-            if (fullName) collectorName = fullName;
-          }
-
-          return {
-            id: payment.id,
-            name: payment.members?.full_name || "Unknown",
-            type: "membership",
-            amount: parseFloat(payment.amount),
-            mode: payment.payment_mode?.toLowerCase() || "cash",
-            date: payment.paid_at || payment.created_at,
-            status: payment.status || "paid",
-            collectedBy: collectorName,
-            collectedByFallback: payment.collected_by || null,
-          };
-        });
-        setTransactions(transformedTransactions);
+        setTransactions(result.data || []);
       }
     } catch (err) {
       console.error("Error:", err);
       setTransactions([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   useEffect(() => {
@@ -106,7 +76,7 @@ export default function TransactionsPage() {
     }
 
     return undefined;
-  }, [selectedGym]);
+  }, [authLoading, selectedGym, user?.id]);
 
   const filteredTransactions = transactions.filter((txn) => {
     const matchesMode = filterMode === "all" || txn.mode === filterMode;
@@ -214,6 +184,15 @@ export default function TransactionsPage() {
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           <div className="divide-y divide-gray-100">
             {filteredTransactions.map((txn) => (
+              (() => {
+                const collectorDisplayName = txn.collectedBy || "—";
+                const collectorLine = txn.collectedBy
+                  ? txn.type === "personal_training" || txn.type === "trainer"
+                    ? `₹${txn.amount.toLocaleString("en-IN")} collected by trainer (${collectorDisplayName})`
+                    : `₹${txn.amount.toLocaleString("en-IN")} collected by ${collectorDisplayName}`
+                  : `₹${txn.amount.toLocaleString("en-IN")} collected by —`;
+
+                return (
               <div
                 key={txn.id}
                 className="p-4 flex items-center justify-between"
@@ -229,6 +208,9 @@ export default function TransactionsPage() {
                     <p className="text-xs text-gray-500 capitalize">
                       {txn.type.replace("_", " ")} • {txn.mode} • {formatDate(txn.date)}
                     </p>
+                    <p className="text-xs text-violet-700 font-medium mt-0.5">
+                      {collectorLine}
+                    </p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -238,6 +220,8 @@ export default function TransactionsPage() {
                   )}
                 </div>
               </div>
+                );
+              })()
             ))}
           </div>
         </div>

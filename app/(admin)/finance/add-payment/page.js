@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import { useAuth } from "@/lib/hooks/useAuth";
 import Header from "@/components/layout/Header";
 import { 
   Search, 
@@ -22,6 +23,7 @@ import {
 
 export default function AddPaymentPage() {
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [step, setStep] = useState(1);
   const [selectedMember, setSelectedMember] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -91,20 +93,34 @@ export default function AddPaymentPage() {
         return;
       }
 
-      // Record payment in database
-      const { error: paymentError } = await supabase
-        .from("payments")
-        .insert({
-          gym_id: selectedGym.id,
-          member_id: selectedMember.id,
-          amount: amount,
-          payment_mode: formData.mode,
-          status: "paid",
-          paid_at: new Date().toISOString(),
-          created_at: new Date().toISOString()
-        });
+      if (authLoading || !user?.id) {
+        alert("Session expired. Please login again.");
+        setLoading(false);
+        return;
+      }
 
-      if (paymentError) throw paymentError;
+      const paymentRes = await fetch("/api/finance/payments/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-id": String(user.id),
+        },
+        body: JSON.stringify({
+          p_gym_id: selectedGym.id,
+          p_member_id: selectedMember.id,
+          p_amount: amount,
+          p_payment_mode: formData.mode,
+          p_status: "paid",
+          p_paid_at: new Date().toISOString(),
+          p_created_at: new Date().toISOString(),
+          p_notes: formData.notes || null,
+        }),
+      });
+
+      const paymentJson = await paymentRes.json();
+      if (!paymentRes.ok) {
+        throw new Error(paymentJson?.error || "Failed to record payment");
+      }
 
       // Update member balance (reduce the due amount)
       const newBalance = Math.max(0, selectedMember.balance - amount);

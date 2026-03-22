@@ -28,8 +28,10 @@ BEGIN
       'status', p.status,
       'paid_at', p.paid_at,
       'created_at', p.created_at,
+      'transaction_gym_id', p.gym_id,
       'collected_by', p.collected_by,
       'collected_by_name', p.collected_by_name,
+      'collector_gym_id', pr.gym_id,
       'member_full_name', mem.full_name,
       'member_phone', mem.phone,
       'collector_name', CASE 
@@ -45,7 +47,7 @@ BEGIN
   INTO v_payments
   FROM payments p
   LEFT JOIN members mem ON mem.id = p.member_id
-  LEFT JOIN profiles pr ON pr.id = p.collected_by
+  LEFT JOIN profiles pr ON pr.id = p.collected_by AND pr.gym_id = p.gym_id
   WHERE p.gym_id = p_gym_id
     AND (
       (p.paid_at >= p_period_start AND p.paid_at <= p_period_end)

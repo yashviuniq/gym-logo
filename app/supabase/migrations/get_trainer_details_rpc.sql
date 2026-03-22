@@ -169,6 +169,7 @@ BEGIN
       FROM payments pay
       JOIN members m ON m.id = pay.member_id
       WHERE pay.gym_id = p_gym_id
+        AND pay.status = 'paid'
         AND pay.collected_by = v_profile_id
       LIMIT 15
     )

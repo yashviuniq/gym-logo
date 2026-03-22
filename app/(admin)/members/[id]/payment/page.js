@@ -4,10 +4,12 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
+import { useAuth } from "@/lib/hooks/useAuth";
 
 export default function AddPaymentPage() {
   const router = useRouter();
   const params = useParams();
+  const { user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [member, setMember] = useState(null);
   const [selectedGym, setSelectedGym] = useState(null);
@@ -73,47 +75,34 @@ export default function AddPaymentPage() {
         return;
       }
 
-      // Get current user for collector info (localStorage fallback + auth)
-      const storedUser = localStorage.getItem("gymUser");
-      const currentUser = storedUser ? JSON.parse(storedUser) : null;
-      const buildName = (user) => {
-        const name = `${user?.first_name || user?.user_metadata?.first_name || ''} ${user?.last_name || user?.user_metadata?.last_name || ''}`.trim();
-        return name || null;
-      };
-      let collectedBy = currentUser?.id || null;
-      let collectedByName = currentUser ? buildName(currentUser) : null;
-
-      if (!collectedBy || !collectedByName) {
-        const { data: authData } = await supabase.auth.getUser();
-        const authUser = authData?.user;
-        if (authUser?.id) {
-          collectedBy = collectedBy || authUser.id;
-          collectedByName = collectedByName || buildName(authUser);
-        }
+      if (authLoading || !user?.id) {
+        alert("Session expired. Please login again.");
+        setLoading(false);
+        return;
       }
 
-      // Record payment in database
-      const { error: paymentError } = await supabase
-        .from("payments")
-        .insert({
-          gym_id: selectedGym.id,
-          member_id: member.id,
-          amount: amount,
-          payment_mode: formData.mode,
-          status: "paid",
-          paid_at: new Date(formData.date).toISOString(),
-            created_at: new Date().toISOString(),
-            collected_by: collectedBy,
-            collected_by_name: collectedByName
-        });
-
-      if (paymentError) throw paymentError;
-      console.log("Payment recorded with collector:", {
-        amount,
-        mode: formData.mode,
-        collected_by: collectedBy,
-        collected_by_name: collectedByName,
+      const paymentRes = await fetch("/api/finance/payments/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-user-id": String(user.id),
+        },
+        body: JSON.stringify({
+          p_gym_id: selectedGym.id,
+          p_member_id: member.id,
+          p_amount: amount,
+          p_payment_mode: formData.mode,
+          p_status: "paid",
+          p_paid_at: new Date(`${formData.date}T00:00:00`).toISOString(),
+          p_created_at: new Date().toISOString(),
+          p_notes: formData.notes || null,
+        }),
       });
+
+      const paymentJson = await paymentRes.json();
+      if (!paymentRes.ok) {
+        throw new Error(paymentJson?.error || "Failed to record payment");
+      }
 
       // Update member balance (reduce the due amount)
       const newBalance = Math.max(0, member.balance - amount);

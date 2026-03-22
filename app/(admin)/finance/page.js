@@ -336,21 +336,11 @@ export default function FinancePage() {
       const startISO = periodStart.toISOString();
       const endISO = periodEnd.toISOString();
 
-      let userId = null;
-      let userGymId = null;
-      const storedUser = localStorage.getItem("gymUser");
-      if (storedUser) {
-        try {
-          const parsedUser = JSON.parse(storedUser);
-          userId = parsedUser?.id || null;
-          userGymId = parsedUser?.gym_id || null;
-        } catch {
-          userId = null;
-          userGymId = null;
-        }
+      const { data: authData } = await supabase.auth.getUser();
+      const currentUserId = authData?.user?.id || null;
+      if (!currentUserId) {
+        throw new Error("Missing authenticated user");
       }
-
-      console.log("[TenantCheck] Finance request user.gym_id:", userGymId, "selectedGym.id:", gymId);
 
       // Single RPC call replaces 5-6 separate queries
       // Use same-origin API proxy so backend can validate tenant isolation
@@ -358,8 +348,11 @@ export default function FinancePage() {
       try {
         const res = await fetch('/api/finance/data', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ p_gym_id: gymId, p_period_start: startISO, p_period_end: endISO, p_user_id: userId }),
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-id': String(currentUserId),
+          },
+          body: JSON.stringify({ p_gym_id: gymId, p_period_start: startISO, p_period_end: endISO }),
         });
         const json = await res.json();
         if (!res.ok) {
@@ -412,10 +405,7 @@ export default function FinancePage() {
 
       // Build recent transactions (collector_name resolved by RPC via profiles join)
       const transformedTransactions = paidPayments.slice(0, 10).map((payment) => {
-        let collectorName = payment.collector_name;
-        if (!collectorName && payment.collected_by_name && !payment.collected_by_name.includes('@')) {
-          collectorName = payment.collected_by_name;
-        }
+        const collectorName = payment.collector_name || null;
         
         return {
           id: payment.id,
@@ -575,7 +565,12 @@ export default function FinancePage() {
           next_payment_date,
           remaining_amount,
           membership_id,
-          collected_by_name,
+          collected_by,
+          collector:profiles!collected_by(
+            gym_id,
+            first_name,
+            last_name
+          ),
           members (
             full_name,
             phone
@@ -585,6 +580,11 @@ export default function FinancePage() {
         .single();
 
       if (error) throw error;
+
+      const collectorName =
+        data?.collector?.gym_id && data.collector.gym_id === selectedGym?.id
+          ? `${data.collector.first_name || ""} ${data.collector.last_name || ""}`.trim() || null
+          : null;
 
       const detailedTxn = {
         ...txn,
@@ -599,7 +599,7 @@ export default function FinancePage() {
         nextPaymentDate: data?.next_payment_date || null,
         remainingAmount: Number(data?.remaining_amount || 0),
         membershipId: data?.membership_id || null,
-        collectedBy: data?.collected_by_name || txn.collectedBy || null,
+        collectedBy: collectorName || txn.collectedBy || null,
       };
 
       setSelectedTransaction(detailedTxn);
@@ -959,7 +959,15 @@ export default function FinancePage() {
                       <p className="text-gray-500 text-sm">No recent transactions</p>
                     </div>
                   ) : (
-                    recentTransactions.map((txn) => (
+                    recentTransactions.map((txn) => {
+                      const collectorDisplayName = txn.collectedBy || "—";
+                      const collectorLine = txn.collectedBy
+                        ? txn.type === "trainer"
+                          ? `${formatCurrency(txn.amount)} collected by trainer (${collectorDisplayName})`
+                          : `${formatCurrency(txn.amount)} collected by ${collectorDisplayName}`
+                        : `${formatCurrency(txn.amount)} collected by —`;
+
+                      return (
                       <div
                         key={txn.id}
                         onClick={() => handleTransactionClick(txn)}
@@ -991,13 +999,18 @@ export default function FinancePage() {
                                 <span className="text-gray-400">•</span>
                                 <span className="lowercase">{txn.mode}</span>
                               </div>
+
+                              <p className="text-xs text-violet-700 font-medium truncate">
+                                {collectorLine}
+                              </p>
                               
                               <p className="text-xs text-gray-500">{txn.date}</p>
                             </div>
                           </div>
                         </div>
                       </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </div>

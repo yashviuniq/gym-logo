@@ -273,11 +273,16 @@ export default function AddMemberPage() {
         throw new Error(`Invalid duration for plan "${selectedPlan.name}". Please ensure the plan has a valid duration_days value in the database.`);
       }
 
-      // Prepare user/collector info from localStorage (sync, no await needed)
-      const storedUser = localStorage.getItem("gymUser");
-      const currentUser = storedUser ? JSON.parse(storedUser) : null;
-      const createdBy = currentUser?.id;
-      const createdByName = currentUser ? `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() : null;
+      const { data: authData } = await supabase.auth.getUser();
+      const currentUser = authData?.user || null;
+      const createdBy = currentUser?.id || null;
+      const createdByName = currentUser?.name || null;
+
+      if (!createdBy) {
+        showError("Session expired. Please login again.");
+        setLoading(false);
+        return;
+      }
 
       let collectedBy = createdBy;
       let collectedByName = createdByName;
@@ -315,33 +320,7 @@ export default function AddMemberPage() {
         }
       })();
 
-      const resolveCollectorPromise = (async () => {
-        if (collectedBy && collectedByName) return { collectedBy, collectedByName };
-        try {
-          const buildName = (user) => {
-            const name = `${user?.first_name || user?.user_metadata?.first_name || ''} ${user?.last_name || user?.user_metadata?.last_name || ''}`.trim();
-            return name || null;
-          };
-          const { data: authData } = await supabase.auth.getUser();
-          const authUser = authData?.user;
-          if (authUser?.id) {
-            return {
-              collectedBy: collectedBy || authUser.id,
-              collectedByName: collectedByName || buildName(authUser),
-            };
-          }
-        } catch {}
-        return { collectedBy, collectedByName };
-      })();
-
-      // Wait for both in parallel
-      const [profileImageUrl, collectorInfo] = await Promise.all([
-        uploadImagePromise,
-        resolveCollectorPromise,
-      ]);
-
-      collectedBy = collectorInfo.collectedBy;
-      collectedByName = collectorInfo.collectedByName;
+      const profileImageUrl = await uploadImagePromise;
 
       if (imageUploadFailed) {
         showError("Failed to upload profile image, but member will be created without photo");
@@ -404,7 +383,10 @@ export default function AddMemberPage() {
       try {
         const res = await fetch('/api/members/add', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-id': String(createdBy),
+          },
           body: JSON.stringify({ params: rpcParams }),
         });
         const json = await res.json();
@@ -414,10 +396,7 @@ export default function AddMemberPage() {
           rpcResult = json.data;
         }
       } catch (apiErr) {
-        console.warn("API proxy failed, falling back to direct Supabase:", apiErr);
-        const result = await supabase.rpc('add_member_with_membership', rpcParams);
-        rpcResult = result.data;
-        rpcError = result.error;
+        rpcError = { message: apiErr?.message || "API request failed" };
       }
 
       if (rpcError) {

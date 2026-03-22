@@ -10,6 +10,13 @@ const preventScrollChange = (e) => {
   e.currentTarget.blur();
 };
 
+const toLocalDateInputValue = (dateObj) => {
+        const year = dateObj.getFullYear();
+        const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+        const day = String(dateObj.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+};
+
 const getDefaultStartDate = (validTill) => {
     let currentEndDate;
 
@@ -32,18 +39,18 @@ const getDefaultStartDate = (validTill) => {
     currentEndDate.setHours(0, 0, 0, 0);
 
     if (currentEndDate < today) {
-        return today.toISOString().split("T")[0];
+        return toLocalDateInputValue(today);
     }
 
     const startDate = new Date(currentEndDate);
     startDate.setDate(startDate.getDate() + 1);
-    return startDate.toISOString().split("T")[0];
+    return toLocalDateInputValue(startDate);
 };
 
 const getTodayString = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return today.toISOString().split("T")[0];
+    return toLocalDateInputValue(today);
 };
 
 export default function RenewMembershipModal({ member, gymId, gymData, onClose, onRenew }) {
@@ -104,7 +111,7 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
         const startDate = new Date(startDateValue + 'T00:00:00');
         const newEndDate = new Date(startDate);
         newEndDate.setDate(newEndDate.getDate() + plan.duration_days);
-        return newEndDate.toISOString().split("T")[0];
+        return toLocalDateInputValue(newEndDate);
     };
 
     const getStartDate = () => {
@@ -119,6 +126,14 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
             const targetGymId = gymId || member.gymId;
             const newEndDate = calculateNewEndDate();
             const startDate = getStartDate();
+
+            const { data: authData } = await supabase.auth.getUser();
+            const currentUserId = authData?.user?.id || null;
+            if (!currentUserId) {
+                alert("Session expired. Please login again.");
+                setLoading(false);
+                return;
+            }
 
             if (!startDate || !newEndDate) {
                 alert("Please select a valid renewal start date and plan.");
@@ -182,25 +197,30 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
             // 3. Create payment record
             let paymentId = null;
             if (paymentAmountNum > 0) {
-                const { data: paymentData, error: paymentError } = await supabase
-                    .from("payments")
-                    .insert({
-                        gym_id: targetGymId,
-                        member_id: member.id,
-                        membership_id: membership.id,
-                        amount: paymentAmountNum,
-                        payment_mode: paymentMode,
-                        status: "paid",
-                        paid_at: paymentTimestamp,
-                        created_at: renewalEventTimestamp
-                    })
-                    .select("id")
-                    .single();
+                const paymentRes = await fetch("/api/finance/payments/create", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "x-user-id": String(currentUserId),
+                    },
+                    body: JSON.stringify({
+                        p_gym_id: targetGymId,
+                        p_member_id: member.id,
+                        p_membership_id: membership.id,
+                        p_amount: paymentAmountNum,
+                        p_payment_mode: paymentMode,
+                        p_status: "paid",
+                        p_paid_at: paymentTimestamp,
+                        p_created_at: renewalEventTimestamp,
+                        p_notes: notes || null,
+                    }),
+                });
 
-                if (paymentError) {
-                    console.error("Error creating payment:", paymentError);
+                const paymentJson = await paymentRes.json();
+                if (!paymentRes.ok) {
+                    console.error("Error creating payment:", paymentJson?.error);
                 } else {
-                    paymentId = paymentData?.id;
+                    paymentId = paymentJson?.data?.id || null;
                     
                     // 3.1 Generate payment receipt (async, don't block)
                     try {
@@ -248,23 +268,29 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
             }
 
             if (dueForMembership > 0) {
-                const { error: pendingPaymentError } = await supabase
-                    .from("payments")
-                    .insert({
-                        gym_id: targetGymId,
-                        member_id: member.id,
-                        membership_id: membership.id,
-                        amount: dueForMembership,
-                        payment_mode: paymentMode,
-                        status: "pending",
-                        next_payment_date: nextPaymentDate,
-                        remaining_amount: dueForMembership,
-                        notes: notes || null,
-                        created_at: renewalEventTimestamp,
-                    });
+                const pendingRes = await fetch("/api/finance/payments/create", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "x-user-id": String(currentUserId),
+                    },
+                    body: JSON.stringify({
+                        p_gym_id: targetGymId,
+                        p_member_id: member.id,
+                        p_membership_id: membership.id,
+                        p_amount: dueForMembership,
+                        p_payment_mode: paymentMode,
+                        p_status: "pending",
+                        p_created_at: renewalEventTimestamp,
+                        p_notes: notes || null,
+                        p_next_payment_date: nextPaymentDate,
+                        p_remaining_amount: dueForMembership,
+                    }),
+                });
 
-                if (pendingPaymentError) {
-                    console.error("Error creating pending payment:", pendingPaymentError);
+                const pendingJson = await pendingRes.json();
+                if (!pendingRes.ok) {
+                    console.error("Error creating pending payment:", pendingJson?.error);
                     alert("Membership renewed, but failed to save next payment date.");
                 }
             }

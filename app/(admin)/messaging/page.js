@@ -45,6 +45,7 @@ const MEMBER_CATEGORIES = [
   { id: "all", label: "All Members", icon: Users, color: "blue" },
   { id: "active", label: "Active Members", icon: UserCheck, color: "green" },
   { id: "inactive", label: "Inactive Members", icon: UserX, color: "orange" },
+  { id: "pending", label: "Pending Payments", icon: AlertTriangle, color: "amber" },
 ];
 
 // ══════════════════════════════════════════════════════════════
@@ -72,6 +73,10 @@ const FILTERS = {
     { id: "no_visit_30_days", label: "No Visit in 30 Days", description: "Haven't visited in a month" },
     { id: "expired", label: "Membership Expired", description: "Expired memberships" },
     { id: "never_visited", label: "Never Visited", description: "Joined but never came" },
+  ],
+  pending: [
+    { id: "none", label: "No Filter", description: "Show all pending payments" },
+    { id: "overdue_only", label: "Overdue Only", description: "Members with overdue dues" },
   ],
 };
 
@@ -158,8 +163,20 @@ function personalizeMessage(template, member, gymName) {
   message = message.replace(/{GymName}/gi, gymName || "Our Gym");
   message = message.replace(/{Phone}/gi, member.phone || "");
   message = message.replace(/{JoinDate}/gi, formatDate(member.join_date));
+  message = message.replace(/{PendingAmount}/gi, formatCurrency(member.pending_amount || 0));
+  message = message.replace(/{DueDate}/gi, formatDate(member.due_date || member.expiry_date));
+  message = message.replace(/{DaysOverdue}/gi, String(member.days_overdue || 0));
   
   return message;
+}
+
+function formatCurrency(amount) {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(Number(amount || 0));
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -272,6 +289,81 @@ export default function WhatsAppMessagingPage() {
     if (!selectedGym?.id) return;
     setMembersLoading(true);
     try {
+      if (selectedCategory === "pending") {
+        let userId = null;
+        const storedUser = localStorage.getItem("gymUser");
+        if (storedUser) {
+          try {
+            const parsedUser = JSON.parse(storedUser);
+            userId = parsedUser?.id || null;
+          } catch {
+            userId = null;
+          }
+        }
+
+        const now = new Date();
+        const periodStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0).toISOString();
+        const periodEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).toISOString();
+
+        const res = await fetch("/api/finance/data", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            p_gym_id: selectedGym.id,
+            p_period_start: periodStart,
+            p_period_end: periodEnd,
+            p_user_id: userId,
+          }),
+        });
+
+        const json = await res.json();
+        if (!res.ok) {
+          throw new Error(json?.error || "Failed to fetch pending payments");
+        }
+
+        const result = json?.data || {};
+        const membersWithDues = result.members_with_dues || [];
+        const paymentsWithNextDate = result.payments_with_next_date || [];
+
+        let pendingMembers = membersWithDues
+          .map((member) => {
+            const activeMembership = member.memberships?.find((m) => m.status === "active");
+            const memberPaymentWithDate = paymentsWithNextDate.find((p) => p.member_id === member.id);
+            const nextPaymentDate = memberPaymentWithDate?.next_payment_date;
+            const dueDateRaw = nextPaymentDate || activeMembership?.end_date || null;
+            const daysOverdue = dueDateRaw
+              ? Math.ceil((new Date() - new Date(dueDateRaw)) / (1000 * 60 * 60 * 24))
+              : 0;
+
+            return {
+              member_id: member.id,
+              full_name: member.full_name,
+              phone: member.phone,
+              email: member.email || null,
+              membership_status: "pending",
+              plan_name: activeMembership?.membership_plans?.name || null,
+              expiry_date: dueDateRaw,
+              join_date: member.join_date || null,
+              pending_amount: Number(member.balance || 0),
+              due_date: dueDateRaw,
+              days_overdue: Math.max(0, daysOverdue),
+              is_overdue: daysOverdue > 0,
+            };
+          })
+          .sort((a, b) => {
+            if (a.is_overdue !== b.is_overdue) return a.is_overdue ? -1 : 1;
+            if (b.days_overdue !== a.days_overdue) return b.days_overdue - a.days_overdue;
+            return b.pending_amount - a.pending_amount;
+          });
+
+        if (selectedFilter === "overdue_only") {
+          pendingMembers = pendingMembers.filter((m) => m.is_overdue);
+        }
+
+        setMembers(pendingMembers);
+        return;
+      }
+
       // Try RPC first
       const { data, error } = await supabase.rpc("get_members_for_messaging", {
         p_gym_id: selectedGym.id,
@@ -332,8 +424,9 @@ export default function WhatsAppMessagingPage() {
         console.error("Fallback query failed:", fallbackErr);
         setMembers([]);
       }
+    } finally {
+      setMembersLoading(false);
     }
-    setMembersLoading(false);
   }, [selectedGym?.id, selectedCategory, selectedFilter]);
 
   // ─── Load Members ────────────────────────────────────────────
@@ -350,16 +443,70 @@ export default function WhatsAppMessagingPage() {
       (m) =>
         m.full_name?.toLowerCase().includes(query) ||
         m.phone?.includes(query) ||
-        m.email?.toLowerCase().includes(query)
+        m.email?.toLowerCase().includes(query) ||
+        String(m.pending_amount || "").includes(query)
     );
   }, [members, searchQuery]);
 
   // ─── Get current message ─────────────────────────────────────
   const getCurrentMessage = useCallback(() => {
+    if (selectedCategory === "pending") return "";
     if (customMessage.trim()) return customMessage;
     if (selectedTemplate?.content) return selectedTemplate.content;
     return "";
-  }, [customMessage, selectedTemplate]);
+  }, [customMessage, selectedCategory, selectedTemplate]);
+
+  const getPendingFinanceMessage = useCallback((member) => {
+    if (!member) return "";
+
+    const gymName = selectedGym?.name || "Our Gym";
+    const dueDateText = member.due_date
+      ? new Date(member.due_date).toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })
+      : "N/A";
+
+    return `Dear ${member.full_name},
+
+Greetings from *${gymName}*! 
+
+We hope you're making great progress with your fitness journey! This is a friendly reminder regarding your pending membership payment.
+
+ *Pending Amount:* ${formatCurrency(member.pending_amount || 0)}
+${member.is_overdue ? ` *Overdue by:* ${member.days_overdue || 0} days` : ` *Payment Due Date:* ${dueDateText}`}
+
+We kindly request you to clear the payment at your earliest convenience to continue enjoying uninterrupted access to our facilities.
+
+You can make the payment through:
+• Cash at the reception
+• UPI/Card at the gym
+• Bank transfer
+
+Feel free to reach out if you have any questions or need assistance.
+
+Thank you for your cooperation! 
+
+Best regards,
+*${gymName} Team*`;
+  }, [selectedGym?.name]);
+
+  const getMessageForMember = useCallback(
+    (member) => {
+      const currentMessage = getCurrentMessage();
+      if (currentMessage) {
+        return personalizeMessage(currentMessage, member, selectedGym?.name);
+      }
+
+      if (selectedCategory === "pending") {
+        return getPendingFinanceMessage(member);
+      }
+
+      return "";
+    },
+    [getCurrentMessage, getPendingFinanceMessage, selectedCategory, selectedGym?.name]
+  );
 
   // ─── Handle Select All Toggle ────────────────────────────────
   const handleSelectAll = () => {
@@ -383,14 +530,13 @@ export default function WhatsAppMessagingPage() {
 
   // ─── Send Single Message ─────────────────────────────────────
   const handleSendMessage = (member) => {
-    const message = getCurrentMessage();
+    const message = getMessageForMember(member);
     if (!message) {
       showError("Please select a template or write a custom message");
       return;
     }
 
-    const personalizedMessage = personalizeMessage(message, member, selectedGym?.name);
-    const whatsappUrl = generateWhatsAppURL(member.phone, personalizedMessage);
+    const whatsappUrl = generateWhatsAppURL(member.phone, message);
 
     if (!whatsappUrl) {
       showError("Invalid phone number");
@@ -404,7 +550,7 @@ export default function WhatsAppMessagingPage() {
   // ─── Start Bulk Send ─────────────────────────────────────────
   const startBulkSend = () => {
     const message = getCurrentMessage();
-    if (!message) {
+    if (!message && selectedCategory !== "pending") {
       showError("Please select a template or write a custom message");
       return;
     }
@@ -427,7 +573,7 @@ export default function WhatsAppMessagingPage() {
   const handleBulkSendNext = (action) => {
     if (action === "send") {
       const member = membersToSend[currentSendIndex];
-      const message = personalizeMessage(getCurrentMessage(), member, selectedGym?.name);
+      const message = getMessageForMember(member);
       const whatsappUrl = generateWhatsAppURL(member.phone, message);
       
       if (whatsappUrl) {
@@ -550,7 +696,7 @@ export default function WhatsAppMessagingPage() {
   // ══════════════════════════════════════════════════════════════
   if (bulkSendMode && membersToSend.length > 0) {
     const currentMember = membersToSend[currentSendIndex];
-    const personalizedMsg = personalizeMessage(getCurrentMessage(), currentMember, selectedGym?.name);
+    const personalizedMsg = getMessageForMember(currentMember);
 
     return (
       <div className="min-h-screen bg-gray-50 pb-24">
@@ -657,6 +803,10 @@ export default function WhatsAppMessagingPage() {
                 onClick={() => {
                   setSelectedCategory(cat.id);
                   setSelectedFilter("none");
+                  if (cat.id === "pending") {
+                    setSelectedTemplate(null);
+                    setCustomMessage("");
+                  }
                   setSelectedMembers(new Set());
                 }}
                 className={`flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition whitespace-nowrap ${
@@ -665,6 +815,8 @@ export default function WhatsAppMessagingPage() {
                       ? "bg-blue-600 text-white"
                       : cat.color === "green"
                       ? "bg-green-600 text-white"
+                      : cat.color === "amber"
+                      ? "bg-amber-500 text-white"
                       : "bg-orange-500 text-white"
                     : "bg-white text-gray-700 border border-gray-200"
                 }`}
@@ -703,6 +855,7 @@ export default function WhatsAppMessagingPage() {
         </div>
 
         {/* ─── Template & Message ────────────────────────────────── */}
+        {selectedCategory !== "pending" && (
         <div className="bg-white rounded-2xl p-4 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -773,6 +926,7 @@ export default function WhatsAppMessagingPage() {
             </div>
           </div>
         </div>
+        )}
 
         {/* ─── Search & Stats ────────────────────────────────────── */}
         <div className="flex gap-3">
@@ -821,11 +975,7 @@ export default function WhatsAppMessagingPage() {
           ) : (
             filteredMembers.map((member) => {
               const isSelected = selectedMembers.has(member.member_id);
-              const personalizedMsg = personalizeMessage(
-                getCurrentMessage(),
-                member,
-                selectedGym?.name
-              );
+              const personalizedMsg = getMessageForMember(member);
 
               return (
                 <div
@@ -860,16 +1010,31 @@ export default function WhatsAppMessagingPage() {
                           className={`px-1.5 py-0.5 rounded text-xs font-medium ${
                             member.membership_status === "active"
                               ? "bg-green-100 text-green-700"
+                              : member.membership_status === "pending"
+                              ? "bg-amber-100 text-amber-700"
                               : "bg-gray-100 text-gray-600"
                           }`}
                         >
-                          {member.membership_status === "active" ? "Active" : "Inactive"}
+                          {member.membership_status === "active"
+                            ? "Active"
+                            : member.membership_status === "pending"
+                            ? "Pending"
+                            : "Inactive"}
                         </span>
                       </div>
                       <p className="text-sm text-gray-500 flex items-center gap-2">
                         <Phone className="w-3 h-3" />
                         {member.phone}
-                        {member.expiry_date && (
+                        {member.membership_status === "pending" ? (
+                          <span className="text-xs text-amber-700">
+                            • Due: {formatCurrency(member.pending_amount || 0)}
+                            {member.is_overdue
+                              ? ` • ${member.days_overdue} days overdue`
+                              : member.due_date
+                              ? ` • ${new Date(member.due_date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`
+                              : ""}
+                          </span>
+                        ) : member.expiry_date && (
                           <span className="text-xs">
                             • Expires: {new Date(member.expiry_date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
                           </span>
@@ -888,7 +1053,7 @@ export default function WhatsAppMessagingPage() {
                   </div>
 
                   {/* Message Preview (if selected) */}
-                  {isSelected && getCurrentMessage() && (
+                  {isSelected && personalizedMsg && (
                     <div className="mt-3 ml-8 p-3 bg-green-50 rounded-lg border border-green-100">
                       <p className="text-xs text-gray-600 mb-1 font-medium">Preview:</p>
                       <p className="text-sm text-gray-800">{personalizedMsg}</p>
@@ -905,7 +1070,7 @@ export default function WhatsAppMessagingPage() {
           <div className="sticky bottom-20 bg-white rounded-2xl p-4 shadow-lg border border-gray-200">
             <button
               onClick={startBulkSend}
-              disabled={!getCurrentMessage()}
+              disabled={!getCurrentMessage() && selectedCategory !== "pending"}
               className="w-full py-3.5 px-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-400 text-white rounded-xl font-semibold flex items-center justify-center gap-2 transition"
             >
               <MessageCircle className="w-5 h-5" />

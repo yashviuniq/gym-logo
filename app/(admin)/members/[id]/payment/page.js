@@ -191,7 +191,7 @@ export default function AddPaymentPage() {
               Payment Type
             </label>
             <div className="grid grid-cols-2 gap-2">
-              {["membership", "personal_training", "supplements", "other"].map(
+              {["membership","other"].map(
                 (type) => (
                   <button
                     key={type}

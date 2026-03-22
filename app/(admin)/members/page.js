@@ -69,6 +69,7 @@ const transformMember = (m) => ({
   email: m.email,
   plan: m.plan_name || "No Plan",
   status: m.computed_status || "inactive",
+  validTillRaw: m.valid_till || null,
   validTill: m.valid_till
     ? new Date(m.valid_till).toLocaleDateString("en-IN")
     : "N/A",
@@ -120,6 +121,8 @@ export default function MembersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [expiredStartDate, setExpiredStartDate] = useState("");
+  const [expiredEndDate, setExpiredEndDate] = useState("");
   const [showMyMembers, setShowMyMembers] = useState(false);
   const searchTimerRef = useRef(null);
 
@@ -207,6 +210,11 @@ export default function MembersPage() {
     const fetchMembersList = async () => {
       setMembersLoading(true);
       try {
+        const hasExpiredRangeFilter =
+          filterStatus === "expired" && (expiredStartDate || expiredEndDate);
+        const requestPage = hasExpiredRangeFilter ? 1 : currentPage;
+        const requestPageSize = hasExpiredRangeFilter ? 5000 : PAGE_SIZE;
+
         let result;
         try {
           const res = await fetch("/api/members/list", {
@@ -216,8 +224,8 @@ export default function MembersPage() {
               p_gym_id: selectedGym.id,
               p_search: debouncedSearch,
               p_status: filterStatus,
-              p_page: currentPage,
-              p_page_size: PAGE_SIZE,
+              p_page: requestPage,
+              p_page_size: requestPageSize,
               p_user_id: user?.id || null,
               p_is_trainer: isTrainer || false,
               p_show_my_members: showMyMembers,
@@ -232,8 +240,8 @@ export default function MembersPage() {
             p_gym_id: selectedGym.id,
             p_search: debouncedSearch,
             p_status: filterStatus,
-            p_page: currentPage,
-            p_page_size: PAGE_SIZE,
+            p_page: requestPage,
+            p_page_size: requestPageSize,
             p_user_id: user?.id || null,
             p_is_trainer: isTrainer || false,
             p_show_my_members: showMyMembers,
@@ -245,19 +253,58 @@ export default function MembersPage() {
         if (cancelled) return;
 
         if (result) {
-          // If current page is beyond total pages (e.g. after deletion), reset
-          if (result.members?.length === 0 && result.total_count > 0 && currentPage > 1) {
-            setCurrentPage(Math.max(1, result.total_pages || 1));
-            return;
-          }
           const transformedMembers = (result.members || []).map(transformMember);
-          setMembers(
-            filterStatus === "renewal"
-              ? sortRenewalMembers(transformedMembers)
-              : transformedMembers
-          );
-          setTotalCount(result.total_count || 0);
-          setTotalPages(Math.max(1, result.total_pages || 1));
+
+          if (hasExpiredRangeFilter) {
+            const fromTs = expiredStartDate
+              ? new Date(`${expiredStartDate}T00:00:00`).getTime()
+              : null;
+            const toTs = expiredEndDate
+              ? new Date(`${expiredEndDate}T23:59:59.999`).getTime()
+              : null;
+
+            const rangeFiltered = transformedMembers.filter((member) => {
+              if (!member.validTillRaw) return false;
+              const memberTs = new Date(`${member.validTillRaw}T00:00:00`).getTime();
+              if (Number.isNaN(memberTs)) return false;
+              if (fromTs && memberTs < fromTs) return false;
+              if (toTs && memberTs > toTs) return false;
+              return true;
+            });
+
+            const sortedFiltered =
+              filterStatus === "renewal"
+                ? sortRenewalMembers(rangeFiltered)
+                : rangeFiltered;
+
+            const filteredTotal = sortedFiltered.length;
+            const calculatedPages = Math.max(1, Math.ceil(filteredTotal / PAGE_SIZE));
+
+            if (currentPage > calculatedPages) {
+              setCurrentPage(calculatedPages);
+              return;
+            }
+
+            const startIndex = (currentPage - 1) * PAGE_SIZE;
+            const endIndex = startIndex + PAGE_SIZE;
+            setMembers(sortedFiltered.slice(startIndex, endIndex));
+            setTotalCount(filteredTotal);
+            setTotalPages(calculatedPages);
+          } else {
+            // If current page is beyond total pages (e.g. after deletion), reset
+            if (result.members?.length === 0 && result.total_count > 0 && currentPage > 1) {
+              setCurrentPage(Math.max(1, result.total_pages || 1));
+              return;
+            }
+
+            setMembers(
+              filterStatus === "renewal"
+                ? sortRenewalMembers(transformedMembers)
+                : transformedMembers
+            );
+            setTotalCount(result.total_count || 0);
+            setTotalPages(Math.max(1, result.total_pages || 1));
+          }
         } else {
           setMembers([]);
           setTotalCount(0);
@@ -286,11 +333,18 @@ export default function MembersPage() {
     filterStatus,
     currentPage,
     showMyMembers,
+    expiredStartDate,
+    expiredEndDate,
     user?.id,
     isTrainer,
     roleLoading,
     refreshTrigger,
   ]);
+
+  useEffect(() => {
+    if (filterStatus !== "expired") return;
+    setCurrentPage(1);
+  }, [expiredStartDate, expiredEndDate, filterStatus]);
 
   // ─── Refresh handler for mutations (delete, renew) ───────────
   const refreshData = () => setRefreshTrigger((t) => t + 1);
@@ -827,6 +881,10 @@ Best regards,
   // ─── Event handlers ──────────────────────────────────────────
   const handleFilterChange = (newStatus) => {
     setFilterStatus(newStatus);
+    if (newStatus !== "expired") {
+      setExpiredStartDate("");
+      setExpiredEndDate("");
+    }
     setCurrentPage(1);
   };
 
@@ -1119,6 +1177,33 @@ Best regards,
               </button>
             ))}
           </div>
+
+          {filterStatus === "expired" && (
+            <div className="mt-3 border-t border-gray-100 pt-3">
+              <p className="text-xs font-medium text-gray-700 mb-2">Expired Date Range</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[11px] text-gray-500 mb-1 block">Start Date</label>
+                  <input
+                    type="date"
+                    value={expiredStartDate}
+                    onChange={(e) => setExpiredStartDate(e.target.value)}
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] text-gray-500 mb-1 block">End Date</label>
+                  <input
+                    type="date"
+                    value={expiredEndDate}
+                    onChange={(e) => setExpiredEndDate(e.target.value)}
+                    min={expiredStartDate || undefined}
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Members List */}

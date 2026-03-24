@@ -89,28 +89,38 @@ const transformMember = (m) => ({
 });
 
 const sortRenewalMembers = (memberList) => {
-  return [...memberList].sort((leftMember, rightMember) => {
-    const leftIsExpired =
-      leftMember.status === "expired" ||
-      leftMember.daysRemaining === null ||
-      leftMember.daysRemaining <= 0;
-    const rightIsExpired =
-      rightMember.status === "expired" ||
-      rightMember.daysRemaining === null ||
-      rightMember.daysRemaining <= 0;
+  const activeMembers = [];
+  const expiredMembers = [];
 
-    if (leftIsExpired !== rightIsExpired) {
-      return leftIsExpired ? 1 : -1;
+  memberList.forEach((member) => {
+    const isExpired =
+      member.status === "expired" ||
+      member.daysRemaining === null ||
+      member.daysRemaining <= 0;
+
+    if (isExpired) {
+      expiredMembers.push(member);
+    } else {
+      activeMembers.push(member);
     }
+  });
 
-    if (!leftIsExpired && !rightIsExpired) {
-      if (leftMember.daysRemaining !== rightMember.daysRemaining) {
-        return leftMember.daysRemaining - rightMember.daysRemaining;
-      }
+  expiredMembers.sort((leftMember, rightMember) => {
+    const leftTs = leftMember.validTillRaw
+      ? new Date(`${leftMember.validTillRaw}T00:00:00`).getTime()
+      : Number.POSITIVE_INFINITY;
+    const rightTs = rightMember.validTillRaw
+      ? new Date(`${rightMember.validTillRaw}T00:00:00`).getTime()
+      : Number.POSITIVE_INFINITY;
+
+    if (leftTs !== rightTs) {
+      return leftTs - rightTs;
     }
 
     return leftMember.name.localeCompare(rightMember.name);
   });
+
+  return [...activeMembers, ...expiredMembers];
 };
 
 export default function MembersPage() {

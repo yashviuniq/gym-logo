@@ -421,11 +421,7 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
                                                 <span className="font-semibold text-blue-700">₹{renewal.customPrice}</span>
                                             </div>
                                         )}
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-green-600">Paid</span>
-                                            <span className="font-medium text-green-700">₹{renewal.paymentAmount || 0}</span>
-                                        </div>
-                                       
+                                      
                                     </div>
 
                                     <div className="mb-3 rounded-lg border border-gray-200 bg-gray-50 p-3 space-y-2">

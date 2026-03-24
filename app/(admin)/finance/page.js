@@ -1390,7 +1390,11 @@ Thank you,
                     <p className="text-xs text-gray-500">Created</p>
                     <p className="text-sm font-medium text-gray-900">
                       {selectedTransaction.createdAtRaw
-                        ? new Date(selectedTransaction.createdAtRaw).toLocaleString("en-IN")
+                        ? new Date(selectedTransaction.createdAtRaw).toLocaleDateString("en-GB", {
+                            day: "numeric",
+                            month: "numeric",
+                            year: "2-digit",
+                          })
                         : "N/A"}
                     </p>
                   </div>
@@ -1398,7 +1402,11 @@ Thank you,
                     <p className="text-xs text-gray-500">Paid Date</p>
                     <p className="text-sm font-medium text-gray-900">
                       {selectedTransaction.paidAtRaw
-                        ? new Date(selectedTransaction.paidAtRaw).toLocaleString("en-IN")
+                        ? new Date(selectedTransaction.paidAtRaw).toLocaleDateString("en-GB", {
+                            day: "numeric",
+                            month: "numeric",
+                            year: "2-digit",
+                          })
                         : "N/A"}
                     </p>
                   </div>

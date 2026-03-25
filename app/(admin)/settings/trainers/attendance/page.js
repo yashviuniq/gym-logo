@@ -229,9 +229,19 @@ export default function TrainerAttendanceQuickPage() {
   };
 
   const resetAttendanceDay = (day) => {
+    const emptyDayDraft = TRAINER_ATTENDANCE_SESSIONS.reduce((draftMap, session) => {
+      draftMap[session.sessionNumber] = {
+        id: null,
+        notes: "",
+        checkInParts: createEmptyTimeParts(),
+        checkOutParts: createEmptyTimeParts(),
+      };
+      return draftMap;
+    }, {});
+
     setAttendanceDrafts((currentDrafts) => ({
       ...currentDrafts,
-      [day.attendance_date]: buildAttendanceDrafts([day])[day.attendance_date],
+      [day.attendance_date]: emptyDayDraft,
     }));
   };
 

@@ -43,6 +43,9 @@ DECLARE
   v_result JSONB;
   v_collector_gym_id UUID;
   v_collector_name TEXT;
+  v_plan_price NUMERIC := 0;
+  v_total_amount NUMERIC := 0;
+  v_due_amount NUMERIC := 0;
 BEGIN
   -- 1. Check for existing member with same phone in same gym
   PERFORM 1 FROM members WHERE gym_id = p_gym_id AND phone = p_phone;
@@ -66,13 +69,26 @@ BEGIN
   )
   RETURNING id INTO v_member_id;
 
+  SELECT COALESCE(mp.price, 0)
+  INTO v_plan_price
+  FROM membership_plans mp
+  WHERE mp.id = p_plan_id;
+
+  v_total_amount := COALESCE(p_custom_price, v_plan_price, 0);
+
+  IF p_payment_amount > v_total_amount THEN
+    RAISE EXCEPTION 'PAYMENT_EXCEEDS_MEMBERSHIP_TOTAL';
+  END IF;
+
+  v_due_amount := GREATEST(0, v_total_amount - COALESCE(p_payment_amount, 0));
+
   -- 3. Insert membership
   INSERT INTO memberships (
     member_id, gym_id, plan_id, start_date, end_date,
-    status, updated_by, due_amount, custom_price
+    status, updated_by, due_amount, custom_price, total_amount
   ) VALUES (
     v_member_id, p_gym_id, p_plan_id, p_start_date, p_end_date,
-    p_membership_status::membership_status, p_created_by, p_due_amount, p_custom_price
+    p_membership_status::membership_status, p_created_by, v_due_amount, p_custom_price, v_total_amount
   )
   RETURNING id INTO v_membership_id;
 

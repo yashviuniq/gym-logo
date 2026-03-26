@@ -130,10 +130,28 @@ export default function MemberDetailPage() {
       const trainerScheduleData = result.trainer_schedule || [];
       const nextPaymentData = result.next_payment;
 
+      const sortedMemberships = [...membershipsData].sort((a, b) => {
+        const aEndDate = new Date(a.end_date || 0).getTime();
+        const bEndDate = new Date(b.end_date || 0).getTime();
+        if (bEndDate !== aEndDate) {
+          return bEndDate - aEndDate;
+        }
+
+        const aStartDate = new Date(a.start_date || 0).getTime();
+        const bStartDate = new Date(b.start_date || 0).getTime();
+        if (bStartDate !== aStartDate) {
+          return bStartDate - aStartDate;
+        }
+
+        const aCreatedDate = new Date(a.created_at || 0).getTime();
+        const bCreatedDate = new Date(b.created_at || 0).getTime();
+        return bCreatedDate - aCreatedDate;
+      });
+
       // Process active membership
-      const activeMembership = membershipsData.find(
+      const activeMembership = sortedMemberships.find(
         (m) => m.status === "active"
-      ) || membershipsData[0];
+      ) || sortedMemberships[0];
 
       let memberStatus = "inactive";
       if (activeMembership) {
@@ -163,6 +181,34 @@ export default function MemberDetailPage() {
         .filter((payment) => payment.status === "paid")
         .reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0);
 
+      const latestMembershipForFinancials = sortedMemberships[0] || null;
+      const latestMembershipTotalAmount = latestMembershipForFinancials
+        ? Number(
+            latestMembershipForFinancials.total_amount ||
+            latestMembershipForFinancials.custom_price ||
+            latestMembershipForFinancials.membership_plans?.price ||
+            0
+          )
+        : 0;
+      const latestMembershipPaidAmount = latestMembershipForFinancials
+        ? paymentsData
+            .filter(
+              (payment) =>
+                payment.status === "paid" &&
+                payment.membership_id === latestMembershipForFinancials.id
+            )
+            .reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0)
+        : 0;
+      const latestMembershipDueAmount = Math.max(
+        0,
+        latestMembershipTotalAmount - latestMembershipPaidAmount
+      );
+      const storedMemberBalance = Math.max(0, Number(memberData.balance || 0));
+      const resolvedProfileDueAmount = Math.max(
+        latestMembershipDueAmount,
+        storedMemberBalance
+      );
+
       const latestAdminNote = paymentsData
         .find((payment) => typeof payment.notes === "string" && payment.notes.trim().length > 0)?.notes?.trim() || "";
 
@@ -178,15 +224,15 @@ export default function MemberDetailPage() {
           : new Date(memberData.created_at).toLocaleDateString("en-IN"),
         createdByName: memberData.created_by_name || null,
         plan: activeMembership?.membership_plans?.name || "No Plan",
-        planPrice: activeMembership?.membership_plans?.price || 0,
+        planPrice: latestMembershipTotalAmount,
         status: memberStatus,
         validTill: activeMembership?.end_date
           ? new Date(activeMembership.end_date).toLocaleDateString("en-IN")
           : "N/A",
         daysRemaining: daysRemaining,
-        dueAmount: Math.max(0, memberData.balance || 0),
-        balance: memberData.balance || 0,
-        totalPaid,
+        dueAmount: resolvedProfileDueAmount,
+        balance: resolvedProfileDueAmount,
+        totalPaid: latestMembershipForFinancials ? latestMembershipPaidAmount : totalPaid,
         adminNote: latestAdminNote,
         attendance: attendanceData.map(a => ({
           date: new Date(a.check_in_date).toLocaleDateString("en-IN"),
@@ -201,6 +247,7 @@ export default function MemberDetailPage() {
           amount: p.amount,
           type: p.membership_id ? "Membership" : "Trainer",
           status: p.status,
+          membership_id: p.membership_id || null,
           payment_mode: p.payment_mode,
           notes: p.notes || "",
           created_at: p.created_at
@@ -219,25 +266,26 @@ export default function MemberDetailPage() {
       setPendingPayments(pending);
 
       // Renewal history
-      const history = membershipsData.map(m => {
+      const history = sortedMemberships.map(m => {
         const planPrice = m.membership_plans?.price || 0;
         const customPrice = m.custom_price || null;
-        const actualPrice = customPrice || planPrice;
-        
-        const linkedPayment = paymentsData.find(p => p.membership_id === m.id && p.status === 'paid');
-        const fallbackPayment = !linkedPayment ? paymentsData.find(p => {
-          if (p.status !== 'paid') return false;
-          const pTime = new Date(p.created_at).getTime();
-          const mTime = new Date(m.created_at).getTime();
-          return Math.abs(pTime - mTime) < 60000;
-        }) : null;
-        const payment = linkedPayment || fallbackPayment;
-        const paymentAmount = payment?.amount || 0;
-        const dueAmount = m.due_amount != null ? m.due_amount : Math.max(0, actualPrice - paymentAmount);
-        const renewalEventDate = payment?.paid_at || (m.start_date ? `${m.start_date}T00:00:00` : m.created_at);
+        const actualPrice = Number(m.total_amount || customPrice || planPrice || 0);
+
+        const membershipPayments = paymentsData
+          .filter((p) => p.membership_id === m.id && p.status === "paid")
+          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+        const paymentAmount = membershipPayments.reduce(
+          (sum, payment) => sum + Number(payment.amount || 0),
+          0
+        );
+        const dueAmount = Math.max(0, actualPrice - paymentAmount);
+        const renewalEventDate = m.start_date
+          ? `${m.start_date}T00:00:00`
+          : (membershipPayments[0]?.paid_at || m.created_at);
 
         return {
-          paymentId: payment?.id || null,
+          paymentId: membershipPayments[0]?.id || null,
           membershipId: m.id,
           planName: m.membership_plans?.name || "Unknown",
           duration: m.membership_plans?.duration_days || 0,
@@ -246,7 +294,7 @@ export default function MemberDetailPage() {
           price: actualPrice,
           paymentAmount,
           dueAmount,
-          paymentMode: payment?.payment_mode || "cash",
+          paymentMode: membershipPayments[0]?.payment_mode || "cash",
           notes: "",
           newEndDate: m.end_date,
           renewedAt: renewalEventDate,
@@ -583,6 +631,138 @@ export default function MemberDetailPage() {
   const handleResolvePendingPayment = (payment) => {
     setSelectedPendingPayment(payment);
     setShowResolvePaymentModal(true);
+  };
+
+  const handleUpdatePaymentAmount = async (payment) => {
+    if (!payment?.id) return;
+
+    if ((payment.status || "").toLowerCase() !== "paid") {
+      showError("Only paid payments can be edited");
+      return;
+    }
+
+    const input = window.prompt("Enter updated payment amount", String(payment.amount || ""));
+    if (input === null) return;
+
+    const updatedAmount = Number(input);
+    if (!Number.isFinite(updatedAmount) || updatedAmount <= 0) {
+      showError("Please enter a valid amount");
+      return;
+    }
+
+    if (Math.abs(updatedAmount - Number(payment.amount || 0)) < 0.0001) {
+      return;
+    }
+
+    try {
+      const { error: updatePaymentError } = await supabase
+        .from("payments")
+        .update({ amount: updatedAmount })
+        .eq("id", payment.id);
+
+      if (updatePaymentError) throw updatePaymentError;
+
+      if (payment.membership_id) {
+        const { data: membershipRow, error: membershipError } = await supabase
+          .from("memberships")
+          .select(`
+            id,
+            member_id,
+            total_amount,
+            custom_price,
+            membership_plans (
+              price
+            )
+          `)
+          .eq("id", payment.membership_id)
+          .maybeSingle();
+
+        if (!membershipError && membershipRow?.id) {
+          const membershipTotal = Number(
+            membershipRow.total_amount ||
+            membershipRow.custom_price ||
+            membershipRow.membership_plans?.price ||
+            0
+          );
+
+          const { data: membershipPaidRows, error: membershipPaidError } = await supabase
+            .from("payments")
+            .select("amount")
+            .eq("membership_id", membershipRow.id)
+            .eq("status", "paid");
+
+          if (!membershipPaidError) {
+            const membershipPaid = (membershipPaidRows || []).reduce(
+              (sum, row) => sum + Number(row.amount || 0),
+              0
+            );
+            const membershipDue = Math.max(0, membershipTotal - membershipPaid);
+
+            await supabase
+              .from("memberships")
+              .update({ due_amount: membershipDue })
+              .eq("id", membershipRow.id);
+
+            const { data: latestMembershipRows, error: latestMembershipError } = await supabase
+              .from("memberships")
+              .select(`
+                id,
+                total_amount,
+                custom_price,
+                membership_plans (
+                  price
+                )
+              `)
+              .eq("member_id", membershipRow.member_id)
+              .order("end_date", { ascending: false })
+              .order("start_date", { ascending: false })
+              .order("created_at", { ascending: false })
+              .limit(1);
+
+            if (!latestMembershipError) {
+              const latestMembership = latestMembershipRows?.[0] || null;
+              let latestDue = 0;
+
+              if (latestMembership?.id) {
+                const latestTotal = Number(
+                  latestMembership.total_amount ||
+                  latestMembership.custom_price ||
+                  latestMembership.membership_plans?.price ||
+                  0
+                );
+
+                const { data: latestPaidRows, error: latestPaidError } = await supabase
+                  .from("payments")
+                  .select("amount")
+                  .eq("membership_id", latestMembership.id)
+                  .eq("status", "paid");
+
+                if (!latestPaidError) {
+                  const latestPaid = (latestPaidRows || []).reduce(
+                    (sum, row) => sum + Number(row.amount || 0),
+                    0
+                  );
+                  latestDue = Math.max(0, latestTotal - latestPaid);
+                }
+              }
+
+              await supabase
+                .from("members")
+                .update({ balance: latestDue })
+                .eq("id", membershipRow.member_id);
+            }
+          }
+        }
+      }
+
+      showSuccess("Payment amount updated");
+      if (selectedGym?.id) {
+        fetchMemberDetails(params.id, selectedGym.id);
+      }
+    } catch (error) {
+      console.error("Error updating payment amount:", error);
+      showError("Failed to update payment amount");
+    }
   };
 
   if (loading) {
@@ -967,16 +1147,22 @@ export default function MemberDetailPage() {
           <div className="bg-white rounded-xl border border-gray-300 shadow-sm p-3">
             <button
               onClick={() => setShowRenewModal(true)}
-              className="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-100 active:scale-95 transition-all flex items-center justify-between"
+              disabled={member.dueAmount > 0}
+              className="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-100 active:scale-95 transition-all flex items-center justify-between disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <span className="flex items-center gap-2">
                 <span className="w-7 h-7 rounded-full bg-emerald-200 text-emerald-800 flex items-center justify-center">
                   <RefreshCw className="w-3.5 h-3.5" />
                 </span>
-                Renew Membership
+                {member.dueAmount > 0 ? "Clear Due Before Renewal" : "Renew Membership"}
               </span>
               <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
             </button>
+            {member.dueAmount > 0 && (
+              <p className="mt-2 text-xs text-red-600">
+                Renewal is blocked until current membership due is fully paid.
+              </p>
+            )}
           </div>
         )}
 
@@ -1440,13 +1626,7 @@ export default function MemberDetailPage() {
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="p-4 border-b border-gray-100 flex items-center justify-between">
               <h3 className="font-semibold text-gray-900">Payment History</h3>
-              <button
-                onClick={() => router.push(`/members/${member.id}/payment`)}
-                className="px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-medium rounded-lg hover:shadow-lg transition-all duration-300 flex items-center gap-2"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Add Payment
-              </button>
+             
             </div>
             <div className="divide-y divide-gray-100">
               {member.payments.length > 0 ? (
@@ -1483,7 +1663,15 @@ export default function MemberDetailPage() {
                       }`}>
                         {(payment.status || 'unknown').toLowerCase()}
                       </span>
-                     
+                      {payment.status === "paid" && (
+                        <button
+                          type="button"
+                          onClick={() => handleUpdatePaymentAmount(payment)}
+                          className="px-2.5 py-1 text-xs rounded-lg border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"
+                        >
+                          Edit Amount
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))

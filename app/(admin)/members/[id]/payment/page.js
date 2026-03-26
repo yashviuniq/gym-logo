@@ -32,25 +32,90 @@ export default function AddPaymentPage() {
 
   const fetchMemberData = async (memberId) => {
     try {
-      const { data, error } = await supabase
+      const { data: memberData, error: memberError } = await supabase
         .from("members")
-        .select("id, full_name, phone, balance")
+        .select("id, full_name, phone")
         .eq("id", memberId)
         .single();
 
-      if (error) throw error;
-      
+      if (memberError) throw memberError;
+
+      const { data: memberships, error: membershipError } = await supabase
+        .from("memberships")
+        .select(`
+          id,
+          total_amount,
+          custom_price,
+          start_date,
+          created_at,
+          membership_plans (
+            price
+          )
+        `)
+        .eq("member_id", memberId)
+        .order("end_date", { ascending: false })
+        .order("start_date", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(25);
+
+      if (membershipError) throw membershipError;
+
+      const membershipRows = memberships || [];
+      const membershipIds = membershipRows.map((membership) => membership.id).filter(Boolean);
+
+      let paidRows = [];
+      if (membershipIds.length > 0) {
+        const { data: paidData, error: paidRowsError } = await supabase
+          .from("payments")
+          .select("membership_id, amount")
+          .in("membership_id", membershipIds)
+          .eq("status", "paid");
+
+        if (paidRowsError) throw paidRowsError;
+        paidRows = paidData || [];
+      }
+
+      const paidByMembership = paidRows.reduce((acc, row) => {
+        const key = row.membership_id;
+        acc[key] = (acc[key] || 0) + Number(row.amount || 0);
+        return acc;
+      }, {});
+
+      const getMembershipTotalAmount = (membership) => Number(
+        membership?.total_amount ||
+        membership?.custom_price ||
+        membership?.membership_plans?.price ||
+        0
+      );
+
+      const membershipWithDue = membershipRows.find((membership) => {
+        const totalAmount = getMembershipTotalAmount(membership);
+        const paidAmount = Number(paidByMembership[membership.id] || 0);
+        return Math.max(0, totalAmount - paidAmount) > 0;
+      });
+
+      const latestMembership = membershipWithDue || membershipRows[0] || null;
+      const membershipTotalAmount = latestMembership
+        ? getMembershipTotalAmount(latestMembership)
+        : 0;
+      const membershipPaidAmount = latestMembership
+        ? Number(paidByMembership[latestMembership.id] || 0)
+        : 0;
+      const dueAmount = Math.max(0, membershipTotalAmount - membershipPaidAmount);
+
       setMember({
-        id: data.id,
-        name: data.full_name,
-        phone: data.phone,
-        dueAmount: Math.max(0, data.balance || 0),
-        balance: data.balance || 0
+        id: memberData.id,
+        name: memberData.full_name,
+        phone: memberData.phone,
+        membershipId: latestMembership?.id || null,
+        totalAmount: membershipTotalAmount,
+        paidAmount: membershipPaidAmount,
+        dueAmount,
       });
 
       // Auto-fill amount if there's a due amount
-      if (data.balance > 0) {
-        setFormData(prev => ({ ...prev, amount: data.balance.toString() }));
+      if (dueAmount > 0) {
+        setFormData((prev) => ({ ...prev, amount: dueAmount.toString() }));
       }
     } catch (error) {
       console.error("Error fetching member:", error);
@@ -75,6 +140,12 @@ export default function AddPaymentPage() {
         return;
       }
 
+      if (!member?.membershipId) {
+        alert("No membership found for this member.");
+        setLoading(false);
+        return;
+      }
+
       if (authLoading || !user?.id) {
         alert("Session expired. Please login again.");
         setLoading(false);
@@ -90,6 +161,7 @@ export default function AddPaymentPage() {
         body: JSON.stringify({
           p_gym_id: selectedGym.id,
           p_member_id: member.id,
+          p_membership_id: member.membershipId,
           p_amount: amount,
           p_payment_mode: formData.mode,
           p_status: "paid",
@@ -103,15 +175,6 @@ export default function AddPaymentPage() {
       if (!paymentRes.ok) {
         throw new Error(paymentJson?.error || "Failed to record payment");
       }
-
-      // Update member balance (reduce the due amount)
-      const newBalance = Math.max(0, member.balance - amount);
-      const { error: balanceError } = await supabase
-        .from("members")
-        .update({ balance: newBalance })
-        .eq("id", member.id);
-
-      if (balanceError) throw balanceError;
 
       alert("Payment recorded successfully!");
       router.back();

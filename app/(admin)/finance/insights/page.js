@@ -313,15 +313,17 @@ function buildRevenueRows(data) {
 
 function buildNewJoinRows(data) {
   return [
-    ["Member Name", "Phone", "Plan", "Join Date"],
+    ["Member Name", "Phone", "Plan", "Join Date", "End Date", "Payment Mode"],
     ...(data?.month_new_joins_list?.length
       ? data.month_new_joins_list.map((member) => [
           member.full_name || "Unknown",
           member.phone || "-",
           member.plan_name || "-",
           formatExcelDate(member.join_date),
+          formatExcelDate(member.end_date),
+          member.payment_mode || "-",
         ])
-      : [["No new joins found", "", "", ""]]),
+      : [["No new joins found", "", "", "", "", ""]]),
   ];
 }
 
@@ -574,7 +576,7 @@ export default function FinanceInsightsPage() {
       addSheet(
         "New Joins",
         newJoinRows,
-        [{ wch: 28 }, { wch: 18 }, { wch: 22 }, { wch: 18 }]
+        [{ wch: 28 }, { wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 18 }, { wch: 18 }]
       );
 
       addSheet(
@@ -1715,6 +1717,9 @@ export default function FinanceInsightsPage() {
                         </div>
                         <p className="text-xs text-gray-400 mt-0.5">
                           Joined {new Date(m.join_date + 'T00:00:00').toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          Valid till {formatExcelDate(m.end_date)} • {m.payment_mode || "-"}
                         </p>
                       </div>
                       <div className="text-right flex-shrink-0">

@@ -19,6 +19,10 @@ DECLARE
   v_trainer JSONB;
   v_trainer_schedule JSONB;
   v_next_payment JSONB;
+  v_latest_membership_id UUID;
+  v_latest_total_amount NUMERIC := 0;
+  v_latest_paid_amount NUMERIC := 0;
+  v_latest_due_amount NUMERIC := 0;
 BEGIN
   -- 1. Fetch member basic info
   SELECT id, full_name, phone, email, balance, profile_image, 
@@ -40,6 +44,7 @@ BEGIN
       'end_date', m.end_date,
       'status', m.status,
       'custom_price', m.custom_price,
+      'total_amount', COALESCE(m.total_amount, m.custom_price, mp.price, 0),
       'due_amount', m.due_amount,
       'created_at', m.created_at,
       'membership_plans', jsonb_build_object(
@@ -54,6 +59,24 @@ BEGIN
   FROM memberships m
   LEFT JOIN membership_plans mp ON mp.id = m.plan_id
   WHERE m.member_id = p_member_id;
+
+  SELECT m.id, COALESCE(m.total_amount, m.custom_price, mp.price, 0)
+  INTO v_latest_membership_id, v_latest_total_amount
+  FROM memberships m
+  LEFT JOIN membership_plans mp ON mp.id = m.plan_id
+  WHERE m.member_id = p_member_id
+  ORDER BY m.created_at DESC
+  LIMIT 1;
+
+  IF v_latest_membership_id IS NOT NULL THEN
+    SELECT COALESCE(SUM(p.amount), 0)
+    INTO v_latest_paid_amount
+    FROM payments p
+    WHERE p.membership_id = v_latest_membership_id
+      AND p.status = 'paid';
+  END IF;
+
+  v_latest_due_amount := GREATEST(0, COALESCE(v_latest_total_amount, 0) - COALESCE(v_latest_paid_amount, 0));
 
   -- 3. Fetch all payments
   SELECT COALESCE(jsonb_agg(
@@ -171,7 +194,7 @@ BEGIN
   -- 9. Get next payment info (pending payment with next_payment_date)
   SELECT jsonb_build_object(
     'next_payment_date', p.next_payment_date,
-    'remaining_amount', GREATEST(0, COALESCE(v_member.balance, 0))
+    'remaining_amount', v_latest_due_amount
   )
   INTO v_next_payment
   FROM payments p

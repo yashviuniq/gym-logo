@@ -21,6 +21,7 @@ BEGIN
     jsonb_build_object(
       'id', m.id,
       'full_name', m.full_name,
+      'phone', m.phone,
       'balance', m.balance,
       'created_at', m.created_at,
       'memberships', (

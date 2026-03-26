@@ -87,7 +87,7 @@ BEGIN
         WHEN lat_ms.end_date IS NOT NULL THEN (lat_ms.end_date - CURRENT_DATE)
         ELSE NULL
       END,
-      'due_amount', GREATEST(0, COALESCE(m.balance, 0)),
+      'due_amount', GREATEST(0, COALESCE(lat_ms.total_amount, 0) - COALESCE(lat_paid.total_paid, 0)),
       'has_credentials', EXISTS (
         SELECT 1 FROM member_credentials mc WHERE mc.member_id = m.id
       ),
@@ -111,13 +111,20 @@ BEGIN
     FROM members m
     LEFT JOIN LATERAL (
       SELECT ms.id AS ms_id, ms.status AS ms_status, ms.end_date, ms.start_date,
-             mp.name AS plan_name, mp.price AS plan_price
+             mp.name AS plan_name,
+             COALESCE(ms.total_amount, ms.custom_price, mp.price, 0) AS total_amount
       FROM memberships ms
       LEFT JOIN membership_plans mp ON mp.id = ms.plan_id
       WHERE ms.member_id = m.id
       ORDER BY CASE WHEN ms.status = 'active' THEN 0 ELSE 1 END, ms.created_at DESC
       LIMIT 1
     ) lat_ms ON true
+    LEFT JOIN LATERAL (
+      SELECT COALESCE(SUM(p.amount), 0) AS total_paid
+      FROM payments p
+      WHERE p.membership_id = lat_ms.ms_id
+        AND p.status = 'paid'
+    ) lat_paid ON true
     LEFT JOIN LATERAL (
       SELECT tma.plan_end_date,
              NULLIF(TRIM(COALESCE(pr.first_name, '') || ' ' || COALESCE(pr.last_name, '')), '') AS trainer_name

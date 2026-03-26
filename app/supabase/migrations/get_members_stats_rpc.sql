@@ -46,9 +46,27 @@ BEGIN
       SELECT 1 FROM memberships ms WHERE ms.member_id = m.id
     );
 
-  -- Dues: members with positive balance
+  -- Dues: latest membership due computed as total amount minus paid installments
   SELECT COUNT(*) INTO v_dues
-  FROM members WHERE gym_id = p_gym_id AND COALESCE(balance, 0) > 0;
+  FROM members m
+  LEFT JOIN LATERAL (
+    SELECT ms.id,
+           COALESCE(ms.total_amount, ms.custom_price, mp.price, 0) AS total_amount
+    FROM memberships ms
+    LEFT JOIN membership_plans mp ON mp.id = ms.plan_id
+    WHERE ms.member_id = m.id
+    ORDER BY CASE WHEN ms.status = 'active' THEN 0 ELSE 1 END, ms.created_at DESC
+    LIMIT 1
+  ) lat_ms ON true
+  LEFT JOIN LATERAL (
+    SELECT COALESCE(SUM(p.amount), 0) AS total_paid
+    FROM payments p
+    WHERE p.membership_id = lat_ms.id
+      AND p.status = 'paid'
+  ) lat_paid ON true
+  WHERE m.gym_id = p_gym_id
+    AND lat_ms.id IS NOT NULL
+    AND GREATEST(0, COALESCE(lat_ms.total_amount, 0) - COALESCE(lat_paid.total_paid, 0)) > 0;
 
   -- Renewal: members whose latest membership end_date is within ±7 days of today
   SELECT COUNT(DISTINCT m.id) INTO v_renewal

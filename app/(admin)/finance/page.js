@@ -620,12 +620,6 @@ export default function FinancePage() {
   const handleSaveTransactionEdit = async () => {
     if (!selectedTransaction?.id || !selectedGym?.id) return;
 
-    const parsedAmount = Number(transactionEditValues.amount);
-    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
-      showError("Please enter a valid amount");
-      return;
-    }
-
     if (!transactionEditValues.paidDate) {
       showError("Please select a valid payment date");
       return;
@@ -640,7 +634,6 @@ export default function FinancePage() {
       );
 
       const payload = {
-        amount: parsedAmount,
         payment_mode: transactionEditValues.paymentMode,
         paid_at: updatedPaidAt,
         notes: transactionEditValues.notes.trim() || null,
@@ -660,7 +653,6 @@ export default function FinancePage() {
 
       setSelectedTransaction((current) => current ? ({
         ...current,
-        amount: parsedAmount,
         mode: transactionEditValues.paymentMode,
         paidAtRaw: updatedPaidAt,
         notes: transactionEditValues.notes.trim(),
@@ -1341,15 +1333,7 @@ Thank you,
       </main>
 
       {/* Add Payment FAB */}
-      <button
-        onClick={() => router.push("/finance/add-payment")}
-        className="fixed bottom-24 right-4 w-14 h-14 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full shadow-xl flex items-center justify-center z-40 hover:shadow-2xl transition-all hover:scale-105 active:scale-95"
-        style={{
-          boxShadow: '0 10px 25px -5px rgba(59, 130, 246, 0.5)',
-        }}
-      >
-        <Plus className="w-6 h-6" />
-      </button>
+    
 
       {/* Export FAB */}
       {selectedTransaction && (
@@ -1414,15 +1398,16 @@ Thank you,
 
                 {transactionEditMode ? (
                   <div className="space-y-3 rounded-xl border border-blue-200 bg-blue-50 p-3">
-                    <div>
-                      <label className="block text-xs text-gray-600 mb-1">Amount</label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={transactionEditValues.amount}
-                        onChange={(e) => setTransactionEditValues((prev) => ({ ...prev, amount: e.target.value }))}
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+                      <p className="text-xs font-medium text-amber-800">
+                        Amount changes are disabled here.
+                      </p>
+                      <p className="mt-1 text-xs text-amber-700">
+                        To update amount, open that member and go to Payments.
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-gray-900">
+                        Current Amount: +{formatCurrency(selectedTransaction.amount)}
+                      </p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">

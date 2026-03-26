@@ -407,6 +407,11 @@ export default function AddMemberPage() {
           setLoading(false);
           return;
         }
+        if (rpcError.message?.includes('PAYMENT_EXCEEDS_MEMBERSHIP_TOTAL')) {
+          showError("Initial payment cannot be greater than membership total amount.");
+          setLoading(false);
+          return;
+        }
         throw rpcError;
       }
 

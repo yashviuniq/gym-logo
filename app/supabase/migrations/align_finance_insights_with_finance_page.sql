@@ -143,12 +143,14 @@ BEGIN
         'full_name', m.full_name,
         'phone', m.phone,
         'join_date', (fp.first_paid_at AT TIME ZONE v_reporting_tz)::date,
-        'plan_name', COALESCE(mp.name, 'No Plan')
+        'plan_name', COALESCE(mp.name, 'No Plan'),
+        'end_date', ms.end_date,
+        'payment_mode', first_membership_payment.payment_mode
       ) ORDER BY fp.first_paid_at DESC)
       FROM first_paid fp
       JOIN members m ON m.id = fp.member_id
       LEFT JOIN LATERAL (
-        SELECT p1.membership_id
+        SELECT p1.membership_id, p1.payment_mode
         FROM payments p1
         WHERE p1.gym_id = p_gym_id
           AND p1.member_id = fp.member_id

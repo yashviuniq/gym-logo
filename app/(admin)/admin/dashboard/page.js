@@ -585,7 +585,7 @@ export default function AdminDashboard() {
             formatExportDate(joinDate),
             formatExportMonth(joinDate),
             member.full_name || "Member",
-            member.phone || "",
+            member.phone ?? "",
             admissionType,
             String(status).toUpperCase(),
             Number(member.balance || 0),

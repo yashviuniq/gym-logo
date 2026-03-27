@@ -65,7 +65,11 @@ export async function POST(request) {
     const { data, error } = await supabaseAdmin.rpc("add_member_with_membership", safeParams);
 
     if (error) {
-      const status = error.message?.includes("DUPLICATE_PHONE") ? 409 : 500;
+      const status = error.message?.includes("DUPLICATE_PHONE")
+        ? 409
+        : error.message?.includes("PAYMENT_EXCEEDS_MEMBERSHIP_TOTAL")
+          ? 400
+          : 500;
       return NextResponse.json({ error: error.message }, { status });
     }
 

@@ -127,6 +127,56 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
             const newEndDate = calculateNewEndDate();
             const startDate = getStartDate();
 
+            const { data: latestMembershipRows, error: latestMembershipError } = await supabase
+                .from("memberships")
+                .select(`
+                    id,
+                    custom_price,
+                    created_at,
+                    membership_plans (
+                        price
+                    )
+                `)
+                .eq("member_id", member.id)
+                .order("created_at", { ascending: false })
+                .limit(1);
+
+            if (latestMembershipError) {
+                alert("Unable to verify current dues. Please try again.");
+                setLoading(false);
+                return;
+            }
+
+            const latestMembership = latestMembershipRows?.[0] || null;
+            if (latestMembership?.id) {
+                const { data: paidRows, error: paidRowsError } = await supabase
+                    .from("payments")
+                    .select("amount")
+                    .eq("membership_id", latestMembership.id)
+                    .eq("status", "paid");
+
+                if (paidRowsError) {
+                    alert("Unable to verify current dues. Please try again.");
+                    setLoading(false);
+                    return;
+                }
+
+                const currentMembershipTotal = Number(
+                    latestMembership.custom_price || latestMembership.membership_plans?.price || 0
+                );
+                const currentMembershipPaid = (paidRows || []).reduce(
+                    (sum, row) => sum + Number(row.amount || 0),
+                    0
+                );
+                const currentMembershipDue = Math.max(0, currentMembershipTotal - currentMembershipPaid);
+
+                if (currentMembershipDue > 0) {
+                    alert(`Renewal blocked. Current membership still has due: ₹${currentMembershipDue.toLocaleString("en-IN")}`);
+                    setLoading(false);
+                    return;
+                }
+            }
+
             const { data: authData } = await supabase.auth.getUser();
             const currentUserId = authData?.user?.id || null;
             if (!currentUserId) {
@@ -168,6 +218,7 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
                 created_at: renewalEventTimestamp,
                     status: "active",
                     due_amount: dueForMembership,
+                    total_amount: finalPrice,
             };
             if (useCustomPrice && customPrice) {
                 membershipInsert.custom_price = parseFloat(customPrice);
@@ -267,43 +318,15 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
                 }
             }
 
-            if (dueForMembership > 0) {
-                const pendingRes = await fetch("/api/finance/payments/create", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "x-user-id": String(currentUserId),
-                    },
-                    body: JSON.stringify({
-                        p_gym_id: targetGymId,
-                        p_member_id: member.id,
-                        p_membership_id: membership.id,
-                        p_amount: dueForMembership,
-                        p_payment_mode: paymentMode,
-                        p_status: "pending",
-                        p_created_at: renewalEventTimestamp,
-                        p_notes: notes || null,
-                        p_next_payment_date: nextPaymentDate,
-                        p_remaining_amount: dueForMembership,
-                    }),
-                });
-
-                const pendingJson = await pendingRes.json();
-                if (!pendingRes.ok) {
-                    console.error("Error creating pending payment:", pendingJson?.error);
-                    alert("Membership renewed, but failed to save next payment date.");
-                }
-            }
-
-            // 4. Update member balance (add due amount if partial payment)
-            const dueAmount = dueForMembership;
-            const currentBalance = member.balance || member.dueAmount || 0;
-            const newBalance = currentBalance + dueAmount;
-
-            await supabase
+            // Keep member.balance aligned with latest membership due for profile widgets.
+            const { error: memberBalanceError } = await supabase
                 .from("members")
-                .update({ balance: newBalance })
+                .update({ balance: dueForMembership })
                 .eq("id", member.id);
+
+            if (memberBalanceError) {
+                console.error("Error updating member balance after renewal:", memberBalanceError);
+            }
 
             // Success! Prepare renewal data
             const renewalData = {

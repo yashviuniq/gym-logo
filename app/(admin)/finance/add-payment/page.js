@@ -122,15 +122,6 @@ export default function AddPaymentPage() {
         throw new Error(paymentJson?.error || "Failed to record payment");
       }
 
-      // Update member balance (reduce the due amount)
-      const newBalance = Math.max(0, selectedMember.balance - amount);
-      const { error: balanceError } = await supabase
-        .from("members")
-        .update({ balance: newBalance })
-        .eq("id", selectedMember.id);
-
-      if (balanceError) throw balanceError;
-
       alert("Payment recorded successfully!");
       router.push("/finance");
     } catch (error) {

@@ -7,6 +7,7 @@ import { useToast } from "@/contexts/ToastContext";
 const PAYMENT_MODE_OPTIONS = ["cash", "upi", "card", "bank"];
 
 const roundCurrency = (value) => Math.round((Number(value) || 0) * 100) / 100;
+const formatCurrency = (value) => `₹${Number(value || 0).toLocaleString("en-IN")}`;
 
 const getDateInputValue = (value) => {
     if (!value) return "";
@@ -69,14 +70,76 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
                 : item.paymentMode,
         }));
 
-    const totalPaid = member?.totalPaid ?? historyItems.reduce(
-        (sum, renewal) => sum + (renewal.paymentAmount || 0),
-        0
+    const totalPaid = roundCurrency(
+        historyItems.reduce((sum, renewal) => sum + Number(renewal.paymentAmount || 0), 0)
     );
-    const totalDue = Math.max(0, member?.balance ?? historyItems.reduce(
-        (sum, renewal) => sum + (renewal.dueAmount || 0),
-        0
-    ));
+    const totalDue = roundCurrency(
+        historyItems.reduce((sum, renewal) => sum + Number(renewal.dueAmount || 0), 0)
+    );
+
+    const syncMemberBalanceFromLatestMembershipDue = async () => {
+        const { data: latestMembershipRows, error: latestMembershipError } = await supabase
+            .from("memberships")
+            .select(`
+                id,
+                total_amount,
+                custom_price,
+                membership_plans (
+                    price
+                ),
+                created_at
+            `)
+            .eq("member_id", member.id)
+            .order("created_at", { ascending: false })
+            .limit(1);
+
+        if (latestMembershipError) {
+            console.error("Error fetching latest membership for balance sync:", latestMembershipError);
+            return;
+        }
+
+        const latestMembership = latestMembershipRows?.[0] || null;
+        if (!latestMembership?.id) {
+            const { error: clearBalanceError } = await supabase
+                .from("members")
+                .update({ balance: 0 })
+                .eq("id", member.id);
+
+            if (clearBalanceError) {
+                console.error("Error clearing member balance:", clearBalanceError);
+            }
+            return;
+        }
+
+        const membershipTotal = roundCurrency(
+            latestMembership.total_amount || latestMembership.custom_price || latestMembership.membership_plans?.price || 0
+        );
+
+        const { data: paidRows, error: paidRowsError } = await supabase
+            .from("payments")
+            .select("amount")
+            .eq("membership_id", latestMembership.id)
+            .eq("status", "paid");
+
+        if (paidRowsError) {
+            console.error("Error fetching paid rows for balance sync:", paidRowsError);
+            return;
+        }
+
+        const paidAmount = roundCurrency(
+            (paidRows || []).reduce((sum, row) => sum + Number(row.amount || 0), 0)
+        );
+        const dueAmount = roundCurrency(Math.max(0, membershipTotal - paidAmount));
+
+        const { error: memberUpdateError } = await supabase
+            .from("members")
+            .update({ balance: dueAmount })
+            .eq("id", member.id);
+
+        if (memberUpdateError) {
+            console.error("Error syncing member balance:", memberUpdateError);
+        }
+    };
 
     const updatePaymentMode = async (renewalIndex, paymentId, nextMode) => {
         if (!paymentId || !nextMode) return;
@@ -123,45 +186,63 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
         });
     };
 
-    const updateRenewalDetails = async (renewal) => {
+    const updateRenewalDetails = async (renewal, action = "all") => {
         if (!renewal?.membershipId) return;
 
-        const renewalDate = editingValues.renewedAt;
-        const newEndDate = calculateExtendedTillDate(renewalDate, renewal.duration);
+        const updateDates = action === "dates" || action === "all";
+        const updatePrice = action === "price" || action === "all";
+        const updatePaid = action === "paid" || action === "all";
+
+        const renewalDate = updateDates
+            ? editingValues.renewedAt
+            : getDateInputValue(renewal.renewedAt);
+        const newEndDate = updateDates
+            ? calculateExtendedTillDate(renewalDate, renewal.duration)
+            : (getDateInputValue(renewal.newEndDate) || calculateExtendedTillDate(renewalDate, renewal.duration));
         const customPriceInput = editingValues.customPrice.trim();
         const paymentAmountInput = editingValues.paymentAmount.trim();
         const planPrice = roundCurrency(renewal.planPrice || renewal.price);
 
-        if (!renewalDate || !newEndDate) {
+        if (updateDates && (!renewalDate || !newEndDate)) {
             showError("Please select a valid renewal date");
             return;
         }
 
-        const parsedCustomPrice = customPriceInput === "" ? null : Number(customPriceInput);
-        if (parsedCustomPrice != null && (!Number.isFinite(parsedCustomPrice) || parsedCustomPrice < 0)) {
+        const parsedCustomPrice = updatePrice && customPriceInput !== "" ? Number(customPriceInput) : null;
+        if (updatePrice && parsedCustomPrice != null && (!Number.isFinite(parsedCustomPrice) || parsedCustomPrice < 0)) {
             showError("Please enter a valid applied price");
             return;
         }
 
-        if (paymentAmountInput !== "" && (!Number.isFinite(Number(paymentAmountInput)) || Number(paymentAmountInput) < 0)) {
+        if (updatePaid && paymentAmountInput !== "" && (!Number.isFinite(Number(paymentAmountInput)) || Number(paymentAmountInput) < 0)) {
             showError("Please enter a valid paid amount");
             return;
         }
 
-        const appliedPrice = parsedCustomPrice == null ? planPrice : roundCurrency(parsedCustomPrice);
-        const updatedPaymentAmount = roundCurrency(paymentAmountInput === "" ? renewal.paymentAmount || 0 : Number(paymentAmountInput));
+        const appliedPrice = updatePrice
+            ? (parsedCustomPrice == null ? planPrice : roundCurrency(parsedCustomPrice))
+            : roundCurrency(renewal.customPrice != null ? renewal.customPrice : planPrice);
+        const updatedPaymentAmount = updatePaid
+            ? roundCurrency(paymentAmountInput === "" ? renewal.paymentAmount || 0 : Number(paymentAmountInput))
+            : roundCurrency(renewal.paymentAmount || 0);
         const recalculatedDue = roundCurrency(Math.max(0, appliedPrice - updatedPaymentAmount));
-        const customPriceValue = appliedPrice === planPrice ? null : appliedPrice;
-        const previousDue = roundCurrency(renewal.dueAmount || 0);
-
+        const customPriceValue = updatePrice
+            ? (appliedPrice === planPrice ? null : appliedPrice)
+            : (renewal.customPrice != null ? roundCurrency(renewal.customPrice) : null);
         setSavingMembershipId(renewal.membershipId);
 
         const membershipUpdate = {
-            start_date: renewalDate,
-            end_date: newEndDate,
-            custom_price: customPriceValue,
             due_amount: recalculatedDue,
         };
+
+        if (updateDates) {
+            membershipUpdate.start_date = renewalDate;
+            membershipUpdate.end_date = newEndDate;
+        }
+
+        if (updatePrice) {
+            membershipUpdate.custom_price = customPriceValue;
+        }
 
         const { error: membershipError } = await supabase
             .from("memberships")
@@ -176,13 +257,20 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
         }
 
         if (renewal.paymentId) {
-            const updatedPaidAt = mergeDateWithOriginalTime(renewalDate, renewal.renewedAt);
+            const paymentUpdate = {};
+
+            if (updatePaid) {
+                paymentUpdate.amount = updatedPaymentAmount;
+            }
+
+            if (updateDates) {
+                paymentUpdate.paid_at = mergeDateWithOriginalTime(renewalDate, renewal.renewedAt);
+            }
+
+            if (Object.keys(paymentUpdate).length > 0) {
             const { error: paymentDateError } = await supabase
                 .from("payments")
-                .update({
-                    paid_at: updatedPaidAt,
-                    amount: updatedPaymentAmount,
-                })
+                .update(paymentUpdate)
                 .eq("id", renewal.paymentId);
 
             if (paymentDateError) {
@@ -191,8 +279,12 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
                 setSavingMembershipId(null);
                 return;
             }
+            }
         } else if (updatedPaymentAmount > 0) {
-            const insertedPaidAt = mergeDateWithOriginalTime(renewalDate, renewal.renewedAt);
+            const insertedPaidAt = mergeDateWithOriginalTime(
+                getDateInputValue(renewal.renewedAt) || renewalDate,
+                renewal.renewedAt
+            );
             const { error: paymentInsertError } = await supabase
                 .from("payments")
                 .insert({
@@ -242,23 +334,14 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
             }
         }
 
-        const adjustedBalance = roundCurrency(Math.max(0, (member.balance || 0) - previousDue + recalculatedDue));
-        const { error: memberUpdateError } = await supabase
-            .from("members")
-            .update({ balance: adjustedBalance })
-            .eq("id", member.id);
-
-        if (memberUpdateError) {
-            console.error("Error updating member balance:", memberUpdateError);
-            showError("Renewal updated, but member balance could not be refreshed");
-            setSavingMembershipId(null);
-            return;
-        }
+        await syncMemberBalanceFromLatestMembershipDue();
 
         setRenewalOverrides((current) => ({
             ...current,
             [renewal.membershipId]: {
-                renewedAt: mergeDateWithOriginalTime(renewalDate, renewal.renewedAt),
+                renewedAt: updateDates
+                    ? mergeDateWithOriginalTime(renewalDate, renewal.renewedAt)
+                    : renewal.renewedAt,
                 newEndDate,
                 customPrice: customPriceValue,
                 price: appliedPrice,
@@ -307,18 +390,7 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
             return;
         }
 
-        const adjustedBalance = roundCurrency(
-            Math.max(0, (member.balance || 0) - roundCurrency(renewal.dueAmount || 0))
-        );
-
-        const { error: memberUpdateError } = await supabase
-            .from("members")
-            .update({ balance: adjustedBalance })
-            .eq("id", member.id);
-
-        if (memberUpdateError) {
-            console.error("Error syncing member balance after delete:", memberUpdateError);
-        }
+        await syncMemberBalanceFromLatestMembershipDue();
 
         setDeletedMembershipIds((current) => ({
             ...current,
@@ -394,7 +466,7 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className="font-bold text-gray-900">₹{renewal.planPrice || renewal.price}</p>
+                                            <p className="font-bold text-gray-900">₹{renewal.price || renewal.planPrice}</p>
                                             <p className="text-xs text-gray-500">{renewal.duration} days</p>
                                             <button
                                                 type="button"
@@ -412,16 +484,31 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
                                         <div className="flex justify-between text-sm">
                                             <span className="text-gray-600">Plan Price</span>
                                             <span className={`font-medium ${renewal.customPrice != null ? 'line-through text-gray-400' : 'text-gray-900'}`}>
-                                                ₹{renewal.planPrice || renewal.price}
+                                                {formatCurrency(renewal.planPrice || renewal.price)}
                                             </span>
                                         </div>
                                         {renewal.customPrice != null && (
                                             <div className="flex justify-between text-sm">
                                                 <span className="text-blue-600 font-medium">Custom Price Applied</span>
-                                                <span className="font-semibold text-blue-700">₹{renewal.customPrice}</span>
+                                                <span className="font-semibold text-blue-700">{formatCurrency(renewal.customPrice)}</span>
                                             </div>
                                         )}
                                       
+                                    </div>
+
+                                    <div className="mb-3 grid grid-cols-2 gap-2">
+                                        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
+                                            <p className="text-[11px] font-medium uppercase tracking-wide text-emerald-700">Paid Amount</p>
+                                            <p className="mt-1 text-lg font-bold text-emerald-700">{formatCurrency(renewal.paymentAmount || 0)}</p>
+                                        </div>
+                                        <div className={`rounded-lg border px-3 py-2 ${Number(renewal.dueAmount || 0) > 0 ? "border-red-200 bg-red-50" : "border-emerald-200 bg-emerald-50"}`}>
+                                            <p className={`text-[11px] font-medium uppercase tracking-wide ${Number(renewal.dueAmount || 0) > 0 ? "text-red-700" : "text-emerald-700"}`}>
+                                                Due Amount
+                                            </p>
+                                            <p className={`mt-1 text-lg font-bold ${Number(renewal.dueAmount || 0) > 0 ? "text-red-700" : "text-emerald-700"}`}>
+                                                {formatCurrency(renewal.dueAmount || 0)}
+                                            </p>
+                                        </div>
                                     </div>
 
                                     <div className="mb-3 rounded-lg border border-gray-200 bg-gray-50 p-3 space-y-2">
@@ -485,7 +572,7 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
                                                     </button>
                                                     <button
                                                         type="button"
-                                                        onClick={() => updateRenewalDetails(renewal)}
+                                                        onClick={() => updateRenewalDetails(renewal, "dates")}
                                                         disabled={savingMembershipId === renewal.membershipId}
                                                         className="flex-1 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-60"
                                                     >
@@ -547,7 +634,7 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
                                                     </button>
                                                     <button
                                                         type="button"
-                                                        onClick={() => updateRenewalDetails(renewal)}
+                                                        onClick={() => updateRenewalDetails(renewal, "price")}
                                                         disabled={savingMembershipId === renewal.membershipId}
                                                         className="flex-1 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-60"
                                                     >
@@ -562,58 +649,18 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
                                         <div className="flex items-center justify-between gap-2">
                                             <div>
                                                 <p className="text-xs text-gray-600">Paid Amount</p>
-                                                <p className="text-sm font-medium text-gray-900">₹{renewal.paymentAmount || 0}</p>
+                                                <p className="text-sm font-medium text-gray-900">{formatCurrency(renewal.paymentAmount || 0)}</p>
                                             </div>
-                                            {editingMembershipId !== renewal.membershipId && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => startEditingRenewal(renewal)}
-                                                    className="text-xs font-medium text-blue-600 hover:text-blue-700"
-                                                >
-                                                    Tap to edit
-                                                </button>
-                                            )}
                                         </div>
 
-                                        {editingMembershipId === renewal.membershipId && (
-                                            <div className="space-y-3 border-t border-gray-200 pt-3">
-                                                <div>
-                                                    <label className="block text-xs font-medium text-gray-600 mb-1">Paid Amount</label>
-                                                    <input
-                                                        type="text"
-                                                        inputMode="decimal"
-                                                        value={editingValues.paymentAmount}
-                                                        onChange={(e) => {
-                                                            const value = e.target.value;
-                                                            if (value === "" || /^\d*\.?\d*$/.test(value)) {
-                                                                setEditingValues((current) => ({ ...current, paymentAmount: value }));
-                                                            }
-                                                        }}
-                                                        placeholder="Enter paid amount"
-                                                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                                                    />
-                                                    <p className="mt-1 text-[11px] text-gray-500">Due amount will recalculate automatically after saving.</p>
-                                                </div>
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        type="button"
-                                                        onClick={cancelEditingRenewal}
-                                                        disabled={savingMembershipId === renewal.membershipId}
-                                                        className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700"
-                                                    >
-                                                        Cancel
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => updateRenewalDetails(renewal)}
-                                                        disabled={savingMembershipId === renewal.membershipId}
-                                                        className="flex-1 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-60"
-                                                    >
-                                                        {savingMembershipId === renewal.membershipId ? "Saving..." : "Save Paid"}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )}
+                                        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+                                            <p className="text-[11px] font-medium text-amber-800">
+                                                Paid amount editing is disabled here.
+                                            </p>
+                                            <p className="mt-1 text-[11px] text-amber-700">
+                                                To update amount, open this member and go to Payments.
+                                            </p>
+                                        </div>
                                     </div>
 
                                     {renewal.paymentAmount > 0 && (

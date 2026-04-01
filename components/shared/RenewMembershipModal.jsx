@@ -132,12 +132,16 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
                 .select(`
                     id,
                     custom_price,
+                    end_date,
+                    start_date,
                     created_at,
                     membership_plans (
                         price
                     )
                 `)
                 .eq("member_id", member.id)
+                .order("end_date", { ascending: false, nullsFirst: false })
+                .order("start_date", { ascending: false, nullsFirst: false })
                 .order("created_at", { ascending: false })
                 .limit(1);
 
@@ -148,6 +152,27 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
             }
 
             const latestMembership = latestMembershipRows?.[0] || null;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const latestEndDate = latestMembership?.end_date
+                ? new Date(`${latestMembership.end_date}T00:00:00`)
+                : null;
+
+            // Membership validity is determined only by MAX(end_date), not status.
+            const hasActiveMembership =
+                latestEndDate &&
+                !Number.isNaN(latestEndDate.getTime()) &&
+                latestEndDate >= today;
+
+            if (hasActiveMembership) {
+                alert(
+                    `Renewal blocked. Member already has an active membership till ${latestEndDate.toLocaleDateString("en-IN")}.`
+                );
+                setLoading(false);
+                return;
+            }
+
             if (latestMembership?.id) {
                 const { data: paidRows, error: paidRowsError } = await supabase
                     .from("payments")
@@ -209,6 +234,36 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
             }
 
             // 1. Create new membership record
+            const { data: existingActiveMemberships, error: existingActiveMembershipsError } = await supabase
+                .from("memberships")
+                .select("id")
+                .eq("member_id", member.id)
+                .eq("status", "active");
+
+            if (existingActiveMembershipsError) {
+                alert("Unable to prepare renewal. Please try again.");
+                setLoading(false);
+                return;
+            }
+
+            const existingActiveIds = (existingActiveMemberships || [])
+                .map((row) => row.id)
+                .filter(Boolean);
+
+            if (existingActiveIds.length > 0) {
+                const { error: expireExistingError } = await supabase
+                    .from("memberships")
+                    .update({ status: "expired" })
+                    .in("id", existingActiveIds);
+
+                if (expireExistingError) {
+                    alert("Unable to finalize renewal state. Please try again.");
+                    setLoading(false);
+                    return;
+                }
+            }
+
+            // 1. Create new membership record
             const membershipInsert = {
                     member_id: member.id,
                     gym_id: targetGymId,
@@ -231,21 +286,19 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
                 .single();
 
             if (membershipError) {
+                if (existingActiveIds.length > 0) {
+                    await supabase
+                        .from("memberships")
+                        .update({ status: "active" })
+                        .in("id", existingActiveIds);
+                }
                 console.error("Error creating membership:", membershipError);
                 alert("Failed to renew membership. Please try again.");
                 setLoading(false);
                 return;
             }
 
-            // 2. Update any previous active memberships to expired
-            await supabase
-                .from("memberships")
-                .update({ status: "expired" })
-                .eq("member_id", member.id)
-                .neq("id", membership.id)
-                .eq("status", "active");
-
-            // 3. Create payment record
+            // 2. Create payment record
             let paymentId = null;
             if (paymentAmountNum > 0) {
                 const paymentRes = await fetch("/api/finance/payments/create", {

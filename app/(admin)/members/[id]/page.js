@@ -148,33 +148,32 @@ export default function MemberDetailPage() {
         return bCreatedDate - aCreatedDate;
       });
 
-      // Process active membership
-      const activeMembership = sortedMemberships.find(
-        (m) => m.status === "active"
-      ) || sortedMemberships[0];
+      // Use the latest membership by end_date as the source of truth for validity.
+      const latestMembership = sortedMemberships[0] || null;
 
       let memberStatus = "inactive";
-      if (activeMembership) {
-        const endDate = new Date(activeMembership.end_date);
+      if (latestMembership?.end_date) {
+        const endDate = new Date(latestMembership.end_date);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        endDate.setHours(0, 0, 0, 0);
-        
-        if (endDate >= today && activeMembership.status === "active") {
-          memberStatus = "active";
-        } else if (endDate < today || activeMembership.status === "expired") {
+        if (!Number.isNaN(endDate.getTime())) {
+          endDate.setHours(0, 0, 0, 0);
+          memberStatus = endDate >= today ? "active" : "expired";
+        } else {
           memberStatus = "expired";
         }
       }
 
       // Calculate days remaining
       let daysRemaining = null;
-      if (activeMembership?.end_date) {
-        const endDate = new Date(activeMembership.end_date);
+      if (latestMembership?.end_date) {
+        const endDate = new Date(latestMembership.end_date);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        endDate.setHours(0, 0, 0, 0);
-        daysRemaining = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
+        if (!Number.isNaN(endDate.getTime())) {
+          endDate.setHours(0, 0, 0, 0);
+          daysRemaining = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
+        }
       }
 
       const totalPaid = paymentsData
@@ -223,11 +222,11 @@ export default function MemberDetailPage() {
           ? new Date(memberData.join_date + 'T00:00:00').toLocaleDateString("en-IN")
           : new Date(memberData.created_at).toLocaleDateString("en-IN"),
         createdByName: memberData.created_by_name || null,
-        plan: activeMembership?.membership_plans?.name || "No Plan",
+        plan: latestMembership?.membership_plans?.name || "No Plan",
         planPrice: latestMembershipTotalAmount,
         status: memberStatus,
-        validTill: activeMembership?.end_date
-          ? new Date(activeMembership.end_date).toLocaleDateString("en-IN")
+        validTill: latestMembership?.end_date
+          ? new Date(latestMembership.end_date).toLocaleDateString("en-IN")
           : "N/A",
         daysRemaining: daysRemaining,
         dueAmount: resolvedProfileDueAmount,

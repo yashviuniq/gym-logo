@@ -313,7 +313,7 @@ function buildRevenueRows(data) {
 
 function buildNewJoinRows(data) {
   return [
-    ["Member Name", "Phone", "Plan", "Join Date", "End Date", "Payment Mode"],
+    ["Member Name", "Phone", "Plan", "Join Date", "End Date", "Payment Mode", "Payment Amount"],
     ...(data?.month_new_joins_list?.length
       ? data.month_new_joins_list.map((member) => [
           member.full_name || "Unknown",
@@ -322,8 +322,9 @@ function buildNewJoinRows(data) {
           formatExcelDate(member.join_date),
           formatExcelDate(member.end_date),
           member.payment_mode || "-",
+          Number(member.payment_amount || 0),
         ])
-      : [["No new joins found", "", "", "", "", ""]]),
+      : [["No new joins found", "", "", "", "", "", ""]]),
   ];
 }
 
@@ -331,7 +332,7 @@ function buildRenewalRows(data) {
   const renewalRows = data?.month_renewals_list || [];
 
   return [
-    ["Member Name", "Phone", "Plan", "Renewed At", "Start Date", "End Date", "Created At"],
+    ["Member Name", "Phone", "Plan", "Renewed At", "Start Date", "End Date", "Created At", "Payment Amount"],
     ...(renewalRows.length
       ? renewalRows.map((renewal) => [
           renewal.member_name || "Unknown",
@@ -341,8 +342,9 @@ function buildRenewalRows(data) {
           formatExcelDate(renewal.start_date),
           formatExcelDate(renewal.end_date),
           formatExcelDate(renewal.created_at),
+          Number(renewal.payment_amount || 0),
         ])
-      : [["No renewals found", "", "", "", "", "", ""]]),
+      : [["No renewals found", "", "", "", "", "", "", ""]]),
   ];
 }
 
@@ -576,13 +578,15 @@ export default function FinanceInsightsPage() {
       addSheet(
         "New Joins",
         newJoinRows,
-        [{ wch: 28 }, { wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 18 }, { wch: 18 }]
+        [{ wch: 28 }, { wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 16 }],
+        [6]
       );
 
       addSheet(
         "Renewals",
         renewalRows,
-        [{ wch: 28 }, { wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 }]
+        [{ wch: 28 }, { wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 16 }],
+        [7]
       );
 
       XLSX.writeFile(

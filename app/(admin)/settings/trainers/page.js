@@ -283,7 +283,7 @@ export default function TrainersPage() {
         assignmentIds.length
           ? supabase
               .from("trainer_earnings")
-              .select("assignment_id, member_id, trainer_id, total_amount, created_at")
+              .select("assignment_id, member_id, trainer_id, total_amount, payment_mode, created_at")
               .eq("gym_id", selectedGym.id)
               .in("assignment_id", assignmentIds)
               .order("created_at", { ascending: true })
@@ -336,6 +336,7 @@ export default function TrainersPage() {
             balance,
             status: balance > 0 ? "PENDING" : "PAID",
             payment: "",
+            paymentMode: "-",
             time: "",
           });
           return;
@@ -353,6 +354,7 @@ export default function TrainersPage() {
             balance,
             status: balance > 0 ? "PARTIAL" : "PAID",
             payment: Number(payment.total_amount || 0),
+            paymentMode: String(payment.payment_mode || "cash").toUpperCase(),
             time: formatTrainerExportDate(payment.created_at),
           });
         });
@@ -379,6 +381,7 @@ export default function TrainersPage() {
         "BALANCE",
         "STATUS",
         "PAYMENT",
+        "PAYMENT MODE",
         "TIME",
       ];
 
@@ -402,6 +405,7 @@ export default function TrainersPage() {
             row.balance,
             row.status,
             row.payment,
+            row.paymentMode,
             row.time,
           ]);
         });
@@ -419,6 +423,7 @@ export default function TrainersPage() {
         { wch: 12 },
         { wch: 12 },
         { wch: 12 },
+        { wch: 14 },
         { wch: 14 },
       ];
 

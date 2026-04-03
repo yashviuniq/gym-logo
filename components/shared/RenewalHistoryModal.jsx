@@ -84,12 +84,16 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
                 id,
                 total_amount,
                 custom_price,
+                end_date,
+                start_date,
                 membership_plans (
                     price
                 ),
                 created_at
             `)
             .eq("member_id", member.id)
+            .order("end_date", { ascending: false, nullsFirst: false })
+            .order("start_date", { ascending: false, nullsFirst: false })
             .order("created_at", { ascending: false })
             .limit(1);
 
@@ -112,7 +116,7 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
         }
 
         const membershipTotal = roundCurrency(
-            latestMembership.total_amount || latestMembership.custom_price || latestMembership.membership_plans?.price || 0
+            latestMembership.custom_price ?? latestMembership.total_amount ?? latestMembership.membership_plans?.price ?? 0
         );
 
         const { data: paidRows, error: paidRowsError } = await supabase
@@ -242,6 +246,7 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
 
         if (updatePrice) {
             membershipUpdate.custom_price = customPriceValue;
+            membershipUpdate.total_amount = appliedPrice;
         }
 
         const { error: membershipError } = await supabase

@@ -72,6 +72,9 @@ export default function MemberDetailPage() {
   const [assignedDietPlans, setAssignedDietPlans] = useState([]);
   const [assignedWorkoutPlans, setAssignedWorkoutPlans] = useState([]);
   const [assignedTrainer, setAssignedTrainer] = useState(null);
+  const [trainerHistory, setTrainerHistory] = useState([]);
+  const [trainerHistoryLoading, setTrainerHistoryLoading] = useState(false);
+  const [trainerAssignMode, setTrainerAssignMode] = useState("default");
   const [editingDietPlan, setEditingDietPlan] = useState(null);
   const { showSuccess, showError } = useToast();
 
@@ -85,6 +88,33 @@ export default function MemberDetailPage() {
       setLoading(false);
     }
   }, [params.id]);
+
+  const fetchTrainerHistory = async (memberId) => {
+    try {
+      const raw = localStorage.getItem("gymUser");
+      if (!raw) return;
+      const userId = JSON.parse(raw)?.id;
+      if (!userId) return;
+      setTrainerHistoryLoading(true);
+      const res = await fetch(
+        `/api/member/${memberId}/trainer-history?p_user_id=${encodeURIComponent(userId)}`
+      );
+      const json = await res.json();
+      if (res.ok && json.data?.assignments) {
+        setTrainerHistory(json.data.assignments);
+      }
+    } catch (e) {
+      console.error("fetchTrainerHistory:", e);
+    } finally {
+      setTrainerHistoryLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (params.id && selectedGym?.id) {
+      fetchTrainerHistory(params.id);
+    }
+  }, [params.id, selectedGym?.id]);
 
   const fetchMemberDetails = async (memberId, gymId) => {
     setLoading(true);
@@ -183,9 +213,9 @@ export default function MemberDetailPage() {
       const latestMembershipForFinancials = sortedMemberships[0] || null;
       const latestMembershipTotalAmount = latestMembershipForFinancials
         ? Number(
-            latestMembershipForFinancials.total_amount ||
-            latestMembershipForFinancials.custom_price ||
-            latestMembershipForFinancials.membership_plans?.price ||
+            latestMembershipForFinancials.custom_price ??
+            latestMembershipForFinancials.total_amount ??
+            latestMembershipForFinancials.membership_plans?.price ??
             0
           )
         : 0;
@@ -203,10 +233,9 @@ export default function MemberDetailPage() {
         latestMembershipTotalAmount - latestMembershipPaidAmount
       );
       const storedMemberBalance = Math.max(0, Number(memberData.balance || 0));
-      const resolvedProfileDueAmount = Math.max(
-        latestMembershipDueAmount,
-        storedMemberBalance
-      );
+      const resolvedProfileDueAmount = latestMembershipForFinancials
+        ? latestMembershipDueAmount
+        : storedMemberBalance;
 
       const latestAdminNote = paymentsData
         .find((payment) => typeof payment.notes === "string" && payment.notes.trim().length > 0)?.notes?.trim() || "";
@@ -267,8 +296,8 @@ export default function MemberDetailPage() {
       // Renewal history
       const history = sortedMemberships.map(m => {
         const planPrice = m.membership_plans?.price || 0;
-        const customPrice = m.custom_price || null;
-        const actualPrice = Number(m.total_amount || customPrice || planPrice || 0);
+        const customPrice = m.custom_price ?? null;
+        const actualPrice = Number(m.custom_price ?? m.total_amount ?? planPrice ?? 0);
 
         const membershipPayments = paymentsData
           .filter((p) => p.membership_id === m.id && p.status === "paid")
@@ -1450,19 +1479,48 @@ export default function MemberDetailPage() {
 
             {/* Assigned Trainer Section */}
             <div className="pt-3 border-t border-gray-100">
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
                 <h4 className="font-semibold text-gray-900 flex items-center gap-2">
                   <Users className="w-4 h-4 text-purple-600" />
                   Assigned Trainer
                 </h4>
                 {!isTrainer && (
-                  <button
-                    onClick={() => setShowAssignTrainerModal(true)}
-                    className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    {assignedTrainer ? "Change" : "Assign"}
-                  </button>
+                  <div className="flex items-center gap-2 flex-wrap justify-end">
+                    {assignedTrainer && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTrainerAssignMode("renew");
+                            setShowAssignTrainerModal(true);
+                          }}
+                          className="text-xs text-violet-700 hover:text-violet-800 font-medium px-2 py-1 rounded-lg border border-violet-200 bg-violet-50"
+                        >
+                          Renew Trainer
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTrainerAssignMode("change");
+                            setShowAssignTrainerModal(true);
+                          }}
+                          className="text-xs text-indigo-700 hover:text-indigo-800 font-medium px-2 py-1 rounded-lg border border-indigo-200 bg-indigo-50"
+                        >
+                          Change Trainer
+                        </button>
+                      </>
+                    )}
+                    <button
+                      onClick={() => {
+                        setTrainerAssignMode("default");
+                        setShowAssignTrainerModal(true);
+                      }}
+                      className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      {assignedTrainer ? "Assign / Update" : "Assign"}
+                    </button>
+                  </div>
                 )}
               </div>
               {!assignedTrainer ? (
@@ -1511,7 +1569,7 @@ export default function MemberDetailPage() {
                         <span className={`text-xs font-medium ${
                           assignedTrainer.trainerPlanDaysRemaining <= 0 
                             ? 'text-red-600' 
-                            : assignedTrainer.trainerPlanDaysRemaining <= 7 
+                            : assignedTrainer.trainerPlanDaysRemaining <= 3 
                               ? 'text-amber-600' 
                               : 'text-purple-600'
                         }`}>
@@ -1579,6 +1637,69 @@ export default function MemberDetailPage() {
                       </div>
                     </div>
                   )}
+                </div>
+              )}
+            </div>
+
+            {/* Trainer assignment history (all periods; PT amounts from trainer_payments) */}
+            <div className="pt-3 border-t border-gray-100">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                  <History className="w-4 h-4 text-gray-600" />
+                  Trainer History
+                </h4>
+              </div>
+              {trainerHistoryLoading ? (
+                <p className="text-xs text-gray-500">Loading history…</p>
+              ) : trainerHistory.length === 0 ? (
+                <p className="text-xs text-gray-500">No past trainer assignments yet.</p>
+              ) : (
+                <div className="space-y-2 max-h-56 overflow-y-auto">
+                  {trainerHistory.map((row) => (
+                    <div
+                      key={row.id}
+                      className={`rounded-lg border p-2.5 text-xs ${
+                        row.is_active
+                          ? "border-emerald-200 bg-emerald-50/80"
+                          : "border-gray-200 bg-gray-50"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="font-semibold text-gray-900">{row.trainer_name}</p>
+                          <p className="text-gray-600 mt-0.5">
+                            {row.start_date
+                              ? new Date(`${row.start_date}T00:00:00`).toLocaleDateString("en-IN")
+                              : "—"}
+                            {" → "}
+                            {row.is_active
+                              ? "Present"
+                              : row.end_date
+                                ? new Date(`${row.end_date}T00:00:00`).toLocaleDateString("en-IN")
+                                : "—"}
+                          </p>
+                          {row.plan_name && (
+                            <p className="text-gray-500 mt-0.5">Plan: {row.plan_name}</p>
+                          )}
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          {row.is_active && (
+                            <span className="text-[10px] font-semibold text-emerald-700 uppercase">Current</span>
+                          )}
+                          <p className="text-gray-700 mt-0.5">
+                            {row.duration_days != null ? `${row.duration_days}d` : "—"}
+                          </p>
+                          <p className="font-semibold text-gray-900">
+                            ₹{Number(row.amount_earned || 0).toLocaleString("en-IN")}
+                          </p>
+                          <p className="text-[10px] text-gray-500">PT collected</p>
+                        </div>
+                      </div>
+                      {row.expires_within_3_days && row.is_active && (
+                        <p className="text-amber-700 font-medium mt-1.5">Plan ends in under 3 days</p>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -1749,12 +1870,17 @@ export default function MemberDetailPage() {
       {showAssignTrainerModal && (
         <AssignTrainerModal
           isOpen={showAssignTrainerModal}
-          onClose={() => setShowAssignTrainerModal(false)}
+          onClose={() => {
+            setShowAssignTrainerModal(false);
+            setTrainerAssignMode("default");
+          }}
           memberId={member?.id}
           selectedGym={selectedGym}
           currentTrainerId={assignedTrainer?.trainerId}
+          assignMode={trainerAssignMode}
           onSuccess={() => {
             fetchAssignedTrainer(member.id, selectedGym?.id);
+            fetchTrainerHistory(member.id);
           }}
         />
       )}

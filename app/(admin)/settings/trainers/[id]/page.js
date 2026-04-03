@@ -82,6 +82,17 @@ const calculateDaysRemaining = (endDateValue) => {
   return Math.ceil((planEndDate - now) / (1000 * 60 * 60 * 24));
 };
 
+const formatCompactRupees = (value) => {
+  const amount = Number(value || 0);
+
+  if (amount <= 0) return "₹0";
+  if (amount < 1000) return `₹${amount.toLocaleString("en-IN")}`;
+  if (amount < 100000) return `₹${(amount / 1000).toFixed(1).replace(/\.0$/, "")}K`;
+  if (amount < 10000000) return `₹${(amount / 100000).toFixed(1).replace(/\.0$/, "")}L`;
+
+  return `₹${(amount / 10000000).toFixed(1).replace(/\.0$/, "")}Cr`;
+};
+
 export default function TrainerDetailsPage({ params }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -778,7 +789,7 @@ export default function TrainerDetailsPage({ params }) {
           <div className="bg-white rounded-xl p-3 shadow-sm text-center">
             <IndianRupee className="w-5 h-5 text-emerald-600 mx-auto mb-1" />
             <p className="text-xl font-bold text-gray-900">
-              {earningsSummary.total > 0 ? `₹${(earningsSummary.total / 1000).toFixed(earningsSummary.total >= 1000 ? 1 : 0)}k` : "₹0"}
+              {formatCompactRupees(earningsSummary.total)}
             </p>
             <p className="text-[10px] text-gray-500">Earnings</p>
           </div>

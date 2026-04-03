@@ -32,7 +32,16 @@ const getDefaultPlanStartDate = (planEndDate) => {
   return baseDate.toISOString().split("T")[0];
 };
 
-export default function AssignTrainerModal({ isOpen, onClose, memberId, selectedGym, onSuccess, currentTrainerId }) {
+/** assignMode: "default" | "renew" | "change" — renew pre-selects current trainer for a new PT period */
+export default function AssignTrainerModal({
+  isOpen,
+  onClose,
+  memberId,
+  selectedGym,
+  onSuccess,
+  currentTrainerId,
+  assignMode = "default",
+}) {
   const router = useRouter();
   const [trainers, setTrainers] = useState([]);
   const [selectedTrainerId, setSelectedTrainerId] = useState(null);
@@ -442,6 +451,11 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
   const handleSave = async () => {
     if (!selectedTrainerId || !memberId || !selectedGym?.id) return;
 
+    if (assignMode === "renew" && currentTrainerId && selectedTrainerId !== currentTrainerId) {
+      showError("Renew keeps the same trainer. Use Change Trainer to switch.");
+      return;
+    }
+
     // Validate day and slot selection
     const selectedTrainer = trainers.find((t) => t.id === selectedTrainerId);
     const totalSelectedSlots = Object.values(selectedSlots).flat().length;
@@ -462,13 +476,15 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
       const { data: authData } = await supabase.auth.getUser();
       const assignedBy = authData?.user?.id;
 
-      // 1. Deactivate existing trainer assignments for this member
-      await supabase
+      const closeDate = new Date().toISOString().split("T")[0];
+      // 1. Soft-close existing active assignments (never delete — history preserved)
+      const { error: deactivateError } = await supabase
         .from("trainer_member_assignments")
-        .update({ is_active: false })
+        .update({ is_active: false, end_date: closeDate })
         .eq("member_id", memberId)
         .eq("gym_id", selectedGym.id)
         .eq("is_active", true);
+      if (deactivateError) throw deactivateError;
 
       // 2. Build assignment data with plan info
       const selectedPlan = trainerPlans.find((p) => p.id === selectedPlanId);
@@ -511,18 +527,20 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
         assignmentData.total_paid_amount = receivedAmountValue;
         assignmentData.pending_amount = pendingAmount;
         assignmentData.next_payment_date = pendingAmount > 0 ? nextPaymentDate : null;
+        assignmentData.start_date = customStartDate;
+        assignmentData.end_date = null;
+      } else {
+        assignmentData.start_date = closeDate;
+        assignmentData.end_date = null;
       }
 
-      // Upsert the trainer-member assignment
-      const { data: assignmentResult, error: upsertError } = await supabase
+      const { data: assignmentResult, error: insertError } = await supabase
         .from("trainer_member_assignments")
-        .upsert(assignmentData, {
-          onConflict: "gym_id,member_id,trainer_id",
-        })
+        .insert(assignmentData)
         .select("id")
         .single();
 
-      if (upsertError) throw upsertError;
+      if (insertError) throw insertError;
 
       // 3. Handle bookings if slots selected (multi-day, multi-slot)
       if (totalSelectedSlots > 0) {
@@ -613,9 +631,10 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
 
     setLoading(true);
     try {
+      const closeDate = new Date().toISOString().split("T")[0];
       const { error } = await supabase
         .from("trainer_member_assignments")
-        .update({ is_active: false })
+        .update({ is_active: false, end_date: closeDate })
         .eq("member_id", memberId)
         .eq("gym_id", selectedGym.id)
         .eq("is_active", true);
@@ -759,6 +778,15 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
     .filter(([, slots]) => slots.length > 0)
     .reduce((sum, [, slots]) => sum + slots.length, 0);
 
+  const modalTitle =
+    assignMode === "renew" ? "Renew Trainer" : assignMode === "change" ? "Change Trainer" : "Assign Trainer";
+  const modalSubtitle =
+    assignMode === "renew"
+      ? "New PT period — previous assignment is kept in history"
+      : assignMode === "change"
+        ? "Switch trainer — past assignments stay in history"
+        : "Select trainer & schedule";
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fadeIn">
       {/* Backdrop with blur */}
@@ -776,8 +804,8 @@ export default function AssignTrainerModal({ isOpen, onClose, memberId, selected
               <User className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white">Assign Trainer</h2>
-              <p className="text-blue-100 text-sm opacity-90">Select trainer & schedule</p>
+              <h2 className="text-lg font-bold text-white">{modalTitle}</h2>
+              <p className="text-blue-100 text-sm opacity-90">{modalSubtitle}</p>
             </div>
           </div>
           <button

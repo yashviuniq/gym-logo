@@ -409,9 +409,10 @@ export default function AssignMembersPage({ params }) {
       // Process new assignments
       for (const [memberId, config] of newConfigs) {
         // Deactivate all existing assignments for this member
+        const closeDate = new Date().toISOString().split("T")[0];
         await supabase
           .from("trainer_member_assignments")
-          .update({ is_active: false })
+          .update({ is_active: false, end_date: closeDate })
           .eq("member_id", memberId)
           .eq("gym_id", selectedGym.id)
           .eq("is_active", true);
@@ -464,15 +465,20 @@ export default function AssignMembersPage({ params }) {
           assignmentData.total_paid_amount = receivedAmountValue;
           assignmentData.pending_amount = pendingAmount;
           assignmentData.next_payment_date = pendingAmount > 0 ? config.nextPaymentDate : null;
+          assignmentData.start_date = planStartDate;
+          assignmentData.end_date = null;
+        } else {
+          assignmentData.start_date = closeDate;
+          assignmentData.end_date = null;
         }
 
-        const { data: assignmentResult, error: upsertError } = await supabase
+        const { data: assignmentResult, error: insertError } = await supabase
           .from("trainer_member_assignments")
-          .upsert(assignmentData, { onConflict: "gym_id,member_id,trainer_id" })
+          .insert(assignmentData)
           .select("id")
           .single();
 
-        if (upsertError) throw upsertError;
+        if (insertError) throw insertError;
 
         // Handle bookings
         const totalSelectedSlots = Object.values(config.selectedSlots).flat().length;
@@ -545,9 +551,10 @@ export default function AssignMembersPage({ params }) {
 
       // Process unassignments
       for (const memberId of unassignSet) {
+        const unassignClose = new Date().toISOString().split("T")[0];
         await supabase
           .from("trainer_member_assignments")
-          .update({ is_active: false })
+          .update({ is_active: false, end_date: unassignClose })
           .eq("trainer_id", trainer.profileId)
           .eq("gym_id", selectedGym.id)
           .eq("member_id", memberId);

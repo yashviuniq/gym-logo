@@ -38,7 +38,8 @@ import {
   X,
   Pencil,
   Save,
-  Loader2
+  Loader2,
+  Trash2
 } from "lucide-react";
 
 const EXPENSE_EXCEL_AMOUNT_FORMAT = "#,##0.##";
@@ -1509,6 +1510,16 @@ function ExpensesSection({ router, selectedGym, dateFilter, customStartDate, cus
   const [totalExpenses, setTotalExpenses] = useState(0);
   const [exporting, setExporting] = useState(false);
   const [overallExporting, setOverallExporting] = useState(false);
+  const [selectedExpense, setSelectedExpense] = useState(null);
+  const [expenseSaving, setExpenseSaving] = useState(false);
+  const [expenseDeleting, setExpenseDeleting] = useState(false);
+  const [deletingExpenseId, setDeletingExpenseId] = useState(null);
+  const [expenseEditValues, setExpenseEditValues] = useState({
+    category: "",
+    amount: "",
+    expenseDate: "",
+    notes: "",
+  });
 
   const fetchExpenses = useCallback(async (gymId) => {
     try {
@@ -1520,7 +1531,7 @@ function ExpensesSection({ router, selectedGym, dateFilter, customStartDate, cus
       if (dateFilter === "today") {
         startDate = now.toISOString().split('T')[0];
         endDate = startDate;
-      } else if (dateFilter === "week") {
+      } else if (dateFilter === "week") { 
         const weekStart = new Date(now);
         weekStart.setDate(weekStart.getDate() - 6);
         startDate = weekStart.toISOString().split('T')[0];
@@ -1655,6 +1666,110 @@ function ExpensesSection({ router, selectedGym, dateFilter, customStartDate, cus
     return monthNames[new Date().getMonth()];
   };
 
+  const openExpenseEditor = (expense) => {
+    if (!expense) return;
+
+    setSelectedExpense(expense);
+    setExpenseEditValues({
+      category: expense.category || "",
+      amount: String(expense.amount || ""),
+      expenseDate: expense.expenseDate || "",
+      notes: expense.notes || "",
+    });
+  };
+
+  const closeExpenseEditor = () => {
+    setSelectedExpense(null);
+    setExpenseSaving(false);
+    setExpenseDeleting(false);
+    setDeletingExpenseId(null);
+    setExpenseEditValues({
+      category: "",
+      amount: "",
+      expenseDate: "",
+      notes: "",
+    });
+  };
+
+  const handleSaveExpenseEdit = async () => {
+    if (!selectedExpense?.id || !selectedGym?.id) return;
+
+    const parsedAmount = parseFloat(expenseEditValues.amount);
+    if (!parsedAmount || parsedAmount <= 0) {
+      showError("Please enter a valid amount");
+      return;
+    }
+
+    if (!expenseEditValues.category) {
+      showError("Please select a category");
+      return;
+    }
+
+    if (!expenseEditValues.expenseDate) {
+      showError("Please select a valid date");
+      return;
+    }
+
+    try {
+      setExpenseSaving(true);
+
+      const { error } = await supabase
+        .from("expenses")
+        .update({
+          category: expenseEditValues.category,
+          amount: parsedAmount,
+          expense_date: expenseEditValues.expenseDate,
+          notes: expenseEditValues.notes.trim() || null,
+        })
+        .eq("id", selectedExpense.id)
+        .eq("gym_id", selectedGym.id);
+
+      if (error) throw error;
+
+      showSuccess("Expense updated successfully");
+      await fetchExpenses(selectedGym.id);
+      closeExpenseEditor();
+    } catch (error) {
+      console.error("Error updating expense:", error);
+      showError("Failed to update expense");
+    } finally {
+      setExpenseSaving(false);
+    }
+  };
+
+  const handleDeleteExpense = async (expenseOverride = null) => {
+    const targetExpense = expenseOverride || selectedExpense;
+    if (!targetExpense?.id || !selectedGym?.id) return;
+
+    const shouldDelete = window.confirm("Delete this expense? This action cannot be undone.");
+    if (!shouldDelete) return;
+
+    try {
+      setExpenseDeleting(true);
+      setDeletingExpenseId(targetExpense.id);
+
+      const { error } = await supabase
+        .from("expenses")
+        .delete()
+        .eq("id", targetExpense.id)
+        .eq("gym_id", selectedGym.id);
+
+      if (error) throw error;
+
+      showSuccess("Expense deleted successfully");
+      await fetchExpenses(selectedGym.id);
+      if (!expenseOverride) {
+        closeExpenseEditor();
+      }
+    } catch (error) {
+      console.error("Error deleting expense:", error);
+      showError("Failed to delete expense");
+    } finally {
+      setExpenseDeleting(false);
+      setDeletingExpenseId(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-3 pb-20">
@@ -1741,7 +1856,7 @@ function ExpensesSection({ router, selectedGym, dateFilter, customStartDate, cus
             {expenses.map((expense) => (
               <div
                 key={expense.id}
-                className="flex items-start justify-between gap-3 p-3 rounded-lg border border-gray-100 bg-white"
+                className="flex items-start justify-between gap-3 p-3 rounded-xl border border-gray-100 bg-white hover:border-gray-200 hover:shadow-sm transition"
               >
                 <div className="flex items-start gap-3 min-w-0 flex-1">
                   <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-50 to-orange-100 flex items-center justify-center shrink-0">
@@ -1763,14 +1878,147 @@ function ExpensesSection({ router, selectedGym, dateFilter, customStartDate, cus
                     )}
                   </div>
                 </div>
-                <p className="font-semibold text-red-500 text-sm shrink-0 text-right pt-0.5">
-                  -{formatCurrency(expense.amount)}
-                </p>
+                <div className="shrink-0 flex flex-col items-end gap-2">
+                  <p className="font-semibold text-red-500 text-sm text-right pt-0.5">
+                    -{formatCurrency(expense.amount)}
+                  </p>
+                  {canViewFinance && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openExpenseEditor(expense)}
+                        className="px-2.5 py-1.5 rounded-md border border-gray-200 bg-gray-50 text-[11px] font-medium text-gray-700 hover:text-blue-700 hover:border-blue-200 hover:bg-blue-50 transition flex items-center gap-1.5"
+                        aria-label="Edit expense"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteExpense(expense)}
+                        disabled={expenseDeleting}
+                        className="px-2.5 py-1.5 rounded-md border border-red-200 bg-red-50 text-[11px] font-medium text-red-600 hover:text-red-700 hover:bg-red-100 transition flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
+                        aria-label="Delete expense"
+                      >
+                        {expenseDeleting && deletingExpenseId === expense.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-3.5 h-3.5" />
+                        )}
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {selectedExpense && canViewFinance && (
+        <div className="fixed inset-0 mb-20 z-50 flex items-end sm:items-center justify-center bg-black/50 p-3">
+          <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-gray-900">Edit Expense</h3>
+              <button
+                type="button"
+                onClick={closeExpenseEditor}
+                disabled={expenseSaving || expenseDeleting}
+                className="p-1.5 rounded-md text-gray-500 hover:bg-gray-100 disabled:opacity-50"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-4 max-h-[80vh] overflow-y-auto">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-2">Category</label>
+                <select
+                  value={expenseEditValues.category}
+                  onChange={(e) => setExpenseEditValues((prev) => ({ ...prev, category: e.target.value }))}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  {Object.entries(EXPENSE_CATEGORY_META).map(([key, value]) => (
+                    <option key={key} value={key}>{value.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-2">Amount</label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9]*\.?[0-9]*"
+                  value={expenseEditValues.amount}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                      setExpenseEditValues((prev) => ({ ...prev, amount: value }));
+                    }
+                  }}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter amount"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-2">Date</label>
+                <input
+                  type="date"
+                  value={expenseEditValues.expenseDate}
+                  onChange={(e) => setExpenseEditValues((prev) => ({ ...prev, expenseDate: e.target.value }))}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-2">Notes</label>
+                <textarea
+                  rows={3}
+                  value={expenseEditValues.notes}
+                  onChange={(e) => setExpenseEditValues((prev) => ({ ...prev, notes: e.target.value }))}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Expense details..."
+                />
+              </div>
+            </div>
+
+            <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={handleDeleteExpense}
+                disabled={expenseSaving || expenseDeleting}
+                className="px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-red-600 text-xs font-medium flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {expenseDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                {expenseDeleting ? "Deleting..." : "Delete"}
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={closeExpenseEditor}
+                  disabled={expenseSaving || expenseDeleting}
+                  className="px-3 py-2 rounded-lg border border-gray-200 text-gray-600 text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveExpenseEdit}
+                  disabled={expenseSaving || expenseDeleting}
+                  className="px-3 py-2 rounded-lg bg-linear-to-r from-blue-600 to-indigo-600 text-white text-xs font-medium flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {expenseSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  {expenseSaving ? "Saving..." : "Save"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

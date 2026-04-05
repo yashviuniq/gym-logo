@@ -55,34 +55,6 @@ const EXPENSE_CATEGORY_META = {
   other: { name: "Other", icon: <Package className="w-4 h-4" /> },
 };
 
-function getExpenseExportTitle(dateFilter, customStartDate, customEndDate) {
-  const now = new Date();
-
-  if (dateFilter === "custom" && customStartDate && customEndDate) {
-    const startDate = new Date(`${customStartDate}T00:00:00`);
-    const endDate = new Date(`${customEndDate}T00:00:00`);
-
-    if (
-      startDate.getFullYear() === endDate.getFullYear() &&
-      startDate.getMonth() === endDate.getMonth()
-    ) {
-      return `${startDate.toLocaleDateString("en-IN", { month: "long" }).toUpperCase()} EXPENSES`;
-    }
-
-    return "CUSTOM EXPENSES";
-  }
-
-  if (dateFilter === "today") {
-    return "TODAY EXPENSES";
-  }
-
-  if (dateFilter === "week") {
-    return "WEEKLY EXPENSES";
-  }
-
-  return `${now.toLocaleDateString("en-IN", { month: "long" }).toUpperCase()} EXPENSES`;
-}
-
 function getExpenseExportFileName(gymName, title) {
   const safeGymName = (gymName || "Gym").replace(/\s+/g, "_");
   const safeTitle = title.replace(/\s+/g, "_");
@@ -1326,9 +1298,6 @@ Thank you,
           <ExpensesSection 
             router={router} 
             selectedGym={selectedGym}
-            dateFilter={dateFilter}
-            customStartDate={customStartDate}
-            customEndDate={customEndDate}
           />
         )}
       </main>
@@ -1502,14 +1471,19 @@ Thank you,
 }
 
 // Expenses Section Component
-function ExpensesSection({ router, selectedGym, dateFilter, customStartDate, customEndDate }) {
+function ExpensesSection({ router, selectedGym }) {
   const { canViewFinance } = useUserRole();
   const { showSuccess, showError } = useToast();
+  const getCurrentMonthValue = () => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  };
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [totalExpenses, setTotalExpenses] = useState(0);
   const [exporting, setExporting] = useState(false);
   const [overallExporting, setOverallExporting] = useState(false);
+  const [selectedExpenseMonth, setSelectedExpenseMonth] = useState(getCurrentMonthValue);
   const [selectedExpense, setSelectedExpense] = useState(null);
   const [expenseSaving, setExpenseSaving] = useState(false);
   const [expenseDeleting, setExpenseDeleting] = useState(false);
@@ -1524,29 +1498,27 @@ function ExpensesSection({ router, selectedGym, dateFilter, customStartDate, cus
   const fetchExpenses = useCallback(async (gymId) => {
     try {
       setLoading(true);
-      
-      const now = new Date();
-      let startDate, endDate;
-      
-      if (dateFilter === "today") {
-        startDate = now.toISOString().split('T')[0];
-        endDate = startDate;
-      } else if (dateFilter === "week") { 
-        const weekStart = new Date(now);
-        weekStart.setDate(weekStart.getDate() - 6);
-        startDate = weekStart.toISOString().split('T')[0];
-        endDate = now.toISOString().split('T')[0];
-      } else if (dateFilter === "month") {
-        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        startDate = firstDayOfMonth.toISOString().split('T')[0];
-        endDate = now.toISOString().split('T')[0];
-      } else if (dateFilter === "custom") {
-        startDate = customStartDate;
-        endDate = customEndDate;
-      } else {
-        startDate = now.toISOString().split('T')[0];
-        endDate = startDate;
-      }
+
+      const formatLocalDate = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      };
+
+      const [yearString, monthString] = selectedExpenseMonth.split("-");
+      const year = Number(yearString);
+      const monthIndex = Number(monthString) - 1;
+
+      const monthStart = new Date(year, monthIndex, 1);
+      const monthEnd = new Date(year, monthIndex + 1, 0);
+      const today = new Date();
+
+      const isCurrentMonth =
+        today.getFullYear() === year && today.getMonth() === monthIndex;
+
+      const startDate = formatLocalDate(monthStart);
+      const endDate = formatLocalDate(isCurrentMonth ? today : monthEnd);
 
       const { data, error } = await supabase
         .from("expenses")
@@ -1570,13 +1542,13 @@ function ExpensesSection({ router, selectedGym, dateFilter, customStartDate, cus
     } finally {
       setLoading(false);
     }
-  }, [customEndDate, customStartDate, dateFilter]);
+  }, [selectedExpenseMonth]);
 
   useEffect(() => {
     if (selectedGym) {
       fetchExpenses(selectedGym.id);
     }
-  }, [selectedGym, dateFilter, customStartDate, customEndDate, fetchExpenses]);
+  }, [selectedGym, selectedExpenseMonth, fetchExpenses]);
 
   const handleExportExcel = async () => {
     if (!selectedGym?.name || expenses.length === 0) {
@@ -1587,7 +1559,9 @@ function ExpensesSection({ router, selectedGym, dateFilter, customStartDate, cus
     setExporting(true);
     try {
       const XLSX = await import("xlsx");
-      const exportTitle = getExpenseExportTitle(dateFilter, customStartDate, customEndDate);
+      const [yearString, monthString] = selectedExpenseMonth.split("-");
+      const exportMonth = new Date(Number(yearString), Number(monthString) - 1, 1);
+      const exportTitle = `${exportMonth.toLocaleDateString("en-IN", { month: "long", year: "numeric" }).toUpperCase()} EXPENSES`;
       const rows = buildExpenseExportRows(expenses, exportTitle);
 
       const workbook = XLSX.utils.book_new();
@@ -1662,8 +1636,9 @@ function ExpensesSection({ router, selectedGym, dateFilter, customStartDate, cus
   };
 
   const getMonthName = () => {
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    return monthNames[new Date().getMonth()];
+    const [yearString, monthString] = selectedExpenseMonth.split("-");
+    const monthDate = new Date(Number(yearString), Number(monthString) - 1, 1);
+    return monthDate.toLocaleDateString("en-IN", { month: "short", year: "numeric" });
   };
 
   const openExpenseEditor = (expense) => {
@@ -1784,14 +1759,24 @@ function ExpensesSection({ router, selectedGym, dateFilter, customStartDate, cus
     <div className="space-y-3 pb-20">
       {/* Expense Summary */}
       <div className="bg-white rounded-xl border border-gray-200 p-3 shadow-sm mx-1">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center gap-3 flex-wrap">
           <div>
             <p className="text-xs text-gray-500 font-medium">
-              Total Expenses ({dateFilter === "today" ? "Today" : dateFilter === "week" ? "This Week" : getMonthName()})
+              Total Expenses ({getMonthName()})
             </p>
             <p className="text-xl font-bold text-orange-600 mt-0.5">
               {formatCurrency(totalExpenses)}
             </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-gray-500 font-medium">Month</label>
+            <input
+              type="month"
+              value={selectedExpenseMonth}
+              max={getCurrentMonthValue()}
+              onChange={(e) => setSelectedExpenseMonth(e.target.value || getCurrentMonthValue())}
+              className="px-3 py-2 border border-gray-200 rounded-lg text-xs font-medium text-gray-700 bg-white outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
           </div>
           <div className="flex items-center gap-2 flex-wrap justify-end">
             {canViewFinance && (

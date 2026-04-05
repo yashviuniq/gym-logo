@@ -14,7 +14,7 @@ const supabaseAdmin = createClient(
 
 export async function POST(request) {
   try {
-    const { p_gym_id, p_period_start, p_period_end } = await request.json();
+    const { p_gym_id, p_period_start, p_period_end, p_business_tz } = await request.json();
 
     if (!p_period_start || !p_period_end) {
       return NextResponse.json({ error: "Missing required parameters" }, { status: 400 });
@@ -41,6 +41,7 @@ export async function POST(request) {
       p_gym_id: finalGymId,
       p_period_start,
       p_period_end,
+      p_business_tz: p_business_tz || "Asia/Kolkata",
     });
 
     if (error) {

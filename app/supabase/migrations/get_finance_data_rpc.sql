@@ -3,7 +3,8 @@
 CREATE OR REPLACE FUNCTION get_finance_data(
   p_gym_id UUID,
   p_period_start TIMESTAMPTZ,
-  p_period_end TIMESTAMPTZ
+  p_period_end TIMESTAMPTZ,
+  p_business_tz TEXT DEFAULT 'Asia/Kolkata'
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -16,7 +17,10 @@ DECLARE
   v_expenses_total NUMERIC;
   v_payments_with_next_date JSONB;
   v_pending_trainer_installments JSONB;
+  v_business_tz TEXT;
 BEGIN
+  v_business_tz := COALESCE(NULLIF(TRIM(p_business_tz), ''), 'Asia/Kolkata');
+
   -- 1. Fetch payments in period with member info and resolved collector names
   --    Replicates the OR condition: (paid_at in range) OR (paid_at IS NULL AND created_at in range)
   --    Collector name resolved via profiles table (same as gym_trainers→profiles + profiles fallback)
@@ -80,13 +84,13 @@ BEGIN
   WHERE m.gym_id = p_gym_id
     AND m.balance > 0;
 
-  -- 3. Fetch total expenses in period (expense_date is DATE type)
+  -- 3. Fetch total expenses in period by expense_date (business timezone date boundaries)
   SELECT COALESCE(SUM(e.amount), 0)
   INTO v_expenses_total
   FROM expenses e
   WHERE e.gym_id = p_gym_id
-    AND e.expense_date >= p_period_start::DATE
-    AND e.expense_date <= p_period_end::DATE;
+    AND e.expense_date >= (p_period_start AT TIME ZONE v_business_tz)::DATE
+    AND e.expense_date <= (p_period_end AT TIME ZONE v_business_tz)::DATE;
 
   -- 4. Fetch payments with next_payment_date for due date resolution
   SELECT COALESCE(jsonb_agg(

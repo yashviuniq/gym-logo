@@ -319,13 +319,19 @@ export default function FinancePage() {
       // Use same-origin API proxy so backend can validate tenant isolation
       let result, rpcError;
       try {
+        const businessTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Kolkata";
         const res = await fetch('/api/finance/data', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'x-user-id': String(currentUserId),
           },
-          body: JSON.stringify({ p_gym_id: gymId, p_period_start: startISO, p_period_end: endISO }),
+          body: JSON.stringify({
+            p_gym_id: gymId,
+            p_period_start: startISO,
+            p_period_end: endISO,
+            p_business_tz: businessTimeZone,
+          }),
         });
         const json = await res.json();
         if (!res.ok) {

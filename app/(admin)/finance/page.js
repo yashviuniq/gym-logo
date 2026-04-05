@@ -201,6 +201,23 @@ function getStoredGym() {
   }
 }
 
+function getLocalCollectorName() {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const storedUser = localStorage.getItem("gymUser");
+    if (!storedUser) return null;
+
+    const user = JSON.parse(storedUser);
+    if (!user || typeof user !== "object") return null;
+
+    const fullName = `${user.first_name || ""} ${user.last_name || ""}`.trim();
+    return user.name || user.full_name || fullName || null;
+  } catch {
+    return null;
+  }
+}
+
 export default function FinancePage() {
   const router = useRouter();
   const { canViewFinance } = useUserRole();
@@ -353,6 +370,7 @@ export default function FinancePage() {
       const paidPayments = payments.filter(
         (payment) => String(payment.status || "").toLowerCase() === "paid"
       );
+      const localCollectorName = getLocalCollectorName();
       const membersWithDues = result.members_with_dues || [];
       const expensesTotal = parseFloat(result.expenses_total || 0);
       const paymentsWithNextDate = result.payments_with_next_date || [];
@@ -384,13 +402,13 @@ export default function FinancePage() {
 
       // Build recent transactions (collector_name resolved by RPC via profiles join)
       const transformedTransactions = paidPayments.slice(0, 10).map((payment) => {
-        const collectorName = payment.collector_name || null;
+        const collectorName = payment.collector_name || payment.collected_by_name || localCollectorName || null;
         
         return {
           id: payment.id,
           name: payment.member_full_name || "Unknown",
           memberPhone: payment.member_phone || "",
-          type: payment.membership_id ? "membership" : "trainer",
+          type: payment.membership_id ? "membership" : "personal_training",
           amount: payment.amount,
           mode: payment.payment_mode,
           date: formatFinanceTransactionDate(payment.paid_at || payment.created_at),
@@ -545,6 +563,7 @@ export default function FinancePage() {
           remaining_amount,
           membership_id,
           collected_by,
+          collected_by_name,
           collector:profiles!collected_by(
             gym_id,
             first_name,
@@ -563,7 +582,8 @@ export default function FinancePage() {
       const collectorName =
         data?.collector?.gym_id && data.collector.gym_id === selectedGym?.id
           ? `${data.collector.first_name || ""} ${data.collector.last_name || ""}`.trim() || null
-          : null;
+          : data?.collected_by_name || null;
+      const localCollectorName = getLocalCollectorName();
 
       const detailedTxn = {
         ...txn,
@@ -578,7 +598,7 @@ export default function FinancePage() {
         nextPaymentDate: data?.next_payment_date || null,
         remainingAmount: Number(data?.remaining_amount || 0),
         membershipId: data?.membership_id || null,
-        collectedBy: collectorName || txn.collectedBy || null,
+        collectedBy: collectorName || txn.collectedBy || localCollectorName || null,
       };
 
       setSelectedTransaction(detailedTxn);

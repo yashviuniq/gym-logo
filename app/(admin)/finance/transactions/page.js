@@ -23,6 +23,25 @@ function getStoredGym() {
   }
 }
 
+function getLocalCollectorName() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const storedUser = localStorage.getItem("gymUser");
+    if (!storedUser) return null;
+
+    const user = JSON.parse(storedUser);
+    if (!user || typeof user !== "object") return null;
+
+    const fullName = `${user.first_name || ""} ${user.last_name || ""}`.trim();
+    return user.name || user.full_name || fullName || null;
+  } catch {
+    return null;
+  }
+}
+
 export default function TransactionsPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -32,6 +51,11 @@ export default function TransactionsPage() {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(Boolean(initialGym));
   const [selectedGym] = useState(initialGym);
+  const [localCollectorName, setLocalCollectorName] = useState(null);
+
+  useEffect(() => {
+    setLocalCollectorName(getLocalCollectorName());
+  }, []);
 
   async function fetchTransactions(gymId) {
     try {
@@ -185,8 +209,8 @@ export default function TransactionsPage() {
           <div className="divide-y divide-gray-100">
             {filteredTransactions.map((txn) => (
               (() => {
-                const collectorDisplayName = txn.collectedBy || "—";
-                const collectorLine = txn.collectedBy
+                const collectorDisplayName = txn.collectedBy || localCollectorName || "—";
+                const collectorLine = collectorDisplayName !== "—"
                   ? txn.type === "personal_training" || txn.type === "trainer"
                     ? `₹${txn.amount.toLocaleString("en-IN")} collected by trainer (${collectorDisplayName})`
                     : `₹${txn.amount.toLocaleString("en-IN")} collected by ${collectorDisplayName}`
@@ -199,9 +223,9 @@ export default function TransactionsPage() {
               >
                 <div className="flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    txn.collectedBy ? "bg-purple-100" : "bg-green-100"
+                    collectorDisplayName !== "—" ? "bg-purple-100" : "bg-green-100"
                   }`}>
-                    <span className={`font-bold ${txn.collectedBy ? "text-purple-600" : "text-green-600"}`}>₹</span>
+                    <span className={`font-bold ${collectorDisplayName !== "—" ? "text-purple-600" : "text-green-600"}`}>₹</span>
                   </div>
                   <div>
                     <p className="font-medium text-gray-900">{txn.name}</p>

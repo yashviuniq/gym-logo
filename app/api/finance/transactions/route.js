@@ -43,6 +43,7 @@ export async function POST(request) {
         created_at,
         membership_id,
         collected_by,
+        collected_by_name,
         members (
           id,
           full_name,
@@ -70,6 +71,7 @@ export async function POST(request) {
         collectorGymId && collectorGymId === finalGymId
           ? `${payment.collector?.first_name || ""} ${payment.collector?.last_name || ""}`.trim() || null
           : null;
+      const fallbackCollectorName = payment.collected_by_name || null;
 
       return {
         id: payment.id,
@@ -82,8 +84,8 @@ export async function POST(request) {
         status: payment.status || "paid",
         collected_by: payment.collected_by || null,
         collector_gym_id: collectorGymId,
-        collector_name: collectorName,
-        collectedBy: collectorName || null,
+        collector_name: collectorName || fallbackCollectorName,
+        collectedBy: collectorName || fallbackCollectorName || null,
       };
     });
 

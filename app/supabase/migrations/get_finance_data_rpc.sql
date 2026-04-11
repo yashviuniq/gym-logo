@@ -30,6 +30,7 @@ BEGIN
       'amount', p.amount,
       'payment_mode', p.payment_mode,
       'status', p.status,
+      'membership_id', p.membership_id,
       'paid_at', p.paid_at,
       'created_at', p.created_at,
       'transaction_gym_id', p.gym_id,
@@ -42,9 +43,10 @@ BEGIN
         WHEN p.collected_by IS NOT NULL AND pr.id IS NOT NULL THEN 
           COALESCE(
             NULLIF(TRIM(COALESCE(pr.first_name, '') || ' ' || COALESCE(pr.last_name, '')), ''),
+            NULLIF(TRIM(COALESCE(p.collected_by_name, '')), ''),
             'Trainer'
           )
-        ELSE NULL
+        ELSE NULLIF(TRIM(COALESCE(p.collected_by_name, '')), '')
       END
     ) ORDER BY p.created_at DESC
   ), '[]'::jsonb)

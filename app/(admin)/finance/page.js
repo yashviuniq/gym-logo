@@ -148,6 +148,24 @@ function getDateInputValue(value) {
   return parsed.toISOString().split("T")[0];
 }
 
+function parseDateOnly(value) {
+  if (!value) return null;
+
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return null;
+    return new Date(value.getFullYear(), value.getMonth(), value.getDate(), 0, 0, 0, 0);
+  }
+
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split("-").map(Number);
+    return new Date(year, month - 1, day, 0, 0, 0, 0);
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate(), 0, 0, 0, 0);
+}
+
 function mergeDateWithOriginalTime(dateValue, originalDateTime) {
   if (!dateValue) return null;
   const fallbackTime = "12:00:00.000Z";
@@ -201,6 +219,23 @@ function getStoredGym() {
   }
 }
 
+function getLocalCollectorName() {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const storedUser = localStorage.getItem("gymUser");
+    if (!storedUser) return null;
+
+    const user = JSON.parse(storedUser);
+    if (!user || typeof user !== "object") return null;
+
+    const fullName = `${user.first_name || ""} ${user.last_name || ""}`.trim();
+    return user.name || user.full_name || fullName || null;
+  } catch {
+    return null;
+  }
+}
+
 export default function FinancePage() {
   const router = useRouter();
   const { canViewFinance } = useUserRole();
@@ -223,6 +258,8 @@ export default function FinancePage() {
   const [pendingSearchInput, setPendingSearchInput] = useState("");
   const [pendingSearch, setPendingSearch] = useState("");
   const [pendingSection, setPendingSection] = useState("members");
+  const [pendingDateFilterStart, setPendingDateFilterStart] = useState("");
+  const [pendingDateFilterEnd, setPendingDateFilterEnd] = useState("");
   const [paymentModes, setPaymentModes] = useState([]);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [transactionDetailsLoading, setTransactionDetailsLoading] = useState(false);
@@ -244,20 +281,78 @@ export default function FinancePage() {
     return () => clearTimeout(timer);
   }, [pendingSearchInput]);
 
-  const filteredPendingPayments = useMemo(() => {
-    if (!pendingSearch) return pendingPayments;
+  const effectivePendingDateFilterStart =
+    pendingDateFilterStart || (dateFilter === "custom" ? customStartDate : "");
+  const effectivePendingDateFilterEnd =
+    pendingDateFilterEnd || (dateFilter === "custom" ? customEndDate : "");
 
-    return pendingPayments.filter((member) => {
+  const filteredPendingPayments = useMemo(() => {
+    let result = pendingPayments;
+
+    // Apply date range filter
+    if (effectivePendingDateFilterStart || effectivePendingDateFilterEnd) {
+      result = result.filter((member) => {
+        const dueDate = parseDateOnly(member.nextPaymentDate || member.dueDate);
+        if (!dueDate) return false;
+
+        if (effectivePendingDateFilterStart) {
+          const startDate = parseDateOnly(effectivePendingDateFilterStart);
+          if (!startDate) return false;
+          if (dueDate < startDate) return false;
+        }
+        if (effectivePendingDateFilterEnd) {
+          const endDate = parseDateOnly(effectivePendingDateFilterEnd);
+          if (!endDate) return false;
+          endDate.setHours(23, 59, 59, 999);
+          if (dueDate > endDate) return false;
+        }
+        return true;
+      });
+    }
+
+    // Apply search filter
+    if (!pendingSearch) return result;
+
+    return result.filter((member) => {
       const name = String(member.name || "").toLowerCase();
       const phone = String(member.phone || "").toLowerCase();
       return name.includes(pendingSearch) || phone.includes(pendingSearch);
     });
-  }, [pendingPayments, pendingSearch]);
+  }, [
+    pendingPayments,
+    pendingSearch,
+    effectivePendingDateFilterStart,
+    effectivePendingDateFilterEnd,
+  ]);
 
   const filteredPendingTrainerInstallments = useMemo(() => {
-    if (!pendingSearch) return pendingTrainerInstallments;
+    let result = pendingTrainerInstallments;
 
-    return pendingTrainerInstallments.filter((item) => {
+    if (effectivePendingDateFilterStart || effectivePendingDateFilterEnd) {
+      result = result.filter((item) => {
+        const dueDate = parseDateOnly(item.nextPaymentDate);
+        if (!dueDate) return false;
+
+        if (effectivePendingDateFilterStart) {
+          const startDate = parseDateOnly(effectivePendingDateFilterStart);
+          if (!startDate) return false;
+          if (dueDate < startDate) return false;
+        }
+
+        if (effectivePendingDateFilterEnd) {
+          const endDate = parseDateOnly(effectivePendingDateFilterEnd);
+          if (!endDate) return false;
+          endDate.setHours(23, 59, 59, 999);
+          if (dueDate > endDate) return false;
+        }
+
+        return true;
+      });
+    }
+
+    if (!pendingSearch) return result;
+
+    return result.filter((item) => {
       const memberName = String(item.memberName || "").toLowerCase();
       const memberPhone = String(item.memberPhone || "").toLowerCase();
       const trainerName = String(item.trainerName || "").toLowerCase();
@@ -270,7 +365,23 @@ export default function FinancePage() {
         planName.includes(pendingSearch)
       );
     });
-  }, [pendingTrainerInstallments, pendingSearch]);
+  }, [
+    pendingTrainerInstallments,
+    pendingSearch,
+    effectivePendingDateFilterStart,
+    effectivePendingDateFilterEnd,
+  ]);
+
+  const filteredPendingDuesTotal = useMemo(() => {
+    return filteredPendingPayments.reduce((sum, member) => sum + (member.amount || 0), 0);
+  }, [filteredPendingPayments]);
+
+  const filteredPendingTrainerTotal = useMemo(() => {
+    return filteredPendingTrainerInstallments.reduce(
+      (sum, item) => sum + (item.pendingAmount || 0),
+      0
+    );
+  }, [filteredPendingTrainerInstallments]);
 
   const fetchFinancialData = useCallback(async (gymId) => {
     setLoading(true);
@@ -353,6 +464,7 @@ export default function FinancePage() {
       const paidPayments = payments.filter(
         (payment) => String(payment.status || "").toLowerCase() === "paid"
       );
+      const localCollectorName = getLocalCollectorName();
       const membersWithDues = result.members_with_dues || [];
       const expensesTotal = parseFloat(result.expenses_total || 0);
       const paymentsWithNextDate = result.payments_with_next_date || [];
@@ -384,13 +496,13 @@ export default function FinancePage() {
 
       // Build recent transactions (collector_name resolved by RPC via profiles join)
       const transformedTransactions = paidPayments.slice(0, 10).map((payment) => {
-        const collectorName = payment.collector_name || null;
+        const collectorName = payment.collector_name || payment.collected_by_name || localCollectorName || null;
         
         return {
           id: payment.id,
           name: payment.member_full_name || "Unknown",
           memberPhone: payment.member_phone || "",
-          type: payment.membership_id ? "membership" : "trainer",
+          type: payment.membership_id ? "membership" : "personal_training",
           amount: payment.amount,
           mode: payment.payment_mode,
           date: formatFinanceTransactionDate(payment.paid_at || payment.created_at),
@@ -545,6 +657,7 @@ export default function FinancePage() {
           remaining_amount,
           membership_id,
           collected_by,
+          collected_by_name,
           collector:profiles!collected_by(
             gym_id,
             first_name,
@@ -563,7 +676,8 @@ export default function FinancePage() {
       const collectorName =
         data?.collector?.gym_id && data.collector.gym_id === selectedGym?.id
           ? `${data.collector.first_name || ""} ${data.collector.last_name || ""}`.trim() || null
-          : null;
+          : data?.collected_by_name || null;
+      const localCollectorName = getLocalCollectorName();
 
       const detailedTxn = {
         ...txn,
@@ -578,7 +692,7 @@ export default function FinancePage() {
         nextPaymentDate: data?.next_payment_date || null,
         remainingAmount: Number(data?.remaining_amount || 0),
         membershipId: data?.membership_id || null,
-        collectedBy: collectorName || txn.collectedBy || null,
+        collectedBy: collectorName || txn.collectedBy || localCollectorName || null,
       };
 
       setSelectedTransaction(detailedTxn);
@@ -732,6 +846,19 @@ export default function FinancePage() {
                   />
                 </div>
               </div>
+              {/* Display selected date range */}
+              {customStartDate && customEndDate && (
+                <div className="mt-3 p-2.5 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+                  <p className="text-xs text-gray-600">
+                    <span className="font-medium">Selected Period:</span>{" "}
+                    <span className="font-semibold text-blue-900">
+                      {new Date(customStartDate + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} 
+                      {" "}-{" "}
+                      {new Date(customEndDate + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </span>
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1006,6 +1133,61 @@ export default function FinancePage() {
               </div>
             </div>
 
+            {/* Pending Date Range Filter */}
+            <div className="bg-white rounded-xl border border-gray-200 p-3 shadow-sm mx-1">
+              <div className="flex items-center gap-2 mb-3">
+                <Calendar className="w-4 h-4 text-gray-500" />
+                <span className="text-xs font-medium text-gray-700">Filter by Expiry Date</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">Start Date</label>
+                  <input
+                    type="date"
+                    value={effectivePendingDateFilterStart}
+                    onChange={(e) => setPendingDateFilterStart(e.target.value)}
+                    max={effectivePendingDateFilterEnd || new Date().toISOString().split('T')[0]}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">End Date</label>
+                  <input
+                    type="date"
+                    value={effectivePendingDateFilterEnd}
+                    onChange={(e) => setPendingDateFilterEnd(e.target.value)}
+                    min={effectivePendingDateFilterStart}
+                    max={new Date().toISOString().split('T')[0]}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+              {(effectivePendingDateFilterStart || effectivePendingDateFilterEnd) && (
+                <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-xs text-blue-900">
+                    <span className="font-medium">Showing:</span>{" "}
+                    {effectivePendingDateFilterStart && effectivePendingDateFilterEnd 
+                      ? `${new Date(effectivePendingDateFilterStart + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} to ${new Date(effectivePendingDateFilterEnd + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`
+                      : effectivePendingDateFilterStart
+                      ? `from ${new Date(effectivePendingDateFilterStart + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`
+                      : `until ${new Date(effectivePendingDateFilterEnd + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`
+                    }
+                  </p>
+                </div>
+              )}
+              {(pendingDateFilterStart || pendingDateFilterEnd) && (
+                <button
+                  onClick={() => {
+                    setPendingDateFilterStart("");
+                    setPendingDateFilterEnd("");
+                  }}
+                  className="mt-2 w-full px-3 py-1.5 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg active:scale-95 transition-transform"
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
+
             <div className="bg-white rounded-xl border border-gray-200 p-2 shadow-sm mx-1">
               <div className="grid grid-cols-2 gap-2">
                 {[
@@ -1013,7 +1195,7 @@ export default function FinancePage() {
                     id: "members",
                     label: "Pending Payments",
                     hint: `${filteredPendingPayments.length} members`,
-                    amount: formatCurrency(financialData.pendingDues),
+                    amount: formatCurrency(filteredPendingDuesTotal),
                     activeClasses: "bg-amber-50 text-amber-900 border-amber-300 shadow-sm",
                     inactiveClasses: "bg-white text-gray-700 border-gray-200 hover:bg-gray-50",
                   },
@@ -1021,7 +1203,7 @@ export default function FinancePage() {
                     id: "trainers",
                     label: "Trainer Installments",
                     hint: `${filteredPendingTrainerInstallments.length} PT assignments`,
-                    amount: formatCurrency(pendingTrainerInstallments.reduce((sum, item) => sum + item.pendingAmount, 0)),
+                    amount: formatCurrency(filteredPendingTrainerTotal),
                     activeClasses: "bg-indigo-50 text-indigo-900 border-indigo-300 shadow-sm",
                     inactiveClasses: "bg-white text-gray-700 border-gray-200 hover:bg-gray-50",
                   },
@@ -1055,7 +1237,7 @@ export default function FinancePage() {
                   </p>
                 </div>
                 <span className="text-xs font-semibold text-amber-600">
-                  {formatCurrency(financialData.pendingDues)}
+                  {formatCurrency(filteredPendingDuesTotal)}
                 </span>
               </div>
               
@@ -1532,7 +1714,6 @@ function ExpensesSection({ router, selectedGym }) {
         .eq("gym_id", gymId)
         .gte("expense_date", startDate)
         .lte("expense_date", endDate)
-        .order("expense_date", { ascending: false })
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -1540,7 +1721,6 @@ function ExpensesSection({ router, selectedGym }) {
       const formattedExpenses = (data || []).map(mapExpenseRecord);
 
       setExpenses(formattedExpenses);
-      
       const total = formattedExpenses.reduce((sum, e) => sum + e.amount, 0);
       setTotalExpenses(total);
     } catch (error) {
@@ -1556,7 +1736,7 @@ function ExpensesSection({ router, selectedGym }) {
     }
   }, [selectedGym, selectedExpenseMonth, fetchExpenses]);
 
-  const handleExportExcel = async () => {
+  const handleExportMonthExcel = async () => {
     if (!selectedGym?.name || expenses.length === 0) {
       showError("No expenses available to export");
       return;
@@ -1797,7 +1977,7 @@ function ExpensesSection({ router, selectedGym }) {
                   {overallExporting ? "Exporting..." : "Overall Excel"}
                 </button>
                 <button
-                  onClick={handleExportExcel}
+                  onClick={handleExportMonthExcel}
                   disabled={exporting || expenses.length === 0}
                   className="px-4 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-medium active:scale-95 transition-transform flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ minHeight: '36px' }}

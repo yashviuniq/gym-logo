@@ -251,7 +251,7 @@ export default function FinancePage() {
     monthlyRevenue: 0,
     pendingDues: 0,
     monthlyExpenses: 0,
-  });
+  }); 
   const [recentTransactions, setRecentTransactions] = useState([]);
   const [pendingPayments, setPendingPayments] = useState([]);
   const [pendingTrainerInstallments, setPendingTrainerInstallments] = useState([]);

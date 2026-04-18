@@ -469,6 +469,12 @@ export default function FinancePage() {
       const expensesTotal = parseFloat(result.expenses_total || 0);
       const paymentsWithNextDate = result.payments_with_next_date || [];
       const trainerInstallmentsPending = result.pending_trainer_installments || [];
+      const periodStartDateOnly = parseDateOnly(periodStart);
+      const periodEndDateOnly = parseDateOnly(periodEnd);
+
+      const paymentWithDateByMemberId = new Map(
+        paymentsWithNextDate.map((item) => [item.member_id, item])
+      );
 
       // Revenue cards and transaction list should only include paid entries
       const totalRevenue = paidPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
@@ -487,10 +493,28 @@ export default function FinancePage() {
           .reduce((sum, p) => sum + (p.amount || 0), 0);
       }
 
+      const pendingDuesForSelectedPeriod = membersWithDues.reduce((sum, member) => {
+        const activeMembership = member.memberships?.find((m) => m.status === "active");
+        const memberPaymentWithDate = paymentWithDateByMemberId.get(member.id);
+        const dueDate = parseDateOnly(
+          memberPaymentWithDate?.next_payment_date || activeMembership?.end_date || null
+        );
+
+        if (!dueDate || !periodStartDateOnly || !periodEndDateOnly) {
+          return sum;
+        }
+
+        if (dueDate < periodStartDateOnly || dueDate > periodEndDateOnly) {
+          return sum;
+        }
+
+        return sum + (member.balance || 0);
+      }, 0);
+
       setFinancialData({
         todayCollection,
         monthlyRevenue: totalRevenue,
-        pendingDues: membersWithDues.reduce((sum, m) => sum + (m.balance || 0), 0) || 0,
+        pendingDues: pendingDuesForSelectedPeriod,
         monthlyExpenses: expensesTotal,
       });
 
@@ -533,7 +557,7 @@ export default function FinancePage() {
       // Build pending payments
       const pendingData = membersWithDues.map((member) => {
         const activeMembership = member.memberships?.find(m => m.status === "active");
-        const memberPaymentWithDate = paymentsWithNextDate.find(p => p.member_id === member.id);
+        const memberPaymentWithDate = paymentWithDateByMemberId.get(member.id);
         
         // Use next_payment_date if available, otherwise fall back to membership end_date
         const nextPaymentDate = memberPaymentWithDate?.next_payment_date;

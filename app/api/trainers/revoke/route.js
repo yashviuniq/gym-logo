@@ -1,8 +1,17 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
+import { createClient } from "@supabase/supabase-js";
+import { blockViewOnlyWrites } from "@/lib/server/viewOnlyGuard";
 
 export async function POST(request) {
   try {
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    );
+    const writeBlocked = await blockViewOnlyWrites(request, supabaseAdmin);
+    if (writeBlocked) return writeBlocked;
+
     const { trainerProfileId } = await request.json();
 
     if (!trainerProfileId) {

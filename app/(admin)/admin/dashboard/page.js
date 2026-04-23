@@ -45,7 +45,7 @@ export default function AdminDashboard() {
   const [selectedGym, setSelectedGym] = useState(null);
   const [loadingGyms, setLoadingGyms] = useState(true);
   const { permissions } = usePermissions();
-  const { canViewFinance, canCreateTrainer } = useUserRole();
+  const { canViewFinance, canCreateTrainer, canWrite } = useUserRole();
   const [dataLoading, setDataLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState({
     totalMembers: 0,
@@ -82,7 +82,7 @@ export default function AdminDashboard() {
       if (storedUser) {
         // Admin/Owner logged in via localStorage
         const userData = JSON.parse(storedUser);
-        if (["owner", "admin", "trainer"].includes(userData.role)) {
+        if (["owner", "admin", "view_only", "trainer"].includes(userData.role)) {
           setUser(userData);
           setLoading(false);
 
@@ -132,7 +132,7 @@ export default function AdminDashboard() {
       // Fallback: Check Supabase auth for trainer users
       const { data } = await supabase.auth.getUser();
       const userRole = data.user?.role;
-      if (!data.user || !["owner", "admin", "trainer"].includes(userRole)) {
+      if (!data.user || !["owner", "admin", "view_only", "trainer"].includes(userRole)) {
         router.push("/auth/login");
         return;
       }
@@ -954,7 +954,7 @@ export default function AdminDashboard() {
         )}
 
         {/* Quick Actions - Permission Based */}
-        <div className="bg-white rounded-xl p-3 mx-1">
+        {canWrite && <div className="bg-white rounded-xl p-3 mx-1">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold text-gray-900">Quick Actions</h3>
             <button className="text-xs text-blue-600 font-medium active:text-blue-700 transition-colors">
@@ -992,7 +992,7 @@ export default function AdminDashboard() {
               </button>
             ))}
           </div>
-        </div>
+        </div>}
 
         {/* Attendance & Payments - Stacked on Mobile */}
         <div className="space-y-3 px-1">

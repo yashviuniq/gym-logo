@@ -35,7 +35,7 @@ DROP TYPE IF EXISTS announcement_status CASCADE;
 -- ============================================================
 
 -- Profile roles for different user types
-CREATE TYPE profile_role AS ENUM ('owner', 'admin', 'trainer', 'member');
+CREATE TYPE profile_role AS ENUM ('owner', 'admin', 'trainer', 'member', 'view_only');
 
 -- Membership status tracking
 CREATE TYPE membership_status AS ENUM ('active', 'expired', 'cancelled');
@@ -75,7 +75,7 @@ CREATE TABLE profiles (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-COMMENT ON TABLE profiles IS 'User profiles for all roles - owner, admin, trainer, member';
+COMMENT ON TABLE profiles IS 'User profiles for all roles - owner, admin, trainer, member, view_only';
 COMMENT ON COLUMN profiles.email IS 'Email for admin/owner/trainer login';
 COMMENT ON COLUMN profiles.password IS 'Password for admin/owner/trainer login (hash in production)';
 COMMENT ON COLUMN profiles.permissions IS 'Feature permissions for admin role: {dashboard, members, attendance, announcements, finance, analytics, monitoring, settings}';

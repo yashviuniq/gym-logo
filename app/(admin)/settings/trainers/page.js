@@ -46,7 +46,7 @@ function getTrainerExportMonthKey(value) {
 
 export default function TrainersPage() {
   const router = useRouter();
-  const { canCreateTrainer } = useUserRole();
+  const { canCreateTrainer, user } = useUserRole();
   const [trainers, setTrainers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -176,7 +176,10 @@ export default function TrainersPage() {
       try {
         await fetch("/api/trainers/revoke", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "x-user-id": String(user?.id || ""),
+          },
           body: JSON.stringify({ trainerProfileId: trainer.profileId }),
         });
       } catch (err) {

@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import admin from 'firebase-admin';
+import { createClient } from "@supabase/supabase-js";
+import { blockViewOnlyWrites } from "@/lib/server/viewOnlyGuard";
 
 // Ensure Admin SDK initialized (lib/notifications should already handle, but safe-guard here)
 if (!admin.apps.length) {
@@ -13,6 +15,13 @@ if (!admin.apps.length) {
 
 export async function POST(request) {
   try {
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    );
+    const writeBlocked = await blockViewOnlyWrites(request, supabaseAdmin);
+    if (writeBlocked) return writeBlocked;
+
     const body = await request.json();
     const { token, title, body: msgBody } = body;
 

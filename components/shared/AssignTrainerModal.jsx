@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/contexts/ToastContext";
 import { DAYS_OF_WEEK } from "@/lib/constants/trainerSchedule";
+import { useUserRole } from "@/lib/hooks/useUserRole";
 
 const PAYMENT_MODE_OPTIONS = ["cash", "upi", "card", "bank"];
 
@@ -55,6 +56,7 @@ export default function AssignTrainerModal({
   const [fetchingSlots, setFetchingSlots] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
   const { showSuccess, showError } = useToast();
+  const { canWrite } = useUserRole();
 
   // Trainer plans state
   const [trainerPlans, setTrainerPlans] = useState([]);
@@ -378,6 +380,10 @@ export default function AssignTrainerModal({
   };
 
   const handleRecordInstallment = async () => {
+    if (!canWrite) {
+      showError("Read-only access: payments cannot be recorded");
+      return;
+    }
     if (!currentAssignment?.assignmentId || !selectedGym?.id || !selectedTrainerId) return;
 
     const planTotalAmount = roundCurrency(currentAssignment.planTotalAmount || currentAssignment.planPrice || 0);
@@ -449,6 +455,10 @@ export default function AssignTrainerModal({
   };
 
   const handleSave = async () => {
+    if (!canWrite) {
+      showError("Read-only access: assignment changes are not allowed");
+      return;
+    }
     if (!selectedTrainerId || !memberId || !selectedGym?.id) return;
 
     if (assignMode === "renew" && currentTrainerId && selectedTrainerId !== currentTrainerId) {
@@ -627,6 +637,10 @@ export default function AssignTrainerModal({
   };
 
   const handleRemoveTrainer = async () => {
+    if (!canWrite) {
+      showError("Read-only access: trainer cannot be removed");
+      return;
+    }
     if (!memberId || !selectedGym?.id || !currentTrainerId) return;
 
     setLoading(true);
@@ -665,6 +679,10 @@ export default function AssignTrainerModal({
 
   // Update only the schedule/bookings without changing the assignment or plan
   const handleUpdateSchedule = async () => {
+    if (!canWrite) {
+      showError("Read-only access: schedule updates are not allowed");
+      return;
+    }
     if (!memberId || !selectedGym?.id || !currentTrainerId) return;
 
     const totalSelectedSlots = Object.values(selectedSlots).flat().length;
@@ -1594,14 +1612,14 @@ export default function AssignTrainerModal({
                     setActiveDay("");
                     setSelectedSlots({});
                   }}
-                  disabled={loading}
+                  disabled={loading || !canWrite}
                   className="flex-1 px-5 py-3 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-xl font-medium hover:from-gray-200 hover:to-gray-300 transition-all duration-200 active:scale-[0.98] disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSave}
-                  disabled={loading}
+                  disabled={loading || !canWrite}
                   className="flex-1 px-5 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-amber-200 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {loading ? (
@@ -1620,7 +1638,7 @@ export default function AssignTrainerModal({
               {currentTrainerId && (
                 <button
                   onClick={handleRemoveTrainer}
-                  disabled={loading}
+                  disabled={loading || !canWrite}
                   className="w-full px-5 py-3 bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 text-red-600 rounded-xl font-medium hover:from-red-100 hover:to-rose-100 hover:border-red-300 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {loading ? (
@@ -1633,7 +1651,7 @@ export default function AssignTrainerModal({
               <div className={`grid gap-3 ${selectedTrainerId === currentTrainerId && currentAssignment?.planId ? 'grid-cols-1 sm:grid-cols-3' : currentTrainerId ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2'}`}>
                 <button
                   onClick={onClose}
-                  disabled={loading}
+                  disabled={loading || !canWrite}
                   className="w-full px-5 py-3 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-xl font-medium hover:from-gray-200 hover:to-gray-300 transition-all duration-200 active:scale-[0.98] disabled:opacity-50"
                 >
                   Cancel
@@ -1643,8 +1661,9 @@ export default function AssignTrainerModal({
                   <>
                     <button
                       onClick={handleUpdateSchedule}
-                      disabled={
+                  disabled={
                         loading ||
+                    !canWrite ||
                         (trainerDays.length > 0 && totalSelections === 0)
                       }
                       className="w-full px-5 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-green-200 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
@@ -1660,7 +1679,7 @@ export default function AssignTrainerModal({
                     </button>
                     <button
                       onClick={handleRecordInstallment}
-                      disabled={loading || ptOutstandingBeforePayment <= 0}
+                      disabled={loading || !canWrite || ptOutstandingBeforePayment <= 0}
                       className="w-full px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-blue-200 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                       {loading ? (
@@ -1678,6 +1697,7 @@ export default function AssignTrainerModal({
                     onClick={handleSave}
                     disabled={
                       loading ||
+                      !canWrite ||
                       !selectedTrainerId ||
                       selectedTrainerId === currentTrainerId ||
                       (trainerDays.length > 0 && totalSelections === 0)

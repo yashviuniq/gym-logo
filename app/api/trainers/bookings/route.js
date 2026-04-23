@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getRequestUserId, unauthorized } from "@/lib/server/tenantAuth";
+import { blockViewOnlyWrites } from "@/lib/server/viewOnlyGuard";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -57,6 +59,11 @@ export async function GET(request) {
  */
 export async function POST(request) {
   try {
+    const currentUserId = getRequestUserId(request);
+    if (!currentUserId) return unauthorized("Missing authenticated user");
+    const writeBlocked = await blockViewOnlyWrites(request, supabaseAdmin, currentUserId);
+    if (writeBlocked) return writeBlocked;
+
     const body = await request.json();
     const { trainer_id, member_id, gym_id, day, time_slot } = body;
 
@@ -138,6 +145,11 @@ export async function POST(request) {
  */
 export async function DELETE(request) {
   try {
+    const currentUserId = getRequestUserId(request);
+    if (!currentUserId) return unauthorized("Missing authenticated user");
+    const writeBlocked = await blockViewOnlyWrites(request, supabaseAdmin, currentUserId);
+    if (writeBlocked) return writeBlocked;
+
     const body = await request.json();
     const { booking_id, member_id, gym_id } = body;
 

@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import { useUserRole } from "@/lib/hooks/useUserRole";
 import Header from "@/components/layout/Header";
 import {
   Search,
@@ -36,6 +37,7 @@ const PAGE_SIZE = 15;
 
 export default function InquiriesPage() {
   const router = useRouter();
+  const { isViewOnly } = useUserRole();
   const [selectedGym, setSelectedGym] = useState(null);
   const [inquiries, setInquiries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -204,12 +206,14 @@ export default function InquiriesPage() {
 
         {/* Quick Action Buttons */}
         <div className="flex gap-2 flex-wrap">
-          <button
-            onClick={() => router.push("/inquiries/add")}
-            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 active:scale-95 transition-all shadow-sm"
-          >
-            <Plus className="w-4 h-4" /> New Inquiry
-          </button>
+          {!isViewOnly && (
+            <button
+              onClick={() => router.push("/inquiries/add")}
+              className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 active:scale-95 transition-all shadow-sm"
+            >
+              <Plus className="w-4 h-4" /> New Inquiry
+            </button>
+          )}
           <button
             onClick={() => router.push("/inquiries/follow-ups")}
             className="flex items-center gap-2 px-4 py-2.5 bg-purple-600 text-white rounded-xl text-sm font-semibold hover:bg-purple-700 active:scale-95 transition-all shadow-sm"
@@ -402,13 +406,15 @@ export default function InquiriesPage() {
 
                   {/* Action Buttons */}
                   <div className="flex items-center gap-2 flex-wrap border-t border-gray-100 pt-3">
-                    <button
-                      onClick={() => router.push(`/inquiries/${inquiry.id}/edit`)}
-                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
-                    >
-                      <Edit3 className="w-3.5 h-3.5" /> Edit
-                    </button>
-                    {inquiry.status !== "joined" && (
+                    {!isViewOnly && (
+                      <button
+                        onClick={() => router.push(`/inquiries/${inquiry.id}/edit`)}
+                        className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" /> Edit
+                      </button>
+                    )}
+                    {!isViewOnly && inquiry.status !== "joined" && (
                       <button
                         onClick={() => handleStatusChange(inquiry.id, "joined")}
                         className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-green-700 bg-green-100 rounded-lg hover:bg-green-200 transition"
@@ -416,7 +422,7 @@ export default function InquiriesPage() {
                         <UserCheck className="w-3.5 h-3.5" /> Mark Joined
                       </button>
                     )}
-                    {inquiry.status !== "contacted" && inquiry.status !== "joined" && (
+                    {!isViewOnly && inquiry.status !== "contacted" && inquiry.status !== "joined" && (
                       <button
                         onClick={() => handleStatusChange(inquiry.id, "contacted")}
                         className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-orange-700 bg-orange-100 rounded-lg hover:bg-orange-200 transition"

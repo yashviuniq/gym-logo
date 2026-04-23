@@ -124,6 +124,7 @@ export default function AddAnnouncementPage() {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
+                'x-user-id': String(JSON.parse(localStorage.getItem("gymUser") || "{}")?.id || ""),
               },
               body: JSON.stringify({
                 userIds: memberIds,

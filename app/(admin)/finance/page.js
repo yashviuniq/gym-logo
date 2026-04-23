@@ -238,7 +238,7 @@ function getLocalCollectorName() {
 
 export default function FinancePage() {
   const router = useRouter();
-  const { canViewFinance } = useUserRole();
+  const { canViewFinance, isViewOnly } = useUserRole();
   const { showSuccess, showError } = useToast();
   const [activeTab, setActiveTab] = useState("overview");
   const [dateFilter, setDateFilter] = useState("month");
@@ -1364,16 +1364,18 @@ Best regards,
                             Remind
                           </button>
                           
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              router.push(`/members/${member.id}/payment`);
-                            }}
-                            className="px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-medium rounded-lg active:scale-95 transition-transform flex items-center gap-1"
-                            style={{ minHeight: '32px' }}
-                          >
-                            Collect
-                          </button>
+                          {!isViewOnly && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/members/${member.id}/payment`);
+                              }}
+                              className="px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-medium rounded-lg active:scale-95 transition-transform flex items-center gap-1"
+                              style={{ minHeight: '32px' }}
+                            >
+                              Collect
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1487,13 +1489,15 @@ Thank you,
                           >
                             Remind
                           </button>
-                          <button
-                            onClick={() => router.push(`/members/${item.memberId}`)}
-                            className="px-3 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-xs font-medium rounded-lg active:scale-95 transition-transform flex items-center gap-1"
-                            style={{ minHeight: '32px' }}
-                          >
-                            Collect
-                          </button>
+                          {!isViewOnly && (
+                            <button
+                              onClick={() => router.push(`/members/${item.memberId}`)}
+                              className="px-3 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-xs font-medium rounded-lg active:scale-95 transition-transform flex items-center gap-1"
+                              style={{ minHeight: '32px' }}
+                            >
+                              Collect
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1643,6 +1647,7 @@ Thank you,
                   </div>
                 )}
 
+                {!isViewOnly && (
                 <div className="flex items-center gap-2">
                   {transactionEditMode ? (
                     <>
@@ -1672,6 +1677,7 @@ Thank you,
                     </button>
                   )}
                 </div>
+                )}
               </div>
             )}
           </div>
@@ -1684,7 +1690,7 @@ Thank you,
 
 // Expenses Section Component
 function ExpensesSection({ router, selectedGym }) {
-  const { canViewFinance } = useUserRole();
+  const { canViewFinance, isViewOnly } = useUserRole();
   const { showSuccess, showError } = useToast();
   const getCurrentMonthValue = () => {
     const now = new Date();
@@ -2011,14 +2017,16 @@ function ExpensesSection({ router, selectedGym }) {
                 </button>
               </>
             )}
-            <button
-              onClick={() => router.push("/finance/expenses/add")}
-              className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-xs font-medium active:scale-95 transition-transform flex items-center gap-2"
-              style={{ minHeight: '36px' }}
-            >
-              <Plus className="w-4 h-4" />
-              Add
-            </button>
+            {!isViewOnly && (
+              <button
+                onClick={() => router.push("/finance/expenses/add")}
+                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-xs font-medium active:scale-95 transition-transform flex items-center gap-2"
+                style={{ minHeight: '36px' }}
+              >
+                <Plus className="w-4 h-4" />
+                Add
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -2038,13 +2046,15 @@ function ExpensesSection({ router, selectedGym }) {
               <Receipt className="w-6 h-6 text-gray-400" />
             </div>
             <p className="text-gray-500 text-sm mb-4">No expenses recorded yet</p>
-            <button
-              onClick={() => router.push("/finance/expenses/add")}
-              className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-xs font-medium active:scale-95 transition-transform"
-              style={{ minHeight: '36px' }}
-            >
-              Add First Expense
-            </button>
+            {!isViewOnly && (
+              <button
+                onClick={() => router.push("/finance/expenses/add")}
+                className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-xs font-medium active:scale-95 transition-transform"
+                style={{ minHeight: '36px' }}
+              >
+                Add First Expense
+              </button>
+            )}
           </div>
         ) : (
           <div className="space-y-2">

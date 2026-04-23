@@ -125,7 +125,7 @@ const sortRenewalMembers = (memberList) => {
 
 export default function MembersPage() {
   const router = useRouter();
-  const { canViewFinance, isTrainer, user, loading: roleLoading } = useUserRole();
+  const { canViewFinance, isTrainer, isViewOnly, user, loading: roleLoading } = useUserRole();
 
   // Search & filter
   const [searchQuery, setSearchQuery] = useState("");
@@ -913,6 +913,10 @@ Best regards,
   const handleDeleteMember = async (e, member) => {
     e.stopPropagation();
 
+    if (isTrainer || isViewOnly) {
+      return;
+    }
+
     const confirmDelete = window.confirm(
       `Are you sure you want to delete ${member.name}? This action cannot be undone. All associated data including memberships, payments, and attendance records will be permanently deleted.`
     );
@@ -1431,7 +1435,7 @@ Best regards,
                         </button>
                       )}
 
-                      {!isTrainer && (
+                      {!isTrainer && !isViewOnly && (
                         <button
                           onClick={(e) => handleDeleteMember(e, member)}
                           title="Delete"

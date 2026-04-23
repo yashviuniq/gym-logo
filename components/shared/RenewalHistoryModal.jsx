@@ -45,7 +45,7 @@ const calculateExtendedTillDate = (startDate, durationDays) => {
     return endDate.toISOString().split("T")[0];
 };
 
-export default function RenewalHistoryModal({ member, renewalHistory, onClose, onPaymentModeUpdated }) {
+export default function RenewalHistoryModal({ member, renewalHistory, onClose, onPaymentModeUpdated, readOnly = false }) {
     const [paymentModeOverrides, setPaymentModeOverrides] = useState({});
     const [renewalOverrides, setRenewalOverrides] = useState({});
     const [deletedMembershipIds, setDeletedMembershipIds] = useState({});
@@ -146,6 +146,7 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
     };
 
     const updatePaymentMode = async (renewalIndex, paymentId, nextMode) => {
+        if (readOnly) return;
         if (!paymentId || !nextMode) return;
 
         const previousMode = historyItems[renewalIndex]?.paymentMode || "cash";
@@ -173,6 +174,7 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
     };
 
     const startEditingRenewal = (renewal) => {
+        if (readOnly) return;
         setEditingMembershipId(renewal.membershipId);
         setEditingValues({
             renewedAt: getDateInputValue(renewal.renewedAt),
@@ -191,6 +193,7 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
     };
 
     const updateRenewalDetails = async (renewal, action = "all") => {
+        if (readOnly) return;
         if (!renewal?.membershipId) return;
 
         const updateDates = action === "dates" || action === "all";
@@ -362,6 +365,7 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
     };
 
     const deleteRenewalRecord = async (renewal) => {
+        if (readOnly) return;
         if (!renewal?.membershipId) return;
 
         const confirmed = window.confirm(
@@ -473,14 +477,16 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
                                         <div className="text-right">
                                             <p className="font-bold text-gray-900">₹{renewal.price || renewal.planPrice}</p>
                                             <p className="text-xs text-gray-500">{renewal.duration} days</p>
-                                            <button
-                                                type="button"
-                                                onClick={() => deleteRenewalRecord(renewal)}
-                                                disabled={deletingMembershipId === renewal.membershipId}
-                                                className="mt-1 text-[11px] font-semibold text-red-600 hover:text-red-700 disabled:opacity-60"
-                                            >
-                                                {deletingMembershipId === renewal.membershipId ? "Deleting..." : "Delete"}
-                                            </button>
+                                            {!readOnly && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => deleteRenewalRecord(renewal)}
+                                                    disabled={deletingMembershipId === renewal.membershipId}
+                                                    className="mt-1 text-[11px] font-semibold text-red-600 hover:text-red-700 disabled:opacity-60"
+                                                >
+                                                    {deletingMembershipId === renewal.membershipId ? "Deleting..." : "Delete"}
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
 
@@ -533,13 +539,15 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
                                                     })}` : ""}
                                                 </p>
                                             </div>
-                                            <button
-                                                type="button"
-                                                onClick={() => startEditingRenewal(renewal)}
-                                                className="text-xs font-medium text-blue-600 hover:text-blue-700"
-                                            >
-                                                {editingMembershipId === renewal.membershipId ? "Editing" : "Tap to edit"}
-                                            </button>
+                                            {!readOnly && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => startEditingRenewal(renewal)}
+                                                    className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                                                >
+                                                    {editingMembershipId === renewal.membershipId ? "Editing" : "Tap to edit"}
+                                                </button>
+                                            )}
                                         </div>
 
                                         {editingMembershipId === renewal.membershipId && (
@@ -598,7 +606,7 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
                                                         : `Default ₹${renewal.planPrice || renewal.price}`}
                                                 </p>
                                             </div>
-                                            {editingMembershipId !== renewal.membershipId && (
+                                            {!readOnly && editingMembershipId !== renewal.membershipId && (
                                                 <button
                                                     type="button"
                                                     onClick={() => startEditingRenewal(renewal)}
@@ -677,14 +685,14 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
                                                         {renewal.paymentMode}
                                                     </p>
                                                 </div>
-                                                {renewal.paymentId && (
+                                                {renewal.paymentId && !readOnly && (
                                                     <span className="text-[11px] text-gray-400">
                                                         {savingPaymentId === renewal.paymentId ? "Updating..." : "Tap to change"}
                                                     </span>
                                                 )}
                                             </div>
 
-                                            {renewal.paymentId && (
+                                            {renewal.paymentId && !readOnly && (
                                                 <div className="grid grid-cols-4 gap-2">
                                                     {PAYMENT_MODE_OPTIONS.map((mode) => (
                                                         <button

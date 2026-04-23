@@ -6,6 +6,7 @@ import {
   resolveProfileContextById,
   unauthorized,
 } from "@/lib/server/tenantAuth";
+import { blockViewOnlyWrites } from "@/lib/server/viewOnlyGuard";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -47,6 +48,8 @@ export async function POST(request) {
     if (!currentUserId) {
       return unauthorized("Missing authenticated user");
     }
+    const writeBlocked = await blockViewOnlyWrites(request, supabaseAdmin, currentUserId);
+    if (writeBlocked) return writeBlocked;
 
     const collector = await resolveProfileContextById(supabaseAdmin, currentUserId);
     if (!collector) {

@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { sendNotificationToUsers } from '@/lib/notifications';
+import { createClient } from "@supabase/supabase-js";
+import { blockViewOnlyWrites } from "@/lib/server/viewOnlyGuard";
 
 /**
  * POST /api/notifications/send
@@ -8,6 +10,13 @@ import { sendNotificationToUsers } from '@/lib/notifications';
  */
 export async function POST(request) {
   try {
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    );
+    const writeBlocked = await blockViewOnlyWrites(request, supabaseAdmin);
+    if (writeBlocked) return writeBlocked;
+
     const body = await request.json();
     const { userIds, notification } = body;
 

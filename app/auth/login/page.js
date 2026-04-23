@@ -50,7 +50,7 @@ export default function LoginPage() {
           .from("profiles")
           .select("*")
           .eq(searchField, emailOrPhone)
-          .in("role", ["admin", "owner"])
+          .in("role", ["admin", "owner", "view_only"])
           .maybeSingle();
 
         if (profileError || !profile) {

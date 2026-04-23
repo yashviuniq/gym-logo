@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/layout/Header";
 import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/contexts/ToastContext";
+import { useUserRole } from "@/lib/hooks/useUserRole";
 import { 
   PlusCircle, 
   Edit2, 
@@ -55,6 +56,7 @@ function WorkoutPlansContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showSuccess, showError } = useToast();
+  const { isViewOnly } = useUserRole();
   const [workoutPlans, setWorkoutPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -151,6 +153,8 @@ function WorkoutPlansContent() {
   );
 
   const handleDelete = async (id) => {
+    if (isViewOnly) return;
+
     if (!window.confirm("Are you sure you want to delete this workout plan? This action cannot be undone.")) {
       return;
     }
@@ -274,14 +278,16 @@ function WorkoutPlansContent() {
           </div>
 
           {/* Add Plan Button */}
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2"
-            style={{ minHeight: '44px' }}
-          >
-            <Plus className="w-5 h-5" />
-            Create New Plan
-          </button>
+          {!isViewOnly && (
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2"
+              style={{ minHeight: '44px' }}
+            >
+              <Plus className="w-5 h-5" />
+              Create New Plan
+            </button>
+          )}
         </div>
 
         {/* Workout Plans List */}
@@ -390,30 +396,34 @@ function WorkoutPlansContent() {
 
                       {/* Action Buttons */}
                       <div className="flex space-x-2 overflow-x-auto mt-3 pt-3 border-t border-gray-100 pb-1 -mx-1 px-1 no-scrollbar">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingPlan(plan);
-                            setShowAddModal(true);
-                          }}
-                          className="flex-shrink-0 px-3 py-2 bg-blue-50 text-blue-700 text-xs font-medium rounded-lg active:bg-blue-100 transition-all flex items-center gap-2"
-                          style={{ minHeight: '36px' }}
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                          Edit
-                        </button>
-                        
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(plan.id);
-                          }}
-                          className="flex-shrink-0 px-3 py-2 bg-red-50 text-red-700 text-xs font-medium rounded-lg active:bg-red-100 transition-all flex items-center gap-2"
-                          style={{ minHeight: '36px' }}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          Delete
-                        </button>
+                        {!isViewOnly && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingPlan(plan);
+                              setShowAddModal(true);
+                            }}
+                            className="flex-shrink-0 px-3 py-2 bg-blue-50 text-blue-700 text-xs font-medium rounded-lg active:bg-blue-100 transition-all flex items-center gap-2"
+                            style={{ minHeight: '36px' }}
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                            Edit
+                          </button>
+                        )}
+
+                        {!isViewOnly && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(plan.id);
+                            }}
+                            className="flex-shrink-0 px-3 py-2 bg-red-50 text-red-700 text-xs font-medium rounded-lg active:bg-red-100 transition-all flex items-center gap-2"
+                            style={{ minHeight: '36px' }}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            Delete
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

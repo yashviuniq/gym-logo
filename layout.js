@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import BottomNav from "@/components/layout/BottomNav";
-import RouteProtection from "@/components/shared/RouteProtection";
+import RouteProtection from "@/components/shared/RouteProtectionOptimized";
 import { runStartupCleanup } from "@/lib/receiptCleanup";
 import { useAuthContext } from "@/contexts/AuthContext";
 

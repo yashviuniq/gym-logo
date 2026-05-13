@@ -1,11 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import PWASetup from "@/components/PWASetup";
-import { ToastProvider } from "@/contexts/ToastContext";
-import { NotificationProvider } from "@/contexts/NotificationContext";
-import NotificationManager from "@/components/shared/NotificationManager";
-import SessionRestoration from "@/components/shared/SessionRestoration";
-import NumberScrollPrevention from "@/components/shared/NumberScrollPrevention";
+import ClientProviders from "@/components/ClientProviders";
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -57,15 +52,9 @@ export default function RootLayout({ children }) {
 				suppressHydrationWarning
 				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
 			>
-				<ToastProvider>
-					<NotificationProvider>
-						<SessionRestoration />
-						<NumberScrollPrevention />
-						<PWASetup />
-						<NotificationManager />
-						{children}
-					</NotificationProvider>
-				</ToastProvider>
+				<ClientProviders>
+					{children}
+				</ClientProviders>
 			</body>
 		</html>
 	);

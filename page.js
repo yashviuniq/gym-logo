@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
@@ -35,74 +35,48 @@ const MessagingDashboard = dynamic(
   { ssr: false }
 );
 
-// ─── Data Processing ─────────────────────────────────────────
-// Works with BOTH old (all members array) and new (pre-computed stats) response formats
+// ─── Data Processing (unchanged) ─────────────────────────────
 
 function processDashboardResult(result) {
   if (!result) return null;
 
+  const members = result.members || [];
   const attendance = result.attendance || [];
   const payments = result.payments || [];
 
-  // ─── Stats: use pre-computed if available, else compute from members array
-  let statsObj;
-  if (result.stats) {
-    // NEW optimized SQL format — stats pre-computed server-side
-    statsObj = {
-      totalMembers: result.stats.total_members || 0,
-      activeMembers: result.stats.active_members || 0,
-      expiredMembers: result.stats.expired_members || 0,
-      todayAttendance: attendance.length,
-      totalRevenue: parseFloat(result.overall_revenue || 0),
-      pendingDues: parseFloat(result.stats.pending_dues || 0),
-    };
-  } else {
-    // OLD SQL format — compute from members array (backwards compat)
-    const members = result.members || [];
-    let activeMembers = 0;
-    let expiredMembers = 0;
-    let pendingDues = 0;
+  let activeMembers = 0;
+  let expiredMembers = 0;
+  let pendingDues = 0;
 
-    members.forEach((member) => {
-      const activeMembership =
-        member.memberships?.find((ms) => ms.status === "active") ||
-        member.memberships?.[0];
+  members.forEach((member) => {
+    const activeMembership =
+      member.memberships?.find((ms) => ms.status === "active") ||
+      member.memberships?.[0];
 
-      let memberStatus = "inactive";
-      if (activeMembership) {
-        const endDate = new Date(activeMembership.end_date);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        endDate.setHours(0, 0, 0, 0);
+    let memberStatus = "inactive";
+    if (activeMembership) {
+      const endDate = new Date(activeMembership.end_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      endDate.setHours(0, 0, 0, 0);
 
-        if (endDate >= today && activeMembership.status === "active") {
-          memberStatus = "active";
-        } else if (endDate < today || activeMembership.status === "expired") {
-          memberStatus = "expired";
-        }
+      if (endDate >= today && activeMembership.status === "active") {
+        memberStatus = "active";
+      } else if (endDate < today || activeMembership.status === "expired") {
+        memberStatus = "expired";
       }
-
-      if (memberStatus === "active") activeMembers++;
-      else if (memberStatus === "expired") expiredMembers++;
-      if (member.balance > 0) pendingDues += parseFloat(member.balance || 0);
-    });
-
-    let totalRevenue = parseFloat(result.overall_revenue || 0);
-    if (!totalRevenue) {
-      totalRevenue = payments.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
     }
 
-    statsObj = {
-      totalMembers: members.length,
-      activeMembers,
-      expiredMembers,
-      todayAttendance: attendance.length,
-      totalRevenue,
-      pendingDues,
-    };
+    if (memberStatus === "active") activeMembers++;
+    else if (memberStatus === "expired") expiredMembers++;
+    if (member.balance > 0) pendingDues += parseFloat(member.balance || 0);
+  });
+
+  let totalRevenue = parseFloat(result.overall_revenue || 0);
+  if (!totalRevenue) {
+    totalRevenue = payments.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
   }
 
-  // ─── Attendance formatting (same for both)
   const formattedAttendance = attendance.map((att) => ({
     id: att.id,
     name: att.member_name || "Unknown",
@@ -115,34 +89,17 @@ function processDashboardResult(result) {
     membershipStatus: att.membership_status || "ACTIVE",
   }));
 
-  // ─── Pending payments: use pre-computed if available
-  let allMembersDue;
-  if (result.pending_members) {
-    // NEW format
-    allMembersDue = result.pending_members.map((m) => ({
-      id: m.id,
-      name: m.full_name,
-      amount: m.balance,
+  const allMembersDue = members
+    .filter((m) => m.balance > 0)
+    .sort((a, b) => b.balance - a.balance)
+    .map((member) => ({
+      id: member.id,
+      name: member.full_name,
+      amount: member.balance,
       dueDate: "Overdue",
     }));
-  } else {
-    // OLD format
-    const members = result.members || [];
-    allMembersDue = members
-      .filter((m) => m.balance > 0)
-      .sort((a, b) => b.balance - a.balance)
-      .map((member) => ({
-        id: member.id,
-        name: member.full_name,
-        amount: member.balance,
-        dueDate: "Overdue",
-      }));
-  }
 
-  // ─── Activities
   let activities = [];
-
-  // Attendance activities
   activities = activities.concat(
     attendance.map((att) => ({
       id: `att_${att.id}`,
@@ -153,8 +110,7 @@ function processDashboardResult(result) {
     }))
   );
 
-  // Recent members activities
-  const recentMembers = result.recent_members || (result.members || [])
+  const recentMembers = members
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
     .slice(0, 10);
   activities = activities.concat(
@@ -167,7 +123,6 @@ function processDashboardResult(result) {
     }))
   );
 
-  // Payment activities
   const recentPayments = payments.slice(0, 10);
   activities = activities.concat(
     recentPayments.map((payment) => {
@@ -188,7 +143,14 @@ function processDashboardResult(result) {
   );
 
   return {
-    stats: statsObj,
+    stats: {
+      totalMembers: members.length,
+      activeMembers,
+      expiredMembers,
+      todayAttendance: attendance.length,
+      totalRevenue,
+      pendingDues,
+    },
     formattedAttendance,
     allMembersDue,
     activities,
@@ -198,19 +160,19 @@ function processDashboardResult(result) {
 // ─── Gym Resolution Hook ──────────────────────────────────────
 // Only runs when selectedGym is not set (first visit or owner with multiple gyms)
 function useGymResolution() {
-  const { user, selectedGym, setSelectedGym, isReady } = useAuthContext();
+  const { user, selectedGym, setSelectedGym } = useAuthContext();
   const [gyms, setGyms] = useState([]);
   const [loadingGyms, setLoadingGyms] = useState(!selectedGym);
+  const [resolved, setResolved] = useState(!!selectedGym);
 
   // Resolve gym on mount if not already set
-  useEffect(() => {
-    if (!isReady) return;
+  useState(() => {
     if (selectedGym || !user) {
+      setResolved(true);
       setLoadingGyms(false);
       return;
     }
 
-    let cancelled = false;
     const resolve = async () => {
       try {
         if (user.gym_id) {
@@ -219,7 +181,7 @@ function useGymResolution() {
             .select("id, name, address, timezone, created_at")
             .eq("id", user.gym_id)
             .single();
-          if (!cancelled && gymData) {
+          if (gymData) {
             setGyms([gymData]);
             setSelectedGym(gymData);
           }
@@ -229,7 +191,7 @@ function useGymResolution() {
             .select("gym_id, gyms (id, name, address, timezone, created_at)")
             .eq("profile_id", user.id)
             .single();
-          if (!cancelled && trainerData?.gyms) {
+          if (trainerData?.gyms) {
             setGyms([trainerData.gyms]);
             setSelectedGym(trainerData.gyms);
           }
@@ -238,24 +200,22 @@ function useGymResolution() {
             .from("gyms")
             .select("id, name, address, timezone, created_at")
             .eq("owner_id", user.id);
-          if (!cancelled) {
-            setGyms(gymsData || []);
-            if (gymsData?.length === 1) {
-              setSelectedGym(gymsData[0]);
-            }
+          setGyms(gymsData || []);
+          if (gymsData?.length === 1) {
+            setSelectedGym(gymsData[0]);
           }
         }
       } catch (err) {
         console.error("Gym resolution error:", err);
       }
-      if (!cancelled) setLoadingGyms(false);
+      setLoadingGyms(false);
+      setResolved(true);
     };
 
     resolve();
-    return () => { cancelled = true; };
-  }, [isReady, user, selectedGym, setSelectedGym]);
+  });
 
-  return { gyms, loadingGyms };
+  return { gyms, loadingGyms, resolved };
 }
 
 // ─── Main Dashboard ───────────────────────────────────────────

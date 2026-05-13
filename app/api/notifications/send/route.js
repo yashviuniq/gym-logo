@@ -1,26 +1,17 @@
 import { NextResponse } from 'next/server';
 import { sendNotificationToUsers } from '@/lib/notifications';
-import { createClient } from "@supabase/supabase-js";
+import { getSupabaseAdmin } from "@/lib/server/supabaseAdminClient";
 import { blockViewOnlyWrites } from "@/lib/server/viewOnlyGuard";
 
-/**
- * POST /api/notifications/send
- * Send push notifications to users
- * Body: { userIds: string[], notification: { title, body, type, data, url } }
- */
 export async function POST(request) {
   try {
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    );
+    const supabaseAdmin = getSupabaseAdmin();
     const writeBlocked = await blockViewOnlyWrites(request, supabaseAdmin);
     if (writeBlocked) return writeBlocked;
 
     const body = await request.json();
     const { userIds, notification } = body;
 
-    // Validate request
     if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
       return NextResponse.json(
         { error: 'userIds array is required' },
@@ -35,7 +26,6 @@ export async function POST(request) {
       );
     }
 
-    // Send notifications
     const result = await sendNotificationToUsers(userIds, notification);
 
     if (!result.success) {

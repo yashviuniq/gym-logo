@@ -13,7 +13,8 @@ import {
   Dumbbell,
   Apple,
   Bell,
-  ClipboardList
+  ClipboardList,
+  Trophy
 } from "lucide-react";
 import { usePermissions } from "@/lib/hooks/usePermissions";
 import { hasPermission, PERMISSIONS } from "@/lib/constants/permissions";
@@ -23,6 +24,7 @@ const allAdminNavItems = [
   { href: "/members", label: "Members", icon: <Users className="w-5 h-5" />, permission: PERMISSIONS.MEMBERS },
   { href: "/attendance", label: "Attendance", icon: <CalendarCheck className="w-5 h-5" />, permission: PERMISSIONS.ATTENDANCE },
   { href: "/announcements", label: "Alerts", icon: <Megaphone className="w-5 h-5" />, permission: PERMISSIONS.ANNOUNCEMENTS },
+  { href: "/admin/leaderboard", label: "Ranks", icon: <Trophy className="w-5 h-5" /> },
   { href: "/finance", label: "Finance", icon: <CreditCard className="w-5 h-5" />, permission: PERMISSIONS.FINANCE },
   { href: "/settings", label: "Settings", icon: <Settings className="w-5 h-5" />, permission: PERMISSIONS.SETTINGS },
 ];
@@ -39,6 +41,7 @@ const customerNavItems = [
   { href: "/user/dashboard", label: "Home", icon: <Home className="w-5 h-5" /> },
   { href: "/workout", label: "Workout", icon: <Dumbbell className="w-5 h-5" /> },
   { href: "/diet", label: "Diet", icon: <Apple className="w-5 h-5" /> },
+  { href: "/leaderboard", label: "Ranks", icon: <Trophy className="w-5 h-5" /> },
   { href: "/user/announcements", label: "Alerts", icon: <Bell className="w-5 h-5" /> },
   { href: "/profile", label: "Profile", icon: <User className="w-5 h-5" /> },
 ];

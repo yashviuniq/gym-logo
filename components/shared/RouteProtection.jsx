@@ -43,6 +43,15 @@ export default function RouteProtection({ children }) {
     if (!isReady) return;
 
     if (!role) {
+      // Before redirecting, do a direct localStorage check.
+      // After login, AuthContext may not have re-synced yet
+      // (same-tab writes don't trigger storage events).
+      const raw = localStorage.getItem("gymUser");
+      if (raw) {
+        // localStorage has user data but AuthContext hasn't caught up.
+        // Don't redirect — AuthContext will re-sync on next render cycle.
+        return;
+      }
       router.replace("/auth/login");
       return;
     }

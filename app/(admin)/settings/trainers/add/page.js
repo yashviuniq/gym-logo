@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuthContext } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
@@ -32,7 +33,7 @@ import {
 export default function AddTrainerPage() {
   const router = useRouter();
   const { canCreateTrainer, loading: roleLoading } = useUserRole();
-  const [selectedGym, setSelectedGym] = useState(null);
+  const { selectedGym } = useAuthContext();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -54,20 +55,12 @@ export default function AddTrainerPage() {
 
   const [errors, setErrors] = useState({});
 
+  // Redirect if no gym selected
   useEffect(() => {
-    // Redirect trainers who try to access this page directly
-    if (!roleLoading && !canCreateTrainer) {
-      router.push("/settings/trainers");
-      return;
-    }
-    
-    const storedGym = localStorage.getItem("selectedGym");
-    if (storedGym) {
-      setSelectedGym(JSON.parse(storedGym));
-    } else {
+    if (!selectedGym) {
       router.push("/settings/trainers");
     }
-  }, [router, canCreateTrainer, roleLoading]);
+  }, [selectedGym, router]);
 
   const validateForm = () => {
     const newErrors = {};

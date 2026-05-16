@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
 import { supabase } from "@/lib/supabaseClient";
@@ -50,7 +51,7 @@ export default function TrainersPage() {
   const [trainers, setTrainers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedGym, setSelectedGym] = useState(null);
+  const { selectedGym } = useAuthContext();
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [payrollMonth, setPayrollMonth] = useState(new Date().toISOString().slice(0, 7));
@@ -63,14 +64,7 @@ export default function TrainersPage() {
     totalAssignments: 0
   });
 
-  useEffect(() => {
-    const storedGym = localStorage.getItem("selectedGym");
-    if (storedGym) {
-      setSelectedGym(JSON.parse(storedGym));
-    } else {
-      setLoading(false);
-    }
-  }, []);
+  // gym now comes from AuthContext (no localStorage read needed)
 
   const fetchTrainers = useCallback(async () => {
     if (!selectedGym?.id) return;

@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuthContext } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
@@ -46,7 +47,7 @@ export default function AddMemberPage() {
   const { showSuccess, showError } = useToast();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
-  const [selectedGym, setSelectedGym] = useState(null);
+  const { selectedGym } = useAuthContext();
   const [membershipPlans, setMembershipPlans] = useState([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
   
@@ -108,16 +109,13 @@ export default function AddMemberPage() {
     profileImage: null,
   });
 
+  // gym now comes from AuthContext
   useEffect(() => {
-    const storedGym = localStorage.getItem("selectedGym");
-    if (storedGym) {
-      const gym = JSON.parse(storedGym);
-      setSelectedGym(gym);
-      fetchMembershipPlans(gym.id);
-    } else {
-      setLoadingPlans(false);
+    if (selectedGym?.id) {
+      fetchMembershipPlans(selectedGym.id);
     }
-  }, []);
+  }, [selectedGym?.id]);
+
 
   const fetchMembershipPlans = async (gymId) => {
     setLoadingPlans(true);

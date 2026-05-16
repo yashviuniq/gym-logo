@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuthContext } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
@@ -12,7 +13,7 @@ export default function AddPaymentPage() {
   const { user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [member, setMember] = useState(null);
-  const [selectedGym, setSelectedGym] = useState(null);
+  const { selectedGym } = useAuthContext();
   const [formData, setFormData] = useState({
     amount: "",
     type: "membership",
@@ -21,14 +22,13 @@ export default function AddPaymentPage() {
     date: new Date().toISOString().split("T")[0],
   });
 
+  // gym now comes from AuthContext
   useEffect(() => {
-    const storedGym = localStorage.getItem("selectedGym");
-    if (storedGym) {
-      const gym = JSON.parse(storedGym);
-      setSelectedGym(gym);
+    if (selectedGym?.id) {
       fetchMemberData(params.id);
     }
-  }, [params.id]);
+  }, [selectedGym?.id]);
+
 
   const fetchMemberData = async (memberId) => {
     try {

@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
+import { usePathname } from "next/navigation";
 import { OWNER_PERMISSIONS } from "@/lib/constants/permissions";
 
 const AuthContext = createContext(null);
@@ -73,6 +74,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => readUserFromStorage());
   const [selectedGym, setSelectedGymState] = useState(() => readGymFromStorage());
   const [isReady, setIsReady] = useState(() => typeof window !== "undefined");
+  const pathname = usePathname();
 
   // On mount, mark ready (covers SSR hydration)
   useEffect(() => {
@@ -85,7 +87,26 @@ export function AuthProvider({ children }) {
     }
   }, [isReady]);
 
-  // Listen for storage changes (other tabs, SessionRestoration updates)
+  // Re-sync from localStorage on EVERY route change.
+  // This catches same-tab writes (login page → dashboard).
+  // The `storage` event only fires for OTHER tabs, so without
+  // this, after login the AuthContext still has user=null.
+  useEffect(() => {
+    const u = readUserFromStorage();
+    const g = readGymFromStorage();
+    
+    // Only update if actually different to avoid unnecessary re-renders
+    setUser((prev) => {
+      if (prev?.id === u?.id && prev?.role === u?.role) return prev;
+      return u;
+    });
+    setSelectedGymState((prev) => {
+      if (prev?.id === g?.id) return prev;
+      return g;
+    });
+  }, [pathname]);
+
+  // Listen for storage changes (other tabs)
   useEffect(() => {
     const onStorage = (e) => {
       if (e.key === "gymUser") {

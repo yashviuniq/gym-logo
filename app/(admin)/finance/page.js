@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuthContext } from "@/contexts/AuthContext";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
@@ -202,22 +203,7 @@ function mapExpenseRecord(expense) {
   };
 }
 
-function getStoredGym() {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  const storedGym = localStorage.getItem("selectedGym");
-  if (!storedGym) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(storedGym);
-  } catch {
-    return null;
-  }
-}
+// getStoredGym removed — gym comes from AuthContext
 
 function getLocalCollectorName() {
   if (typeof window === "undefined") return null;
@@ -244,8 +230,8 @@ export default function FinancePage() {
   const [dateFilter, setDateFilter] = useState("month");
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
-  const [selectedGym] = useState(() => getStoredGym());
-  const [loading, setLoading] = useState(() => Boolean(getStoredGym()));
+  const { selectedGym, user } = useAuthContext();
+  const [loading, setLoading] = useState(() => Boolean(selectedGym));
   const [financialData, setFinancialData] = useState({
     todayCollection: 0,
     monthlyRevenue: 0,

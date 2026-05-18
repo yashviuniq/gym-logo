@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuthContext } from "@/contexts/AuthContext";
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Header from "@/components/layout/Header";
@@ -12,7 +13,7 @@ function AttendanceHistoryContent() {
   const [filterTime, setFilterTime] = useState("all");
   const [attendanceData, setAttendanceData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedGym, setSelectedGym] = useState(null);
+  const { selectedGym } = useAuthContext();
   
   // Format the date for display
   const displayDate = dateParam 
@@ -24,13 +25,8 @@ function AttendanceHistoryContent() {
     : "No Date";
 
   // Get gym from localStorage
-  useEffect(() => {
-    const storedGym = localStorage.getItem("selectedGym");
-    if (storedGym) {
-      const gym = JSON.parse(storedGym);
-      setSelectedGym(gym);
-    }
-  }, []);
+  // gym now comes from AuthContext
+
 
   // Fetch attendance data for the specific date
   useEffect(() => {

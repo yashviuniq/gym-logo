@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import dynamic from "next/dynamic";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
-import RenewMembershipModal from "@/components/shared/RenewMembershipModal";
-import ShareReceiptModal from "@/components/shared/ShareReceiptModal";
+const RenewMembershipModal = dynamic(() => import("@/components/shared/RenewMembershipModal"), { ssr: false });
+const ShareReceiptModal = dynamic(() => import("@/components/shared/ShareReceiptModal"), { ssr: false });
 import { MembersPageSkeleton } from "@/components/shared/Skeleton";
 import { useUserRole } from "@/lib/hooks/useUserRole";
 import {
@@ -125,7 +127,8 @@ const sortRenewalMembers = (memberList) => {
 
 export default function MembersPage() {
   const router = useRouter();
-  const { canViewFinance, isTrainer, isViewOnly, user, loading: roleLoading } = useUserRole();
+  const { canViewFinance, isTrainer, isViewOnly, user, isReady, selectedGym: authGym } = useAuthContext();
+  const roleLoading = !isReady;
 
   // Search & filter
   const [searchQuery, setSearchQuery] = useState("");
@@ -142,7 +145,7 @@ export default function MembersPage() {
   const [totalCount, setTotalCount] = useState(0);
 
   // Data
-  const [selectedGym, setSelectedGym] = useState(null);
+  const selectedGym = authGym;
   const [members, setMembers] = useState([]);
   const [stats, setStats] = useState({ total: 0, active: 0, expired: 0, dues: 0, renewal: 0 });
   const [myMembersCount, setMyMembersCount] = useState(0);
@@ -158,15 +161,7 @@ export default function MembersPage() {
   // Refresh trigger for manual refreshes (delete, renew, etc.)
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // ─── Get gym from localStorage ───────────────────────────────
-  useEffect(() => {
-    const storedGym = localStorage.getItem("selectedGym");
-    if (storedGym) {
-      setSelectedGym(JSON.parse(storedGym));
-    } else {
-      setLoading(false);
-    }
-  }, []);
+  // gym now comes from AuthContext
 
   // ─── Debounce search input (300ms) ──────────────────────────
   useEffect(() => {

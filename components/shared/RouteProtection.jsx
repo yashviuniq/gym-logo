@@ -2,35 +2,32 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { usePermissions } from "@/lib/hooks/usePermissions";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { hasRouteAccess } from "@/lib/constants/permissions";
 
 /**
- * Route protection component - blocks unauthorized access
+ * Optimized route protection — uses shared AuthContext
+ * instead of reading IndexedDB separately.
+ * Renders children immediately once auth is ready.
  */
 export default function RouteProtection({ children }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { permissions, loading, userRole } = usePermissions();
+  const { user, role, permissions, isReady } = useAuthContext();
   const [authorized, setAuthorized] = useState(false);
 
-  // Handle browser back/forward navigation and bfcache restoration after logout
+  // Handle browser back/forward navigation and bfcache
   useEffect(() => {
     const checkAuthOnPageShow = (e) => {
-      // persisted = true means page was restored from bfcache (back button)
       if (e.persisted) {
-        const user = localStorage.getItem("gymUser");
-        if (!user) {
-          window.location.replace("/auth/login");
-        }
+        const u = localStorage.getItem("gymUser");
+        if (!u) window.location.replace("/auth/login");
       }
     };
 
     const checkAuthOnPopState = () => {
-      const user = localStorage.getItem("gymUser");
-      if (!user) {
-        window.location.replace("/auth/login");
-      }
+      const u = localStorage.getItem("gymUser");
+      if (!u) window.location.replace("/auth/login");
     };
 
     window.addEventListener("pageshow", checkAuthOnPageShow);
@@ -43,28 +40,33 @@ export default function RouteProtection({ children }) {
   }, []);
 
   useEffect(() => {
-    if (loading) return;
+    if (!isReady) return;
 
-    // No user logged in
-    if (!userRole) {
+    if (!role) {
+      // Before redirecting, do a direct localStorage check.
+      // After login, AuthContext may not have re-synced yet
+      // (same-tab writes don't trigger storage events).
+      const raw = localStorage.getItem("gymUser");
+      if (raw) {
+        // localStorage has user data but AuthContext hasn't caught up.
+        // Don't redirect — AuthContext will re-sync on next render cycle.
+        return;
+      }
       router.replace("/auth/login");
       return;
     }
 
-    // Check route access
     const hasAccess = hasRouteAccess(permissions, pathname);
 
     if (!hasAccess) {
-      // Redirect to dashboard if no permission
       router.replace("/admin/dashboard");
       return;
     }
 
     setAuthorized(true);
-  }, [permissions, loading, userRole, pathname, router]);
+  }, [permissions, isReady, role, pathname, router]);
 
-  // Loading state
-  if (loading || !authorized) {
+  if (!isReady || !authorized) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">

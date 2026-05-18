@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuthContext } from "@/contexts/AuthContext";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/layout/Header";
@@ -40,7 +41,7 @@ export default function TrainerAttendanceQuickPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { canCreateTrainer, loading: roleLoading } = useUserRole();
-  const [selectedGym, setSelectedGym] = useState(null);
+  const { selectedGym } = useAuthContext();
   const [loading, setLoading] = useState(true);
   const [trainers, setTrainers] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -52,19 +53,12 @@ export default function TrainerAttendanceQuickPage() {
   const [attendanceData, setAttendanceData] = useState({ month: null, summary: null, attendance_days: [], pt_sessions: [] });
   const [attendanceDrafts, setAttendanceDrafts] = useState({});
 
+  // Set loading false if no gym
   useEffect(() => {
-    if (!roleLoading && !canCreateTrainer) {
-      router.push("/admin/dashboard");
-      return;
-    }
-
-    const storedGym = localStorage.getItem("selectedGym");
-    if (storedGym) {
-      setSelectedGym(JSON.parse(storedGym));
-    } else if (!roleLoading) {
+    if (!selectedGym && !roleLoading) {
       setLoading(false);
     }
-  }, [canCreateTrainer, roleLoading, router]);
+  }, [selectedGym, roleLoading]);
 
   const fetchTrainers = useCallback(async () => {
     if (!selectedGym?.id) return;

@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuthContext } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Header from "@/components/layout/Header";
@@ -10,7 +11,7 @@ export default function AnalyticsPage() {
   const [dateRange, setDateRange] = useState("month");
   const [activeSection, setActiveSection] = useState("overview");
   const [loading, setLoading] = useState(true);
-  const [selectedGym, setSelectedGym] = useState(null);
+  const { selectedGym } = useAuthContext();
   
   const [stats, setStats] = useState({
     totalMembers: 0,
@@ -25,16 +26,15 @@ export default function AnalyticsPage() {
   const [planPopularity, setPlanPopularity] = useState([]);
   const [revenueData, setRevenueData] = useState([]);
 
+  // Fetch analytics when gym is available or dateRange changes
   useEffect(() => {
-    const storedGym = localStorage.getItem("selectedGym");
-    if (storedGym) {
-      const gym = JSON.parse(storedGym);
-      setSelectedGym(gym);
-      fetchAnalyticsData(gym.id);
+    if (selectedGym?.id) {
+      fetchAnalyticsData(selectedGym.id);
     } else {
       setLoading(false);
     }
-  }, [dateRange]);
+  }, [selectedGym?.id, dateRange]);
+
 
   const fetchAnalyticsData = async (gymId) => {
     setLoading(true);

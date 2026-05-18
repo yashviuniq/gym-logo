@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { getSupabaseAdmin } from "@/lib/server/supabaseAdminClient";
 import {
   forbidden,
   getRequestUserId,
@@ -8,10 +8,7 @@ import {
 } from "@/lib/server/tenantAuth";
 import { blockViewOnlyWrites } from "@/lib/server/viewOnlyGuard";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
+const supabaseAdmin = getSupabaseAdmin();
 
 function resolveMembershipTotalAmount(membershipRow) {
   const totalAmount = Number(membershipRow?.total_amount ?? 0);

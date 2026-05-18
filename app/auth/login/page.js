@@ -50,7 +50,7 @@ export default function LoginPage() {
           .from("profiles")
           .select("*")
           .eq(searchField, emailOrPhone)
-          .in("role", ["admin", "owner", "view_only"])
+          .in("role", ["superadmin", "admin", "owner", "view_only"])
           .maybeSingle();
 
         if (profileError || !profile) {
@@ -62,6 +62,13 @@ export default function LoginPage() {
         // Verify password
         if (profile.password !== password) {
           setError("Invalid email/phone or password");
+          setLoading(false);
+          return;
+        }
+
+        // Check if account is deactivated by superadmin
+        if (profile.is_active === false) {
+          setError("Your account has been deactivated. Contact your super admin.");
           setLoading(false);
           return;
         }
@@ -147,17 +154,14 @@ export default function LoginPage() {
               email,
               phone,
               gym_id,
-              profile_image,
-              gyms (
-                plan_type
-              )
+              profile_image
             )
           `)
           .eq("login_type", loginType)
           .eq("login_value", emailOrPhone)
           .maybeSingle();
 
-        if (credError || !credentials || !credentials.members) {
+        if (credError || !credentials) {
           setError("Invalid email/phone or password");
           setLoading(false);
           return;
@@ -169,7 +173,6 @@ export default function LoginPage() {
           setLoading(false);
           return;
         }
-
 
         // Store member info
         const member = credentials.members;

@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuthContext } from "@/contexts/AuthContext";
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
@@ -29,7 +30,7 @@ export default function AttendancePage() {
   const [activeTab, setActiveTab] = useState("today");
   const [showMarkModal, setShowMarkModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedGym, setSelectedGym] = useState(null);
+  const { selectedGym } = useAuthContext();
   const [historyData, setHistoryData] = useState([]);
   const [searchModalQuery, setSearchModalQuery] = useState("");
   const [rawAttendance, setRawAttendance] = useState([]);
@@ -37,16 +38,15 @@ export default function AttendancePage() {
   const [loading, setLoading] = useState(true);
 
   // Get gym from localStorage
+  // Fetch data when gym is available
   useEffect(() => {
-    const storedGym = localStorage.getItem("selectedGym");
-    if (storedGym) {
-      const gym = JSON.parse(storedGym);
-      setSelectedGym(gym);
-      fetchHistoryData(gym.id);
+    if (selectedGym?.id) {
+      fetchHistoryData(selectedGym.id);
     } else {
       setLoading(false);
     }
-  }, []);
+  }, [selectedGym?.id]);
+
 
   // Fetch attendance data directly from Supabase
   const fetchAttendance = async (gymId, date) => {

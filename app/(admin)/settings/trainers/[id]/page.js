@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, use } from "react";
+import dynamic from "next/dynamic";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/layout/Header";
 import AttendanceTimePicker from "@/components/shared/AttendanceTimePicker";
@@ -103,7 +105,7 @@ export default function TrainerDetailsPage({ params }) {
   const [assignedMembers, setAssignedMembers] = useState([]);
   const [activityLog, setActivityLog] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedGym, setSelectedGym] = useState(null);
+  const { selectedGym } = useAuthContext();
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "members");
   const [unassignMember, setUnassignMember] = useState(null);
   const [unassigning, setUnassigning] = useState(false);
@@ -127,12 +129,8 @@ export default function TrainerDetailsPage({ params }) {
   const [editingAssignmentStartDate, setEditingAssignmentStartDate] = useState("");
   const [assignmentUpdating, setAssignmentUpdating] = useState(false);
 
-  useEffect(() => {
-    const storedGym = localStorage.getItem("selectedGym");
-    if (storedGym) {
-      setSelectedGym(JSON.parse(storedGym));
-    }
-  }, []);
+  // gym now comes from AuthContext
+
 
   useEffect(() => {
     if (!canCreateTrainer && searchParams.get("tab") === "attendance") {

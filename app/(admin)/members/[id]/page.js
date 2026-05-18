@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import MemberPointsSection from "@/components/shared/MemberPointsSection";
 import Header from "@/components/layout/Header";
 import RenewMembershipModal from "@/components/shared/RenewMembershipModal";
 import RenewalHistoryModal from "@/components/shared/RenewalHistoryModal";
@@ -45,7 +46,8 @@ import {
   Edit2,
   Trash2 as TrashIcon,
   Eye as EyeIcon,
-  Package
+  Package,
+  Star,
 } from "lucide-react";
 import { useToast } from "@/contexts/ToastContext";
 import { useUserRole } from "@/lib/hooks/useUserRole";
@@ -53,7 +55,7 @@ import { useUserRole } from "@/lib/hooks/useUserRole";
 export default function MemberDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const { isTrainer, canWrite, isViewOnly } = useUserRole();
+  const { isTrainer, canWrite, isViewOnly, user } = useUserRole();
   const [activeTab, setActiveTab] = useState("overview");
   const [showRenewModal, setShowRenewModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
@@ -251,6 +253,7 @@ export default function MemberDetailPage() {
           ? new Date(memberData.join_date + 'T00:00:00').toLocaleDateString("en-IN")
           : new Date(memberData.created_at).toLocaleDateString("en-IN"),
         createdByName: memberData.created_by_name || null,
+        points: memberData.points || 0,
         plan: latestMembership?.membership_plans?.name || "No Plan",
         planPrice: latestMembershipTotalAmount,
         status: memberStatus,
@@ -1030,18 +1033,16 @@ export default function MemberDetailPage() {
         )}
 
         {/* Quick Action Buttons */}
-        <div className={`grid gap-3 ${selectedGym?.plan_type !== 'basic' ? 'grid-cols-4' : 'grid-cols-3'}`}>
-          {selectedGym?.plan_type !== 'basic' && (
-            <button
-              onClick={() => router.push(`/members/${member.id}/credentials`)}
-              className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm flex flex-col items-center gap-1 hover:shadow-md transition-all duration-200 active:scale-95"
-            >
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg flex items-center justify-center">
-                <Key className="w-5 h-5 text-blue-600" />
-              </div>
-              <span className="text-xs font-medium text-gray-600">Credentials</span>
-            </button>
-          )}
+        <div className="grid grid-cols-5 gap-2">
+          <button
+            onClick={() => router.push(`/members/${member.id}/credentials`)}
+            className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm flex flex-col items-center gap-1 hover:shadow-md transition-all duration-200 active:scale-95"
+          >
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg flex items-center justify-center">
+              <Key className="w-5 h-5 text-blue-600" />
+            </div>
+            <span className="text-xs font-medium text-gray-600">Credentials</span>
+          </button>
           
           <a
             href={`tel:${member.phone}`}
@@ -1073,6 +1074,30 @@ export default function MemberDetailPage() {
               <CreditCard className="w-5 h-5 text-amber-600" />
             </div>
             <span className="text-xs font-medium text-gray-600">Payment</span>
+          </button>
+
+          <button
+            onClick={() => {
+              const el = document.getElementById("points-section");
+
+            if (el) {
+              const yOffset = -80; // kitna upar chahiye
+              const y =
+                el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+
+              window.scrollTo({
+                top: y,
+                behavior: "smooth",
+              });
+            }
+          }}
+      
+            className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm flex flex-col items-center gap-1 hover:shadow-md transition-all duration-200 active:scale-95"
+          >
+            <div className="w-10 h-10 bg-gradient-to-br from-orange-50 to-amber-100 rounded-lg flex items-center justify-center">
+              <Star className="w-5 h-5 text-amber-500" />
+            </div>
+            <span className="text-xs font-medium text-gray-600">Points</span>
           </button>
         </div>
 
@@ -1300,6 +1325,18 @@ export default function MemberDetailPage() {
                 </div>
               )}
             </div>
+
+            {/* Points Section */}
+            <div id="points-section" className="pt-3 border-t border-gray-100">
+              <MemberPointsSection
+                memberId={member.id}
+                gymId={member.gymId}
+                userId={user?.id}
+                initialPoints={member.points}
+                canEdit={canWrite}
+              />
+            </div>
+
             <div className="pt-3 border-t border-gray-100">
               <h4 className="font-semibold text-gray-900 mb-3">Recent Activity</h4>
               <div className="space-y-2">

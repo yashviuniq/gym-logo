@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuthContext } from "@/contexts/AuthContext";
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
@@ -48,7 +49,7 @@ export default function EditTrainerPage({ params }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [selectedGym, setSelectedGym] = useState(null);
+  const { selectedGym } = useAuthContext();
   const [error, setError] = useState(null);
   
   const [formData, setFormData] = useState({
@@ -64,12 +65,8 @@ export default function EditTrainerPage({ params }) {
     isActive: true
   });
 
-  useEffect(() => {
-    const storedGym = localStorage.getItem("selectedGym");
-    if (storedGym) {
-      setSelectedGym(JSON.parse(storedGym));
-    }
-  }, []);
+  // gym now comes from AuthContext
+
 
   useEffect(() => {
     if (id && selectedGym?.id) {

@@ -4,11 +4,9 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
 import { supabase } from "@/lib/supabaseClient";
-import { useGymLogo } from "@/lib/hooks/useGymLogo";
 
 export default function SchedulePage() {
   const router = useRouter();
-  const gymLogo = useGymLogo();
   const [loading, setLoading] = useState(true);
   const [selectedWeek, setSelectedWeek] = useState(0);
   const [gymTimings, setGymTimings] = useState(null);
@@ -169,7 +167,7 @@ export default function SchedulePage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 pb-24">
-        <Header title="Schedule" showBack={false} gymLogo={gymLogo} />
+        <Header title="Schedule" showBack={false} />
         <div className="flex items-center justify-center h-96">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
         </div>

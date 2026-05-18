@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuthContext } from "@/contexts/AuthContext";
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
@@ -58,7 +59,7 @@ export default function AssignMembersPage({ params }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [selectedGym, setSelectedGym] = useState(null);
+  const { selectedGym } = useAuthContext();
   const [success, setSuccess] = useState(false);
 
   // Trainer schedule & plans
@@ -82,10 +83,8 @@ export default function AssignMembersPage({ params }) {
   // Track members marked for unassignment
   const [unassignSet, setUnassignSet] = useState(new Set());
 
-  useEffect(() => {
-    const storedGym = localStorage.getItem("selectedGym");
-    if (storedGym) setSelectedGym(JSON.parse(storedGym));
-  }, []);
+  // gym now comes from AuthContext
+
 
   useEffect(() => {
     if (id && selectedGym?.id) fetchData();

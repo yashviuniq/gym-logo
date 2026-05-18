@@ -442,7 +442,10 @@ export default function AddMemberPage() {
       const statusMessage = isStartDateInPast(formData.startDate) 
         ? ` (${calculateRemainingDays(formData.startDate, durationDays)} days remaining)` 
         : '';
-      showSuccess(`Member added successfully!${statusMessage} Login: ${formData.phone} | Password: ${defaultPassword}`);
+      const loginInfoMessage = selectedGym?.plan === "Basic"
+        ? ""
+        : ` Login: ${formData.phone} | Password: ${defaultPassword}`;
+      showSuccess(`Member added successfully!${statusMessage} ${loginInfoMessage}`);
       
       if (addAnother) {
         setFormData({

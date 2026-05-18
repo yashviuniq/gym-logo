@@ -16,6 +16,16 @@ export const POST = withAuth(async (request, { user, gymId, supabase, body }) =>
     return NextResponse.json({ error: "Forbidden: gym access denied" }, { status: 403 });
   }
 
+  const { data: gymData, error: gymError } = await supabase
+    .from("gyms")
+    .select("plan")
+    .eq("id", gymId)
+    .single();
+
+  if (gymError) {
+    return NextResponse.json({ error: "Failed to fetch gym details" }, { status: 500 });
+  }
+
   const safeParams = {
     ...params,
     p_created_by: user.id,
@@ -23,6 +33,11 @@ export const POST = withAuth(async (request, { user, gymId, supabase, body }) =>
     p_collected_by: user.id,
     p_collected_by_name: user.name,
   };
+
+  if (gymData.plan === "Basic") {
+    safeParams.p_login_value = null;
+    safeParams.p_default_password = null;
+  }
 
   const { data, error } = await supabase.rpc("add_member_with_membership", safeParams);
 

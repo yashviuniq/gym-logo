@@ -31,6 +31,7 @@ import {
 export default function MemberCredentialsPage() {
     const router = useRouter();
     const params = useParams();
+    const { selectedGym, isReady } = useAuthContext();
     const { showSuccess, showError } = useToast();
     const [showPassword, setShowPassword] = useState(false);
     const [copied, setCopied] = useState({ field: null, timestamp: null });
@@ -39,8 +40,15 @@ export default function MemberCredentialsPage() {
     const [activeTab, setActiveTab] = useState("credentials");
 
     useEffect(() => {
+        if (!isReady || !selectedGym) return;
+        
+        if (selectedGym.plan === "Basic" || selectedGym.plan_type === "Basic") {
+            showError("Credentials setup is not available on the Basic plan.");
+            router.push(`/members/${params.id}`);
+            return;
+        }
         fetchMemberCredentials();
-    }, [params.id]);
+    }, [params.id, selectedGym, isReady]);
 
     const fetchMemberCredentials = async () => {
         setLoading(true);

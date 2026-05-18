@@ -6,6 +6,8 @@ import Header from "@/components/layout/Header";
 import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/contexts/ToastContext";
 import { useUserRole } from "@/lib/hooks/useUserRole";
+import { Plus, X, Building } from "lucide-react";
+import { compressMemberImage, fileToDataUrl, validateMemberImage } from "@/lib/utils/memberImageUpload";
 
 export default function GymSettingsPage() {
   const router = useRouter();
@@ -20,6 +22,8 @@ export default function GymSettingsPage() {
     phone: "",
     email: "",
     website: "",
+    logoUrl: "",
+    newLogoBase64: null,
     weekdayMorningStart: "06:00",
     weekdayMorningEnd: "12:00",
     weekdayEveningStart: "16:00",
@@ -86,6 +90,8 @@ export default function GymSettingsPage() {
           phone: gymData.phone || "",
           email: gymData.email || "",
           website: gymData.website || "",
+          logoUrl: gymData.logo_url || "",
+          newLogoBase64: null,
           weekdayMorningStart: gymData.weekday_morning_start || "06:00",
           weekdayMorningEnd: gymData.weekday_morning_end || "12:00",
           weekdayEveningStart: gymData.weekday_evening_start || "16:00",
@@ -164,12 +170,41 @@ export default function GymSettingsPage() {
       const cleanPhone = formData.phone ? formData.phone.replace(/\D/g, '') : null;
       console.log("[GymSettings] cleanPhone:", cleanPhone);
 
+      let finalLogoUrl = formData.logoUrl;
+      
+      if (formData.newLogoBase64) {
+        try {
+          const response = await fetch(formData.newLogoBase64);
+          const blob = await response.blob();
+          const fileExt = blob.type.split('/')[1] || 'png';
+          const fileName = `gym-logo-${gymId}-${Date.now()}.${fileExt}`;
+          const filePath = `gyms/${fileName}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from("member-images")
+            .upload(filePath, blob, { cacheControl: "3600", upsert: true });
+
+          if (uploadError) {
+            console.error("Logo upload error:", uploadError);
+            showError("Failed to upload gym logo");
+          } else {
+            const { data: urlData } = supabase.storage
+              .from("member-images")
+              .getPublicUrl(filePath);
+            finalLogoUrl = urlData.publicUrl;
+          }
+        } catch (imgError) {
+          console.error("Error processing logo image:", imgError);
+        }
+      }
+
       const updatePayload = {
         name: formData.name,
         address: formData.address,
         phone: cleanPhone || null,
         email: formData.email?.trim() || null,
         website: formData.website?.trim() || null,
+        logo_url: finalLogoUrl || null,
         weekday_morning_start: formData.weekdayMorningStart,
         weekday_morning_end: formData.weekdayMorningEnd,
         weekday_evening_start: formData.weekdayEveningStart,
@@ -201,6 +236,7 @@ export default function GymSettingsPage() {
       if (storedGym) {
         const gym = JSON.parse(storedGym);
         gym.name = formData.name;
+        gym.logo_url = finalLogoUrl;
         localStorage.setItem("selectedGym", JSON.stringify(gym));
         console.log("[GymSettings] localStorage.selectedGym updated:", gym);
       }
@@ -234,6 +270,69 @@ export default function GymSettingsPage() {
         {/* Basic Info */}
         <div className="bg-white rounded-xl p-4 shadow-sm space-y-4">
           <h3 className="font-semibold text-gray-900">Basic Information</h3>
+          
+          <div className="flex flex-col items-center py-4 border-b border-gray-100">
+            <div className="mb-3">
+              <div className="relative group">
+                <div className="w-24 h-24 rounded-2xl overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold shadow-lg">
+                  {(formData.newLogoBase64 || formData.logoUrl) ? (
+                    <img
+                      src={formData.newLogoBase64 || formData.logoUrl}
+                      alt="Gym Logo Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Building className="w-10 h-10" />
+                  )}
+                </div>
+                <label htmlFor="logo-upload" className="absolute -bottom-2 -right-2 w-8 h-8 bg-white rounded-full shadow-lg border border-gray-200 flex items-center justify-center cursor-pointer hover:bg-gray-50 active:scale-95 transition-all group">
+                  <Plus className="w-4 h-4 text-blue-600" />
+                  <input
+                    id="logo-upload"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+
+                      const validationError = validateMemberImage(file);
+                      if (validationError) {
+                        showError(validationError);
+                        e.target.value = "";
+                        return;
+                      }
+
+                      try {
+                        const compressedFile = await compressMemberImage(file);
+                        const previewDataUrl = await fileToDataUrl(compressedFile);
+                        updateForm("newLogoBase64", previewDataUrl);
+                      } catch (error) {
+                        console.error("Error compressing gym logo:", error);
+                        showError("Could not compress logo. Please try another photo.");
+                      }
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+                {(formData.newLogoBase64 || formData.logoUrl) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      updateForm("newLogoBase64", null);
+                      updateForm("logoUrl", "");
+                    }}
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full shadow-lg flex items-center justify-center hover:bg-red-600 active:scale-95 transition-all"
+                  >
+                    <X className="w-3 h-3 text-white" />
+                  </button>
+                )}
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 text-center">
+              Upload gym logo (Optional)
+            </p>
+          </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">

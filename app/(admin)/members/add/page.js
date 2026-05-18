@@ -273,10 +273,21 @@ export default function AddMemberPage() {
         throw new Error(`Invalid duration for plan "${selectedPlan.name}". Please ensure the plan has a valid duration_days value in the database.`);
       }
 
+      let currentUser = null;
       const { data: authData } = await supabase.auth.getUser();
-      const currentUser = authData?.user || null;
+      if (authData?.user) {
+        currentUser = authData.user;
+      } else {
+        const storedUser = localStorage.getItem("gymUser");
+        if (storedUser) {
+          try {
+            currentUser = JSON.parse(storedUser);
+          } catch (e) {}
+        }
+      }
+
       const createdBy = currentUser?.id || null;
-      const createdByName = currentUser?.name || null;
+      const createdByName = currentUser?.name || currentUser?.full_name || null;
 
       if (!createdBy) {
         showError("Session expired. Please login again.");
@@ -1228,27 +1239,29 @@ export default function AddMemberPage() {
             </div>
 
             {/* Login Info Preview */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-4 mx-1 text-white">
-              <div className="flex items-center gap-3 mb-3">
-                <Key className="w-5 h-5 text-white/80" />
-                <div>
-                  <h4 className="font-medium text-white">App Login Details</h4>
-                  <p className="text-white/80 text-xs">Will be shown after saving</p>
+            {selectedGym?.plan_type !== 'basic' && (
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-4 mx-1 text-white">
+                <div className="flex items-center gap-3 mb-3">
+                  <Key className="w-5 h-5 text-white/80" />
+                  <div>
+                    <h4 className="font-medium text-white">App Login Details</h4>
+                    <p className="text-white/80 text-xs">Will be shown after saving</p>
+                  </div>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-white/80" />
+                    <span className="font-medium">Phone:</span>
+                    <span>{formData.phone || "Not set"}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Info className="w-4 h-4 text-white/80" />
+                    <span className="font-medium">Password:</span>
+                    <span>{formData.phone ? `${formData.phone.slice(-4)}123` : "Will be generated"}</span>
+                  </div>
                 </div>
               </div>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <Phone className="w-4 h-4 text-white/80" />
-                  <span className="font-medium">Phone:</span>
-                  <span>{formData.phone || "Not set"}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Info className="w-4 h-4 text-white/80" />
-                  <span className="font-medium">Password:</span>
-                  <span>{formData.phone ? `${formData.phone.slice(-4)}123` : "Will be generated"}</span>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         )}
       </main>

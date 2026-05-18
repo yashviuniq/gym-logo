@@ -147,14 +147,17 @@ export default function LoginPage() {
               email,
               phone,
               gym_id,
-              profile_image
+              profile_image,
+              gyms (
+                plan_type
+              )
             )
           `)
           .eq("login_type", loginType)
           .eq("login_value", emailOrPhone)
           .maybeSingle();
 
-        if (credError || !credentials) {
+        if (credError || !credentials || !credentials.members) {
           setError("Invalid email/phone or password");
           setLoading(false);
           return;
@@ -166,6 +169,7 @@ export default function LoginPage() {
           setLoading(false);
           return;
         }
+
 
         // Store member info
         const member = credentials.members;

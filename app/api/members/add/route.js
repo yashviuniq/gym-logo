@@ -47,6 +47,13 @@ export async function POST(request) {
       return forbidden("Invalid collector (cross-gym)");
     }
 
+    // Fetch the gym's plan_type to enforce basic plan restrictions
+    const { data: gymData } = await supabaseAdmin
+      .from("gyms")
+      .select("plan_type")
+      .eq("id", params.p_gym_id)
+      .single();
+
     const safeParams = {
       ...params,
       p_created_by: currentUser.id,
@@ -54,6 +61,11 @@ export async function POST(request) {
       p_collected_by: currentUser.id,
       p_collected_by_name: currentUser.name,
     };
+
+    if (gymData && gymData.plan_type === 'basic') {
+      safeParams.p_login_value = null;
+      safeParams.p_default_password = null;
+    }
 
     console.log("[TenantCheck][members/add][write]", {
       transaction_gym_id: safeParams.p_gym_id,
@@ -63,6 +75,7 @@ export async function POST(request) {
       collector_user_id: safeParams.p_collected_by,
       collector_gym_id: currentUser.gym_id,
       collector_name: safeParams.p_collected_by_name,
+      plan_type: gymData?.plan_type,
     });
 
     const { data, error } = await supabaseAdmin.rpc("add_member_with_membership", safeParams);

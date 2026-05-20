@@ -18,7 +18,7 @@ export const POST = withAuth(async (request, { user, gymId, supabase, body }) =>
 
   const { data: gymData, error: gymError } = await supabase
     .from("gyms")
-    .select("plan")
+    .select("plan:plan_type")
     .eq("id", gymId)
     .single();
 

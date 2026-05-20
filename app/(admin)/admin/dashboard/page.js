@@ -216,7 +216,7 @@ function useGymResolution() {
         if (user.gym_id) {
           const { data: gymData } = await supabase
             .from("gyms")
-            .select("id, name, address, timezone, created_at, logo_url, plan")
+            .select("id, name, address, timezone, created_at, logo_url, plan:plan_type")
             .eq("id", user.gym_id)
             .single();
           if (!cancelled && gymData) {
@@ -226,7 +226,7 @@ function useGymResolution() {
         } else if (user.role === "trainer") {
           const { data: trainerData } = await supabase
             .from("gym_trainers")
-            .select("gym_id, gyms (id, name, address, timezone, created_at, logo_url, plan)")
+            .select("gym_id, gyms (id, name, address, timezone, created_at, logo_url, plan:plan_type)")
             .eq("profile_id", user.id)
             .single();
           if (!cancelled && trainerData?.gyms) {
@@ -236,7 +236,7 @@ function useGymResolution() {
         } else if (user.role === "owner") {
           const { data: gymsData } = await supabase
             .from("gyms")
-            .select("id, name, address, timezone, created_at, logo_url, plan")
+            .select("id, name, address, timezone, created_at, logo_url, plan:plan_type")
             .eq("owner_id", user.id);
           if (!cancelled) {
             setGyms(gymsData || []);

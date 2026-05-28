@@ -2,92 +2,122 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { DollarSign, CheckCircle } from "lucide-react";
+import { DollarSign, CheckCircle, AlertCircle } from "lucide-react";
 import ListModal from "./ListModal";
 
 function PaymentRow({ payment, size = "sm", onClick }) {
   return (
     <div
       onClick={onClick}
-      className={`flex items-center justify-between ${
-        size === "lg"
-          ? "p-3 bg-gray-50 rounded-xl active:bg-gray-100 cursor-pointer"
-          : "p-2 active:bg-gray-50 rounded-lg"
-      }`}
-      style={{ minHeight: "52px" }}
+      className="flex items-center justify-between p-3 rounded-2xl border border-[#ececec] bg-[#fafafa] hover:bg-white transition-all duration-300 cursor-pointer active-scale"
     >
-      <div className="flex items-center gap-2 flex-1 min-w-0">
-        <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
-          <span className="text-xs font-bold text-red-600">₹</span>
+      <div className="flex items-center gap-3 flex-1 min-w-0">
+        
+        <div className="w-11 h-11 bg-red-50 text-[#f0813d] border border-orange-100 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm">
+          <DollarSign className="w-5 h-5" />
         </div>
+
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-900 truncate">
+          <p className="text-sm font-bold text-[#1a1c1c] truncate">
             {payment.name}
           </p>
-          <span className="text-xs px-2 py-0.5 bg-red-100 text-red-600 rounded-full font-medium">
-            Overdue
-          </span>
+
+          <div className="flex items-center gap-1 mt-1">
+            <AlertCircle className="w-3.5 h-3.5 text-red-500" />
+            <span className="text-[10px] font-black text-red-500 uppercase tracking-wide">
+              overdue payment
+            </span>
+          </div>
         </div>
       </div>
+
       <div className="text-right flex-shrink-0 pl-2">
-        <p className="text-sm font-semibold text-red-600">
-          ₹{typeof payment.amount === "number" ? payment.amount.toLocaleString() : payment.amount}
+        <p className="text-lg font-black font-heading text-[#f0813d] tracking-tight">
+          ₹
+          {typeof payment.amount === "number"
+            ? payment.amount.toLocaleString()
+            : payment.amount}
         </p>
-        <span className="text-xs text-blue-600 font-medium">
-          {size === "lg" ? "View →" : "Collect →"}
+
+        <span className="text-[10px] font-bold text-[#5f5e5e]">
+          {size === "lg" ? "View Details" : "Collect"}
         </span>
       </div>
     </div>
   );
 }
 
-export default function PendingPaymentsSection({ topPayments, allPayments, totalDues }) {
+export default function PendingPaymentsSection({
+  topPayments,
+  allPayments,
+  totalDues,
+}) {
   const [showModal, setShowModal] = useState(false);
   const router = useRouter();
 
   return (
     <>
-      <div className="bg-white rounded-xl p-3">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
-              <DollarSign className="w-4 h-4 text-amber-600" />
+      <div className="bg-white border border-[#ececec] rounded-3xl p-5 shadow-[0_10px_40px_rgba(0,0,0,0.05)]">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between mb-5">
+          
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-orange-50 text-[#f0813d] border border-orange-100 rounded-2xl flex items-center justify-center">
+              <DollarSign className="w-5 h-5" />
             </div>
+
             <div>
-              <h3 className="text-sm font-bold text-gray-900">Pending Payments</h3>
-              <p className="text-xs text-gray-500">
-                Total: ₹{totalDues.toLocaleString()}
+              <h3 className="text-sm font-black text-[#1a1c1c] tracking-tight">
+                Pending Payments
+              </h3>
+
+              <p className="text-[11px] font-semibold text-[#897267] uppercase tracking-wide mt-0.5">
+                ₹{totalDues.toLocaleString()} outstanding
               </p>
             </div>
           </div>
+
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowModal(true)}
-              className="px-3 py-1.5 bg-amber-50 text-amber-600 rounded-lg text-xs font-medium active:bg-amber-100 transition-colors"
-              style={{ minHeight: "32px" }}
+              className="px-3 py-2 bg-[#fafafa] hover:bg-white border border-[#ececec] text-[#1a1c1c] rounded-xl text-[11px] font-bold active-scale transition-all"
             >
               View All
             </button>
+
             <button
               onClick={() => router.push("/finance")}
-              className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg text-xs font-medium active:scale-95 transition-transform"
-              style={{ minHeight: "32px" }}
+              className="px-4 py-2 bg-[#1a1c1c] hover:bg-black text-white rounded-xl text-[11px] font-bold active-scale transition-all shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
             >
-              Collect All
+              Collect
             </button>
           </div>
         </div>
-        <div className="space-y-2">
+
+        {/* Payments */}
+        <div className="space-y-2.5">
           {topPayments.length > 0 ? (
-            topPayments.map((p) => <PaymentRow key={p.id} payment={p} />)
+            topPayments.map((p) => (
+              <PaymentRow
+                key={p.id}
+                payment={p}
+                onClick={() => router.push(`/members/${p.id}`)}
+              />
+            ))
           ) : (
-            <div className="text-center py-4">
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-2">
-                <CheckCircle className="w-6 h-6 text-green-400" />
+            <div className="text-center py-8 bg-[#fafafa] border border-dashed border-[#e5e5e5] rounded-2xl">
+              
+              <div className="w-14 h-14 bg-[#d9ff3f]/20 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <CheckCircle className="w-7 h-7 text-[#84cc16]" />
               </div>
-              <p className="text-gray-500 text-sm">All payments up to date!</p>
-              <p className="text-xs text-gray-400 mt-0.5">
-                Great job managing finances
+
+              <p className="text-[#1a1c1c] font-black text-sm">
+                All payments cleared
+              </p>
+
+              <p className="text-xs text-[#897267] mt-1">
+                No pending dues right now
               </p>
             </div>
           )}
@@ -98,19 +128,19 @@ export default function PendingPaymentsSection({ topPayments, allPayments, total
         open={showModal}
         onClose={() => setShowModal(false)}
         title="Pending Payments"
-        subtitle={`Total: ₹${totalDues.toLocaleString()}`}
+        subtitle={`₹${totalDues.toLocaleString()} outstanding`}
         icon={<DollarSign className="w-5 h-5" />}
-        iconBg="bg-amber-100"
-        iconColor="text-amber-600"
+        iconBg="bg-orange-50"
+        iconColor="text-[#f0813d]"
         footer={
           <button
             onClick={() => {
               setShowModal(false);
               router.push("/finance");
             }}
-            className="w-full py-3 bg-amber-500 text-white rounded-xl font-medium active:bg-amber-600 transition-colors"
+            className="w-full py-3 bg-[#1a1c1c] text-white rounded-2xl font-bold text-sm active-scale transition-all"
           >
-            Go to Finance Page
+            Open Finance Dashboard
           </button>
         }
       >
@@ -127,13 +157,15 @@ export default function PendingPaymentsSection({ topPayments, allPayments, total
             />
           ))
         ) : (
-          <div className="text-center py-8">
-            <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-              <CheckCircle className="w-8 h-8 text-green-500" />
-            </div>
-            <p className="text-gray-500 font-medium">All payments up to date!</p>
-            <p className="text-xs text-gray-400 mt-1">
-              Great job managing finances
+          <div className="text-center py-8 bg-[#fafafa] border border-dashed border-[#e5e5e5] rounded-2xl">
+            <CheckCircle className="w-10 h-10 text-[#84cc16] mx-auto mb-3" />
+
+            <p className="text-[#1a1c1c] font-black">
+              Everything is cleared
+            </p>
+
+            <p className="text-xs text-[#897267] mt-1">
+              No pending payments remaining
             </p>
           </div>
         )}

@@ -4,35 +4,29 @@ import { useState } from "react";
 import { Activity, Clock } from "lucide-react";
 import ListModal from "./ListModal";
 
-function ActivityRow({ activity, size = "sm" }) {
+function ActivityRow({ activity }) {
   return (
-    <div
-      className={`flex items-center justify-between ${
-        size === "lg" ? "p-3 bg-gray-50 rounded-xl" : "p-2"
-      }`}
-      style={{ minHeight: "52px" }}
-    >
-      <div className="flex items-center gap-2 flex-1 min-w-0">
-        <div
-          className={`${size === "lg" ? "w-10 h-10" : "w-8 h-8"} rounded-lg flex items-center justify-center flex-shrink-0 ${
-            activity.type === "attendance" ? "bg-green-100" : "bg-blue-100"
-          }`}
-        >
-          <span className={size === "lg" ? "text-lg" : "text-sm"}>
-            {activity.icon}
-          </span>
+    <div className="flex items-center justify-between p-3 rounded-2xl border border-[#ececec] bg-[#fafafa] hover:bg-white transition-all duration-300">
+      <div className="flex items-center gap-3 flex-1 min-w-0">
+        <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-orange-50 border border-orange-100 shadow-sm">
+          <span className="text-base">{activity.icon}</span>
         </div>
+
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-900 truncate">
+          <p className="text-sm font-bold text-[#1a1c1c] truncate">
             {activity.text}
           </p>
-          <div className="flex items-center gap-1">
-            <Clock className="w-3 h-3 text-gray-400" />
-            <p className="text-xs text-gray-500">{activity.time}</p>
+
+          <div className="flex items-center gap-1.5 mt-1">
+            <Clock className="w-3.5 h-3.5 text-[#897267]" />
+            <p className="text-xs text-[#897267] font-medium">
+              {activity.time}
+            </p>
           </div>
         </div>
       </div>
-      <span className="text-xs text-gray-400 flex-shrink-0 pl-2">
+
+      <span className="text-[10px] font-bold text-[#5f5e5e] flex-shrink-0 pl-2">
         {activity.time === "Today" ? "Just now" : activity.time}
       </span>
     </div>
@@ -44,30 +38,45 @@ export default function RecentActivitySection({ topActivity, allActivity }) {
 
   return (
     <>
-      <div className="bg-white rounded-xl p-3 mx-1">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-              <Activity className="w-4 h-4 text-blue-600" />
+      <div className="bg-white border border-[#ececec] rounded-3xl p-5 shadow-[0_10px_40px_rgba(0,0,0,0.05)]">
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-orange-50 text-[#f0813d] border border-orange-100 rounded-2xl flex items-center justify-center">
+              <Activity className="w-5 h-5" />
             </div>
-            <h3 className="text-sm font-bold text-gray-900">Recent Activity</h3>
+
+            <div>
+              <h3 className="text-sm font-black text-[#1a1c1c] tracking-tight">
+                Recent Activity
+              </h3>
+              <p className="text-[11px] font-semibold text-[#897267] uppercase tracking-wide">
+                Real-time updates
+              </p>
+            </div>
           </div>
+
           <button
             onClick={() => setShowModal(true)}
-            className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-medium active:bg-indigo-100 transition-colors"
+            className="px-3 py-2 bg-[#fafafa] hover:bg-white border border-[#ececec] text-[#1a1c1c] rounded-xl text-[11px] font-bold active-scale transition-all"
           >
-            View all
+            View All
           </button>
         </div>
-        <div className="space-y-2">
+
+        <div className="space-y-2.5">
           {topActivity.length > 0 ? (
             topActivity.map((a) => <ActivityRow key={a.id} activity={a} />)
           ) : (
-            <div className="text-center py-4">
-              <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-2">
-                <Activity className="w-6 h-6 text-gray-400" />
+            <div className="text-center py-8 bg-[#fafafa] border border-dashed border-[#e5e5e5] rounded-2xl">
+              <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-sm">
+                <Activity className="w-6 h-6 text-[#897267]" />
               </div>
-              <p className="text-gray-500 text-sm">No recent activity</p>
+              <p className="text-[#1a1c1c] text-sm font-black">
+                No recent activity
+              </p>
+              <p className="text-xs text-[#897267] mt-1">
+                Activity will appear here as events happen
+              </p>
             </div>
           )}
         </div>
@@ -79,12 +88,12 @@ export default function RecentActivitySection({ topActivity, allActivity }) {
         title="Recent Activity"
         subtitle={`${allActivity.length} activities`}
         icon={<Activity className="w-5 h-5" />}
-        iconBg="bg-blue-100"
-        iconColor="text-blue-600"
+        iconBg="bg-orange-50"
+        iconColor="text-[#f0813d]"
         footer={
           <button
             onClick={() => setShowModal(false)}
-            className="w-full py-3 bg-gray-200 text-gray-700 rounded-xl font-medium active:bg-gray-300 transition-colors"
+            className="w-full py-3 bg-[#1a1c1c] text-white rounded-2xl font-bold text-sm active-scale transition-all"
           >
             Close
           </button>
@@ -92,15 +101,15 @@ export default function RecentActivitySection({ topActivity, allActivity }) {
       >
         {allActivity.length > 0 ? (
           allActivity.map((a) => (
-            <ActivityRow key={a.id} activity={a} size="lg" />
+            <ActivityRow key={a.id} activity={a} />
           ))
         ) : (
-          <div className="text-center py-8">
-            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-              <Activity className="w-8 h-8 text-gray-400" />
-            </div>
-            <p className="text-gray-500 font-medium">No recent activity</p>
-            <p className="text-xs text-gray-400 mt-1">
+          <div className="text-center py-8 bg-[#fafafa] border border-dashed border-[#e5e5e5] rounded-2xl">
+            <Activity className="w-10 h-10 text-[#897267] mx-auto mb-3" />
+            <p className="text-[#1a1c1c] font-black">
+              No recent activity
+            </p>
+            <p className="text-xs text-[#897267] mt-1">
               Activity will appear here as events happen
             </p>
           </div>

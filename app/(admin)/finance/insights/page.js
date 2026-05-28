@@ -1267,49 +1267,49 @@ export default function FinanceInsightsPage() {
       label: "Total Revenue",
       value: formatCurrency(data?.total_revenue_all_time),
       icon: <IndianRupee className="w-5 h-5" />,
-      color: "from-emerald-500 to-green-600",
-      textColor: "text-emerald-700",
-      bgColor: "bg-emerald-50",
+      color: "from-[#f0813d] to-[#9c4400]",
+textColor: "text-[#f0813d]",
+bgColor: "bg-[#f0813d]/10",
     },
     {
       label: "Salary Paid",
       value: formatCurrency(data?.total_salary_paid_all_time),
       icon: <Wallet className="w-5 h-5" />,
-      color: "from-orange-500 to-amber-600",
-      textColor: "text-orange-700",
-      bgColor: "bg-orange-50",
+      color: "from-[#1f1f1f] to-[#2b2b2b]",
+textColor: "text-[#1f1f1f]",
+bgColor: "bg-[#1f1f1f]/5",
     },
     {
       label: "Pending Dues",
       value: formatCurrency(data?.total_dues_all_time),
       icon: <PiggyBank className="w-5 h-5" />,
-      color: "from-red-500 to-rose-600",
-      textColor: "text-red-700",
-      bgColor: "bg-red-50",
+      color: "from-[#3a3a3a] to-[#1f1f1f]",
+textColor: "text-[#1f1f1f]",
+bgColor: "bg-[#1f1f1f]/5",
     },
     {
       label: "Net Profit",
       value: formatCurrency(data?.net_profit_all_time),
       icon: <TrendingUp className="w-5 h-5" />,
-      color: "from-blue-500 to-indigo-600",
-      textColor: (data?.net_profit_all_time ?? 0) >= 0 ? "text-blue-700" : "text-red-700",
-      bgColor: (data?.net_profit_all_time ?? 0) >= 0 ? "bg-blue-50" : "bg-red-50",
+      color: "from-[#f0813d] to-[#9c4400]",
+textColor: "text-[#f0813d]",
+bgColor: "bg-[#f0813d]/10",
     },
     {
       label: "Avg Monthly Revenue",
       value: formatCurrency(data?.avg_monthly_revenue),
       icon: <BarChart3 className="w-5 h-5" />,
-      color: "from-violet-500 to-purple-600",
-      textColor: "text-violet-700",
-      bgColor: "bg-violet-50",
+      color: "from-[#1f1f1f] to-[#2b2b2b]",
+textColor: "text-[#1f1f1f]",
+bgColor: "bg-[#1f1f1f]/5",
     },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom pb-32">
+    <div className="min-h-screen bg-[#f6f3f1] text-[#1a1c1c] safe-area-inset-bottom pb-32">
       <Header title="Finance Insights" showBack backUrl="/finance" />
 
-      <main className="px-4 py-4 space-y-5">
+      <main className="px-3 md:px-8 lg:px-12 py-3 md:py-6 space-y-5 max-w-7xl mx-auto w-full">
         {/* ─── All Time Summary ─── */}
         <section>
           <div className="flex items-center justify-between gap-3 mb-3 px-1">
@@ -1351,17 +1351,19 @@ export default function FinanceInsightsPage() {
           <div className="grid grid-cols-2 gap-3">
             {summaryCards.map((card, idx) => (
               <div
-                key={idx}
-                className={`bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition-shadow ${
-                  idx === summaryCards.length - 1 ? "col-span-2 sm:col-span-1" : ""
-                }`}
-              >
-                <div
-                  className={`w-9 h-9 rounded-xl bg-gradient-to-br ${card.color} flex items-center justify-center mb-3 shadow-sm`}
-                >
+  key={idx}
+  className={`relative overflow-hidden bg-white rounded-[28px] p-5 border border-[#ece7e2] shadow-[0_10px_35px_rgba(0,0,0,0.06)] hover:shadow-[0_18px_45px_rgba(0,0,0,0.08)] transition-all duration-300 ${
+    idx === summaryCards.length - 1 ? "col-span-2 sm:col-span-1" : ""
+  }`}
+>
+  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[#f0813d]/10 to-transparent rounded-full blur-2xl pointer-events-none" />
+
+  <div
+    className={`w-9 h-9 rounded-xl bg-gradient-to-br ${card.color} flex items-center justify-center mb-3 shadow-sm`}
+  >
                   <span className="text-white">{card.icon}</span>
                 </div>
-                <p className="text-xs font-medium text-gray-500 mb-1">{card.label}</p>
+                <p className="text-xs font-medium text-[#7b746f] mb-1">{card.label}</p>
                 <p className={`text-xl font-bold ${card.textColor}`}>{card.value}</p>
               </div>
             ))}
@@ -1378,7 +1380,7 @@ export default function FinanceInsightsPage() {
               <button
                 onClick={handleExportPdf}
                 disabled={pdfExporting || monthLoading || !data}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#f0813d]/10 text-[#f0813d] border border-[#f0813d]/20 hover:bg-[#f0813d]/15 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-1.5 shadow-sm"
               >
                 {pdfExporting ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1390,7 +1392,7 @@ export default function FinanceInsightsPage() {
               <button
                 onClick={handleExportExcel}
                 disabled={exporting || monthLoading || !data}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#f0813d]/10 text-[#f0813d] border border-[#f0813d]/20 hover:bg-[#f0813d]/15 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-1.5 shadow-sm"
               >
                 {exporting ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1409,8 +1411,8 @@ export default function FinanceInsightsPage() {
                     onClick={() => handleYearChange(y)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
                       y === selectedYear
-                        ? "bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-md"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200 active:scale-95"
+                        ? "bg-[#f0813d]/15 text-[#f0813d] border border-[#f0813d]/20 shadow-sm"
+                        : "bg-white text-[#7b746f] border border-[#ece7e2] hover:bg-[#f5f2ef] active:scale-95"
                     }`}
                   >
                     {y}
@@ -1432,7 +1434,7 @@ export default function FinanceInsightsPage() {
                     onClick={() => handleMonthChange(idx)}
                     className={`flex-shrink-0 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
                       isSelected
-                        ? "bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-md scale-105"
+                        ? "bg-gradient-to-r from-[#1f1f1f] to-[#2b2b2b] text-white shadow-md scale-105"
                         : isFuture
                         ? "bg-gray-50 text-gray-300 cursor-not-allowed"
                         : "bg-gray-100 text-gray-600 hover:bg-gray-200 active:scale-95"
@@ -1638,7 +1640,7 @@ export default function FinanceInsightsPage() {
                 {drillDown === "renewals" && <RefreshCw className="w-5 h-5 text-white" />}
               </div>
               <div className="flex-1 ">
-                <h3 className="font-bold text-gray-900 text-base">
+                <h3 className="font-bold text-[#1f1f1f] text-base">
                   {drillDown === "revenue" && "Revenue Details"}
                   {drillDown === "new_joins" && "New Members"}
                   {drillDown === "renewals" && "Renewals"}
@@ -1672,7 +1674,7 @@ export default function FinanceInsightsPage() {
                         {(p.member_name || "?").charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-900 text-sm truncate">{p.member_name}</p>
+                        <p className="font-semibold text-[#1f1f1f] text-sm truncate">{p.member_name}</p>
                         <div className="flex items-center gap-2 mt-0.5">
                           {p.phone && (
                             <span className="text-xs text-gray-500 flex items-center gap-1">
@@ -1711,7 +1713,7 @@ export default function FinanceInsightsPage() {
                         {(m.full_name || "?").charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-900 text-sm truncate">{m.full_name}</p>
+                        <p className="font-semibold text-[#1f1f1f] text-sm truncate">{m.full_name}</p>
                         <div className="flex items-center gap-2 mt-0.5">
                           {m.phone && (
                             <span className="text-xs text-gray-500 flex items-center gap-1">
@@ -1749,7 +1751,7 @@ export default function FinanceInsightsPage() {
                         {(r.member_name || "?").charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-900 text-sm truncate">{r.member_name}</p>
+                        <p className="font-semibold text-[#1f1f1f] text-sm truncate">{r.member_name}</p>
                         {r.phone && (
                           <span className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
                             <Phone className="w-3 h-3" />{r.phone}

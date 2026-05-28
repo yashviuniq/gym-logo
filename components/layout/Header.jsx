@@ -66,13 +66,14 @@ export default function Header({ title, showBack = true, gymLogo = null }) {
   const displayLogo = gymLogo || localLogo;
 
   return (
-    <header className="sticky top-0 bg-white border-b border-gray-100 z-50">
+    <header className="sticky top-0 bg-white/75 backdrop-blur-2xl border-b border-[#ececec] z-50">
       <div className="flex items-center justify-between px-4 py-4 relative">
         <div className="flex items-center gap-3">
           {showBack && (
             <button
               onClick={() => router.back()}
-              className="p-2 -ml-2 hover:bg-gray-100 rounded-lg transition text-gray-700 text-2xl font-bold min-w-[40px] flex items-center justify-center"
+              className="p-2.5 bg-[#fafafa] hover:bg-white border border-[#ececec] rounded-2xl text-[#1a1c1c] transition-all active-scale flex items-center justify-center text-lg font-bold shadow-sm"
+              style={{ width: '40px', height: '40px' }}
               aria-label="Go back"
             >
               ←
@@ -82,40 +83,49 @@ export default function Header({ title, showBack = true, gymLogo = null }) {
             <img
               src={displayLogo}
               alt="Gym Logo"
-              className="h-9 w-9 rounded-lg object-cover"
+              className="h-11 w-11 rounded-2xl object-cover border border-[#ececec] shadow-[0_6px_18px_rgba(0,0,0,0.06)]"
             />
           )}
-          <h1 className="text-xl font-bold text-gray-900">{title}</h1>
+          <h1 className="text-xl font-black tracking-tight text-[#1a1c1c] font-heading">{title}</h1>
         </div>
+        
         <button
-          className="relative p-2 hover:bg-gray-100 rounded-lg transition cursor-pointer"
+          className="relative p-2.5 bg-[#fafafa] hover:bg-white border border-[#ececec] rounded-2xl text-[#1a1c1c] transition-all active-scale cursor-pointer flex items-center justify-center shadow-sm"
+          style={{ width: '40px', height: '40px' }}
           aria-label="Notifications"
           onClick={toggleOpen}
           type="button"
-          role="button"
-          tabIndex={0}
         >
-          <span role="img" aria-label="bell">🔔</span>
+          <span className="text-lg leading-none" role="img" aria-label="bell">🔔</span>
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full px-1.5 py-[2px] min-w-[20px] text-center">
+            <span className="absolute -top-1 -right-1 bg-[#f0813d] text-white text-[10px] font-extrabold rounded-full px-1.5 py-[2px] min-w-[18px] text-center shadow-[0_0_10px_rgba(240,129,61,0.3)]">
               {unreadCount > 99 ? '99+' : unreadCount}
             </span>
           )}
         </button>
+
         {open && (
-          <div className="absolute right-4 top-14 w-80 bg-white border border-gray-200 rounded-xl shadow-xl z-[60]">
-            <div className="p-3 border-b font-semibold text-gray-800">Notifications</div>
-            <div className="max-h-64 overflow-auto">
+          <div className="absolute right-4 top-16 w-80 bg-white border border-[#ececec] rounded-3xl shadow-[0_24px_60px_rgba(0,0,0,0.08)] backdrop-blur-2xl z-[60] overflow-hidden animate-slideUp">
+            <div className="px-4 py-3 bg-black/2 border-b border-black/5 font-bold text-sm text-[#1a1c1c] tracking-wide uppercase font-heading flex justify-between items-center">
+              <span>Notifications</span>
+              {unreadCount > 0 && (
+                <span className="text-[10px] bg-[#f0813d]/10 text-[#9c4400] px-2 py-0.5 rounded-full font-extrabold uppercase">New</span>
+              )}
+            </div>
+            <div className="max-h-72 overflow-y-auto no-scrollbar">
               {items && items.length > 0 ? (
                 items.map((n) => (
-                  <div key={n.id} className="px-3 py-2 hover:bg-gray-50">
-                    <div className="text-sm font-medium text-gray-900">{n.title}</div>
-                    {n.body && (<div className="text-xs text-gray-600">{n.body}</div>)}
-                    <div className="text-[10px] text-gray-400 mt-1">{new Date(n.receivedAt).toLocaleString()}</div>
+                <div key={n.id} className="px-4 py-3 hover:bg-[#fafafa] border-b border-[#f1f1f1] last:border-0 transition-colors duration-200">
+                   
+                    {n.body && (<div className="text-xs text-zinc-500 leading-relaxed">{n.body}</div>)}
+                    <div className="text-[9px] text-zinc-400 font-medium mt-1.5 tracking-wider uppercase">{new Date(n.receivedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
                   </div>
                 ))
               ) : (
-                <div className="p-3 text-sm text-gray-600">No notifications</div>
+                <div className="p-6 text-center text-sm text-zinc-400 font-medium">
+                  <div className="text-2xl mb-2">📥</div>
+                  No notifications yet
+                </div>
               )}
             </div>
           </div>

@@ -313,40 +313,40 @@ export default function AdminDashboard() {
 
   if (!selectedGym && gyms.length > 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom">
+      <div className="min-h-screen bg-[#090A0C] text-white safe-area-inset-bottom">
         <Header title="Select Gym" showBack={false} />
         <main className="px-4 py-4 space-y-4">
           <div className="text-center mb-6 pt-2">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-              <Building className="w-8 h-8 text-white" />
+            <div className="w-16 h-16 bg-gradient-to-br from-[#C8FF00] to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-[0_0_20px_rgba(200,255,0,0.2)]">
+              <Building className="w-8 h-8 text-black" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900">
+            <h2 className="text-xl font-heading font-extrabold text-white tracking-tight">
               Welcome, {user?.name || "Admin"}!
             </h2>
-            <p className="text-gray-500 text-xs mt-1">Select a gym to manage</p>
+            <p className="text-zinc-500 text-xs mt-1">Select a gym to manage</p>
           </div>
           <div className="space-y-3">
             {gyms.map((gym) => (
               <button
                 key={gym.id}
                 onClick={() => handleSelectGym(gym)}
-                className="w-full p-4 bg-white rounded-xl border border-gray-200 shadow-sm active:scale-95 active:shadow-none transition-all text-left active:bg-gray-50"
+                className="w-full p-4 bg-white/[0.02] hover:bg-white/[0.05] rounded-xl border border-white/5 shadow-[0_4px_20px_rgba(0,0,0,0.4)] active:scale-95 transition-all text-left"
                 style={{ minHeight: "72px" }}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Building className="w-5 h-5 text-blue-600" />
+                  <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center flex-shrink-0 border border-white/10">
+                    <Building className="w-5 h-5 text-[#C8FF00] drop-shadow-[0_0_8px_rgba(200,255,0,0.3)]" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-gray-900 text-base truncate">{gym.name}</h3>
-                    <p className="text-xs text-gray-500 truncate mt-0.5">
+                    <h3 className="font-heading font-bold text-white text-base truncate">{gym.name}</h3>
+                    <p className="text-xs text-zinc-400 truncate mt-0.5">
                       {gym.address || "No address"}
                     </p>
-                    <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full">
+                    <span className="inline-block text-[10px] font-bold px-2 py-0.5 bg-[#C8FF00]/10 text-[#C8FF00] rounded-full mt-1 border border-[#C8FF00]/20 tracking-wider">
                       {gym.timezone || "UTC"}
                     </span>
                   </div>
-                  <div className="w-8 h-8 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 bg-white/5 hover:bg-[#C8FF00]/10 text-zinc-400 hover:text-[#C8FF00] rounded-full flex items-center justify-center flex-shrink-0 border border-white/5 transition-colors">
                     <ArrowRight className="w-4 h-4" />
                   </div>
                 </div>
@@ -362,15 +362,15 @@ export default function AdminDashboard() {
 
   if (gyms.length === 0 && !selectedGym) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom">
+      <div className="min-h-screen bg-[#090A0C] text-white safe-area-inset-bottom">
         <Header title="Dashboard" showBack={false} />
         <main className="px-4 py-4">
           <div className="text-center py-12">
-            <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-[0_0_30px_rgba(239,68,68,0.25)] border border-red-500/20">
               <Building className="w-10 h-10 text-white" />
             </div>
-            <h2 className="text-lg font-bold text-gray-900 mb-2">No Gym Assigned</h2>
-            <p className="text-gray-500 text-sm mb-6 px-4">
+            <h2 className="text-lg font-heading font-bold text-white mb-2">No Gym Assigned</h2>
+            <p className="text-zinc-500 text-sm mb-6 px-4">
               Please contact the administrator to assign a gym to your account.
             </p>
           </div>
@@ -387,26 +387,26 @@ export default function AdminDashboard() {
   // ─── Main Dashboard ────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-gradient-to-b mb-17 from-gray-50 to-gray-100 safe-area-inset-bottom">
+    <div className="min-h-screen bg-[#f9f9f9] text-[#1a1c1c] mb-17 safe-area-inset-bottom">
       <Header title="Dashboard" showBack={false} gymLogo={selectedGym?.logo_url} />
 
-      <main className="px-3 py-2 space-y-4">
+      <main className="px-4 py-3 space-y-5 max-w-screen-xl mx-auto">
         {/* Welcome */}
         <div className="flex items-start justify-between px-1">
-          <div className="flex-1">
-            <h1 className="text-lg font-bold text-gray-900 truncate">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl font-heading font-black text-[#1a1c1c] truncate tracking-tight">
               Welcome back, {user?.name?.split(" ")[0] || "Admin"}!
             </h1>
-            <p className="text-xs text-gray-500 truncate">
+            <p className="text-sm text-[#5f5e5e] truncate font-medium">
               Here&apos;s your gym overview for today
             </p>
           </div>
-          <div className="flex items-center gap-2 ml-2">
+          <div className="flex items-center gap-2 ml-2 flex-shrink-0">
             {user?.role === "admin" && (
               <button
                 onClick={handleExportWholeDashboardExcel}
                 disabled={exportingExcel}
-                className="px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg text-xs font-medium active:scale-95 transition-transform flex-shrink-0 flex items-center gap-1 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="px-4 py-2 btn-premium-lime text-sm font-bold rounded-xl active-scale flex items-center gap-2 disabled:opacity-60"
                 style={{ minHeight: "36px" }}
               >
                 <Download className="w-3.5 h-3.5" />
@@ -416,7 +416,7 @@ export default function AdminDashboard() {
             {gyms.length > 1 && (
               <button
                 onClick={() => setSelectedGym(null)}
-                className="px-3 py-1.5 bg-white border text-black border-gray-300 rounded-lg text-xs font-medium active:scale-95 transition-transform flex-shrink-0"
+                className="px-3 py-2 bg-white border border-[#ececec] hover:border-[#f0813d]/40 text-[#1a1c1c] rounded-xl text-xs font-bold active-scale shadow-sm transition-all flex-shrink-0"
                 style={{ minHeight: "36px", minWidth: "36px" }}
               >
                 Switch gym
@@ -429,7 +429,7 @@ export default function AdminDashboard() {
         <GymHeroCard gym={selectedGym} />
 
         {/* KPI Grid */}
-        <div className="grid grid-cols-2 gap-2 px-1">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {hasPermission(permissions, PERMISSIONS.MEMBERS) && (
             <>
               <KPICard

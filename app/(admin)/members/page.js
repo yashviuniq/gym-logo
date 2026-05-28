@@ -48,14 +48,14 @@ function MemberAvatar({ name, profileImage }) {
       <img
         src={profileImage}
         alt={name}
-        className="w-12 h-12 rounded-xl object-cover shadow-sm"
+        className="w-14 h-14 rounded-2xl object-cover shadow-sm"
         onError={() => setImageFailed(true)}
       />
     );
   }
 
   return (
-    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-sm">
+    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#f0813d] to-[#9c4400] flex items-center justify-center text-white font-bold text-lg shadow-sm">
       {name.charAt(0).toUpperCase()}
     </div>
   );
@@ -968,13 +968,15 @@ Best regards,
 
   // ─── Main render ─────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom">
+    
+    <div className="min-h-screen bg-[#f6f3f1] text-[#1a1c1c] safe-area-inset-bottom">
       <Header title="Members" showBack={false} />
 
-      <main className="px-3 py-3 space-y-4">
+      <main className="px-3 md:px-8 lg:px-12 py-3 md:py-6 space-y-4 max-w-7xl mx-auto w-full">
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 gap-2 px-1">
-          <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 px-1">
+          <div className="relative overflow-hidden bg-white rounded-[24px] p-4 border border-[#ececec] shadow-[0_10px_30px_rgba(0,0,0,0.05)]">
+  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[#f0813d]/10 to-transparent rounded-full blur-2xl" />
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-medium">Total</p>
@@ -982,14 +984,15 @@ Best regards,
                   {stats.total}
                 </p>
               </div>
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-[#f0813d]/10 rounded-lg flex items-center justify-center">
                 <Users className="w-5 h-5 text-blue-600" />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
-            <div className="flex items-center justify-between">
+          <div className="relative overflow-hidden bg-white rounded-[24px] p-4 border border-[#ececec] shadow-[0_10px_30px_rgba(0,0,0,0.05)]">
+            
+            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[#f0813d]/10 to-transparent rounded-full blur-2xl" /><div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-medium">Active</p>
                 <p className="text-xl font-bold text-emerald-600 mt-0.5">
@@ -1002,7 +1005,8 @@ Best regards,
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
+          <div className="relative overflow-hidden bg-white rounded-[24px] p-4 border border-[#ececec] shadow-[0_10px_30px_rgba(0,0,0,0.05)]">
+  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[#f0813d]/10 to-transparent rounded-full blur-2xl" />
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-medium">Dues</p>
@@ -1016,7 +1020,8 @@ Best regards,
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
+          <div className="relative overflow-hidden bg-white rounded-[24px] p-4 border border-[#ececec] shadow-[0_10px_30px_rgba(0,0,0,0.05)]">
+  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[#f0813d]/10 to-transparent rounded-full blur-2xl" />
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-medium">Expired</p>
@@ -1030,32 +1035,101 @@ Best regards,
             </div>
           </div>
         </div>
+{/* Members Hero Banner */}
+<div className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#f0813d] via-[#d96a28] to-[#9c4400] p-6 mx-1 mb-4 shadow-[0_20px_50px_rgba(240,129,61,0.28)]">
+  <div className="absolute top-0 right-0 w-52 h-52 bg-white/10 rounded-full blur-3xl" />
 
+  <div className="relative z-10 flex items-center justify-between gap-4">
+    <div className="flex-1">
+      <p className="text-white/70 text-xs font-bold uppercase tracking-[0.2em] mb-2">
+        Gym Members
+      </p>
+
+      <h1 className="text-3xl font-black text-white leading-none tracking-tight">
+        Stronger
+        <br />
+        Every Day
+      </h1>
+
+      <p className="text-white/80 text-sm mt-3 leading-relaxed max-w-[220px]">
+        Manage members, renewals, dues and fitness progress beautifully.
+      </p>
+
+      <div className="flex items-center gap-3 mt-5">
+        <div className="bg-white/15 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/10">
+          <p className="text-white text-lg font-black">
+            {stats.total}
+          </p>
+          <p className="text-white/70 text-[10px] uppercase tracking-widest">
+            Total
+          </p>
+        </div>
+
+        <div className="bg-white/15 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/10">
+          <p className="text-white text-lg font-black">
+            {stats.active}
+          </p>
+          <p className="text-white/70 text-[10px] uppercase tracking-widest">
+            Active
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div className="hidden sm:block relative">
+      <img
+        src="https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?q=80&w=800&auto=format&fit=crop"
+        alt="Fitness member"
+        className="h-56 w-36 object-cover rounded-3xl shadow-[0_20px_40px_rgba(0,0,0,0.25)]"
+      />
+    </div>
+  </div>
+</div>
         {/* Search and Add Member */}
-        <div className="bg-white rounded-xl p-3 mx-1 space-y-3">
-          {/* Search Bar */}
+       <div className="premium-card rounded-[28px] p-4 mx-1 space-y-4 border border-[#ececec] shadow-[0_10px_35px_rgba(0,0,0,0.06)]">
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 text-gray-400" />
+              <Search className="h-4 w-4 text-[#5f5e5e]" />
             </div>
             <input
-              type="text"
-              placeholder="Search by name, phone, or email..."
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm placeholder:text-gray-400"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+  type="text"
+  placeholder="Search members, phone or email..."
+  value={searchQuery}
+  onChange={(e) => setSearchQuery(e.target.value)}
+  className="w-full pl-11 pr-4 py-3 bg-[#f5f5f5] border border-[#ececec] rounded-2xl focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all text-sm text-[#1a1c1c] placeholder:text-[#8b8b8b] shadow-inner"
+/>
+<div className="flex gap-2 overflow-x-auto no-scrollbar pt-3">
+  <button className="px-4 py-2 rounded-2xl bg-[#f0813d] text-white text-xs font-black tracking-wide shadow-[0_8px_20px_rgba(240,129,61,0.25)] whitespace-nowrap">
+    All Members
+  </button>
+
+  <button className="px-4 py-2 rounded-2xl bg-[#f5f5f5] border border-[#ececec] text-[#5f5e5e] text-xs font-bold whitespace-nowrap">
+    Active
+  </button>
+
+  <button className="px-4 py-2 rounded-2xl bg-[#f5f5f5] border border-[#ececec] text-[#5f5e5e] text-xs font-bold whitespace-nowrap">
+    Expired
+  </button>
+
+  <button className="px-4 py-2 rounded-2xl bg-[#f5f5f5] border border-[#ececec] text-[#5f5e5e] text-xs font-bold whitespace-nowrap">
+    Renewal
+  </button>
+
+  <button className="px-4 py-2 rounded-2xl bg-[#f5f5f5] border border-[#ececec] text-[#5f5e5e] text-xs font-bold whitespace-nowrap">
+    Premium
+  </button>
+</div>
           </div>
 
           {/* Compact Action Icons */}
-          <div className={`grid gap-2 ${canViewFinance ? "grid-cols-3" : "grid-cols-1"}`}>
+          <div className={`grid gap-2 ${canViewFinance ? "grid-cols-2 md:grid-cols-3" : "grid-cols-1"}`}>
             <button
               onClick={() => router.push("/members/add")}
               title="Add Member"
               className="flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 active:bg-gray-100 active:scale-95 transition-all"
               style={{ minHeight: "62px" }}
             >
-              <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full bg-blue-100 text-[#f0813d] flex items-center justify-center">
                 <Plus className="w-4 h-4" />
               </div>
               <span className="text-[11px] font-medium text-gray-700">Add Member</span>
@@ -1101,7 +1175,7 @@ Best regards,
                   className="flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 active:bg-gray-100 active:scale-95 transition-all disabled:opacity-50"
                   style={{ minHeight: "62px" }}
                 >
-                  <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-[#f0813d]/10 text-[#f0813d] flex items-center justify-center">
                     {exportingType === "excel" ? (
                       <div className="w-4 h-4 border-2 border-blue-300 border-t-blue-700 rounded-full animate-spin"></div>
                     ) : (
@@ -1144,76 +1218,7 @@ Best regards,
         )}
 
         {/* Filter Tabs */}
-        <div className="bg-white rounded-xl p-3 mx-1">
-          <div className="flex items-center gap-2 mb-2">
-            <Filter className="w-4 h-4 text-gray-500" />
-            <span className="text-xs font-medium text-gray-700">
-              Filter by Status
-            </span>
-          </div>
-          <div className="flex space-x-2 overflow-x-auto pb-1 -mx-1 px-1 no-scrollbar">
-            {[
-              { id: "all", label: "All", count: stats.total },
-              { id: "active", label: "Active", count: stats.active },
-              { id: "expired", label: "Expired", count: stats.expired },
-              { id: "renewal", label: "Renewal", count: stats.renewal },
-              {
-                id: "inactive",
-                label: "Inactive",
-                count: stats.total - stats.active - stats.expired,
-              },
-            ].map((filter) => (
-              <button
-                key={filter.id}
-                onClick={() => handleFilterChange(filter.id)}
-                className={`flex-shrink-0 px-4 py-2 rounded-lg text-xs font-medium transition-all duration-200 flex items-center gap-2 ${
-                  filterStatus === filter.id
-                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }`}
-                style={{ minHeight: "36px" }}
-              >
-                {filter.label}
-                <span
-                  className={`px-2 py-0.5 text-xs rounded-full ${
-                    filterStatus === filter.id
-                      ? "bg-white/20"
-                      : "bg-white text-gray-600"
-                  }`}
-                >
-                  {filter.count}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          {filterStatus === "expired" && (
-            <div className="mt-3 border-t border-gray-100 pt-3">
-              <p className="text-xs font-medium text-gray-700 mb-2">Expired Date Range</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <div>
-                  <label className="text-[11px] text-gray-500 mb-1 block">Start Date</label>
-                  <input
-                    type="date"
-                    value={expiredStartDate}
-                    onChange={(e) => setExpiredStartDate(e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] text-gray-500 mb-1 block">End Date</label>
-                  <input
-                    type="date"
-                    value={expiredEndDate}
-                    onChange={(e) => setExpiredEndDate(e.target.value)}
-                    min={expiredStartDate || undefined}
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+   
 
         {/* Members List */}
         <div
@@ -1223,231 +1228,202 @@ Best regards,
               : ""
           } transition-opacity duration-200`}
         >
-          {members.map((member) => {
-            const statusConfig = getStatusConfig(member.status);
-            const canShowRenewReminder =
-              member.status === "expired" ||
-              member.status === "renewal" ||
-              (member.daysRemaining !== null && member.daysRemaining <= 7);
+          <div className="flex items-center justify-between px-2 pt-2">
+  <div>
+    <h2 className="text-xl font-black text-[#1a1c1c] tracking-tight">
+      Members Directory
+    </h2>
 
-            return (
+    <p className="text-sm text-[#897267] mt-1">
+      Manage and monitor all gym members
+    </p>
+  </div>
+
+  <div className="bg-white border border-[#ececec] shadow-sm rounded-2xl px-4 py-2">
+    <p className="text-[10px] uppercase tracking-[0.18em] text-[#897267] font-bold">
+      Showing
+    </p>
+
+    <p className="text-lg font-black text-[#f0813d] leading-none mt-1">
+      {members.length}
+    </p>
+  </div>
+</div>
+            {members.map((member) => {
+  const statusConfig = getStatusConfig(member.status);
+  const canShowRenewReminder =
+    member.status === "expired" ||
+    member.status === "renewal" ||
+    (member.daysRemaining !== null && member.daysRemaining <= 7);
+
+  return (
+    <div
+      key={member.id}
+      onClick={() => router.push(`/members/${member.id}`)}
+      className="relative overflow-hidden bg-white rounded-[28px] p-5 border border-[#ececec] shadow-[0_10px_35px_rgba(0,0,0,0.06)] hover:shadow-[0_18px_45px_rgba(0,0,0,0.10)] active:scale-[0.99] transition-all duration-300 cursor-pointer mx-1"
+    >
+      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#f0813d]/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+
+      <div className="flex items-start gap-4 relative z-10">
+        <div className="flex-shrink-0">
+          <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-[0_10px_25px_rgba(55,104,248,0.18)] border-2 border-white">
+            <MemberAvatar name={member.name} profileImage={member.profileImage} />
+          </div>
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-3 mb-2">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-black text-[#1a1c1c] text-[18px] tracking-tight leading-tight break-words">
+                {member.name}
+              </h3>
+
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#f0813d] mt-2">
+                Premium Gym Member
+              </p>
+
+              <div className="flex flex-col gap-1 mt-2">
+                <div className="flex items-center gap-1">
+                  <Phone className="w-3 h-3 text-[#897267]" />
+                  <span className="text-[#5f5e5e] text-xs break-all" >
+                    {member.phone}
+                  </span>
+                </div>
+
+                {member.email && (
+                  <div className="flex items-center gap-1">
+                    <Mail className="w-3 h-3 text-[#897267]" />
+                    <span className="text-[#5f5e5e] text-xs break-all">
+                      {member.email}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col items-end gap-2">
               <div
-                key={member.id}
-                onClick={() => router.push(`/members/${member.id}`)}
-                className="bg-white rounded-xl border border-gray-200 p-3 hover:shadow-md active:scale-95 transition-all duration-200 cursor-pointer mx-1"
-              >
-                <div className="flex items-start gap-3">
-                  {/* Avatar */}
-                  <div className="flex-shrink-0">
-                    <MemberAvatar
-                      name={member.name}
-                      profileImage={member.profileImage}
-                    />
-                  </div>
+                
+  className={`px-3 py-1.5 rounded-full border ${statusConfig.color} ${statusConfig.text} flex items-center gap-1.5 shadow-sm`}
+> 
+              
+                <div className={statusConfig.text}>{statusConfig.icon}</div>
+                <span className="text-[11px] font-black uppercase tracking-wide">
+                  {statusConfig.label}
+                </span>
+              </div>
 
-                  {/* Member Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between mb-1">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 text-base truncate">
-                          {member.name}
-                        </h3>
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mt-1">
-                          <div className="flex items-center gap-1">
-                            <Phone className="w-3 h-3 text-gray-400" />
-                            <span className="text-gray-500 text-xs truncate">
-                              {member.phone}
-                            </span>
-                          </div>
-                          {member.email && (
-                            <div className="flex items-center gap-1">
-                              <Mail className="w-3 h-3 text-gray-400" />
-                              <span className="text-gray-500 text-xs truncate hidden sm:block">
-                                {member.email}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <div
-                          className={`px-2.5 py-1.5 rounded-lg border ${statusConfig.color} ${statusConfig.text} flex items-center gap-1.5`}
-                        >
-                          <div className={statusConfig.text}>
-                            {statusConfig.icon}
-                          </div>
-                          <span className="text-xs font-medium">
-                            {statusConfig.label}
-                          </span>
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-gray-400" />
-                      </div>
-                    </div>
-                    
-                      {/* Days remaining for active memberships */}
-                      {member.daysRemaining !== null && (
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-gray-400" />
-                          <span
-                            className={`text-xs ${getDaysRemainingColor(
-                              member.daysRemaining
-                            )}`}
-                          >
-                            {member.daysRemaining > 0
-                              ? `${member.daysRemaining} days remaining`
-                              : "Membership expired"}
-                          </span>
-                        </div>
-                      )}
-                    {/* Plan and Status Info */}
-                    <div className="mt-3 space-y-2">
-                      {/* Show if created by trainer */}
-                   
+              <ChevronRight className="w-4 h-4 text-[#897267]" />
+            </div>
+          </div>
 
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
-                            <UserIcon className="w-4 h-4 text-blue-600" />
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-500">Plan</p>
-                            <p className="text-sm font-medium text-gray-900">
-                              {member.plan}
-                            </p>
-                          </div>
-                        </div>
+          {member.daysRemaining !== null && (
+            <div className="flex items-center gap-2 mt-2">
+              <Calendar className="w-4 h-4 text-[#897267]" />
+              <span className={`text-xs ${getDaysRemainingColor(member.daysRemaining)}`}>
+                {member.daysRemaining > 0
+                  ? `${member.daysRemaining} days remaining`
+                  : "Membership expired"}
+              </span>
+            </div>
+          )}
 
-                        <div className="text-right">
-                          <p className="text-xs text-gray-500">Valid Till</p>
-                          <p className="text-sm font-medium text-gray-900">
-                            {member.validTill}
-                          </p>
-                        </div>
-                      </div>
-
-
-                      {/* Trainer plan expiry */}
-                      {member.trainerAssignment &&
-                        member.trainerAssignment.trainerPlanDaysRemaining !==
-                          null && (
-                          <div className="flex items-center gap-2">
-                            <Users className="w-4 h-4 text-purple-400" />
-                            <span
-                              className={`text-xs ${
-                                member.trainerAssignment
-                                  .trainerPlanDaysRemaining <= 0
-                                  ? "text-red-600 font-semibold"
-                                  : member.trainerAssignment
-                                      .trainerPlanDaysRemaining <= 7
-                                  ? "text-amber-600 font-semibold"
-                                  : "text-purple-600"
-                              }`}
-                            >
-                              {member.trainerAssignment
-                                .trainerPlanDaysRemaining > 0
-                                ? `Trainer plan: ${member.trainerAssignment.trainerPlanDaysRemaining} days remaining`
-                                : "Trainer plan expired"}
-                            </span>
-                          </div>
-                        )}
-
-                      {member.dueAmount > 0 && (
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center">
-                            <CreditCard className="w-4 h-4 text-amber-600" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-xs text-gray-500">
-                              Pending Payment
-                            </p>
-                            <p className="text-sm font-semibold text-amber-600">
-                              {canViewFinance
-                                ? `₹${member.dueAmount}`
-                                : "*****"}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex space-x-2 overflow-x-auto mt-3 pt-3 border-t border-gray-100 pb-1 -mx-1 px-1 no-scrollbar">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/members/${member.id}/credentials`);
-                        }}
-                        title={member.hasCredentials ? "Credentials" : "Setup Login"}
-                        aria-label={member.hasCredentials ? "Credentials" : "Setup Login"}
-                        className="flex-shrink-0 px-2.5 sm:px-3 py-2 bg-blue-50 text-blue-700 cursor-pointer text-xs font-medium rounded-lg active:bg-blue-100 transition-all flex items-center justify-center gap-0 sm:gap-2"
-                        style={{ minHeight: "36px" }}
-                      >
-                        <Key className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">
-                          {member.hasCredentials ? "Credentials" : "Setup Login"}
-                        </span>
-                      </button>
-
-                      {/* Share Receipt Button */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedMember(member);
-                          setShowShareReceiptModal(true);
-                        }}
-                        title="Share Receipt"
-                        aria-label="Share Receipt"
-                        className="flex-shrink-0 px-2.5 sm:px-3 py-2 bg-green-50 text-green-700 cursor-pointer text-xs font-medium rounded-lg active:bg-green-100 transition-all flex items-center justify-center gap-0 sm:gap-2"
-                        style={{ minHeight: "36px" }}
-                      >
-                        <Share2 className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">Share Receipt</span>
-                      </button>
-
-                      {canShowRenewReminder && (
-                        <button
-                          onClick={(e) => handleRenewalReminder(e, member)}
-                          title="Remind"
-                          aria-label="Remind"
-                          className="flex-shrink-0 px-2.5 sm:px-3 py-2 bg-emerald-100 text-emerald-700 cursor-pointer text-xs font-medium rounded-lg active:bg-emerald-200 transition-all flex items-center justify-center gap-0 sm:gap-2"
-                          style={{ minHeight: "36px" }}
-                        >
-                          <MessageCircle className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">Remind</span>
-                        </button>
-                      )}
-
-                      {(member.status === "expired" || member.status === "renewal") && (
-                        <button
-                          onClick={(e) => handleRenewClick(e, member)}
-                          title="Renew"
-                          aria-label="Renew"
-                          className="flex-shrink-0 px-2.5 sm:px-3 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-xs font-medium rounded-lg active:scale-95 transition-all flex items-center justify-center gap-0 sm:gap-2"
-                          style={{ minHeight: "36px" }}
-                        >
-                          <RefreshCw className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">Renew</span>
-                        </button>
-                      )}
-
-                      {!isTrainer && !isViewOnly && (
-                        <button
-                          onClick={(e) => handleDeleteMember(e, member)}
-                          title="Delete"
-                          aria-label="Delete"
-                          className="flex-shrink-0 px-2.5 sm:px-3 py-2 bg-red-50 cursor-pointer text-red-700 text-xs font-medium rounded-lg active:bg-red-100 transition-all flex items-center justify-center gap-0 sm:gap-2"
-                          style={{ minHeight: "36px" }}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">Delete</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
+          <div className="mt-4 space-y-3 pt-4 border-t border-[#f1f1f1]">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 bg-[#f0813d]/10 rounded-2xl flex items-center justify-center">
+                  <UserIcon className="w-4 h-4 text-[#f0813d]" />
+                </div>
+                <div>
+                  <p className="text-xs text-[#897267]">Plan</p>
+                  <p className="text-sm font-bold text-[#1a1c1c]">
+                    {member.plan}
+                  </p>
                 </div>
               </div>
-            );
-          })}
+
+              <div className="text-right">
+                <p className="text-xs text-[#897267]">Valid Till</p>
+                <p className="text-sm font-bold text-[#1a1c1c]">
+                  {member.validTill}
+                </p>
+              </div>
+            </div>
+
+            {member.dueAmount > 0 && (
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 bg-[#f0813d]/10 rounded-2xl flex items-center justify-center">
+                  <CreditCard className="w-4 h-4 text-[#f0813d]" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs text-[#897267]">Pending Payment</p>
+                  <p className="text-sm font-black text-[#f0813d]">
+                    {canViewFinance ? `₹${member.dueAmount}` : "*****"}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex space-x-2 overflow-x-auto mt-4 pt-4 border-t border-[#f1f1f1] pb-1 -mx-1 px-1 no-scrollbar">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push(`/members/${member.id}/credentials`);
+              }}
+              className="flex-shrink-0 px-3 py-2 bg-[#f0813d]/10 text-[#f0813d] text-xs font-bold rounded-xl active-scale"
+            >
+              <Key className="w-3.5 h-3.5 inline mr-1" />
+              Login
+            </button>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedMember(member);
+                setShowShareReceiptModal(true);
+              }}
+              className="flex-shrink-0 px-3 py-2 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-xl active-scale"
+            >
+              <Share2 className="w-3.5 h-3.5 inline mr-1" />
+              Receipt
+            </button>
+
+            {canShowRenewReminder && (
+              <button
+                onClick={(e) => handleRenewalReminder(e, member)}
+                className="flex-shrink-0 px-3 py-2 bg-[#f0813d]/10 text-[#f0813d] text-xs font-bold rounded-xl active-scale"
+              >
+                <MessageCircle className="w-3.5 h-3.5 inline mr-1" />
+                Remind
+              </button>
+            )}
+
+            {(member.status === "expired" || member.status === "renewal") && (
+              <button
+                onClick={(e) => handleRenewClick(e, member)}
+                className="flex-shrink-0 px-3 py-2 bg-[#1a1c1c] text-white text-xs font-bold rounded-xl active-scale"
+              >
+                <RefreshCw className="w-3.5 h-3.5 inline mr-1" />
+                Renew
+              </button>
+            )}
+
+            {!isTrainer && !isViewOnly && (
+              <button
+                onClick={(e) => handleDeleteMember(e, member)}
+                className="flex-shrink-0 px-3 py-2 bg-red-50 text-red-600 text-xs font-bold rounded-xl active-scale"
+              >
+                <Trash2 className="w-3.5 h-3.5 inline mr-1" />
+                Delete
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+})}
         </div>
 
         {/* Loading spinner for subsequent page/filter loads */}
@@ -1523,7 +1499,7 @@ Best regards,
         )}
 
         {/* Bottom spacing for bottom nav */}
-        <div className="pb-16" />
+        <div className="pb-16 md:pb-6" />
       </main>
 
       {/* Renew Membership Modal */}

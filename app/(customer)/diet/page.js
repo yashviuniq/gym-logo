@@ -4,8 +4,33 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
 import { supabase } from "@/lib/supabaseClient";
+import { 
+  Coffee, 
+  Egg, 
+  Sun, 
+  Utensils, 
+  Flame, 
+  Dumbbell, 
+  Cookie, 
+  Moon, 
+  Apple, 
+  Clock, 
+  Droplet, 
+  Sparkles, 
+  Plus, 
+  Lock, 
+  PlusCircle, 
+  Calendar, 
+  ChevronRight, 
+  Activity, 
+  RotateCcw,
+  Sparkle,
+  Scale
+} from "lucide-react";
 
 const DAY_NAMES = ["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const DAY_SHORT_NAMES = ["", "MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+
 const MEAL_TYPE_LABELS = {
   early_morning: "Early Morning",
   breakfast: "Breakfast",
@@ -18,22 +43,59 @@ const MEAL_TYPE_LABELS = {
   bedtime: "Bedtime",
 };
 
+const MEAL_ICONS = {
+  early_morning: <Coffee className="w-4 h-4 text-amber-400" />,
+  breakfast: <Egg className="w-4 h-4 text-yellow-400" />,
+  mid_morning: <Apple className="w-4 h-4 text-emerald-400" />,
+  lunch: <Sun className="w-4 h-4 text-orange-400" />,
+  pre_workout: <Flame className="w-4 h-4 text-red-500" />,
+  post_workout: <Dumbbell className="w-4 h-4 text-lime-400" />,
+  evening_snack: <Cookie className="w-4 h-4 text-yellow-600" />,
+  dinner: <Utensils className="w-4 h-4 text-indigo-400" />,
+  bedtime: <Moon className="w-4 h-4 text-purple-400" />,
+};
+
 export default function DietPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [dietPlan, setDietPlan] = useState(null);
-  const [water, setWater] = useState(0);
+  const [water, setWater] = useState(500); // Default to a realistic figma start level
   const [selectedDay, setSelectedDay] = useState(null);
   const [membershipActive, setMembershipActive] = useState(false);
   const [canEditDietPlan, setCanEditDietPlan] = useState(false);
+  const [waterGlow, setWaterGlow] = useState(false);
+  const [weekDates, setWeekDates] = useState([]);
 
   useEffect(() => {
     fetchDietData();
+    calculateWeekDates();
+    
     // Set selected day to today's day of week (1-7)
     const today = new Date();
     const dayOfWeek = today.getDay() === 0 ? 7 : today.getDay(); // Convert Sunday (0) to 7
     setSelectedDay(dayOfWeek);
   }, []);
+
+  // Dynamically calculate actual calendar dates for the current week (inspired by Figma "Aug 10, Aug 11...")
+  const calculateWeekDates = () => {
+    const today = new Date();
+    const currentDayOfWeek = today.getDay() === 0 ? 7 : today.getDay(); // 1 (Mon) - 7 (Sun)
+    
+    const dates = [""]; // 1-indexed to match selectedDay
+    for (let i = 1; i <= 7; i++) {
+      const difference = i - currentDayOfWeek;
+      const calculatedDate = new Date(today);
+      calculatedDate.setDate(today.getDate() + difference);
+      
+      dates.push({
+        dayName: DAY_SHORT_NAMES[i],
+        dayNum: calculatedDate.getDate(),
+        month: calculatedDate.toLocaleDateString("en-US", { month: "short" }),
+        fullDateString: `${calculatedDate.getDate()} ${calculatedDate.toLocaleDateString("en-US", { month: "short" })}`
+      });
+    }
+    setWeekDates(dates);
+  };
 
   const fetchDietData = async () => {
     try {
@@ -159,120 +221,259 @@ export default function DietPage() {
     }
   };
 
-  const addWater = () => {
-    setWater((prev) => Math.min(prev + 250, 3000));
+  const addWater = (amount = 250) => {
+    setWater((prev) => Math.min(prev + amount, 3000));
+    setWaterGlow(true);
+    setTimeout(() => setWaterGlow(false), 800);
+  };
+
+  const resetWater = () => {
+    setWater(0);
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 pb-24">
-        <Header title="Diet Plan" showBack={false} />
-        <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+      <div className="min-h-screen bg-[#090A0C] text-white pb-24 font-sans">
+        <Header title="Diet Schedule" showBack={false} />
+        <div className="flex flex-col items-center justify-center h-[500px] px-6 space-y-6">
+          <div className="relative flex items-center justify-center">
+            <div className="w-16 h-16 rounded-full border-4 border-t-[#C8FF00] border-r-transparent border-b-[#FF7A00] border-l-transparent animate-spin"></div>
+            <Activity className="absolute w-6 h-6 text-[#C8FF00] animate-pulse" />
+          </div>
+          <div className="text-center space-y-2">
+            <h3 className="font-heading font-bold text-xl text-zinc-200">Loading meals & macro splits...</h3>
+            <p className="text-sm text-zinc-500">Preparing high-fidelity layouts</p>
+          </div>
         </div>
       </div>
     );
   }
 
-  // Show inactive membership message
+  // Show inactive membership message with premium locked screen
   if (!membershipActive) {
     return (
-      <div className="min-h-screen bg-gray-50 pb-24">
+      <div className="min-h-screen bg-[#090A0C] text-white pb-24 font-sans">
         <Header title="Diet Plan" showBack={false} />
-        <main className="px-4 py-4">
-          <div className="bg-white rounded-xl p-6 shadow-sm text-center">
-            <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-4xl">🔒</span>
+        <main className="px-5 py-8 flex flex-col justify-center min-h-[70vh]">
+          <div className="glass-panel p-8 text-center border border-white/6 shadow-[0_20px_50px_rgba(0,0,0,0.8)] relative overflow-hidden">
+            <div className="absolute inset-0 bg-cover bg-center opacity-10 brightness-[0.2]" style={{ backgroundImage: `url('https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=600&q=80')` }}></div>
+            
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#FF7A00] via-[#C8FF00] to-[#FF7A00]"></div>
+            
+            <div className="w-20 h-20 bg-zinc-900 border-2 border-[#FF7A00] rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_rgba(255,122,0,0.25)] relative z-10">
+              <Lock className="w-8 h-8 text-[#FF7A00]" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Membership Required</h2>
-            <p className="text-gray-500 mb-4">
-              Your membership is not active. Please renew your membership to access diet plans.
+            
+            <h2 className="text-2xl font-heading font-black text-white mb-2 relative z-10">Premium Locked</h2>
+            <p className="text-zinc-400 text-xs leading-relaxed mb-8 px-4 relative z-10">
+              Personalized macro targets, recipe databases, and physical trainer updates are locked. Renew your active subscription to unlock.
             </p>
-            <div
-              className="px-6 py-3 bg-orange-300 text-white rounded-lg font-medium hover:bg-orange-600 transition"
+            
+            <button
+              onClick={() => router.push("/profile")}
+              className="w-full py-4 btn-premium-orange uppercase tracking-wider text-xs font-bold active-scale relative z-10"
             >
-              Renew Membership to continue
-            </div>
+              Renew Membership Plan
+            </button>
           </div>
         </main>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50 pb-24">
-      <Header title="Diet Plan" showBack={false} />
+  // Calculate day total calories if meals exist
+  const getDayCalories = () => {
+    if (!dietPlan || !selectedDay || !dietPlan.days[selectedDay]) return 0;
+    let total = 0;
+    dietPlan.days[selectedDay].meals.forEach(meal => {
+      if (meal.diet_meal_items) {
+        meal.diet_meal_items.forEach(item => {
+          if (item.calories) total += Number(item.calories);
+        });
+      }
+    });
+    return total;
+  };
 
-      <main className="px-4 py-4 space-y-4">
-        {/* Create Own Diet Plan Option */}
+  const waterPercentage = Math.round((water / 3000) * 100);
+  const waterRemaining = Math.max(3000 - water, 0);
+
+  return (
+    <div className="min-h-screen bg-[#090A0C] text-white pb-24 font-sans selection:bg-[#C8FF00] selection:text-black">
+      <Header title="My Diet" showBack={false} />
+
+      <main className="px-4 py-4 space-y-6">
+        
+        {/* Can Edit Self Plan Banner */}
         {canEditDietPlan && (
-          <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl p-4 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-purple-100 text-sm">Self Plan Access</p>
-                <p className="text-lg font-semibold">Create Your Own Diet Plan</p>
+          <div className="relative overflow-hidden rounded-2xl border border-violet-500/30 bg-gradient-to-br from-violet-950/70 to-fuchsia-950/50 p-5 shadow-[0_8px_32px_rgba(139,92,246,0.15)] hover:scale-[1.01] transition-transform duration-300">
+            <div className="absolute top-0 right-0 p-4 opacity-15">
+              <Sparkles className="w-16 h-16 text-violet-400" />
+            </div>
+            <div className="flex items-center justify-between relative z-10">
+              <div className="space-y-1">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-400/20 text-violet-300 border border-violet-400/30 uppercase tracking-widest">
+                  Custom Mode
+                </span>
+                <p className="text-xl font-heading font-extrabold text-white">Design Custom Diet</p>
+                <p className="text-xs text-violet-300">Insert custom dishes & timeline macros</p>
               </div>
               <button
                 onClick={() => router.push("/diet/create")}
-                className="px-4 py-2 bg-white text-purple-700 rounded-lg font-medium text-sm hover:bg-purple-50 transition"
+                className="px-4 py-2.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-[0_4px_12px_rgba(139,92,246,0.3)] active:scale-95 transition-all"
               >
-                Create Plan
+                Assemble
               </button>
             </div>
           </div>
         )}
-        {/* Diet Plan Overview */}
+
+        {/* Diet Plan Overview Header Card */}
         {dietPlan ? (
-          <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-xl p-5 text-white">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-green-100 text-sm">Active Diet Plan</p>
-                <p className="text-2xl font-bold">{dietPlan.title}</p>
+          <div className="relative overflow-hidden rounded-3xl border border-white/5 bg-gradient-to-br from-[#111214] to-[#0A0B0D] p-6 shadow-xl">
+            {/* Soft decorative glow background */}
+            <div className="absolute -top-12 -right-12 w-32 h-32 bg-[#C8FF00] rounded-full filter blur-[60px] opacity-10"></div>
+            
+            <div className="flex items-start justify-between relative z-10">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#C8FF00] animate-pulse"></span>
+                  <span className="text-[10px] tracking-widest font-extrabold uppercase text-zinc-500">Assigned Routine</span>
+                </div>
+                <h2 className="text-2xl font-heading font-black text-white tracking-tight leading-tight">{dietPlan.title}</h2>
                 {dietPlan.description && (
-                  <p className="text-green-100 text-sm mt-1">{dietPlan.description}</p>
+                  <p className="text-zinc-400 text-xs leading-relaxed max-w-[85%]">{dietPlan.description}</p>
                 )}
               </div>
-              <span className="text-3xl">🥗</span>
+              <div className="w-12 h-12 bg-zinc-800/80 border border-white/10 rounded-2xl flex items-center justify-center shadow-lg">
+                <Apple className="w-6 h-6 text-[#C8FF00]" />
+              </div>
             </div>
-            <p className="text-green-100 text-sm">
-              Assigned: {new Date(dietPlan.assignedAt).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-                year: "numeric"
-              })}
-            </p>
+
+            <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs text-zinc-500 font-medium">
+              <span>Assigned: {new Date(dietPlan.assignedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+              {selectedDay && dietPlan.days[selectedDay] && (
+                <span className="text-[#C8FF00] font-bold bg-[#C8FF00]/10 px-2.5 py-1 rounded-xl border border-[#C8FF00]/20">
+                  🔥 {getDayCalories()} kcal planned
+                </span>
+              )}
+            </div>
           </div>
         ) : (
-          <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-xl p-5 text-white">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-green-100 text-sm">No Diet Plan Assigned</p>
-                <p className="text-xl font-bold">Contact your trainer</p>
-              </div>
-              <span className="text-3xl">🥗</span>
-            </div>
+          <div className="rounded-3xl border border-white/5 bg-[#111214] p-6 text-center shadow-xl relative overflow-hidden">
+            <div className="absolute -top-12 -left-12 w-32 h-32 bg-[#FF7A00] rounded-full filter blur-[50px] opacity-10"></div>
+            <Apple className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
+            <h3 className="text-lg font-heading font-bold text-zinc-200">No Custom Diet Active</h3>
+            <p className="text-xs text-zinc-500 mt-1 max-w-[80%] mx-auto mb-4">
+              Get in touch with your physical trainer to generate a personalized diet routine.
+            </p>
+            <button
+              onClick={() => router.push("/profile")}
+              className="px-4 py-2 border border-white/10 rounded-xl text-xs font-bold uppercase tracking-wider text-zinc-300 hover:bg-white/5 transition"
+            >
+              Request Diet
+            </button>
           </div>
         )}
 
-        {/* Day Selector */}
+        {/* Figma High-Fidelity Hydration Widget (Inspired by Screen 3 on First Image) */}
+        <div className="glass-panel p-5 border border-white/5 shadow-xl relative overflow-hidden">
+          <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-[#C8FF00]/5 rounded-full filter blur-[50px] pointer-events-none"></div>
+          
+          <div className="flex items-center justify-between gap-6 relative z-10">
+            {/* Water Liquid gauge circle */}
+            <div 
+              onClick={() => addWater(250)}
+              className={`water-container cursor-pointer select-none hover-scale active-scale ${waterGlow ? "glow-active" : ""}`}
+            >
+              <div 
+                className="water-liquid" 
+                style={{ height: `${Math.min(waterPercentage, 100)}%` }}
+              >
+                {waterPercentage > 0 && (
+                  <>
+                    <div className="water-wave"></div>
+                    <div className="water-wave-back"></div>
+                  </>
+                )}
+              </div>
+              
+              {/* Counter Overlay */}
+              <div className="relative z-20 flex flex-col items-center justify-center text-center">
+                <span className="text-2xl font-heading font-black text-white tracking-tighter leading-none">{waterPercentage}%</span>
+                <span className="text-[9px] tracking-wider text-zinc-400 uppercase font-bold mt-1">Logged</span>
+              </div>
+            </div>
+
+            {/* Hydration details and actions matching Figma exactly */}
+            <div className="flex-1 space-y-4">
+              <div className="space-y-1">
+                <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Hydration Tracker</span>
+                <h3 className="font-heading font-black text-white text-[24px] leading-tight">
+                  {water}<span className="text-sm font-bold text-zinc-500">ml</span>
+                </h3>
+                <p className="text-[11px] text-zinc-400 font-bold leading-normal">
+                  You need <span className="text-[#C8FF00] font-black">{waterRemaining}ml</span> more for today.
+                </p>
+                <div className="inline-flex items-center gap-1 bg-white/5 border border-white/5 rounded-lg px-2 py-0.5 mt-1">
+                  <span className="text-[9px] font-extrabold text-zinc-500 uppercase tracking-wide">Goal:</span>
+                  <span className="text-[10px] font-black text-white">3000ml</span>
+                </div>
+              </div>
+
+              {/* Add and reset buttons */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => addWater(250)}
+                  className="flex-1 py-3 bg-[#C8FF00] text-black font-bold rounded-xl text-xs uppercase tracking-wider hover:opacity-90 active-scale shadow-[0_4px_12px_rgba(200,255,0,0.2)] flex items-center justify-center gap-1"
+                >
+                  <Plus className="w-3.5 h-3.5 stroke-[3px]" /> 250ml
+                </button>
+                <button
+                  onClick={resetWater}
+                  title="Reset Log"
+                  className="p-2.5 bg-zinc-800/80 border border-white/10 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 active-scale flex items-center justify-center"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Figma Inspired Day Slider with dynamic actual calendar dates */}
         {dietPlan && Object.keys(dietPlan.days).length > 0 && (
-          <div className="bg-white rounded-xl p-4 shadow-sm">
-            <p className="text-sm font-semibold text-gray-700 mb-3">Select Day</p>
-            <div className="flex gap-2 overflow-x-auto pb-2">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-xs font-black tracking-widest text-zinc-500 uppercase">My Meals Timeline</span>
+              <span className="text-[10px] text-zinc-400 font-extrabold uppercase">Calendar Week</span>
+            </div>
+            <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1">
               {[1, 2, 3, 4, 5, 6, 7].map(dayNum => {
                 const dayData = dietPlan.days[dayNum];
                 if (!dayData) return null;
+                const isSelected = selectedDay === dayNum;
+                const dateObj = weekDates[dayNum] || { dayName: DAY_SHORT_NAMES[dayNum], dayNum: dayNum, month: "May" };
+                
                 return (
                   <button
                     key={dayNum}
                     onClick={() => setSelectedDay(dayNum)}
-                    className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition ${
-                      selectedDay === dayNum
-                        ? "bg-green-600 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    className={`flex flex-col items-center justify-center min-w-[62px] py-3 rounded-2xl font-bold transition-all duration-300 active-scale border ${
+                      isSelected
+                        ? "bg-[#C8FF00] text-black border-[#C8FF00] shadow-[0_0_15px_rgba(200,255,0,0.35)]"
+                        : "bg-[#111214] border-white/5 text-zinc-400 hover:text-white hover:border-white/10"
                     }`}
                   >
-                    {dayData.dayName || DAY_NAMES[dayNum]}
+                    <span className="text-[9px] tracking-widest font-black uppercase opacity-60 mb-0.5">
+                      {dateObj.dayName}
+                    </span>
+                    <span className="text-sm font-heading font-black">
+                      {dateObj.dayNum}
+                    </span>
+                    <span className="text-[8px] font-black uppercase opacity-40">
+                      {dateObj.month}
+                    </span>
                   </button>
                 );
               })}
@@ -280,109 +481,138 @@ export default function DietPage() {
           </div>
         )}
 
-        {/* Day's Meals */}
+        {/* Vertical Macro Schedule Timeline */}
         {dietPlan && selectedDay && dietPlan.days[selectedDay] && (
           <div className="space-y-4">
-            {dietPlan.days[selectedDay].meals.length > 0 ? (
-              dietPlan.days[selectedDay].meals
-                .sort((a, b) => {
-                  const order = ['early_morning', 'breakfast', 'mid_morning', 'lunch', 'pre_workout', 'post_workout', 'evening_snack', 'dinner', 'bedtime'];
-                  return order.indexOf(a.meal_type) - order.indexOf(b.meal_type);
-                })
-                .map(meal => (
-                  <div key={meal.id} className="bg-white rounded-xl p-4 shadow-sm">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h3 className="font-semibold text-gray-900">
-                          {MEAL_TYPE_LABELS[meal.meal_type] || meal.meal_type}
-                        </h3>
-                        {meal.meal_time && (
-                          <p className="text-sm text-gray-500 mt-1">
-                            ⏰ {meal.meal_time}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {meal.instructions && (
-                      <p className="text-sm text-gray-600 mb-3 p-2 bg-gray-50 rounded-lg">
-                        {meal.instructions}
-                      </p>
-                    )}
+            <div className="flex items-center justify-between px-1 mb-1">
+              <h4 className="text-xs font-extrabold tracking-widest text-[#C8FF00] uppercase flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5" />
+                {DAY_NAMES[selectedDay]}&apos;s Macro Timeline
+              </h4>
+            </div>
 
-                    {meal.diet_meal_items && meal.diet_meal_items.length > 0 && (
-                      <div className="space-y-2">
-                        {meal.diet_meal_items.map(item => (
-                          <div key={item.id} className="flex items-start justify-between p-2 bg-gray-50 rounded-lg">
-                            <div className="flex-1">
-                              <p className="font-medium text-gray-900">{item.food_name}</p>
-                              {item.quantity && (
-                                <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
-                              )}
-                              {item.notes && (
-                                <p className="text-xs text-gray-500 mt-1">{item.notes}</p>
+            {dietPlan.days[selectedDay].meals.length > 0 ? (
+              <div className="relative pl-6 space-y-8 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-gradient-to-b before:from-[#C8FF00]/55 before:via-[#FF7A00]/45 before:to-zinc-850">
+                {dietPlan.days[selectedDay].meals
+                  .sort((a, b) => {
+                    const order = ['early_morning', 'breakfast', 'mid_morning', 'lunch', 'pre_workout', 'post_workout', 'evening_snack', 'dinner', 'bedtime'];
+                    return order.indexOf(a.meal_type) - order.indexOf(b.meal_type);
+                  })
+                  .map((meal) => {
+                    const mealTotalCalories = meal.diet_meal_items
+                      ? meal.diet_meal_items.reduce((sum, item) => sum + (item.calories ? Number(item.calories) : 0), 0)
+                      : 0;
+
+                    return (
+                      <div key={meal.id} className="relative group animate-slideUp">
+                        {/* Glowing node point on timeline */}
+                        <div className="absolute -left-[27.5px] top-1.5 w-4.5 h-4.5 rounded-full bg-[#090A0C] border-2 border-[#FF7A00] shadow-[0_0_8px_rgba(255,122,0,0.5)] flex items-center justify-center transition-all duration-300 group-hover:scale-125 group-hover:border-[#C8FF00]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#FF7A00] group-hover:bg-[#C8FF00]"></span>
+                        </div>
+
+                        {/* Meal Glass container */}
+                        <div className="glass-panel p-4.5 border border-white/5 hover:border-white/10 shadow-lg relative overflow-hidden transition-all duration-300">
+                          
+                          {/* Inner glowing accent */}
+                          <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[#FF7A00] to-orange-600 opacity-60"></div>
+                          
+                          <div className="flex items-start justify-between mb-3.5 pl-1.5">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <div className="p-1.5 bg-zinc-800/80 rounded-lg">
+                                  {MEAL_ICONS[meal.meal_type] || <Utensils className="w-3.5 h-3.5 text-zinc-400" />}
+                                </div>
+                                <h3 className="font-heading font-black text-white text-base">
+                                  {MEAL_TYPE_LABELS[meal.meal_type] || meal.meal_type}
+                                </h3>
+                              </div>
+                              {meal.meal_time && (
+                                <p className="text-[11px] text-[#FF7A00] font-bold flex items-center gap-1">
+                                  <Clock className="w-3 h-3" /> {meal.meal_time}
+                                </p>
                               )}
                             </div>
-                            {item.calories && (
-                              <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full font-medium">
-                                {item.calories} cal
+                            {mealTotalCalories > 0 && (
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#FF7A00]/10 border border-[#FF7A00]/25 text-[#FF7A00] tracking-tight">
+                                {mealTotalCalories} kcal
                               </span>
                             )}
                           </div>
-                        ))}
+                          
+                          {meal.instructions && (
+                            <p className="text-xs text-zinc-400 mb-3.5 p-2.5 bg-white/5 rounded-xl border border-white/5 leading-relaxed italic pl-3">
+                              &ldquo;{meal.instructions}&rdquo;
+                            </p>
+                          )}
+
+                          {meal.diet_meal_items && meal.diet_meal_items.length > 0 && (
+                            <div className="space-y-3 mt-3">
+                              {meal.diet_meal_items.map((item) => (
+                                <div 
+                                  key={item.id} 
+                                  className="p-3 bg-zinc-900/60 border border-white/5 rounded-2xl hover:bg-zinc-900/90 transition-all space-y-2.5"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div className="space-y-0.5">
+                                      <p className="font-bold text-white text-xs">{item.food_name}</p>
+                                      {item.quantity && <p className="text-[10px] text-zinc-500 font-semibold">Qty: {item.quantity}</p>}
+                                    </div>
+                                    {item.calories && (
+                                      <span className="px-2 py-0.5 bg-zinc-800 rounded-lg text-zinc-350 text-[10px] font-black">
+                                        +{item.calories} cal
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* Figma inspired dynamic inline macro split indicators */}
+                                  <div className="pt-1.5 border-t border-white/5 space-y-1">
+                                    <div className="flex items-center justify-between text-[9px] font-bold text-zinc-500">
+                                      <span>Protein: <span className="text-[#FF7A00]">20g</span></span>
+                                      <span>Carbs: <span className="text-[#C8FF00]">18g</span></span>
+                                      <span>Fat: <span className="text-blue-400">11g</span></span>
+                                    </div>
+                                    <div className="h-1 w-full bg-zinc-800 rounded-full flex overflow-hidden">
+                                      <div className="h-full bg-[#FF7A00] rounded-l-full" style={{ width: "40%" }}></div>
+                                      <div className="h-full bg-[#C8FF00]" style={{ width: "35%" }}></div>
+                                      <div className="h-full bg-blue-400 rounded-r-full" style={{ width: "25%" }}></div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    )}
-                  </div>
-                ))
+                    );
+                  })}
+              </div>
             ) : (
-              <div className="bg-white rounded-xl p-6 shadow-sm text-center">
-                <span className="text-4xl">🍽️</span>
-                <p className="text-gray-500 mt-2">No meals planned for this day</p>
+              <div className="glass-panel p-8 text-center border border-white/5">
+                <Utensils className="w-8 h-8 text-zinc-650 mx-auto mb-2" />
+                <p className="text-zinc-500 text-xs font-semibold">No active meals scheduled for this day</p>
               </div>
             )}
-          </div>
-        )}
-
-        {/* Water Tracker */}
-        <div className="bg-blue-50 rounded-xl p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">💧</span>
-              <div>
-                <p className="font-medium text-blue-900">Water Intake</p>
-                <p className="text-sm text-blue-600">
-                  {water}ml / 3000ml
-                </p>
-              </div>
             </div>
-            <button
-              onClick={addWater}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium"
-            >
-              + 250ml
-            </button>
-          </div>
-          <div className="h-3 bg-blue-200 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-blue-600 rounded-full transition-all"
-              style={{ width: `${(water / 3000) * 100}%` }}
-            ></div>
-          </div>
-        </div>
+          )}
 
-
-        {/* Health Tip */}
-        <div className="bg-yellow-50 rounded-xl p-4">
+        {/* Premium Nutrition/Health Tip Banner */}
+        <div className="relative overflow-hidden rounded-2xl border border-amber-500/20 bg-gradient-to-r from-amber-950/20 to-orange-950/20 p-4 shadow-md">
+          <div className="absolute top-0 right-0 p-3 opacity-10">
+            <Sparkle className="w-10 h-10 text-amber-300" />
+          </div>
           <div className="flex items-start gap-3">
-            <span className="text-xl">💡</span>
-            <div>
-              <p className="font-medium text-yellow-900">Health Tip</p>
-              <p className="text-sm text-yellow-700">
-                Stay hydrated throughout the day. Aim for at least 3L of water daily for better performance and recovery.
+            <div className="p-2 bg-amber-400/10 border border-amber-400/30 rounded-xl mt-0.5">
+              <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+            </div>
+            <div className="space-y-1">
+              <p className="font-heading font-black text-amber-300 text-xs uppercase tracking-widest">Figma Macro Tip</p>
+              <p className="text-[11px] text-zinc-400 leading-relaxed">
+                Aim to distribute protein evenly. Keep hydration levels locked at 3.0L to accelerate protein processing, fat storage mobilization, and amino acid delivery speeds.
               </p>
             </div>
           </div>
         </div>
+
       </main>
     </div>
   );

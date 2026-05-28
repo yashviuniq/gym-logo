@@ -775,7 +775,7 @@ export default function FinancePage() {
 
   if (!selectedGym) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom">
+      <div className="min-h-screen bg-[#f6f3f1] text-[#1a1c1c] safe-area-inset-bottom">
         <Header title="Finance" showBack={false} />
         <main className="px-4 py-4">
           <div className="text-center py-12">
@@ -803,9 +803,10 @@ export default function FinancePage() {
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom">
       <Header title="Finance" showBack={false} />
 
-      <main className="px-3 py-3 space-y-4">
+      <main className="px-3 md:px-8 lg:px-12 py-3 md:py-6 space-y-4 max-w-7xl mx-auto w-full">
         {/* Date Filter - Mobile Optimized */}
-        <div className="bg-white rounded-xl p-3 mx-1 border border-gray-200 shadow-sm">
+        <div className="relative overflow-hidden bg-white rounded-[28px] p-4 mx-1 border border-[#ececec] shadow-[0_10px_35px_rgba(0,0,0,0.06)]">
+  <div className="absolute top-0 right-0 w-28 h-28 bg-gradient-to-br from-[#f0813d]/10 to-transparent rounded-full blur-2xl pointer-events-none" />
           <div className="flex items-center gap-2 mb-3">
             <Filter className="w-4 h-4 text-gray-500" />
             <span className="text-sm font-medium text-gray-700">Period</span>
@@ -817,7 +818,7 @@ export default function FinancePage() {
                 onClick={() => setDateFilter(filter)}
                 className={`flex-shrink-0 px-4 py-2.5 rounded-lg text-xs font-medium transition-all duration-200 capitalize flex items-center gap-2 ${
                   dateFilter === filter
-                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
+                    ? "bg-gradient-to-r from-[#f0813d] to-[#9c4400] text-white shadow-md"
                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
                 style={{ minHeight: '36px' }}
@@ -874,8 +875,9 @@ export default function FinancePage() {
         </div>
 
         {/* Stats Cards - Mobile Optimized */}
-        <div className="grid grid-cols-2 gap-2 px-1">
-          <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 px-1">
+          <div className="relative overflow-hidden bg-white rounded-[24px] p-4 border border-[#ececec] shadow-[0_10px_30px_rgba(0,0,0,0.05)]">
+  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[#f0813d]/10 to-transparent rounded-full blur-2xl pointer-events-none" />
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-medium">
@@ -891,7 +893,8 @@ export default function FinancePage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
+          <div className="relative overflow-hidden bg-white rounded-[24px] p-4 border border-[#ececec] shadow-[0_10px_30px_rgba(0,0,0,0.05)]">
+  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[#f0813d]/10 to-transparent rounded-full blur-2xl pointer-events-none" />
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-medium">
@@ -907,7 +910,8 @@ export default function FinancePage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
+          <div className="relative overflow-hidden bg-white rounded-[24px] p-4 border border-[#ececec] shadow-[0_10px_30px_rgba(0,0,0,0.05)]">
+  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[#f0813d]/10 to-transparent rounded-full blur-2xl pointer-events-none" />
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-medium">Pending Dues</p>
@@ -921,7 +925,8 @@ export default function FinancePage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
+          <div className="relative overflow-hidden bg-white rounded-[24px] p-4 border border-[#ececec] shadow-[0_10px_30px_rgba(0,0,0,0.05)]">
+  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[#f0813d]/10 to-transparent rounded-full blur-2xl pointer-events-none" />
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-medium">Net Profit</p>
@@ -949,25 +954,35 @@ export default function FinancePage() {
         </div>
 
         {/* Finance Insights Quick Link */}
-        <button
-          onClick={() => router.push("/finance/insights")}
-          className="w-full bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl p-3 mx-1 shadow-md flex items-center justify-between text-white active:scale-[0.98] transition-transform"
-          style={{ maxWidth: 'calc(100% - 8px)' }}
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-              <BarChart3 className="w-5 h-5 text-white" />
-            </div>
-            <div className="text-left">
-              <p className="text-sm font-semibold">Finance Insights</p>
-              <p className="text-xs text-white/80">All-time stats & monthly breakdown</p>
-            </div>
-          </div>
-          <ChevronRight className="w-5 h-5 text-white/70" />
-        </button>
+        {/* Finance Insights Quick Link */}
+<button
+  onClick={() => router.push("/finance/insights")}
+  className="relative overflow-hidden w-full bg-gradient-to-br from-[#1f1f1f] via-[#2b2b2b] to-[#111111] rounded-[30px] p-5 mx-1 shadow-[0_20px_50px_rgba(0,0,0,0.18)] flex items-center justify-between text-white active:scale-[0.98] transition-transform"
+  style={{ maxWidth: 'calc(100% - 8px)' }}
+>
+  <div className="absolute -right-10 -top-10 w-40 h-40 bg-[#f0813d]/20 rounded-full blur-3xl" />
 
+  <div className="absolute bottom-0 right-0 opacity-10 text-[120px] font-black leading-none">
+    ₹
+  </div>
+
+  <div className="flex items-center gap-3 relative z-10">
+    <div className="w-10 h-10 bg-[#f0813d]/20 border border-[#f0813d]/20 rounded-lg flex items-center justify-center">
+      <BarChart3 className="w-5 h-5 text-white" />
+    </div>
+
+    <div className="text-left">
+      <p className="text-sm font-semibold">Finance Insights</p>
+      <p className="text-xs text-white/80">
+        All-time stats & monthly breakdown
+      </p>
+    </div>
+  </div>
+
+  <ChevronRight className="w-5 h-5 text-white/70 relative z-10" />
+</button>
         {/* Tabs - Mobile Optimized */}
-        <div className="bg-white rounded-xl p-3 mx-1 border border-gray-200 shadow-sm">
+        <div className="bg-white rounded-[28px] p-4 mx-1 border border-[#ececec] shadow-[0_10px_35px_rgba(0,0,0,0.06)]">
           <div className="flex items-center gap-2 mb-3">
             <Filter className="w-4 h-4 text-gray-500" />
             <span className="text-sm font-medium text-gray-700">View</span>
@@ -983,8 +998,8 @@ export default function FinancePage() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex flex-col items-center justify-center py-3 rounded-lg text-xs font-medium transition-all duration-200 ${
                   activeTab === tab.id
-                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    ? "bg-gradient-to-r from-[#f0813d] to-[#9c4400] text-white shadow-md"
+                    : "bg-[#f5f5f5] text-[#5f5f5f] hover:bg-[#ece7e2]"
                 }`}
                 style={{ minHeight: '64px' }}
               >

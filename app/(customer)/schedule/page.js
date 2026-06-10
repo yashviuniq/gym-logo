@@ -169,7 +169,7 @@ export default function SchedulePage() {
       <div className="min-h-screen bg-gray-50 pb-24">
         <Header title="Schedule" showBack={false} />
         <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#f0813d]"></div>
         </div>
       </div>
     );
@@ -213,7 +213,7 @@ export default function SchedulePage() {
                   day.isToday
                     ? "bg-black text-white"
                     : day.completed
-                    ? "bg-green-100"
+                    ? "bg-orange-100"
                     : ""
                 }`}
               >
@@ -226,7 +226,7 @@ export default function SchedulePage() {
                   {day.dayNumber}
                 </p>
                 {day.completed && !day.isToday && (
-                  <span className="text-green-600 text-xs">✓</span>
+                  <span className="text-[#f0813d] text-xs">✓</span>
                 )}
               </div>
             ))}
@@ -235,8 +235,8 @@ export default function SchedulePage() {
 
         {/* Today's Schedule */}
         {todaySchedule && (
-          <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl p-5 text-white">
-            <p className="text-purple-100 text-sm">
+          <div className="bg-gradient-to-br from-[#f0813d] to-[#f0813d] rounded-xl p-5 text-white">
+            <p className="text-orange-100 text-sm">
               Today - {todaySchedule.day}
             </p>
             <h2 className="text-xl font-bold mb-3">
@@ -264,16 +264,16 @@ export default function SchedulePage() {
                 <div
                   key={day.date}
                   className={`p-4 flex items-center justify-between ${
-                    day.isToday ? "bg-purple-50" : ""
+                    day.isToday ? "bg-orange-50" : ""
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <div
                       className={`w-10 h-10 rounded-full flex items-center justify-center font-medium ${
                         day.isToday
-                          ? "bg-purple-600 text-white"
+                          ? "bg-[#f0813d] text-white"
                           : day.completed
-                          ? "bg-green-100 text-green-600"
+                          ? "bg-orange-100 text-[#f0813d]"
                           : "bg-gray-100 text-gray-600"
                       }`}
                     >
@@ -282,7 +282,7 @@ export default function SchedulePage() {
                     <div>
                       <p
                         className={`font-medium ${
-                          day.isToday ? "text-purple-900" : "text-gray-900"
+                          day.isToday ? "text-orange-900" : "text-gray-900"
                         }`}
                       >
                         {day.workout}
@@ -296,12 +296,12 @@ export default function SchedulePage() {
                     </div>
                   </div>
                   {day.isToday && (
-                    <span className="px-2 py-1 bg-purple-600 text-white text-xs rounded-full">
+                    <span className="px-2 py-1 bg-[#f0813d] text-white text-xs rounded-full">
                       Today
                     </span>
                   )}
                   {day.completed && !day.isToday && (
-                    <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                    <span className="px-2 py-1 bg-orange-100 text-[#f0813d] text-xs rounded-full">
                       Attended
                     </span>
                   )}
@@ -344,9 +344,9 @@ export default function SchedulePage() {
                   <div
                     className={`w-10 h-10 rounded-full flex items-center justify-center ${
                       event.type === "training"
-                        ? "bg-blue-100"
+                        ? "bg-orange-100"
                         : event.type === "checkup"
-                        ? "bg-green-100"
+                        ? "bg-orange-100"
                         : "bg-orange-100"
                     }`}
                   >

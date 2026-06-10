@@ -324,7 +324,7 @@ export default function TrainerAttendanceQuickPage() {
       <div className="min-h-screen bg-gray-50 pb-24">
         <Header title="Trainer Attendance" />
         <div className="flex items-center justify-center py-16">
-          <div className="w-9 h-9 rounded-full border-4 border-violet-200 border-t-violet-600 animate-spin"></div>
+          <div className="w-9 h-9 rounded-full border-4 border-[#f0813d]/20 border-t-[#9c4400] animate-spin"></div>
         </div>
       </div>
     );
@@ -339,7 +339,7 @@ export default function TrainerAttendanceQuickPage() {
             <p className="text-gray-600">No gym selected. Open the dashboard first and choose a gym.</p>
             <button
               onClick={() => router.push("/admin/dashboard")}
-              className="mt-4 px-4 py-2 bg-violet-600 text-white rounded-lg font-medium"
+              className="mt-4 px-4 py-2 bg-[#9c4400] text-white rounded-lg font-medium"
             >
               Go to Dashboard
             </button>
@@ -362,7 +362,7 @@ export default function TrainerAttendanceQuickPage() {
             </div>
             <button
               onClick={() => router.push("/settings/trainers")}
-              className="px-3 py-2 text-sm font-medium text-violet-700 bg-violet-50 rounded-lg hover:bg-violet-100"
+              className="px-3 py-2 text-sm font-medium text-[#9c4400] bg-[#f0813d]/10 rounded-lg hover:bg-[#f0813d]/15"
             >
               Open Trainer Management
             </button>
@@ -377,7 +377,7 @@ export default function TrainerAttendanceQuickPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search trainer..."
-                  className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                  className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#f0813d]/20 focus:border-transparent"
                 />
               </div>
 
@@ -398,7 +398,7 @@ export default function TrainerAttendanceQuickPage() {
                         }}
                         className={`w-full text-left rounded-xl border px-3 py-3 transition-colors ${
                           isSelected
-                            ? "border-violet-300 bg-violet-50"
+                            ? "border-[#f0813d]/30 bg-[#f0813d]/10"
                             : "border-gray-200 bg-white hover:bg-gray-50"
                         }`}
                       >
@@ -410,7 +410,7 @@ export default function TrainerAttendanceQuickPage() {
                               {trainer.monthlySalary ? ` • ₹${Number(trainer.monthlySalary).toLocaleString("en-IN")}` : ""}
                             </p>
                           </div>
-                          <ChevronRight className={`w-4 h-4 ${isSelected ? "text-violet-600" : "text-gray-400"}`} />
+                          <ChevronRight className={`w-4 h-4 ${isSelected ? "text-[#f0813d]" : "text-gray-400"}`} />
                         </div>
                       </button>
                     );
@@ -422,10 +422,10 @@ export default function TrainerAttendanceQuickPage() {
             <div className="flex-1 space-y-4">
               {selectedTrainer ? (
                 <>
-                  <div className="bg-violet-50 border border-violet-100 rounded-xl p-4">
+                  <div className="bg-[#f0813d]/10 border border-[#f0813d]/10 rounded-xl p-4">
                     <div className="flex items-start justify-between gap-3 flex-wrap">
                       <div>
-                        <p className="text-xs uppercase tracking-wide text-violet-600 font-semibold">Selected Trainer</p>
+                        <p className="text-xs uppercase tracking-wide text-[#f0813d] font-semibold">Selected Trainer</p>
                         <h3 className="text-xl font-bold text-gray-900 mt-1">{selectedTrainer.name}</h3>
                         <p className="text-sm text-gray-500 mt-1">{selectedTrainer.specialization || "Trainer"}</p>
                       </div>
@@ -436,18 +436,18 @@ export default function TrainerAttendanceQuickPage() {
                             type="month"
                             value={selectedMonth}
                             onChange={(e) => setSelectedMonth(e.target.value)}
-                            className="pl-9 pr-3 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                            className="pl-9 pr-3 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:ring-2 focus:ring-[#f0813d]/20 focus:border-transparent"
                           />
                         </div>
                         <button
                           onClick={() => setViewMode("today")}
-                          className={`px-3 py-2 rounded-lg text-sm font-medium ${viewMode === "today" ? "bg-violet-600 text-white" : "bg-white text-gray-700 border border-gray-200"}`}
+                          className={`px-3 py-2 rounded-lg text-sm font-medium ${viewMode === "today" ? "bg-[#9c4400] text-white" : "bg-white text-gray-700 border border-gray-200"}`}
                         >
                           Today First
                         </button>
                         <button
                           onClick={() => setViewMode("month")}
-                          className={`px-3 py-2 rounded-lg text-sm font-medium ${viewMode === "month" ? "bg-violet-600 text-white" : "bg-white text-gray-700 border border-gray-200"}`}
+                          className={`px-3 py-2 rounded-lg text-sm font-medium ${viewMode === "month" ? "bg-[#9c4400] text-white" : "bg-white text-gray-700 border border-gray-200"}`}
                         >
                           View All
                         </button>
@@ -464,12 +464,12 @@ export default function TrainerAttendanceQuickPage() {
 
                   <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
                     <SummaryCard icon={<CalendarDays className="w-4 h-4 text-gray-600" />} label="Working Days" value={Number(attendanceData.month?.working_days || 0).toLocaleString("en-IN")} />
-                    <SummaryCard icon={<Clock className="w-4 h-4 text-blue-600" />} label="Expected Hours" value={formatHoursLabel(Number(attendanceData.summary?.expected_hours || 0) * 60)} tone="blue" />
-                    <SummaryCard icon={<UserCheck className="w-4 h-4 text-sky-600" />} label="Worked Hours" value={formatHoursLabel(Number(attendanceData.summary?.worked_hours || 0) * 60)} tone="blue" />
-                    <SummaryCard icon={<IndianRupee className="w-4 h-4 text-emerald-600" />} label="Salary Earned" value={`₹${Number(attendanceData.summary?.salary_earned || 0).toLocaleString("en-IN")}`} tone="emerald" />
-                    <SummaryCard icon={<IndianRupee className="w-4 h-4 text-blue-600" />} label="PT Charges" value={`₹${Number(attendanceData.summary?.pt_charges || 0).toLocaleString("en-IN")}`} tone="blue" />
+                    <SummaryCard icon={<Clock className="w-4 h-4 text-[#f0813d]" />} label="Expected Hours" value={formatHoursLabel(Number(attendanceData.summary?.expected_hours || 0) * 60)} tone="blue" />
+                    <SummaryCard icon={<UserCheck className="w-4 h-4 text-[#f0813d]" />} label="Worked Hours" value={formatHoursLabel(Number(attendanceData.summary?.worked_hours || 0) * 60)} tone="blue" />
+                    <SummaryCard icon={<IndianRupee className="w-4 h-4 text-[#f0813d]" />} label="Salary Earned" value={`₹${Number(attendanceData.summary?.salary_earned || 0).toLocaleString("en-IN")}`} tone="orange" />
+                    <SummaryCard icon={<IndianRupee className="w-4 h-4 text-[#f0813d]" />} label="PT Charges" value={`₹${Number(attendanceData.summary?.pt_charges || 0).toLocaleString("en-IN")}`} tone="blue" />
                     <SummaryCard icon={<IndianRupee className="w-4 h-4 text-gray-600" />} label="Hourly Salary" value={`₹${Number(attendanceData.summary?.hourly_salary || 0).toLocaleString("en-IN")}`} />
-                    <SummaryCard icon={<IndianRupee className="w-4 h-4 text-violet-600" />} label="Total Payable" value={`₹${Number(attendanceData.summary?.total_payable || 0).toLocaleString("en-IN")}`} tone="violet" />
+                    <SummaryCard icon={<IndianRupee className="w-4 h-4 text-[#f0813d]" />} label="Total Payable" value={`₹${Number(attendanceData.summary?.total_payable || 0).toLocaleString("en-IN")}`} tone="orange" />
                   </div>
 
                   <div className="bg-white rounded-xl p-4 shadow-sm space-y-4">
@@ -480,7 +480,7 @@ export default function TrainerAttendanceQuickPage() {
                       </div>
                       <button
                         onClick={() => router.push(`/settings/trainers/${selectedTrainer.gymTrainerId}?tab=attendance`)}
-                        className="w-full sm:w-auto text-sm font-medium text-violet-700 bg-violet-50 px-3 py-2 rounded-lg hover:bg-violet-100"
+                        className="w-full sm:w-auto text-sm font-medium text-[#9c4400] bg-[#f0813d]/10 px-3 py-2 rounded-lg hover:bg-[#f0813d]/15"
                       >
                         Open Full Trainer Page
                       </button>
@@ -501,15 +501,15 @@ export default function TrainerAttendanceQuickPage() {
                               </div>
                               <div className="flex gap-2 flex-wrap text-xs">
                                 <span className="rounded-full bg-gray-100 px-2.5 py-1 text-gray-700">Expected {formatHoursLabel(day.expected_minutes)}</span>
-                                <span className="rounded-full bg-blue-50 px-2.5 py-1 text-blue-700">Worked {formatHoursLabel(day.worked_minutes)}</span>
-                                <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">Salary ₹{Number(day.daily_salary || 0).toLocaleString("en-IN")}</span>
+                                <span className="rounded-full bg-[#f0813d]/10 px-2.5 py-1 text-[#9c4400]">Worked {formatHoursLabel(day.worked_minutes)}</span>
+                                <span className="rounded-full bg-[#f0813d]/10 px-2.5 py-1 text-[#9c4400]">Salary ₹{Number(day.daily_salary || 0).toLocaleString("en-IN")}</span>
                               </div>
                             </div>
 
                             {(day.expected_slots || []).length > 0 && (
                               <div className="flex flex-wrap gap-2">
                                 {day.expected_slots.map((slot) => (
-                                  <span key={slot} className="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700">
+                                  <span key={slot} className="rounded-full bg-[#f0813d]/10 px-2.5 py-1 text-xs font-medium text-[#9c4400]">
                                     {slot}
                                   </span>
                                 ))}
@@ -563,7 +563,7 @@ export default function TrainerAttendanceQuickPage() {
                                 type="button"
                                 onClick={() => saveAttendanceDay(day)}
                                 disabled={attendanceSaving}
-                                className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-lg bg-violet-600 px-3 py-2 text-xs font-medium text-white hover:bg-violet-700 disabled:opacity-60"
+                                className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-lg bg-[#9c4400] px-3 py-2 text-xs font-medium text-white hover:bg-[#9c4400] disabled:opacity-60"
                               >
                                 <Save className="w-3.5 h-3.5" />
                                 Save Day
@@ -577,8 +577,8 @@ export default function TrainerAttendanceQuickPage() {
 
                   <div className="bg-white rounded-xl p-4 shadow-sm">
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="p-2 bg-blue-100 rounded-lg">
-                        <IndianRupee className="w-5 h-5 text-blue-600" />
+                      <div className="p-2 bg-[#f0813d]/15 rounded-lg">
+                        <IndianRupee className="w-5 h-5 text-[#f0813d]" />
                       </div>
                       <div>
                         <h3 className="font-semibold text-gray-900">PT Charges from Trainer Earnings</h3>
@@ -603,7 +603,7 @@ export default function TrainerAttendanceQuickPage() {
                               {session.notes && <p className="text-sm text-gray-600 mt-1">{session.notes}</p>}
                             </div>
                             <div className="text-right">
-                              <p className="font-semibold text-blue-700">₹{Number(session.amount || 0).toLocaleString("en-IN")}</p>
+                              <p className="font-semibold text-[#9c4400]">₹{Number(session.amount || 0).toLocaleString("en-IN")}</p>
                               <p className="text-xs text-gray-500">Trainer share</p>
                             </div>
                           </div>
@@ -630,9 +630,9 @@ export default function TrainerAttendanceQuickPage() {
 function SummaryCard({ icon, label, value, tone = "gray" }) {
   const toneClasses = {
     gray: "border-gray-200 bg-gray-50 text-gray-900",
-    blue: "border-blue-100 bg-blue-50 text-blue-800",
-    emerald: "border-emerald-100 bg-emerald-50 text-emerald-800",
-    violet: "border-violet-100 bg-violet-50 text-violet-800",
+    blue: "border-[#f0813d]/10 bg-[#f0813d]/10 text-[#9c4400]",
+    orange: "border-[#f0813d]/10 bg-[#f0813d]/10 text-[#9c4400]",
+    orangeDeep: "border-[#f0813d]/10 bg-[#f0813d]/10 text-[#9c4400]",
   };
 
   return (

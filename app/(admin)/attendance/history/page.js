@@ -196,16 +196,16 @@ function AttendanceHistoryContent() {
       <main className="px-4 py-4">
         {/* Expired Membership Alert */}
         {stats.expired > 0 && (
-          <div className="bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-300 rounded-xl p-4 mb-4 shadow-sm">
+          <div className="bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-[#f0813d] rounded-xl p-4 mb-4 shadow-sm">
             <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center">
+              <div className="flex-shrink-0 w-10 h-10 bg-[#f0813d] rounded-lg flex items-center justify-center">
                 <XCircle className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-bold text-red-900 mb-1">
+                <h3 className="text-sm font-bold text-orange-900 mb-1">
                   ⚠️ {stats.expired} Expired {stats.expired === 1 ? 'Membership' : 'Memberships'}
                 </h3>
-                <p className="text-xs text-red-700 leading-relaxed">
+                <p className="text-xs text-[#f0813d] leading-relaxed">
                   {stats.expired === 1 
                     ? 'A member with expired membership checked in on this date.'
                     : `${stats.expired} members with expired memberships checked in on this date.`}
@@ -274,22 +274,22 @@ function AttendanceHistoryContent() {
                         <div className="flex items-center gap-2">
                           <p className="font-medium text-gray-900">{record.name}</p>
                           {record.membershipStatus === "EXPIRED" && (
-                            <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-red-100 text-red-700 rounded border border-red-300">
+                            <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-orange-100 text-[#f0813d] rounded border border-[#f0813d]">
                               EXPIRED
                             </span>
                           )}
                         </div>
                         {record.membershipStatus === "EXPIRED" && (
-                          <div className="flex items-center gap-1 text-xs text-red-600 bg-red-50 px-2 py-1 rounded mt-1 mb-1">
+                          <div className="flex items-center gap-1 text-xs text-[#f0813d] bg-orange-50 px-2 py-1 rounded mt-1 mb-1">
                             <XCircle className="w-3 h-3" />
                             <span className="font-medium">Membership expired</span>
                           </div>
                         )}
                         <div className="flex items-center gap-2 text-sm text-gray-500">
-                          <span className="text-green-500">
+                          <span className="text-[#f0813d]">
                             ↓ {record.checkIn}
                           </span>
-                          <span className={record.checkOut === "N/A" ? "text-gray-400" : "text-red-500"}>
+                          <span className={record.checkOut === "N/A" ? "text-gray-400" : "text-[#f0813d]"}>
                             ↑ {record.checkOut}
                           </span>
                         </div>

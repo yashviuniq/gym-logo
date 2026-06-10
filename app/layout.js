@@ -13,25 +13,25 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-	title: "Gym Management App",
-	description: "Gym Management PWA",
+	title: "SS Fitness",
+	description: "Premium Gym Management PWA",
 	manifest: "/manifest.json",
 	appleWebApp: {
 		capable: true,
 		statusBarStyle: "default",
-		title: "GymApp",
+		title: "SS Fitness",
 	},
 	icons: {
 		icon: [
-			{ url: "/icons/landing-screen.png", sizes: "540x720", type: "image/png" },
-			{ url: "/icons/landing-screen.png", sizes: "16x16", type: "image/png" },
-			{ url: "/icons/landing-screen.png", sizes: "32x32", type: "image/png" },
-			{ url: "/icons/landing-screen.png", sizes: "96x96", type: "image/png" },
-			{ url: "/icons/landing-screen.png", sizes: "192x192", type: "image/png" },
-			{ url: "/icons/landing-screen.png", sizes: "512x512", type: "image/png" },
+			{ url: "/icons/ss-hexagon.svg", type: "image/svg+xml" },
+			{ url: "/icons/ss-hexagon-16.png", sizes: "16x16", type: "image/png" },
+			{ url: "/icons/ss-hexagon-32.png", sizes: "32x32", type: "image/png" },
+			{ url: "/icons/ss-hexagon-96.png", sizes: "96x96", type: "image/png" },
+			{ url: "/icons/ss-hexagon-192.png", sizes: "192x192", type: "image/png" },
+			{ url: "/icons/ss-hexagon-512.png", sizes: "512x512", type: "image/png" },
 		],
 		apple: [
-			{ url: "/icons/landing-screen.png", sizes: "540x720", type: "image/png" },
+			{ url: "/icons/ss-hexagon-192.png", sizes: "192x192", type: "image/png" },
 		],
 	},
 };

@@ -173,14 +173,14 @@ export default function AssignAmenityModal({
 
       <div className="relative w-full max-w-md transform transition-all animate-slideUp max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-t-2xl p-5 flex items-center justify-between shadow-lg">
+        <div className="bg-gradient-to-r from-[#f0813d] to-[#f0813d] rounded-t-2xl p-5 flex items-center justify-between shadow-lg">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/20 rounded-lg">
               <Package className="w-5 h-5 text-white" />
             </div>
             <div>
               <h2 className="text-lg font-bold text-white">Assign Amenity</h2>
-              <p className="text-blue-100 text-sm opacity-90">
+              <p className="text-orange-100 text-sm opacity-90">
                 {memberName ? `For ${memberName}` : "Select amenities to assign"}
               </p>
             </div>
@@ -200,15 +200,15 @@ export default function AssignAmenityModal({
             {fetching ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <div className="relative">
-                  <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-                  <Sparkles className="absolute -top-1 -right-1 w-4 h-4 text-blue-400 animate-pulse" />
+                  <Loader2 className="w-8 h-8 text-[#f0813d] animate-spin" />
+                  <Sparkles className="absolute -top-1 -right-1 w-4 h-4 text-[#f0813d] animate-pulse" />
                 </div>
                 <p className="mt-4 text-gray-500 text-sm">Loading amenities...</p>
               </div>
             ) : availableAmenities.length === 0 ? (
               <div className="text-center py-10 bg-gray-50 rounded-xl">
                 <div className="w-16 h-16 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Package className="w-8 h-8 text-gray-400" />
+                  <Package className="w-8 h-8 text-white" />
                 </div>
                 <h4 className="font-medium text-gray-700">
                   {amenities.length === 0
@@ -234,7 +234,7 @@ export default function AssignAmenityModal({
                       onClick={() => !loading && toggleSelect(amenity.id)}
                       className={`p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
                         isSelected
-                          ? "border-blue-500 bg-gradient-to-r from-blue-50/50 to-blue-100/50 shadow-sm"
+                          ? "border-[#f0813d] bg-gradient-to-r from-orange-50/50 to-orange-100/50 shadow-sm"
                           : "border-gray-100 bg-gray-50/50 hover:border-gray-300"
                       } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
                     >
@@ -242,7 +242,7 @@ export default function AssignAmenityModal({
                         <div
                           className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${
                             isSelected
-                              ? "border-blue-500 bg-blue-500"
+                              ? "border-[#f0813d] bg-[#f0813d]"
                               : "border-gray-300 bg-white"
                           }`}
                         >
@@ -251,7 +251,7 @@ export default function AssignAmenityModal({
                         <div
                           className={`w-9 h-9 rounded-lg flex items-center justify-center text-white flex-shrink-0 ${
                             isSelected
-                              ? "bg-gradient-to-br from-blue-500 to-indigo-600"
+                              ? "bg-gradient-to-br from-[#f0813d] to-[#f0813d]"
                               : "bg-gradient-to-br from-gray-400 to-gray-500"
                           }`}
                         >
@@ -288,13 +288,13 @@ export default function AssignAmenityModal({
                       .map((amenity) => (
                         <div
                           key={amenity.id}
-                          className="p-3 rounded-xl border-2 border-green-100 bg-green-50/50 mb-2 opacity-60"
+                          className="p-3 rounded-xl border-2 border-orange-100 bg-orange-50/50 mb-2 opacity-60"
                         >
                           <div className="flex items-center gap-3">
-                            <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                            <div className="w-5 h-5 rounded-full bg-[#f0813d] flex items-center justify-center flex-shrink-0">
                               <Check className="w-3 h-3 text-white" />
                             </div>
-                            <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white flex-shrink-0 bg-gradient-to-br from-green-500 to-emerald-600">
+                            <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white flex-shrink-0 bg-gradient-to-br from-[#f0813d] to-[#f0813d]">
                               <Package className="w-4 h-4" />
                             </div>
                             <div className="flex-1 min-w-0">
@@ -302,7 +302,7 @@ export default function AssignAmenityModal({
                                 {amenity.name}
                               </h4>
                             </div>
-                            <span className="text-xs text-green-600 font-medium">
+                            <span className="text-xs text-[#f0813d] font-medium">
                               Assigned
                             </span>
                           </div>
@@ -318,7 +318,7 @@ export default function AssignAmenityModal({
           {selectedIds.length > 0 && (
             <div className="px-5 pb-5 space-y-3 border-t border-gray-100 pt-4">
               {/* Total Cost */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-3">
+              <div className="bg-gradient-to-r from-orange-50 to-orange-50 border border-orange-100 rounded-xl p-3">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs text-gray-500">
@@ -328,7 +328,7 @@ export default function AssignAmenityModal({
                       Total: ₹{totalCost.toLocaleString("en-IN")}
                     </p>
                   </div>
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                  <div className="w-12 h-12 bg-gradient-to-br from-[#f0813d] to-[#f0813d] rounded-xl flex items-center justify-center">
                     <IndianRupee className="w-6 h-6 text-white" />
                   </div>
                 </div>
@@ -348,7 +348,7 @@ export default function AssignAmenityModal({
                         onClick={() => setPaymentMode(mode)}
                         className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all border ${
                           paymentMode === mode
-                            ? "border-blue-500 bg-blue-50 text-blue-700"
+                            ? "border-[#f0813d] bg-orange-50 text-[#f0813d]"
                             : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
                         }`}
                       >
@@ -377,7 +377,7 @@ export default function AssignAmenityModal({
             <button
               onClick={handleAssign}
               disabled={loading || selectedIds.length === 0}
-              className="flex-1 px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-blue-200 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 px-5 py-3 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white rounded-xl font-medium hover:shadow-lg hover:shadow-orange-200 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

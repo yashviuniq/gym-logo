@@ -779,8 +779,8 @@ export default function FinancePage() {
         <Header title="Finance" showBack={false} />
         <main className="px-4 py-4">
           <div className="text-center py-12">
-            <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-              <IndianRupee className="w-5 h-5 text-emerald-700" />
+            <div className="w-20 h-20 bg-gradient-to-br from-[#f0813d] to-[#f0813d] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <IndianRupee className="w-5 h-5 text-white" />
             </div>
             <h2 className="text-lg font-bold text-gray-900 mb-2">No Gym Selected</h2>
             <p className="text-gray-500 text-sm mb-6 px-4">
@@ -788,7 +788,7 @@ export default function FinancePage() {
             </p>
             <button
               onClick={() => router.push("/admin/dashboard")}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold text-sm active:scale-95 transition-transform"
+              className="px-6 py-3 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white rounded-xl font-semibold text-sm active:scale-95 transition-transform"
               style={{ minHeight: '44px' }}
             >
               Go to Dashboard
@@ -840,7 +840,7 @@ export default function FinancePage() {
                     value={customStartDate}
                     onChange={(e) => setCustomStartDate(e.target.value)}
                     max={customEndDate || new Date().toISOString().split('T')[0]}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#f0813d] focus:border-transparent"
                     
                   />
                 </div>
@@ -852,17 +852,17 @@ export default function FinancePage() {
                     onChange={(e) => setCustomEndDate(e.target.value)}
                     min={customStartDate}
                     max={new Date().toISOString().split('T')[0]}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#f0813d] focus:border-transparent"
                 
                   />
                 </div>
               </div>
               {/* Display selected date range */}
               {customStartDate && customEndDate && (
-                <div className="mt-3 p-2.5 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+                <div className="mt-3 p-2.5 bg-gradient-to-r from-orange-50 to-orange-50 border border-orange-200 rounded-lg">
                   <p className="text-xs text-gray-600">
                     <span className="font-medium">Selected Period:</span>{" "}
-                    <span className="font-semibold text-blue-900">
+                    <span className="font-semibold text-orange-900">
                       {new Date(customStartDate + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} 
                       {" "}-{" "}
                       {new Date(customEndDate + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
@@ -883,11 +883,11 @@ export default function FinancePage() {
                 <p className="text-xs text-gray-500 font-medium">
                   {dateFilter === "custom" ? "Period Collection" : "Today's Collection"}
                 </p>
-                <p className="text-xl font-bold  text-emerald-600 mt-0.5">
+                <p className="text-xl font-bold  text-[#f0813d] mt-0.5">
                   {formatCurrency(financialData.todayCollection)}
                 </p>
               </div>
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg flex items-center justify-center">
                 <IndianRupee className="w-5 h-5" />
               </div>
             </div>
@@ -900,12 +900,12 @@ export default function FinancePage() {
                 <p className="text-xs text-gray-500 font-medium">
                   {dateFilter === "today" ? "Today" : dateFilter === "week" ? "Weekly" : dateFilter === "custom" ? "Custom" : "Monthly"} Revenue
                 </p>
-                <p className="text-xl font-bold text-blue-600 mt-0.5">
+                <p className="text-xl font-bold text-[#f0813d] mt-0.5">
                   {formatCurrency(financialData.monthlyRevenue)}
                 </p>
               </div>
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-blue-600" />
+              <div className="w-10 h-10 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-white" />
               </div>
             </div>
           </div>
@@ -915,12 +915,12 @@ export default function FinancePage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-medium">Pending Dues</p>
-                <p className="text-xl font-bold text-amber-600 mt-0.5">
+                <p className="text-xl font-bold text-[#f0813d] mt-0.5">
                   {formatCurrency(financialData.pendingDues)}
                 </p>
               </div>
-              <div className="w-10 h-10 bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg flex items-center justify-center">
-                <Clock className="w-5 h-5 text-amber-600" />
+              <div className="w-10 h-10 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg flex items-center justify-center">
+                <Clock className="w-5 h-5 text-white" />
               </div>
             </div>
           </div>
@@ -932,21 +932,21 @@ export default function FinancePage() {
                 <p className="text-xs text-gray-500 font-medium">Net Profit</p>
                 <p className={`text-xl font-bold mt-0.5 ${
                   (financialData.monthlyRevenue - financialData.monthlyExpenses) >= 0 
-                    ? 'text-emerald-600' 
-                    : 'text-red-600'
+                    ? 'text-[#f0813d]' 
+                    : 'text-[#f0813d]'
                 }`}>
                   {formatCurrency(financialData.monthlyRevenue - financialData.monthlyExpenses)}
                 </p>
               </div>
               <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
                 (financialData.monthlyRevenue - financialData.monthlyExpenses) >= 0
-                  ? 'bg-gradient-to-br from-emerald-50 to-emerald-100'
-                  : 'bg-gradient-to-br from-red-50 to-red-100'
+                  ? 'bg-gradient-to-br from-orange-50 to-orange-100'
+                  : 'bg-gradient-to-br from-orange-50 to-orange-100'
               }`}>
                  <IndianRupee className={`w-5 h-5 ${
                   (financialData.monthlyRevenue - financialData.monthlyExpenses) >= 0
-                    ? 'text-emerald-600'
-                    : 'text-red-600'
+                    ? 'text-[#f0813d]'
+                    : 'text-[#f0813d]'
                 }`} />
               </div>
             </div>
@@ -1030,7 +1030,7 @@ export default function FinancePage() {
                 {paymentModes.length === 0 ? (
                   <div className="text-center py-4">
                     <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                      <CreditCard className="w-6 h-6 text-gray-400" />
+                      <CreditCard className="w-6 h-6 text-white" />
                     </div>
                     <p className="text-gray-500 text-sm">No payment data available</p>
                   </div>
@@ -1039,7 +1039,7 @@ export default function FinancePage() {
                     <div key={item.mode} className="space-y-1">
                       <div className="flex justify-between items-center text-sm">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                          <div className="w-8 h-8 bg-orange-50 rounded-lg flex items-center justify-center">
                             {getPaymentModeIcon(item.mode)}
                           </div>
                           <span className="text-gray-600 font-medium">{item.mode}</span>
@@ -1050,7 +1050,7 @@ export default function FinancePage() {
                       </div>
                       <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-500"
+                          className="h-full rounded-full bg-gradient-to-r from-[#f0813d] to-[#f0813d]"
                           style={{ width: `${item.percentage}%` }}
                         ></div>
                       </div>
@@ -1067,7 +1067,7 @@ export default function FinancePage() {
                   <h3 className="font-semibold text-gray-900 text-sm">Recent Transactions</h3>
                   <button
                     onClick={() => router.push("/finance/transactions")}
-                    className="text-xs text-blue-600 font-medium active:scale-95 transition-transform flex-shrink-0"
+                    className="text-xs text-[#f0813d] font-medium active:scale-95 transition-transform flex-shrink-0"
                   >
                     View All
                   </button>
@@ -1077,7 +1077,7 @@ export default function FinancePage() {
                   {recentTransactions.length === 0 ? (
                     <div className="text-center py-4">
                       <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                        <Receipt className="w-6 h-6 text-gray-400" />
+                        <Receipt className="w-6 h-6 text-white" />
                       </div>
                       <p className="text-gray-500 text-sm">No recent transactions</p>
                     </div>
@@ -1099,17 +1099,17 @@ export default function FinancePage() {
                         <div className="flex items-start gap-3">
                           <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
                             txn.collectedBy 
-                              ? "bg-gradient-to-br from-purple-50 to-purple-100"
-                              : "bg-gradient-to-br from-emerald-50 to-emerald-100"
+                              ? "bg-gradient-to-br from-orange-50 to-orange-100"
+                              : "bg-gradient-to-br from-orange-50 to-orange-100"
                           }`}>
-                            <IndianRupee className={`w-5 h-5 ${txn.collectedBy ? "text-purple-600" : "text-emerald-600"}`} />
+                            <IndianRupee className={`w-5 h-5 ${txn.collectedBy ? "text-[#f0813d]" : "text-[#f0813d]"}`} />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2 mb-1.5">
                               <p className="font-medium text-gray-900 text-sm leading-tight">
                                 {txn.name}
                               </p>
-                              <p className="font-bold text-emerald-600 text-base flex-shrink-0">
+                              <p className="font-bold text-[#f0813d] text-base flex-shrink-0">
                                 +{formatCurrency(txn.amount)}
                               </p>
                             </div>
@@ -1123,7 +1123,7 @@ export default function FinancePage() {
                                 <span className="lowercase">{txn.mode}</span>
                               </div>
 
-                              <p className="text-xs text-violet-700 font-medium truncate">
+                              <p className="text-xs text-[#f0813d] font-medium truncate">
                                 {collectorLine}
                               </p>
                               
@@ -1153,7 +1153,7 @@ export default function FinancePage() {
                   value={pendingSearchInput}
                   onChange={(e) => setPendingSearchInput(e.target.value)}
                   placeholder="Search by member, phone, trainer, plan"
-                  className="w-full pl-9 pr-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-9 pr-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#f0813d] focus:border-transparent"
                 />
               </div>
             </div>
@@ -1172,7 +1172,7 @@ export default function FinancePage() {
                     value={effectivePendingDateFilterStart}
                     onChange={(e) => setPendingDateFilterStart(e.target.value)}
                     max={effectivePendingDateFilterEnd || new Date().toISOString().split('T')[0]}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs focus:ring-2 focus:ring-[#f0813d] focus:border-transparent"
                   />
                 </div>
                 <div>
@@ -1183,13 +1183,13 @@ export default function FinancePage() {
                     onChange={(e) => setPendingDateFilterEnd(e.target.value)}
                     min={effectivePendingDateFilterStart}
                     max={new Date().toISOString().split('T')[0]}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs focus:ring-2 focus:ring-[#f0813d] focus:border-transparent"
                   />
                 </div>
               </div>
               {(effectivePendingDateFilterStart || effectivePendingDateFilterEnd) && (
-                <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-xs text-blue-900">
+                <div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded-lg">
+                  <p className="text-xs text-orange-900">
                     <span className="font-medium">Showing:</span>{" "}
                     {effectivePendingDateFilterStart && effectivePendingDateFilterEnd 
                       ? `${new Date(effectivePendingDateFilterStart + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} to ${new Date(effectivePendingDateFilterEnd + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`
@@ -1221,7 +1221,7 @@ export default function FinancePage() {
                     label: "Pending Payments",
                     hint: `${filteredPendingPayments.length} members`,
                     amount: formatCurrency(filteredPendingDuesTotal),
-                    activeClasses: "bg-amber-50 text-amber-900 border-amber-300 shadow-sm",
+                    activeClasses: "bg-orange-50 text-orange-900 border-[#f0813d] shadow-sm",
                     inactiveClasses: "bg-white text-gray-700 border-gray-200 hover:bg-gray-50",
                   },
                   {
@@ -1229,7 +1229,7 @@ export default function FinancePage() {
                     label: "Trainer Installments",
                     hint: `${filteredPendingTrainerInstallments.length} PT assignments`,
                     amount: formatCurrency(filteredPendingTrainerTotal),
-                    activeClasses: "bg-indigo-50 text-indigo-900 border-indigo-300 shadow-sm",
+                    activeClasses: "bg-orange-50 text-orange-900 border-[#f0813d] shadow-sm",
                     inactiveClasses: "bg-white text-gray-700 border-gray-200 hover:bg-gray-50",
                   },
                 ].map((section) => (
@@ -1261,7 +1261,7 @@ export default function FinancePage() {
                     {filteredPendingPayments.length} members with dues
                   </p>
                 </div>
-                <span className="text-xs font-semibold text-amber-600">
+                <span className="text-xs font-semibold text-[#f0813d]">
                   {formatCurrency(filteredPendingDuesTotal)}
                 </span>
               </div>
@@ -1270,7 +1270,7 @@ export default function FinancePage() {
                 {filteredPendingPayments.length === 0 ? (
                   <div className="text-center py-4">
                     <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                      <Clock className="w-6 h-6 text-gray-400" />
+                      <Clock className="w-6 h-6 text-white" />
                     </div>
                     <p className="text-gray-500 text-sm">
                       {pendingSearch ? "No matching pending payments" : "No pending payments"}
@@ -1280,7 +1280,7 @@ export default function FinancePage() {
                   filteredPendingPayments.map((member) => (
                     <div
                       key={member.id}
-                      className="bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200 rounded-lg p-3 hover:shadow-sm transition-all"
+                      className="bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200 rounded-lg p-3 hover:shadow-sm transition-all"
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1 min-w-0">
@@ -1291,8 +1291,8 @@ export default function FinancePage() {
                           </div>
                           {/* Next Payment Date Display */}
                           {member.nextPaymentDate && (
-                            <div className="mt-2 px-2 py-1 bg-white/70 rounded border border-amber-200 inline-block">
-                              <p className="text-xs text-amber-800">
+                            <div className="mt-2 px-2 py-1 bg-white/70 rounded border border-orange-200 inline-block">
+                              <p className="text-xs text-orange-800">
                                 <span className="font-medium">Due:</span> {formatCurrency(member.amount)} on{" "}
                                 <span className="font-semibold">
                                   {new Date(member.nextPaymentDate).toLocaleDateString("en-IN", {
@@ -1305,7 +1305,7 @@ export default function FinancePage() {
                             </div>
                           )}
                         </div>
-                        <p className="text-lg font-bold text-amber-600">
+                        <p className="text-lg font-bold text-[#f0813d]">
                           {formatCurrency(member.amount)}
                         </p>
                       </div>
@@ -1314,8 +1314,8 @@ export default function FinancePage() {
                         <span
                           className={`px-2.5 py-1 text-xs rounded-lg font-medium ${
                             member.isOverdue
-                              ? "bg-gradient-to-br from-red-50 to-red-100 text-red-700 border border-red-200"
-                              : "bg-gradient-to-br from-amber-50 to-amber-100 text-amber-700 border border-amber-200"
+                              ? "bg-gradient-to-br from-orange-50 to-orange-100 text-[#f0813d] border border-orange-200"
+                              : "bg-gradient-to-br from-orange-50 to-orange-100 text-[#f0813d] border border-orange-200"
                           }`}
                         >
                           {member.isOverdue
@@ -1359,7 +1359,7 @@ Best regards,
                               const encodedMessage = encodeURIComponent(message);
                               window.open(`https://wa.me/91${member.phone}?text=${encodedMessage}`);
                             }}
-                            className="px-3 py-1.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-lg active:scale-95 transition-transform flex items-center gap-1"
+                            className="px-3 py-1.5 bg-orange-100 text-[#f0813d] text-xs font-medium rounded-lg active:scale-95 transition-transform flex items-center gap-1"
                             style={{ minHeight: '32px' }}
                           >
                             Remind
@@ -1371,7 +1371,7 @@ Best regards,
                                 e.stopPropagation();
                                 router.push(`/members/${member.id}/payment`);
                               }}
-                              className="px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-medium rounded-lg active:scale-95 transition-transform flex items-center gap-1"
+                              className="px-3 py-1.5 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white text-xs font-medium rounded-lg active:scale-95 transition-transform flex items-center gap-1"
                               style={{ minHeight: '32px' }}
                             >
                               Collect
@@ -1395,7 +1395,7 @@ Best regards,
                     {filteredPendingTrainerInstallments.length} PT assignments with balance left
                   </p>
                 </div>
-                <span className="text-xs font-semibold text-violet-600">
+                <span className="text-xs font-semibold text-[#f0813d]">
                   {formatCurrency(pendingTrainerInstallments.reduce((sum, item) => sum + item.pendingAmount, 0))}
                 </span>
               </div>
@@ -1404,7 +1404,7 @@ Best regards,
                 {filteredPendingTrainerInstallments.length === 0 ? (
                   <div className="text-center py-4">
                     <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                      <Users className="w-6 h-6 text-gray-400" />
+                      <Users className="w-6 h-6 text-white" />
                     </div>
                     <p className="text-gray-500 text-sm">
                       {pendingSearch ? "No matching pending trainer installments" : "No pending trainer installments"}
@@ -1414,7 +1414,7 @@ Best regards,
                   filteredPendingTrainerInstallments.map((item) => (
                     <div
                       key={item.assignmentId}
-                      className="bg-gradient-to-br from-violet-50 to-indigo-100 border border-violet-200 rounded-lg p-3 hover:shadow-sm transition-all"
+                      className="bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200 rounded-lg p-3 hover:shadow-sm transition-all"
                     >
                       <div className="flex items-start justify-between gap-3 mb-2">
                         <div className="flex-1 min-w-0">
@@ -1423,25 +1423,25 @@ Best regards,
                             <Phone className="w-3 h-3 text-gray-400" />
                             <span className="text-xs text-gray-500">{item.memberPhone}</span>
                           </div>
-                          <p className="text-xs text-violet-700 font-medium mt-1">
+                          <p className="text-xs text-[#f0813d] font-medium mt-1">
                             {item.planName} with {item.trainerName}
                           </p>
                           <div className="mt-2 grid grid-cols-3 gap-2 text-center">
-                            <div className="rounded-md bg-white/80 border border-violet-100 px-2 py-1.5">
+                            <div className="rounded-md bg-white/80 border border-orange-100 px-2 py-1.5">
                               <p className="text-[10px] uppercase tracking-wide text-gray-500">Paid</p>
-                              <p className="mt-1 text-xs font-bold text-green-700">₹{item.totalPaidAmount.toLocaleString("en-IN")}</p>
+                              <p className="mt-1 text-xs font-bold text-[#f0813d]">₹{item.totalPaidAmount.toLocaleString("en-IN")}</p>
                             </div>
-                            <div className="rounded-md bg-white/80 border border-violet-100 px-2 py-1.5">
+                            <div className="rounded-md bg-white/80 border border-orange-100 px-2 py-1.5">
                               <p className="text-[10px] uppercase tracking-wide text-gray-500">Due</p>
-                              <p className="mt-1 text-xs font-bold text-violet-700">₹{item.pendingAmount.toLocaleString("en-IN")}</p>
+                              <p className="mt-1 text-xs font-bold text-[#f0813d]">₹{item.pendingAmount.toLocaleString("en-IN")}</p>
                             </div>
-                            <div className="rounded-md bg-white/80 border border-violet-100 px-2 py-1.5">
+                            <div className="rounded-md bg-white/80 border border-orange-100 px-2 py-1.5">
                               <p className="text-[10px] uppercase tracking-wide text-gray-500">Plan</p>
                               <p className="mt-1 text-xs font-bold text-gray-900">₹{item.planTotalAmount.toLocaleString("en-IN")}</p>
                             </div>
                           </div>
                         </div>
-                        <p className="text-lg font-bold text-violet-700 shrink-0">
+                        <p className="text-lg font-bold text-[#f0813d] shrink-0">
                           {formatCurrency(item.pendingAmount)}
                         </p>
                       </div>
@@ -1450,8 +1450,8 @@ Best regards,
                         <span
                           className={`px-2.5 py-1 text-xs rounded-lg font-medium w-fit ${
                             item.isOverdue
-                              ? "bg-gradient-to-br from-red-50 to-red-100 text-red-700 border border-red-200"
-                              : "bg-gradient-to-br from-violet-50 to-indigo-100 text-violet-700 border border-violet-200"
+                              ? "bg-gradient-to-br from-orange-50 to-orange-100 text-[#f0813d] border border-orange-200"
+                              : "bg-gradient-to-br from-orange-50 to-orange-100 text-[#f0813d] border border-orange-200"
                           }`}
                         >
                           {item.isOverdue
@@ -1485,7 +1485,7 @@ Thank you,
 *${gymName} Team*`;
                               window.open(`https://wa.me/91${item.memberPhone}?text=${encodeURIComponent(message)}`);
                             }}
-                            className="px-3 py-1.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-lg active:scale-95 transition-transform flex items-center gap-1"
+                            className="px-3 py-1.5 bg-orange-100 text-[#f0813d] text-xs font-medium rounded-lg active:scale-95 transition-transform flex items-center gap-1"
                             style={{ minHeight: '32px' }}
                           >
                             Remind
@@ -1493,7 +1493,7 @@ Thank you,
                           {!isViewOnly && (
                             <button
                               onClick={() => router.push(`/members/${item.memberId}`)}
-                              className="px-3 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-xs font-medium rounded-lg active:scale-95 transition-transform flex items-center gap-1"
+                              className="px-3 py-1.5 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white text-xs font-medium rounded-lg active:scale-95 transition-transform flex items-center gap-1"
                               style={{ minHeight: '32px' }}
                             >
                               Collect
@@ -1584,12 +1584,12 @@ Thank you,
                 </div>
 
                 {transactionEditMode ? (
-                  <div className="space-y-3 rounded-xl border border-blue-200 bg-blue-50 p-3">
-                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
-                      <p className="text-xs font-medium text-amber-800">
+                  <div className="space-y-3 rounded-xl border border-orange-200 bg-orange-50 p-3">
+                    <div className="rounded-lg border border-orange-200 bg-orange-50 px-3 py-2">
+                      <p className="text-xs font-medium text-orange-800">
                         Amount changes are disabled here.
                       </p>
-                      <p className="mt-1 text-xs text-amber-700">
+                      <p className="mt-1 text-xs text-[#f0813d]">
                         To update amount, open that member and go to Payments.
                       </p>
                       <p className="mt-2 text-sm font-semibold text-gray-900">
@@ -1603,7 +1603,7 @@ Thank you,
                         <select
                           value={transactionEditValues.paymentMode}
                           onChange={(e) => setTransactionEditValues((prev) => ({ ...prev, paymentMode: e.target.value }))}
-                          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[#f0813d] focus:border-transparent"
                         >
                           <option value="cash">Cash</option>
                           <option value="upi">UPI</option>
@@ -1617,7 +1617,7 @@ Thank you,
                           type="date"
                           value={transactionEditValues.paidDate}
                           onChange={(e) => setTransactionEditValues((prev) => ({ ...prev, paidDate: e.target.value }))}
-                          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[#f0813d] focus:border-transparent"
                         />
                       </div>
                     </div>
@@ -1628,7 +1628,7 @@ Thank you,
                         rows={2}
                         value={transactionEditValues.notes}
                         onChange={(e) => setTransactionEditValues((prev) => ({ ...prev, notes: e.target.value }))}
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[#f0813d] focus:border-transparent resize-none"
                         placeholder="Optional notes"
                       />
                     </div>
@@ -1637,7 +1637,7 @@ Thank you,
                   <div className="rounded-xl border border-gray-200 p-3">
                     <div className="flex items-center justify-between">
                       <p className="text-xs text-gray-500">Amount</p>
-                      <p className="text-lg font-bold text-emerald-600">+{formatCurrency(selectedTransaction.amount)}</p>
+                      <p className="text-lg font-bold text-[#f0813d]">+{formatCurrency(selectedTransaction.amount)}</p>
                     </div>
                     <div className="mt-2 text-xs text-gray-500">
                       Mode: <span className="font-medium text-gray-800 uppercase">{selectedTransaction.mode || "cash"}</span>
@@ -1662,7 +1662,7 @@ Thank you,
                       <button
                         onClick={handleSaveTransactionEdit}
                         disabled={transactionSaving}
-                        className="flex-1 rounded-lg bg-blue-600 py-2 text-sm font-semibold text-white flex items-center justify-center gap-1 disabled:opacity-60"
+                        className="flex-1 rounded-lg bg-[#f0813d] py-2 text-sm font-semibold text-white flex items-center justify-center gap-1 disabled:opacity-60"
                       >
                         {transactionSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                         {transactionSaving ? "Saving..." : "Save Changes"}
@@ -1671,7 +1671,7 @@ Thank you,
                   ) : (
                     <button
                       onClick={() => setTransactionEditMode(true)}
-                      className="w-full rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 py-2 text-sm font-semibold text-white flex items-center justify-center gap-1"
+                      className="w-full rounded-lg bg-gradient-to-r from-[#f0813d] to-[#f0813d] py-2 text-sm font-semibold text-white flex items-center justify-center gap-1"
                     >
                       <Pencil className="w-4 h-4" />
                       Edit Transaction
@@ -1981,7 +1981,7 @@ function ExpensesSection({ router, selectedGym }) {
             <p className="text-xs text-gray-500 font-medium">
               Total Expenses ({getMonthName()})
             </p>
-            <p className="text-xl font-bold text-orange-600 mt-0.5">
+            <p className="text-xl font-bold text-[#f0813d] mt-0.5">
               {formatCurrency(totalExpenses)}
             </p>
           </div>
@@ -1992,7 +1992,7 @@ function ExpensesSection({ router, selectedGym }) {
               value={selectedExpenseMonth}
               max={getCurrentMonthValue()}
               onChange={(e) => setSelectedExpenseMonth(e.target.value || getCurrentMonthValue())}
-              className="px-3 py-2 border border-gray-200 rounded-lg text-xs font-medium text-gray-700 bg-white outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="px-3 py-2 border border-gray-200 rounded-lg text-xs font-medium text-gray-700 bg-white outline-none focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d]"
             />
           </div>
           <div className="flex items-center gap-2 flex-wrap justify-end">
@@ -2001,7 +2001,7 @@ function ExpensesSection({ router, selectedGym }) {
                 <button
                   onClick={handleExportOverallExcel}
                   disabled={overallExporting}
-                  className="px-4 py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-xs font-medium active:scale-95 transition-transform flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-orange-50 text-[#f0813d] border border-orange-200 rounded-lg text-xs font-medium active:scale-95 transition-transform flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ minHeight: '36px' }}
                 >
                   <Download className="w-4 h-4" />
@@ -2010,7 +2010,7 @@ function ExpensesSection({ router, selectedGym }) {
                 <button
                   onClick={handleExportMonthExcel}
                   disabled={exporting || expenses.length === 0}
-                  className="px-4 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-medium active:scale-95 transition-transform flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-orange-50 text-[#f0813d] border border-orange-200 rounded-lg text-xs font-medium active:scale-95 transition-transform flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ minHeight: '36px' }}
                 >
                   <Download className="w-4 h-4" />
@@ -2021,7 +2021,7 @@ function ExpensesSection({ router, selectedGym }) {
             {!isViewOnly && (
               <button
                 onClick={() => router.push("/finance/expenses/add")}
-                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-xs font-medium active:scale-95 transition-transform flex items-center gap-2"
+                className="px-4 py-2 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white rounded-lg text-xs font-medium active:scale-95 transition-transform flex items-center gap-2"
                 style={{ minHeight: '36px' }}
               >
                 <Plus className="w-4 h-4" />
@@ -2044,13 +2044,13 @@ function ExpensesSection({ router, selectedGym }) {
         {expenses.length === 0 ? (
           <div className="text-center py-6">
             <div className="w-14 h-14 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
-              <Receipt className="w-6 h-6 text-gray-400" />
+              <Receipt className="w-6 h-6 text-white" />
             </div>
             <p className="text-gray-500 text-sm mb-4">No expenses recorded yet</p>
             {!isViewOnly && (
               <button
                 onClick={() => router.push("/finance/expenses/add")}
-                className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-xs font-medium active:scale-95 transition-transform"
+                className="px-4 py-2.5 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white rounded-lg text-xs font-medium active:scale-95 transition-transform"
                 style={{ minHeight: '36px' }}
               >
                 Add First Expense
@@ -2066,7 +2066,7 @@ function ExpensesSection({ router, selectedGym }) {
               >
                 <div className="flex items-start gap-3 min-w-0 flex-1">
                   <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-50 to-orange-100 flex items-center justify-center shrink-0">
-                    <div className="text-orange-600">
+                    <div className="text-white">
                       {expense.icon}
                     </div>
                   </div>
@@ -2085,7 +2085,7 @@ function ExpensesSection({ router, selectedGym }) {
                   </div>
                 </div>
                 <div className="shrink-0 flex flex-col items-end gap-2">
-                  <p className="font-semibold text-red-500 text-sm text-right pt-0.5">
+                  <p className="font-semibold text-[#f0813d] text-sm text-right pt-0.5">
                     -{formatCurrency(expense.amount)}
                   </p>
                   {canViewFinance && (
@@ -2093,7 +2093,7 @@ function ExpensesSection({ router, selectedGym }) {
                       <button
                         type="button"
                         onClick={() => openExpenseEditor(expense)}
-                        className="px-2.5 py-1.5 rounded-md border border-gray-200 bg-gray-50 text-[11px] font-medium text-gray-700 hover:text-blue-700 hover:border-blue-200 hover:bg-blue-50 transition flex items-center gap-1.5"
+                        className="px-2.5 py-1.5 rounded-md border border-gray-200 bg-gray-50 text-[11px] font-medium text-gray-700 hover:text-[#f0813d] hover:border-orange-200 hover:bg-orange-50 transition flex items-center gap-1.5"
                         aria-label="Edit expense"
                       >
                         <Pencil className="w-3.5 h-3.5" />
@@ -2103,7 +2103,7 @@ function ExpensesSection({ router, selectedGym }) {
                         type="button"
                         onClick={() => handleDeleteExpense(expense)}
                         disabled={expenseDeleting}
-                        className="px-2.5 py-1.5 rounded-md border border-red-200 bg-red-50 text-[11px] font-medium text-red-600 hover:text-red-700 hover:bg-red-100 transition flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="px-2.5 py-1.5 rounded-md border border-orange-200 bg-orange-50 text-[11px] font-medium text-[#f0813d] hover:text-[#f0813d] hover:bg-orange-100 transition flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
                         aria-label="Delete expense"
                       >
                         {expenseDeleting && deletingExpenseId === expense.id ? (
@@ -2143,7 +2143,7 @@ function ExpensesSection({ router, selectedGym }) {
                 <select
                   value={expenseEditValues.category}
                   onChange={(e) => setExpenseEditValues((prev) => ({ ...prev, category: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d]"
                 >
                   {Object.entries(EXPENSE_CATEGORY_META).map(([key, value]) => (
                     <option key={key} value={key}>{value.name}</option>
@@ -2164,7 +2164,7 @@ function ExpensesSection({ router, selectedGym }) {
                       setExpenseEditValues((prev) => ({ ...prev, amount: value }));
                     }
                   }}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d]"
                   placeholder="Enter amount"
                 />
               </div>
@@ -2175,7 +2175,7 @@ function ExpensesSection({ router, selectedGym }) {
                   type="date"
                   value={expenseEditValues.expenseDate}
                   onChange={(e) => setExpenseEditValues((prev) => ({ ...prev, expenseDate: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d]"
                 />
               </div>
 
@@ -2185,7 +2185,7 @@ function ExpensesSection({ router, selectedGym }) {
                   rows={3}
                   value={expenseEditValues.notes}
                   onChange={(e) => setExpenseEditValues((prev) => ({ ...prev, notes: e.target.value }))}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm outline-none resize-none focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d]"
                   placeholder="Expense details..."
                 />
               </div>
@@ -2196,7 +2196,7 @@ function ExpensesSection({ router, selectedGym }) {
                 type="button"
                 onClick={handleDeleteExpense}
                 disabled={expenseSaving || expenseDeleting}
-                className="px-3 py-2 rounded-lg border border-red-200 bg-red-50 text-red-600 text-xs font-medium flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-2 rounded-lg border border-orange-200 bg-orange-50 text-[#f0813d] text-xs font-medium flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {expenseDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                 {expenseDeleting ? "Deleting..." : "Delete"}
@@ -2215,7 +2215,7 @@ function ExpensesSection({ router, selectedGym }) {
                   type="button"
                   onClick={handleSaveExpenseEdit}
                   disabled={expenseSaving || expenseDeleting}
-                  className="px-3 py-2 rounded-lg bg-linear-to-r from-blue-600 to-indigo-600 text-white text-xs font-medium flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-3 py-2 rounded-lg bg-linear-to-r from-[#f0813d] to-[#f0813d] text-white text-xs font-medium flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {expenseSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                   {expenseSaving ? "Saving..." : "Save"}

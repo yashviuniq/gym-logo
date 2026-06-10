@@ -434,7 +434,7 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
 
                 <div className="flex-1 overflow-y-auto p-4" style={{ minHeight: 0 }}>
                     {/* Member Info */}
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 mb-4">
+                    <div className="bg-gradient-to-r from-orange-50 to-orange-50 rounded-xl p-4 mb-4">
                         <div className="flex items-center gap-3">
                             <div className="w-12 h-12 avatar-gradient rounded-full flex items-center justify-center text-white font-bold">
                                 {member.name.charAt(0)}
@@ -458,7 +458,7 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
                                 >
                                     <div className="flex items-start justify-between mb-3">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                                            <div className="w-8 h-8 bg-gradient-to-br from-[#f0813d] to-[#f0813d] rounded-full flex items-center justify-center text-white text-xs font-bold">
                                                 {historyItems.length - index}
                                             </div>
                                             <div>
@@ -482,7 +482,7 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
                                                     type="button"
                                                     onClick={() => deleteRenewalRecord(renewal)}
                                                     disabled={deletingMembershipId === renewal.membershipId}
-                                                    className="mt-1 text-[11px] font-semibold text-red-600 hover:text-red-700 disabled:opacity-60"
+                                                    className="mt-1 text-[11px] font-semibold text-[#f0813d] hover:text-[#f0813d] disabled:opacity-60"
                                                 >
                                                     {deletingMembershipId === renewal.membershipId ? "Deleting..." : "Delete"}
                                                 </button>
@@ -491,7 +491,7 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
                                     </div>
 
                                     {/* Price Breakdown */}
-                                    <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-3 space-y-1.5">
+                                    <div className="bg-orange-50 border border-orange-100 rounded-lg p-3 mb-3 space-y-1.5">
                                         <div className="flex justify-between text-sm">
                                             <span className="text-gray-600">Plan Price</span>
                                             <span className={`font-medium ${renewal.customPrice != null ? 'line-through text-gray-400' : 'text-gray-900'}`}>
@@ -500,23 +500,23 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
                                         </div>
                                         {renewal.customPrice != null && (
                                             <div className="flex justify-between text-sm">
-                                                <span className="text-blue-600 font-medium">Custom Price Applied</span>
-                                                <span className="font-semibold text-blue-700">{formatCurrency(renewal.customPrice)}</span>
+                                                <span className="text-[#f0813d] font-medium">Custom Price Applied</span>
+                                                <span className="font-semibold text-[#f0813d]">{formatCurrency(renewal.customPrice)}</span>
                                             </div>
                                         )}
                                       
                                     </div>
 
                                     <div className="mb-3 grid grid-cols-2 gap-2">
-                                        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
-                                            <p className="text-[11px] font-medium uppercase tracking-wide text-emerald-700">Paid Amount</p>
-                                            <p className="mt-1 text-lg font-bold text-emerald-700">{formatCurrency(renewal.paymentAmount || 0)}</p>
+                                        <div className="rounded-lg border border-orange-200 bg-orange-50 px-3 py-2">
+                                            <p className="text-[11px] font-medium uppercase tracking-wide text-[#f0813d]">Paid Amount</p>
+                                            <p className="mt-1 text-lg font-bold text-[#f0813d]">{formatCurrency(renewal.paymentAmount || 0)}</p>
                                         </div>
-                                        <div className={`rounded-lg border px-3 py-2 ${Number(renewal.dueAmount || 0) > 0 ? "border-red-200 bg-red-50" : "border-emerald-200 bg-emerald-50"}`}>
-                                            <p className={`text-[11px] font-medium uppercase tracking-wide ${Number(renewal.dueAmount || 0) > 0 ? "text-red-700" : "text-emerald-700"}`}>
+                                        <div className={`rounded-lg border px-3 py-2 ${Number(renewal.dueAmount || 0) > 0 ? "border-orange-200 bg-orange-50" : "border-orange-200 bg-orange-50"}`}>
+                                            <p className={`text-[11px] font-medium uppercase tracking-wide ${Number(renewal.dueAmount || 0) > 0 ? "text-[#f0813d]" : "text-[#f0813d]"}`}>
                                                 Due Amount
                                             </p>
-                                            <p className={`mt-1 text-lg font-bold ${Number(renewal.dueAmount || 0) > 0 ? "text-red-700" : "text-emerald-700"}`}>
+                                            <p className={`mt-1 text-lg font-bold ${Number(renewal.dueAmount || 0) > 0 ? "text-[#f0813d]" : "text-[#f0813d]"}`}>
                                                 {formatCurrency(renewal.dueAmount || 0)}
                                             </p>
                                         </div>
@@ -543,7 +543,7 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
                                                 <button
                                                     type="button"
                                                     onClick={() => startEditingRenewal(renewal)}
-                                                    className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                                                    className="text-xs font-medium text-[#f0813d] hover:text-[#f0813d]"
                                                 >
                                                     {editingMembershipId === renewal.membershipId ? "Editing" : "Tap to edit"}
                                                 </button>
@@ -559,7 +559,7 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
                                                             type="date"
                                                             value={editingValues.renewedAt}
                                                             onChange={(e) => setEditingValues((current) => ({ ...current, renewedAt: e.target.value }))}
-                                                            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                                            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:ring-2 focus:ring-[#f0813d] outline-none"
                                                         />
                                                     </div>
                                                     <div>
@@ -587,7 +587,7 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
                                                         type="button"
                                                         onClick={() => updateRenewalDetails(renewal, "dates")}
                                                         disabled={savingMembershipId === renewal.membershipId}
-                                                        className="flex-1 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-60"
+                                                        className="flex-1 rounded-lg bg-[#f0813d] px-3 py-2 text-sm font-medium text-white disabled:opacity-60"
                                                     >
                                                         {savingMembershipId === renewal.membershipId ? "Saving..." : "Save Dates"}
                                                     </button>
@@ -610,7 +610,7 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
                                                 <button
                                                     type="button"
                                                     onClick={() => startEditingRenewal(renewal)}
-                                                    className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                                                    className="text-xs font-medium text-[#f0813d] hover:text-[#f0813d]"
                                                 >
                                                     Tap to edit
                                                 </button>
@@ -632,7 +632,7 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
                                                             }
                                                         }}
                                                         placeholder={`Default: ₹${renewal.planPrice || renewal.price}`}
-                                                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:ring-2 focus:ring-[#f0813d] outline-none"
                                                     />
                                                     <p className="mt-1 text-[11px] text-gray-500">Leave empty to use the original plan price.</p>
                                                 </div>
@@ -649,7 +649,7 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
                                                         type="button"
                                                         onClick={() => updateRenewalDetails(renewal, "price")}
                                                         disabled={savingMembershipId === renewal.membershipId}
-                                                        className="flex-1 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-60"
+                                                        className="flex-1 rounded-lg bg-[#f0813d] px-3 py-2 text-sm font-medium text-white disabled:opacity-60"
                                                     >
                                                         {savingMembershipId === renewal.membershipId ? "Saving..." : "Save Price"}
                                                     </button>
@@ -666,11 +666,11 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
                                             </div>
                                         </div>
 
-                                        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
-                                            <p className="text-[11px] font-medium text-amber-800">
+                                        <div className="rounded-lg border border-orange-200 bg-orange-50 px-3 py-2">
+                                            <p className="text-[11px] font-medium text-orange-800">
                                                 Paid amount editing is disabled here.
                                             </p>
-                                            <p className="mt-1 text-[11px] text-amber-700">
+                                            <p className="mt-1 text-[11px] text-[#f0813d]">
                                                 To update amount, open this member and go to Payments.
                                             </p>
                                         </div>
@@ -702,7 +702,7 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
                                                             disabled={savingPaymentId === renewal.paymentId}
                                                             className={`py-2 text-xs font-medium rounded-lg capitalize transition-all ${
                                                                 renewal.paymentMode === mode
-                                                                    ? "bg-blue-600 text-white"
+                                                                    ? "bg-[#f0813d] text-white"
                                                                     : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-100"
                                                             } ${savingPaymentId === renewal.paymentId ? "opacity-60 cursor-not-allowed" : ""}`}
                                                         >
@@ -717,7 +717,7 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
                                     {renewal.newEndDate && (
                                         <div className="mt-3 pt-3 border-t border-gray-100">
                                             <p className="text-xs text-gray-600">Extended Till</p>
-                                            <p className="font-medium text-blue-600">
+                                            <p className="font-medium text-[#f0813d]">
                                                 {new Date(renewal.newEndDate).toLocaleDateString("en-IN", {
                                                     day: "numeric",
                                                     month: "short",
@@ -735,7 +735,7 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
                                     )}
 
                                     {(renewal.dueAmount || 0) > 0 && renewal.paymentAmount <= 0 && (
-                                        <div className="mt-2 flex items-center gap-1 text-xs text-orange-600 bg-orange-50 rounded-lg p-2">
+                                        <div className="mt-2 flex items-center gap-1 text-xs text-[#f0813d] bg-orange-50 rounded-lg p-2">
                                             <span>⚠️</span>
                                             <span>
                                                 No payment recorded - Full amount pending
@@ -759,21 +759,21 @@ export default function RenewalHistoryModal({ member, renewalHistory, onClose, o
                     {historyItems && historyItems.length > 0 && (
                         <div className="mt-4 pt-4 border-t border-gray-200">
                             <div className="grid grid-cols-3 gap-3">
-                                <div className="bg-blue-50 rounded-lg p-3 text-center">
-                                    <p className="text-xs text-blue-600 mb-1">Total Renewals</p>
-                                    <p className="text-xl font-bold text-blue-700">
+                                <div className="bg-orange-50 rounded-lg p-3 text-center">
+                                    <p className="text-xs text-[#f0813d] mb-1">Total Renewals</p>
+                                    <p className="text-xl font-bold text-[#f0813d]">
                                         {historyItems.length-1}
                                     </p>
                                 </div>
-                                <div className="bg-green-50 rounded-lg p-3 text-center">
-                                    <p className="text-xs text-green-600 mb-1">Total Paid</p>
-                                    <p className="text-xl font-bold text-green-700">
+                                <div className="bg-orange-50 rounded-lg p-3 text-center">
+                                    <p className="text-xs text-[#f0813d] mb-1">Total Paid</p>
+                                    <p className="text-xl font-bold text-[#f0813d]">
                                         ₹{totalPaid}
                                     </p>
                                 </div>
                                 <div className="bg-orange-50 rounded-lg p-3 text-center">
-                                    <p className="text-xs text-orange-600 mb-1">Total Due</p>
-                                    <p className="text-xl font-bold text-orange-700">
+                                    <p className="text-xs text-[#f0813d] mb-1">Total Due</p>
+                                    <p className="text-xl font-bold text-[#f0813d]">
                                         ₹{totalDue}
                                     </p>
                                 </div>

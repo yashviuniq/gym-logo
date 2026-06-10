@@ -45,7 +45,7 @@ const MEMBER_CATEGORIES = [
   { id: "all", label: "All Members", icon: Users, color: "blue" },
   { id: "active", label: "Active Members", icon: UserCheck, color: "green" },
   { id: "inactive", label: "Inactive Members", icon: UserX, color: "orange" },
-  { id: "pending", label: "Pending Payments", icon: AlertTriangle, color: "amber" },
+  { id: "pending", label: "Pending Payments", icon: AlertTriangle, color: "orange" },
 ];
 
 // ══════════════════════════════════════════════════════════════
@@ -674,7 +674,7 @@ Best regards,
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-[#f0813d]" />
       </div>
     );
   }
@@ -708,20 +708,20 @@ Best regards,
             </div>
             <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all"
+                className="h-full bg-gradient-to-r from-[#f0813d] to-[#f0813d] transition-all"
                 style={{ width: `${((currentSendIndex + 1) / membersToSend.length) * 100}%` }}
               />
             </div>
             
             {/* Stats */}
             <div className="grid grid-cols-3 gap-2 mt-4">
-              <div className="bg-green-50 rounded-xl p-3 text-center">
-                <div className="text-lg font-bold text-green-600">{sendProgress.sent}</div>
-                <div className="text-xs text-green-700">Sent</div>
+              <div className="bg-orange-50 rounded-xl p-3 text-center">
+                <div className="text-lg font-bold text-[#f0813d]">{sendProgress.sent}</div>
+                <div className="text-xs text-[#f0813d]">Sent</div>
               </div>
-              <div className="bg-amber-50 rounded-xl p-3 text-center">
-                <div className="text-lg font-bold text-amber-600">{sendProgress.pending}</div>
-                <div className="text-xs text-amber-700">Pending</div>
+              <div className="bg-orange-50 rounded-xl p-3 text-center">
+                <div className="text-lg font-bold text-[#f0813d]">{sendProgress.pending}</div>
+                <div className="text-xs text-[#f0813d]">Pending</div>
               </div>
               <div className="bg-gray-50 rounded-xl p-3 text-center">
                 <div className="text-lg font-bold text-gray-600">{sendProgress.skipped}</div>
@@ -733,7 +733,7 @@ Best regards,
           {/* Current Member Card */}
           <div className="bg-white rounded-2xl p-4 mb-4 shadow-sm">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-lg">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#f0813d] to-[#f0813d] flex items-center justify-center text-white font-bold text-lg">
                 {currentMember.full_name?.charAt(0) || "?"}
               </div>
               <div>
@@ -746,7 +746,7 @@ Best regards,
             </div>
 
             {/* Message Preview */}
-            <div className="bg-green-50 border border-green-100 rounded-xl p-4">
+            <div className="bg-orange-50 border border-orange-100 rounded-xl p-4">
               <p className="text-sm text-gray-800 whitespace-pre-wrap">{personalizedMsg}</p>
             </div>
           </div>
@@ -762,7 +762,7 @@ Best regards,
             </button>
             <button
               onClick={() => handleBulkSendNext("send")}
-              className="py-3 px-4 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium flex items-center justify-center gap-2 transition"
+              className="py-3 px-4 bg-[#f0813d] hover:bg-[#f0813d] text-white rounded-xl font-medium flex items-center justify-center gap-2 transition"
             >
               <Send className="w-5 h-5" />
               Send & Next
@@ -771,7 +771,7 @@ Best regards,
 
           <button
             onClick={exitBulkSend}
-            className="w-full py-3 px-4 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-medium flex items-center justify-center gap-2 transition"
+            className="w-full py-3 px-4 bg-orange-50 hover:bg-orange-100 text-[#f0813d] rounded-xl font-medium flex items-center justify-center gap-2 transition"
           >
             <X className="w-5 h-5" />
             Exit Bulk Send
@@ -809,12 +809,12 @@ Best regards,
                 className={`flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition whitespace-nowrap ${
                   isSelected
                     ? cat.color === "blue"
-                      ? "bg-blue-600 text-white"
+                      ? "bg-[#f0813d] text-white"
                       : cat.color === "green"
-                      ? "bg-green-600 text-white"
-                      : cat.color === "amber"
-                      ? "bg-amber-500 text-white"
-                      : "bg-orange-500 text-white"
+                      ? "bg-[#f0813d] text-white"
+                      : cat.color === "orange"
+                      ? "bg-[#f0813d] text-white"
+                      : "bg-[#f0813d] text-white"
                     : "bg-white text-gray-700 border border-gray-200"
                 }`}
               >
@@ -841,7 +841,7 @@ Best regards,
                 }}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
                   selectedFilter === filter.id
-                    ? "bg-blue-100 text-blue-700 border border-blue-200"
+                    ? "bg-orange-100 text-[#f0813d] border border-orange-200"
                     : "bg-gray-50 text-gray-600 hover:bg-gray-100"
                 }`}
               >
@@ -861,7 +861,7 @@ Best regards,
             </div>
             <button
               onClick={() => setShowTemplates(true)}
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+              className="text-sm text-[#f0813d] hover:text-[#f0813d] font-medium flex items-center gap-1"
             >
               <Settings className="w-4 h-4" />
               Manage Templates
@@ -879,7 +879,7 @@ Best regards,
                 }}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
                   selectedTemplate?.id === template.id
-                    ? "bg-green-100 text-green-700 border border-green-200"
+                    ? "bg-orange-100 text-[#f0813d] border border-orange-200"
                     : "bg-gray-50 text-gray-600 hover:bg-gray-100"
                 }`}
               >
@@ -908,14 +908,14 @@ Best regards,
               }}
               placeholder="Type your message here... Use {Name}, {ExpiryDate}, {MembershipType}, {GymName} for personalization"
               rows={3}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#f0813d] focus:border-transparent resize-none"
             />
             <div className="mt-2 flex flex-wrap gap-1.5">
               {["{Name}", "{ExpiryDate}", "{MembershipType}", "{GymName}"].map((v) => (
                 <button
                   key={v}
                   onClick={() => setCustomMessage((prev) => prev + " " + v)}
-                  className="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 font-mono"
+                  className="text-xs px-2 py-1 bg-orange-50 text-[#f0813d] rounded-md hover:bg-orange-100 font-mono"
                 >
                   {v}
                 </button>
@@ -934,7 +934,7 @@ Best regards,
               placeholder="Search members..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#f0813d]"
             />
           </div>
           <button
@@ -952,7 +952,7 @@ Best regards,
           </span>
           <button
             onClick={handleSelectAll}
-            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+            className="text-sm text-[#f0813d] hover:text-[#f0813d] font-medium"
           >
             {selectedMembers.size === filteredMembers.length ? "Deselect All" : "Select All"}
           </button>
@@ -962,7 +962,7 @@ Best regards,
         <div className="space-y-2">
           {membersLoading ? (
             <div className="bg-white rounded-2xl p-8 flex items-center justify-center">
-              <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+              <Loader2 className="w-6 h-6 animate-spin text-[#f0813d]" />
             </div>
           ) : filteredMembers.length === 0 ? (
             <div className="bg-white rounded-2xl p-8 text-center">
@@ -978,7 +978,7 @@ Best regards,
                 <div
                   key={member.member_id}
                   className={`bg-white rounded-xl p-3 transition border-2 ${
-                    isSelected ? "border-blue-500 bg-blue-50/30" : "border-transparent"
+                    isSelected ? "border-[#f0813d] bg-orange-50/30" : "border-transparent"
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -987,15 +987,15 @@ Best regards,
                       onClick={() => handleSelectMember(member.member_id)}
                       className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition ${
                         isSelected
-                          ? "bg-blue-600 border-blue-600"
-                          : "border-gray-300 hover:border-blue-400"
+                          ? "bg-[#f0813d] border-[#f0813d]"
+                          : "border-gray-300 hover:border-[#f0813d]"
                       }`}
                     >
                       {isSelected && <CheckCircle className="w-3 h-3 text-white" />}
                     </button>
 
                     {/* Avatar */}
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#f0813d] to-[#f0813d] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                       {member.full_name?.charAt(0) || "?"}
                     </div>
 
@@ -1006,9 +1006,9 @@ Best regards,
                         <span
                           className={`px-1.5 py-0.5 rounded text-xs font-medium ${
                             member.membership_status === "active"
-                              ? "bg-green-100 text-green-700"
+                              ? "bg-orange-100 text-[#f0813d]"
                               : member.membership_status === "pending"
-                              ? "bg-amber-100 text-amber-700"
+                              ? "bg-orange-100 text-[#f0813d]"
                               : "bg-gray-100 text-gray-600"
                           }`}
                         >
@@ -1023,7 +1023,7 @@ Best regards,
                         <Phone className="w-3 h-3" />
                         {member.phone}
                         {member.membership_status === "pending" ? (
-                          <span className="text-xs text-amber-700">
+                          <span className="text-xs text-[#f0813d]">
                             • Due: {formatCurrency(member.pending_amount || 0)}
                             {member.is_overdue
                               ? ` • ${member.days_overdue} days overdue`
@@ -1043,7 +1043,7 @@ Best regards,
                     <button
                       onClick={() => handleSendMessage(member)}
                       disabled={!getCurrentMessage()}
-                      className="p-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white rounded-lg transition"
+                      className="p-2 bg-[#f0813d] hover:bg-[#f0813d] disabled:bg-gray-300 text-white rounded-lg transition"
                     >
                       <Send className="w-4 h-4" />
                     </button>
@@ -1051,7 +1051,7 @@ Best regards,
 
                   {/* Message Preview (if selected) */}
                   {isSelected && personalizedMsg && (
-                    <div className="mt-3 ml-8 p-3 bg-green-50 rounded-lg border border-green-100">
+                    <div className="mt-3 ml-8 p-3 bg-orange-50 rounded-lg border border-orange-100">
                       <p className="text-xs text-gray-600 mb-1 font-medium">Preview:</p>
                       <p className="text-sm text-gray-800">{personalizedMsg}</p>
                     </div>
@@ -1068,7 +1068,7 @@ Best regards,
             <button
               onClick={startBulkSend}
               disabled={!getCurrentMessage() && selectedCategory !== "pending"}
-              className="w-full py-3.5 px-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-400 text-white rounded-xl font-semibold flex items-center justify-center gap-2 transition"
+              className="w-full py-3.5 px-4 bg-gradient-to-r from-[#f0813d] to-[#f0813d] hover:from-[#f0813d] hover:to-[#f0813d] disabled:from-gray-400 disabled:to-gray-400 text-white rounded-xl font-semibold flex items-center justify-center gap-2 transition"
             >
               <MessageCircle className="w-5 h-5" />
               Send to {selectedMembers.size} Members
@@ -1089,7 +1089,7 @@ Best regards,
               <h2 className="text-lg font-bold text-gray-900">Message Templates</h2>
               <button
                 onClick={() => setShowTemplates(false)}
-                className="p-2 -mr-2 hover:bg-red-50 rounded-lg transition text-gray-700 hover:text-red-600"
+                className="p-2 -mr-2 hover:bg-orange-50 rounded-lg transition text-gray-700 hover:text-[#f0813d]"
                 aria-label="Close"
               >
                 <X className="w-6 h-6" />
@@ -1103,7 +1103,7 @@ Best regards,
                   key={template.id}
                   className={`p-4 rounded-xl border-2 transition ${
                     selectedTemplate?.id === template.id
-                      ? "border-green-500 bg-green-50"
+                      ? "border-[#f0813d] bg-orange-50"
                       : "border-gray-100 hover:border-gray-200"
                   }`}
                 >
@@ -1124,9 +1124,9 @@ Best regards,
                       </button>
                       <button
                         onClick={() => handleDeleteTemplate(template)}
-                        className="p-1.5 hover:bg-red-50 rounded-lg"
+                        className="p-1.5 hover:bg-orange-50 rounded-lg"
                       >
-                        <Trash2 className="w-4 h-4 text-red-500" />
+                        <Trash2 className="w-4 h-4 text-[#f0813d]" />
                       </button>
                     </div>
                   </div>
@@ -1137,7 +1137,7 @@ Best regards,
                       setCustomMessage("");
                       setShowTemplates(false);
                     }}
-                    className="mt-3 w-full py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition"
+                    className="mt-3 w-full py-2 bg-[#f0813d] hover:bg-[#f0813d] text-white text-sm font-medium rounded-lg transition"
                   >
                     Use This Template
                   </button>
@@ -1152,7 +1152,7 @@ Best regards,
                   setEditingTemplate(null);
                   setShowTemplateEditor(true);
                 }}
-                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl flex items-center justify-center gap-2 transition"
+                className="w-full py-3 bg-[#f0813d] hover:bg-[#f0813d] text-white font-medium rounded-xl flex items-center justify-center gap-2 transition"
               >
                 <Plus className="w-5 h-5" />
                 Create New Template
@@ -1206,7 +1206,7 @@ function TemplateEditor({ template, onSave, onClose }) {
             </h2>
             <button 
               onClick={onClose} 
-              className="p-2 -mr-2 hover:bg-red-50 rounded-lg transition text-gray-700 hover:text-red-600"
+              className="p-2 -mr-2 hover:bg-orange-50 rounded-lg transition text-gray-700 hover:text-[#f0813d]"
               aria-label="Close"
             >
               <X className="w-6 h-6" />
@@ -1222,7 +1222,7 @@ function TemplateEditor({ template, onSave, onClose }) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Membership Expiry Reminder"
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f0813d]"
               required
             />
           </div>
@@ -1233,7 +1233,7 @@ function TemplateEditor({ template, onSave, onClose }) {
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f0813d]"
             >
               <option value="general">General</option>
               <option value="expiry">Expiry Reminder</option>
@@ -1251,7 +1251,7 @@ function TemplateEditor({ template, onSave, onClose }) {
               onChange={(e) => setContent(e.target.value)}
               placeholder="Hi {Name}, your membership..."
               rows={5}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#f0813d] resize-none"
               required
             />
             <div className="mt-2 flex flex-wrap gap-1.5">
@@ -1260,7 +1260,7 @@ function TemplateEditor({ template, onSave, onClose }) {
                   key={v}
                   type="button"
                   onClick={() => setContent((prev) => prev + " " + v)}
-                  className="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 font-mono"
+                  className="text-xs px-2 py-1 bg-orange-50 text-[#f0813d] rounded-md hover:bg-orange-100 font-mono"
                 >
                   {v}
                 </button>
@@ -1269,7 +1269,7 @@ function TemplateEditor({ template, onSave, onClose }) {
           </div>
 
           {/* Preview */}
-          <div className="bg-green-50 border border-green-100 rounded-xl p-4">
+          <div className="bg-orange-50 border border-orange-100 rounded-xl p-4">
             <p className="text-xs text-gray-500 mb-1">Preview:</p>
             <p className="text-sm text-gray-800">
               {content
@@ -1286,7 +1286,7 @@ function TemplateEditor({ template, onSave, onClose }) {
           <button
             onClick={handleSubmit}
             disabled={saving || !name.trim() || !content.trim()}
-            className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-xl flex items-center justify-center gap-2 transition"
+            className="w-full py-3 bg-[#f0813d] hover:bg-[#f0813d] disabled:bg-gray-400 text-white font-medium rounded-xl flex items-center justify-center gap-2 transition"
           >
             {saving ? (
               <Loader2 className="w-5 h-5 animate-spin" />

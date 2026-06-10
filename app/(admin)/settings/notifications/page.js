@@ -148,7 +148,7 @@ export default function NotificationsSettingsPage() {
       <div className="min-h-screen bg-gray-50 pb-24">
         <Header title="Notifications" />
         <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#f0813d]"></div>
         </div>
       </div>
     );
@@ -369,7 +369,7 @@ function ToggleItem({ icon, title, description, enabled, onToggle, badge }) {
           <div className="flex items-center gap-2">
             <p className="font-medium text-gray-900">{title}</p>
             {badge && (
-              <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">
+              <span className="text-xs bg-[#f0813d]/15 text-[#9c4400] px-2 py-0.5 rounded-full">
                 {badge}
               </span>
             )}
@@ -380,7 +380,7 @@ function ToggleItem({ icon, title, description, enabled, onToggle, badge }) {
       <button
         onClick={onToggle}
         className={`w-12 h-6 rounded-full transition ${
-          enabled ? "bg-green-500" : "bg-gray-300"
+          enabled ? "bg-[#f0813d]" : "bg-gray-300"
         }`}
       >
         <div

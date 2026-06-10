@@ -156,8 +156,8 @@ export default function PlansSettingsPage() {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom flex flex-col items-center justify-center">
         <div className="relative">
-          <div className="w-14 h-14 border-4 border-blue-500/20 border-t-blue-600 rounded-full animate-spin"></div>
-          <div className="absolute inset-0 w-14 h-14 border-4 border-transparent border-t-blue-500 rounded-full animate-spin animation-delay-200"></div>
+          <div className="w-14 h-14 border-4 border-[#f0813d]/20 border-t-[#9c4400] rounded-full animate-spin"></div>
+          <div className="absolute inset-0 w-14 h-14 border-4 border-transparent border-t-[#f0813d] rounded-full animate-spin animation-delay-200"></div>
         </div>
         <p className="mt-6 text-gray-600 font-medium text-sm">Loading plans...</p>
       </div>
@@ -170,7 +170,7 @@ export default function PlansSettingsPage() {
         <Header title="Membership Plans" showBack={true} />
         <main className="px-4 py-4">
           <div className="text-center py-12">
-            <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <div className="w-20 h-20 bg-gradient-to-br from-[#f0813d] to-[#9c4400] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
               <Tag className="w-10 h-10 text-white" />
             </div>
             <h2 className="text-lg font-bold text-gray-900 mb-2">No Gym Selected</h2>
@@ -179,7 +179,7 @@ export default function PlansSettingsPage() {
             </p>
             <button
               onClick={() => router.push("/admin/dashboard")}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold text-sm active:scale-95 transition-transform"
+              className="px-6 py-3 bg-gradient-to-r from-[#f0813d] to-[#9c4400] text-white rounded-xl font-semibold text-sm active:scale-95 transition-transform"
               style={{ minHeight: '44px' }}
             >
               Go to Dashboard
@@ -211,11 +211,11 @@ export default function PlansSettingsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-medium">Active Plans</p>
-                <p className="text-xl font-bold text-emerald-600 mt-0.5">{activePlans.length}</p>
+                <p className="text-xl font-bold text-[#f0813d] mt-0.5">{activePlans.length}</p>
                 <p className="text-xs text-gray-400 mt-1">of {plans.length} total</p>
               </div>
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-lg flex items-center justify-center">
-                <Zap className="w-5 h-5 text-emerald-600" />
+              <div className="w-10 h-10 bg-gradient-to-br from-[#f0813d]/10 to-[#f0813d]/15 rounded-lg flex items-center justify-center">
+                <Zap className="w-5 h-5 text-white" />
               </div>
             </div>
           </div>
@@ -224,11 +224,11 @@ export default function PlansSettingsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-medium">Total Members</p>
-                <p className="text-xl font-bold text-blue-600 mt-0.5">{totalMembers}</p>
+                <p className="text-xl font-bold text-[#f0813d] mt-0.5">{totalMembers}</p>
                 <p className="text-xs text-gray-400 mt-1">across all plans</p>
               </div>
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg flex items-center justify-center">
-                <Users className="w-5 h-5 text-blue-600" />
+              <div className="w-10 h-10 bg-gradient-to-br from-[#f0813d]/10 to-[#f0813d]/15 rounded-lg flex items-center justify-center">
+                <Users className="w-5 h-5 text-white" />
               </div>
             </div>
           </div>
@@ -237,13 +237,13 @@ export default function PlansSettingsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-medium">Monthly Revenue</p>
-                <p className="text-xl font-bold text-indigo-600 mt-0.5">
+                <p className="text-xl font-bold text-[#f0813d] mt-0.5">
                   ₹{totalRevenue.toLocaleString()}
                 </p>
                 <p className="text-xs text-gray-400 mt-1">estimated</p>
               </div>
-              <div className="w-10 h-10 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg flex items-center justify-center">
-                <IndianRupee className="w-5 h-5 text-indigo-600" />
+              <div className="w-10 h-10 bg-gradient-to-br from-[#f0813d]/10 to-[#f0813d]/15 rounded-lg flex items-center justify-center">
+                <IndianRupee className="w-5 h-5 text-white" />
               </div>
             </div>
           </div>
@@ -252,13 +252,13 @@ export default function PlansSettingsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-medium">Avg. Price</p>
-                <p className="text-xl font-bold text-amber-600 mt-0.5">
+                <p className="text-xl font-bold text-[#f0813d] mt-0.5">
                   ₹{plans.length > 0 ? (plans.reduce((sum, p) => sum + p.price, 0) / plans.length).toFixed(0) : 0}
                 </p>
                 <p className="text-xs text-gray-400 mt-1">per plan</p>
               </div>
-              <div className="w-10 h-10 bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg flex items-center justify-center">
-                <DollarSign className="w-5 h-5 text-amber-600" />
+              <div className="w-10 h-10 bg-gradient-to-br from-[#f0813d]/10 to-[#f0813d]/15 rounded-lg flex items-center justify-center">
+                <DollarSign className="w-5 h-5 text-white" />
               </div>
             </div>
           </div>
@@ -269,7 +269,7 @@ export default function PlansSettingsPage() {
           {canCreateTrainer && (
             <button
               onClick={() => setShowAddModal(true)}
-              className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2"
+              className="w-full py-3 bg-gradient-to-r from-[#f0813d] to-[#9c4400] text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2"
               style={{ minHeight: '44px' }}
             >
               <Plus className="w-5 h-5" />
@@ -295,7 +295,7 @@ export default function PlansSettingsPage() {
                 onClick={() => setActiveTab(filter.id)}
                 className={`py-2.5 rounded-lg text-xs font-medium transition-all duration-200 flex flex-col items-center justify-center ${
                   activeTab === filter.id
-                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
+                    ? "bg-gradient-to-r from-[#f0813d] to-[#9c4400] text-white shadow-md"
                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
                 style={{ minHeight: '64px' }}
@@ -325,7 +325,7 @@ export default function PlansSettingsPage() {
           {filteredPlans.length === 0 ? (
             <div className="bg-white rounded-xl p-6 text-center border border-gray-200 shadow-sm mx-1">
               <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Tag className="w-8 h-8 text-gray-400" />
+                <Tag className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-base font-semibold text-gray-900 mb-2">
                 {activeTab === "all" 
@@ -340,7 +340,7 @@ export default function PlansSettingsPage() {
               {canCreateTrainer && (
                 <button
                   onClick={() => setShowAddModal(true)}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 mx-auto"
+                  className="px-6 py-3 bg-gradient-to-r from-[#f0813d] to-[#9c4400] text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 mx-auto"
                   style={{ minHeight: '44px' }}
                 >
                   <Plus className="w-5 h-5" />
@@ -359,7 +359,7 @@ export default function PlansSettingsPage() {
                   <div className="flex-shrink-0">
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-sm ${
                       plan.active 
-                        ? "bg-gradient-to-br from-blue-600 to-indigo-600" 
+                        ? "bg-gradient-to-br from-[#f0813d] to-[#9c4400]" 
                         : "bg-gradient-to-br from-gray-400 to-gray-500"
                     }`}>
                       <Calendar className="w-6 h-6" />
@@ -376,7 +376,7 @@ export default function PlansSettingsPage() {
                           </h3>
                           <div className={`px-2 py-1 rounded-lg text-xs font-medium flex items-center gap-1.5 ${
                             plan.active
-                              ? "bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200 text-emerald-700"
+                              ? "bg-gradient-to-br from-[#f0813d]/10 to-[#f0813d]/15 border-[#f0813d]/20 text-[#9c4400]"
                               : "bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200 text-gray-700"
                           }`}>
                             {plan.active ? (
@@ -402,8 +402,8 @@ export default function PlansSettingsPage() {
                     {/* Plan Details */}
                     <div className="mt-3 space-y-2">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
-                          <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                        <div className="w-8 h-8 bg-[#f0813d]/10 rounded-lg flex items-center justify-center">
+                          <Calendar className="w-3.5 h-3.5 text-white" />
                         </div>
                         <div>
                           <p className="text-xs text-gray-500">Duration</p>
@@ -414,8 +414,8 @@ export default function PlansSettingsPage() {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center">
-                          <Users className="w-3.5 h-3.5 text-emerald-600" />
+                        <div className="w-8 h-8 bg-[#f0813d]/10 rounded-lg flex items-center justify-center">
+                          <Users className="w-3.5 h-3.5 text-white" />
                         </div>
                         <div>
                           <p className="text-xs text-gray-500">Active Members</p>
@@ -435,7 +435,7 @@ export default function PlansSettingsPage() {
                               e.stopPropagation();
                               setEditingPlan(plan);
                             }}
-                            className="flex-shrink-0 px-3 py-2 bg-blue-50 text-blue-700 cursor-pointer text-xs font-medium rounded-lg active:bg-blue-100 transition-all flex items-center gap-2"
+                            className="flex-shrink-0 px-3 py-2 bg-[#f0813d]/10 text-[#9c4400] cursor-pointer text-xs font-medium rounded-lg active:bg-[#f0813d]/15 transition-all flex items-center gap-2"
                             style={{ minHeight: '36px' }}
                           >
                             <Edit2 className="w-3.5 h-3.5" />
@@ -449,8 +449,8 @@ export default function PlansSettingsPage() {
                             }}
                             className={`flex-shrink-0 px-3 py-2 text-xs font-medium rounded-lg active:scale-95 transition-all flex items-center gap-2 ${
                               plan.active
-                                ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white"
-                                : "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white"
+                                ? "bg-gradient-to-r from-[#f0813d] to-[#9c4400] text-white"
+                                : "bg-gradient-to-r from-[#f0813d] to-[#9c4400] text-white"
                             }`}
                             style={{ minHeight: '36px' }}
                           >
@@ -467,7 +467,7 @@ export default function PlansSettingsPage() {
                             className={`flex-shrink-0 px-3 py-2 text-xs font-medium rounded-lg flex items-center gap-2 ${
                               plan.members > 0
                                 ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                : "bg-red-50 text-red-700 hover:bg-red-100 active:bg-red-200 transition-all"
+                                : "bg-[#f0813d]/10 text-[#9c4400] hover:bg-[#f0813d]/15 active:bg-[#f0813d]/25 transition-all"
                             }`}
                             style={{ minHeight: '36px' }}
                             title={plan.members > 0 ? "Cannot delete plan with active members" : "Delete plan"}
@@ -611,7 +611,7 @@ function PlanModal({ plan, gymId, onClose, onSave }) {
               </label>
               <input
                 type="text"
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all text-sm"
                 placeholder="e.g., Monthly Premium, Quarterly Basic"
                 value={formData.name}
                 onChange={(e) => updateForm("name", e.target.value)}
@@ -625,7 +625,7 @@ function PlanModal({ plan, gymId, onClose, onSave }) {
                 Description (Optional)
               </label>
               <textarea
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none text-sm"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all resize-none text-sm"
                 placeholder="Describe the benefits and features of this plan..."
                 rows={3}
                 value={formData.description}
@@ -644,7 +644,7 @@ function PlanModal({ plan, gymId, onClose, onSave }) {
                     type="text"
                     inputMode="numeric"
                     pattern="[0-9]*"
-                    className="flex-1 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
+                    className="flex-1 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all text-sm"
                     placeholder="30"
                     value={formData.duration}
                     onChange={(e) => {
@@ -658,7 +658,7 @@ function PlanModal({ plan, gymId, onClose, onSave }) {
                   <select
                     value={durationUnit}
                     onChange={(e) => setDurationUnit(e.target.value)}
-                    className="px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
+                    className="px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all text-sm"
                   >
                     <option value="days">Days</option>
                     <option value="weeks">Weeks</option>
@@ -684,7 +684,7 @@ function PlanModal({ plan, gymId, onClose, onSave }) {
                     type="text"
                     inputMode="decimal"
                     pattern="[0-9]*\.?[0-9]*"
-                    className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
+                    className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all text-sm"
                     placeholder="1500"
                     value={formData.price}
                     onChange={(e) => {
@@ -714,7 +714,7 @@ function PlanModal({ plan, gymId, onClose, onSave }) {
                   type="button"
                   onClick={() => updateForm("active", !formData.active)}
                   className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                    formData.active ? "bg-emerald-500" : "bg-gray-300"
+                    formData.active ? "bg-[#f0813d]" : "bg-gray-300"
                   }`}
                 >
                   <span
@@ -724,7 +724,7 @@ function PlanModal({ plan, gymId, onClose, onSave }) {
                   />
                 </button>
               </div>
-              <div className={`mt-3 p-2 rounded-md text-xs ${formData.active ? "bg-emerald-50 text-emerald-800" : "bg-gray-100 text-gray-800"}`}>
+              <div className={`mt-3 p-2 rounded-md text-xs ${formData.active ? "bg-[#f0813d]/10 text-[#9c4400]" : "bg-gray-100 text-gray-800"}`}>
                 <p className="font-medium">
                   {formData.active ? "✓ Active Plan" : "✗ Inactive Plan"}
                 </p>
@@ -750,7 +750,7 @@ function PlanModal({ plan, gymId, onClose, onSave }) {
             </button>
             <button
               type="submit"
-              className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 py-3 bg-gradient-to-r from-[#f0813d] to-[#9c4400] text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={saving}
               style={{ minHeight: '44px' }}
             >

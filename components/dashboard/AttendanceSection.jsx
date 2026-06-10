@@ -24,7 +24,7 @@ function AttendanceRow({ member, size = "sm" }) {
             </p>
 
             {isExpired && (
-              <span className="px-2 py-0.5 text-[8px] font-black bg-red-50 text-red-500 border border-red-100 rounded-full uppercase">
+              <span className="px-2 py-0.5 text-[8px] font-black bg-orange-50 text-[#f0813d] border border-orange-100 rounded-full uppercase">
                 Expired
               </span>
             )}
@@ -37,8 +37,8 @@ function AttendanceRow({ member, size = "sm" }) {
 
           {isExpired && (
             <div className="flex items-center gap-1 mt-1">
-              <XCircle className="w-3.5 h-3.5 text-red-500" />
-              <p className="text-[10px] text-red-500 font-bold uppercase">
+              <XCircle className="w-3.5 h-3.5 text-[#f0813d]" />
+              <p className="text-[10px] text-[#f0813d] font-bold uppercase">
                 Membership expired
               </p>
             </div>
@@ -49,8 +49,8 @@ function AttendanceRow({ member, size = "sm" }) {
       <span
         className={`text-[10px] font-black px-2.5 py-1 rounded-full uppercase ${
           isActive
-            ? "bg-[#d9ff3f]/30 text-[#4d7c0f]"
-            : "bg-red-50 text-red-500"
+            ? "bg-[#f0813d]/30 text-[#4d7c0f]"
+            : "bg-orange-50 text-[#f0813d]"
         }`}
       >
         {isActive ? "Active" : "Left"}
@@ -68,8 +68,8 @@ export default function AttendanceSection({ todayList, allAttendance, totalCount
       <div className="bg-white border border-[#ececec] rounded-3xl p-5 shadow-[0_10px_40px_rgba(0,0,0,0.05)]">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 bg-orange-50 text-[#f0813d] border border-orange-100 rounded-2xl flex items-center justify-center">
-              <Calendar className="w-5 h-5" />
+            <div className="w-11 h-11 bg-gradient-to-br from-[#f0813d] to-[#9c4400] text-white border border-[#f0813d]/30 rounded-2xl flex items-center justify-center shadow-[0_10px_24px_rgba(240,129,61,0.24)]">
+              <Calendar className="w-5 h-5 text-white" />
             </div>
 
             <div>

@@ -360,7 +360,7 @@ export default function CreateMemberWorkoutPlanPage() {
       <div className="min-h-screen bg-gray-50 pb-24">
         <Header title="Create Workout Plan" />
         <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#f0813d]"></div>
         </div>
       </div>
     );
@@ -381,7 +381,7 @@ export default function CreateMemberWorkoutPlanPage() {
             </p>
             <button
               onClick={() => router.push("/profile/renew")}
-              className="px-6 py-3 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 transition"
+              className="px-6 py-3 bg-[#f0813d] text-white rounded-lg font-medium hover:bg-[#f0813d] transition"
             >
               Renew Membership
             </button>
@@ -397,7 +397,7 @@ export default function CreateMemberWorkoutPlanPage() {
         <Header title="Create Workout Plan" />
         <main className="px-4 py-4">
           <div className="bg-white rounded-xl p-6 shadow-sm text-center">
-            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="text-4xl">🚫</span>
             </div>
             <h2 className="text-xl font-bold text-gray-900 mb-2">Access Not Granted</h2>
@@ -434,7 +434,7 @@ export default function CreateMemberWorkoutPlanPage() {
               </label>
               <input
                 type="text"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] outline-none"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 required
@@ -448,7 +448,7 @@ export default function CreateMemberWorkoutPlanPage() {
                   Goal
                 </label>
                 <select
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] outline-none"
                   value={formData.goal}
                   onChange={(e) => setFormData({ ...formData, goal: e.target.value })}
                 >
@@ -464,7 +464,7 @@ export default function CreateMemberWorkoutPlanPage() {
                   Level
                 </label>
                 <select
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] outline-none"
                   value={formData.level}
                   onChange={(e) => setFormData({ ...formData, level: e.target.value })}
                 >
@@ -481,7 +481,7 @@ export default function CreateMemberWorkoutPlanPage() {
                 Description
               </label>
               <textarea
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] outline-none resize-none"
                 rows={2}
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -501,7 +501,7 @@ export default function CreateMemberWorkoutPlanPage() {
                   onClick={() => setSelectedDay(dayNum)}
                   className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition ${
                     selectedDay === dayNum
-                      ? "bg-blue-600 text-white"
+                      ? "bg-[#f0813d] text-white"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
                 >
@@ -523,7 +523,7 @@ export default function CreateMemberWorkoutPlanPage() {
               <button
                 type="button"
                 onClick={() => addExerciseToDay(selectedDay)}
-                className="px-3 py-1.5 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition font-medium"
+                className="px-3 py-1.5 text-sm bg-orange-100 text-[#f0813d] rounded-lg hover:bg-orange-200 transition font-medium"
               >
                 + Add Exercise
               </button>
@@ -533,7 +533,7 @@ export default function CreateMemberWorkoutPlanPage() {
             <div className="mb-4">
               <input
                 type="text"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] outline-none"
                 placeholder="Focus (e.g., Chest & Triceps, Back & Biceps)"
                 value={currentDay?.focus || ""}
                 onChange={(e) => updateDayFocus(selectedDay, e.target.value)}
@@ -554,7 +554,7 @@ export default function CreateMemberWorkoutPlanPage() {
                     <div className="flex items-center gap-2 mb-2">
                       <input
                         type="text"
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] outline-none"
                         placeholder="Exercise name (e.g., Bench Press)"
                         value={exercise.exercise_name}
                         onChange={(e) => updateExercise(selectedDay, exerciseIndex, "exercise_name", e.target.value)}
@@ -562,7 +562,7 @@ export default function CreateMemberWorkoutPlanPage() {
                       <button
                         type="button"
                         onClick={() => removeExercise(selectedDay, exerciseIndex)}
-                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
+                        className="p-2 text-[#f0813d] hover:bg-orange-50 rounded-lg"
                       >
                         ✕
                       </button>
@@ -574,7 +574,7 @@ export default function CreateMemberWorkoutPlanPage() {
                         <label className="block text-xs text-gray-500 mb-1">Sets</label>
                         <input
                           type="number"
-                          className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                          className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] outline-none"
                           placeholder="3"
                           value={exercise.sets}
                           onChange={(e) => updateExercise(selectedDay, exerciseIndex, "sets", e.target.value)}
@@ -584,7 +584,7 @@ export default function CreateMemberWorkoutPlanPage() {
                         <label className="block text-xs text-gray-500 mb-1">Reps</label>
                         <input
                           type="text"
-                          className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                          className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] outline-none"
                           placeholder="8-12"
                           value={exercise.reps}
                           onChange={(e) => updateExercise(selectedDay, exerciseIndex, "reps", e.target.value)}
@@ -594,7 +594,7 @@ export default function CreateMemberWorkoutPlanPage() {
                         <label className="block text-xs text-gray-500 mb-1">Weight</label>
                         <input
                           type="text"
-                          className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                          className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] outline-none"
                           placeholder="20kg"
                           value={exercise.weight}
                           onChange={(e) => updateExercise(selectedDay, exerciseIndex, "weight", e.target.value)}
@@ -604,7 +604,7 @@ export default function CreateMemberWorkoutPlanPage() {
                         <label className="block text-xs text-gray-500 mb-1">Rest (s)</label>
                         <input
                           type="number"
-                          className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                          className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] outline-none"
                           placeholder="60"
                           value={exercise.rest_seconds}
                           onChange={(e) => updateExercise(selectedDay, exerciseIndex, "rest_seconds", e.target.value)}
@@ -615,7 +615,7 @@ export default function CreateMemberWorkoutPlanPage() {
                     {/* Notes */}
                     <input
                       type="text"
-                      className="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      className="w-full px-3 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] outline-none"
                       placeholder="Notes (optional)"
                       value={exercise.notes || ""}
                       onChange={(e) => updateExercise(selectedDay, exerciseIndex, "notes", e.target.value)}
@@ -630,7 +630,7 @@ export default function CreateMemberWorkoutPlanPage() {
           <button
             type="submit"
             disabled={saving}
-            className="w-full py-4 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl font-semibold hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-4 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white rounded-xl font-semibold hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? (
               <span className="flex items-center justify-center gap-2">

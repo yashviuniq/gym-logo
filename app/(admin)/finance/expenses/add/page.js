@@ -104,7 +104,7 @@ export default function AddExpensePage() {
         {/* Category Selection */}
         <div className="bg-white rounded-xl p-4 shadow-sm">
           <label className="block text-sm font-medium text-gray-700 mb-3">
-            Category <span className="text-red-500">*</span>
+            Category <span className="text-[#f0813d]">*</span>
           </label>
           <div className="grid grid-cols-4 gap-2">
             {expenseCategories.map((cat) => (
@@ -129,13 +129,13 @@ export default function AddExpensePage() {
         <div className="bg-white rounded-xl p-4 shadow-sm space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Amount <span className="text-red-500">*</span>
+              Amount <span className="text-[#f0813d]">*</span>
             </label>
             <input
               type="text"
               inputMode="decimal"
               pattern="[0-9]*\.?[0-9]*"
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-xl font-semibold outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-xl font-semibold outline-none focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] transition"
               placeholder="₹ 0"
               value={formData.amount}
               onChange={(e) => {
@@ -151,11 +151,11 @@ export default function AddExpensePage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Date <span className="text-red-500">*</span>
+              Date <span className="text-[#f0813d]">*</span>
             </label>
             <input
               type="date"
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] transition"
               value={formData.date}
               onChange={(e) => updateForm("date", e.target.value)}
               required
@@ -167,7 +167,7 @@ export default function AddExpensePage() {
               Notes (Optional)
             </label>
             <textarea
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none resize-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl outline-none resize-none focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] transition"
               rows={3}
               placeholder="Expense details..."
               value={formData.notes}
@@ -188,7 +188,7 @@ export default function AddExpensePage() {
           <button
             type="submit"
             disabled={!formData.category || !formData.amount || loading}
-            className="flex-1 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition"
+            className="flex-1 py-3 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition"
           >
             {loading ? "Saving..." : "Add Expense"}
           </button>

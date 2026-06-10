@@ -13,7 +13,7 @@ function PaymentRow({ payment, size = "sm", onClick }) {
     >
       <div className="flex items-center gap-3 flex-1 min-w-0">
         
-        <div className="w-11 h-11 bg-red-50 text-[#f0813d] border border-orange-100 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm">
+        <div className="w-11 h-11 bg-orange-50 text-[#f0813d] border border-orange-100 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm">
           <DollarSign className="w-5 h-5" />
         </div>
 
@@ -23,8 +23,8 @@ function PaymentRow({ payment, size = "sm", onClick }) {
           </p>
 
           <div className="flex items-center gap-1 mt-1">
-            <AlertCircle className="w-3.5 h-3.5 text-red-500" />
-            <span className="text-[10px] font-black text-red-500 uppercase tracking-wide">
+            <AlertCircle className="w-3.5 h-3.5 text-[#f0813d]" />
+            <span className="text-[10px] font-black text-[#f0813d] uppercase tracking-wide">
               overdue payment
             </span>
           </div>
@@ -63,8 +63,8 @@ export default function PendingPaymentsSection({
         <div className="flex items-center justify-between mb-5">
           
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-orange-50 text-[#f0813d] border border-orange-100 rounded-2xl flex items-center justify-center">
-              <DollarSign className="w-5 h-5" />
+            <div className="w-12 h-12 bg-gradient-to-br from-[#f0813d] to-[#9c4400] text-white border border-[#f0813d]/30 rounded-2xl flex items-center justify-center shadow-[0_10px_24px_rgba(240,129,61,0.24)]">
+              <DollarSign className="w-5 h-5 text-white" />
             </div>
 
             <div>
@@ -108,8 +108,8 @@ export default function PendingPaymentsSection({
           ) : (
             <div className="text-center py-8 bg-[#fafafa] border border-dashed border-[#e5e5e5] rounded-2xl">
               
-              <div className="w-14 h-14 bg-[#d9ff3f]/20 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                <CheckCircle className="w-7 h-7 text-[#84cc16]" />
+              <div className="w-14 h-14 bg-[#f0813d]/20 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <CheckCircle className="w-7 h-7 text-white" />
               </div>
 
               <p className="text-[#1a1c1c] font-black text-sm">
@@ -158,7 +158,7 @@ export default function PendingPaymentsSection({
           ))
         ) : (
           <div className="text-center py-8 bg-[#fafafa] border border-dashed border-[#e5e5e5] rounded-2xl">
-            <CheckCircle className="w-10 h-10 text-[#84cc16] mx-auto mb-3" />
+            <CheckCircle className="w-10 h-10 text-[#9c4400] mx-auto mb-3" />
 
             <p className="text-[#1a1c1c] font-black">
               Everything is cleared

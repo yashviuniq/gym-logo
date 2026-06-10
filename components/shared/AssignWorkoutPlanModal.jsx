@@ -322,11 +322,11 @@ export default function AssignWorkoutPlanModal({ member, memberId, memberName, g
     const getLevelColor = (level) => {
         switch (level?.toLowerCase()) {
             case "beginner":
-                return "bg-green-100 text-green-700";
+                return "bg-orange-100 text-[#f0813d]";
             case "intermediate":
-                return "bg-yellow-100 text-yellow-700";
+                return "bg-orange-100 text-[#f0813d]";
             case "advanced":
-                return "bg-red-100 text-red-700";
+                return "bg-orange-100 text-[#f0813d]";
             default:
                 return "bg-gray-100 text-gray-700";
         }
@@ -362,7 +362,7 @@ export default function AssignWorkoutPlanModal({ member, memberId, memberName, g
                             onClick={() => setMode("select")}
                             className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
                                 mode === "select"
-                                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
+                                    ? "bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white shadow-md"
                                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                             }`}
                         >
@@ -372,7 +372,7 @@ export default function AssignWorkoutPlanModal({ member, memberId, memberName, g
                             onClick={() => setMode("create")}
                             className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
                                 mode === "create"
-                                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
+                                    ? "bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white shadow-md"
                                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                             }`}
                         >
@@ -389,7 +389,7 @@ export default function AssignWorkoutPlanModal({ member, memberId, memberName, g
                         <>
                             {loadingPlans ? (
                                 <div className="flex items-center justify-center py-8">
-                                    <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                                    <div className="w-8 h-8 border-4 border-[#f0813d] border-t-transparent rounded-full animate-spin"></div>
                                 </div>
                             ) : workoutPlans.length === 0 ? (
                                 <div className="text-center py-8">
@@ -402,7 +402,7 @@ export default function AssignWorkoutPlanModal({ member, memberId, memberName, g
                                     </p>
                                     <button
                                         onClick={() => setMode("create")}
-                                        className="mt-4 px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-medium flex items-center gap-2 mx-auto"
+                                        className="mt-4 px-6 py-2.5 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white rounded-lg font-medium flex items-center gap-2 mx-auto"
                                     >
                                         <Plus className="w-4 h-4" />
                                         Create Custom Plan
@@ -420,7 +420,7 @@ export default function AssignWorkoutPlanModal({ member, memberId, memberName, g
                                             onClick={() => setSelectedPlan(plan.id)}
                                             className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
                                                 selectedPlan === plan.id
-                                                    ? "border-blue-600 bg-blue-50"
+                                                    ? "border-[#f0813d] bg-orange-50"
                                                     : "border-gray-200 hover:border-gray-300 bg-white"
                                             }`}
                                         >
@@ -431,7 +431,7 @@ export default function AssignWorkoutPlanModal({ member, memberId, memberName, g
                                                             {plan.title}
                                                         </p>
                                                         {plan.is_template && (
-                                                            <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full">
+                                                            <span className="px-2 py-0.5 bg-orange-100 text-[#f0813d] text-xs rounded-full">
                                                                 Template
                                                             </span>
                                                         )}
@@ -442,7 +442,7 @@ export default function AssignWorkoutPlanModal({ member, memberId, memberName, g
                                                         )}
                                                     </div>
                                                     {plan.goal && (
-                                                        <p className="text-xs text-blue-600 mt-1">
+                                                        <p className="text-xs text-[#f0813d] mt-1">
                                                             🎯 {plan.goal}
                                                         </p>
                                                     )}
@@ -453,7 +453,7 @@ export default function AssignWorkoutPlanModal({ member, memberId, memberName, g
                                                     )}
                                                 </div>
                                                 {selectedPlan === plan.id && (
-                                                    <span className="text-indigo-600 text-xl">
+                                                    <span className="text-[#f0813d] text-xl">
                                                         ✓
                                                     </span>
                                                 )}
@@ -476,7 +476,7 @@ export default function AssignWorkoutPlanModal({ member, memberId, memberName, g
                                     </label>
                                     <input
                                         type="text"
-                                        className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
+                                        className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] outline-none transition-all text-sm"
                                         value={formData.title}
                                         onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                                         required
@@ -490,7 +490,7 @@ export default function AssignWorkoutPlanModal({ member, memberId, memberName, g
                                             Goal
                                         </label>
                                         <select
-                                            className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                                            className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#f0813d] text-sm"
                                             value={formData.goal}
                                             onChange={(e) => setFormData({ ...formData, goal: e.target.value })}
                                         >
@@ -505,7 +505,7 @@ export default function AssignWorkoutPlanModal({ member, memberId, memberName, g
                                             Level
                                         </label>
                                         <select
-                                            className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                                            className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#f0813d] text-sm"
                                             value={formData.level}
                                             onChange={(e) => setFormData({ ...formData, level: e.target.value })}
                                         >
@@ -522,7 +522,7 @@ export default function AssignWorkoutPlanModal({ member, memberId, memberName, g
                                         Description (Optional)
                                     </label>
                                     <textarea
-                                        className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none text-sm"
+                                        className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] outline-none transition-all resize-none text-sm"
                                         rows={2}
                                         value={formData.description}
                                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -530,8 +530,8 @@ export default function AssignWorkoutPlanModal({ member, memberId, memberName, g
                                     />
                                 </div>
 
-                                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                                    <p className="text-xs text-amber-700">
+                                <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                                    <p className="text-xs text-[#f0813d]">
                                         <strong>Note:</strong> This workout plan will be created exclusively for {actualMemberName} and won't appear in the general workout plans list.
                                     </p>
                                 </div>
@@ -551,9 +551,9 @@ export default function AssignWorkoutPlanModal({ member, memberId, memberName, g
                                             onClick={() => setActiveDay(dayNum)}
                                             className={`flex-shrink-0 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                                                 activeDay === dayNum
-                                                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white"
+                                                    ? "bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white"
                                                     : days[dayNum]?.exercises?.length > 0 || days[dayNum]?.focus
-                                                        ? "bg-green-100 text-green-700 border border-green-200"
+                                                        ? "bg-orange-100 text-[#f0813d] border border-orange-200"
                                                         : "bg-gray-100 text-gray-600"
                                             }`}
                                         >
@@ -575,7 +575,7 @@ export default function AssignWorkoutPlanModal({ member, memberId, memberName, g
                                     <button
                                         type="button"
                                         onClick={() => addExerciseToDay(activeDay)}
-                                        className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium flex items-center gap-1 hover:bg-blue-100 transition-colors"
+                                        className="px-3 py-1.5 bg-orange-50 text-[#f0813d] rounded-lg text-xs font-medium flex items-center gap-1 hover:bg-orange-100 transition-colors"
                                     >
                                         <Plus className="w-3.5 h-3.5" />
                                         Add Exercise
@@ -592,7 +592,7 @@ export default function AssignWorkoutPlanModal({ member, memberId, memberName, g
                                         placeholder="e.g., Chest & Triceps"
                                         value={days[activeDay]?.focus || ""}
                                         onChange={(e) => updateDayFocus(activeDay, e.target.value)}
-                                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#f0813d]"
                                     />
                                 </div>
 
@@ -612,7 +612,7 @@ export default function AssignWorkoutPlanModal({ member, memberId, memberName, g
                                                     <button
                                                         type="button"
                                                         onClick={() => removeExercise(activeDay, exerciseIndex)}
-                                                        className="p-1 text-red-500 hover:bg-red-50 rounded-lg"
+                                                        className="p-1 text-[#f0813d] hover:bg-orange-50 rounded-lg"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
@@ -623,7 +623,7 @@ export default function AssignWorkoutPlanModal({ member, memberId, memberName, g
                                                     placeholder="Exercise name (e.g., Bench Press)"
                                                     value={exercise.exercise_name}
                                                     onChange={(e) => updateExercise(activeDay, exerciseIndex, "exercise_name", e.target.value)}
-                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#f0813d]"
                                                 />
 
                                                 <div className="grid grid-cols-4 gap-2">
@@ -686,7 +686,7 @@ export default function AssignWorkoutPlanModal({ member, memberId, memberName, g
                         type="button"
                         onClick={mode === "select" ? handleAssign : handleCreateCustomPlan}
                         disabled={loading || (mode === "select" && (!selectedPlan || loadingPlans))}
-                        className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition"
+                        className="flex-1 py-3 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition"
                     >
                         {loading 
                             ? (mode === "select" ? "Assigning..." : "Creating...") 

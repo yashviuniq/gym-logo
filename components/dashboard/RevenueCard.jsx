@@ -10,7 +10,7 @@ export default function RevenueCard({ totalRevenue, pendingDues, canViewFinance 
   <div className="relative overflow-hidden bg-white border border-[#ececec] rounded-3xl p-5 shadow-[0_10px_40px_rgba(0,0,0,0.06)]">
     
     {/* Premium Glow */}
-    <div className="absolute top-0 right-0 w-52 h-52 bg-gradient-to-br from-[#d9ff3f]/30 to-[#c8ff00]/5 rounded-full blur-3xl pointer-events-none" />
+    <div className="absolute top-0 right-0 w-52 h-52 bg-gradient-to-br from-[#f0813d]/30 to-[#f0813d]/5 rounded-full blur-3xl pointer-events-none" />
 
     <div className="relative z-10">
       
@@ -30,8 +30,8 @@ export default function RevenueCard({ totalRevenue, pendingDues, canViewFinance 
           </h2>
 
           <div className="flex items-center gap-2 mt-3">
-            <div className="w-8 h-8 rounded-xl bg-[#d9ff3f]/20 flex items-center justify-center">
-              <TrendingUp className="w-4 h-4 text-[#84cc16]" />
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#f0813d] to-[#9c4400] flex items-center justify-center shadow-[0_8px_18px_rgba(240,129,61,0.22)]">
+              <TrendingUp className="w-4 h-4 text-white" />
             </div>
 
             <div>
@@ -72,7 +72,7 @@ export default function RevenueCard({ totalRevenue, pendingDues, canViewFinance 
         className="w-full py-3 rounded-2xl bg-[#1a1c1c] hover:bg-black text-white font-bold text-sm active-scale transition-all flex items-center justify-center gap-2 shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
         style={{ minHeight: "50px" }}
       >
-        <DollarSign className="w-4 h-4 text-[#d9ff3f]" />
+        <DollarSign className="w-4 h-4 text-[#f0813d]" />
         Open Finance Dashboard
       </button>
     </div>

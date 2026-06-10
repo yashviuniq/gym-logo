@@ -644,7 +644,7 @@ export default function TrainerDetailsPage({ params }) {
       <div className="min-h-screen bg-gray-50 pb-24">
         <Header title="Trainer Details" />
         <div className="flex items-center justify-center py-20">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#9c4400]"></div>
         </div>
       </div>
     );
@@ -660,7 +660,7 @@ export default function TrainerDetailsPage({ params }) {
           <p className="text-gray-500 mb-4">This trainer doesn&apos;t exist or has been removed.</p>
           <button
             onClick={() => router.push("/settings/trainers")}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+            className="px-4 py-2 bg-[#9c4400] text-white rounded-lg"
           >
             Back to Trainers
           </button>
@@ -679,7 +679,7 @@ export default function TrainerDetailsPage({ params }) {
           <div className="flex items-start gap-4">
             <div className={`w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-2xl ${
               trainer.isActive 
-                ? "bg-gradient-to-br from-blue-500 to-indigo-600" 
+                ? "bg-gradient-to-br from-[#f0813d] to-[#9c4400]" 
                 : "bg-gray-400"
             }`}>
               {trainer.name.charAt(0).toUpperCase()}
@@ -689,7 +689,7 @@ export default function TrainerDetailsPage({ params }) {
               <div className="flex items-center gap-2 mb-1">
                 <h2 className="text-xl font-bold text-gray-900">{trainer.name}</h2>
                 {trainer.isActive ? (
-                  <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                  <span className="px-2 py-0.5 bg-[#f0813d]/15 text-[#9c4400] text-xs font-medium rounded-full">
                     Active
                   </span>
                 ) : (
@@ -700,7 +700,7 @@ export default function TrainerDetailsPage({ params }) {
               </div>
               
               {trainer.specialization && (
-                <p className="text-blue-600 font-medium mb-2">{trainer.specialization}</p>
+                <p className="text-[#f0813d] font-medium mb-2">{trainer.specialization}</p>
               )}
 
               <div className="space-y-1 text-sm text-gray-500">
@@ -748,14 +748,14 @@ export default function TrainerDetailsPage({ params }) {
           <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
             <button
               onClick={() => router.push(`/settings/trainers/${id}/edit`)}
-              className="flex-1 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors flex items-center justify-center gap-2"
+              className="flex-1 py-2 text-sm font-medium text-[#f0813d] bg-[#f0813d]/10 rounded-lg hover:bg-[#f0813d]/15 transition-colors flex items-center justify-center gap-2"
             >
               <Edit2 className="w-4 h-4" />
               Edit Profile
             </button>
             <button
               onClick={() => router.push(`/settings/trainers/${id}/assign`)}
-              className="flex-1 py-2 text-sm font-medium text-purple-600 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors flex items-center justify-center gap-2"
+              className="flex-1 py-2 text-sm font-medium text-[#f0813d] bg-[#f0813d]/10 rounded-lg hover:bg-[#f0813d]/15 transition-colors flex items-center justify-center gap-2"
             >
               <UserPlus className="w-4 h-4" />
               Assign Members
@@ -766,26 +766,26 @@ export default function TrainerDetailsPage({ params }) {
         {/* Stats Cards */}
         <div className="grid grid-cols-4 gap-2">
           <div className="bg-white rounded-xl p-3 shadow-sm text-center">
-            <Users className="w-5 h-5 text-purple-600 mx-auto mb-1" />
+            <Users className="w-5 h-5 text-[#f0813d] mx-auto mb-1" />
             <p className="text-xl font-bold text-gray-900">{assignedMembers.length}</p>
             <p className="text-[10px] text-gray-500">Members</p>
           </div>
           <div className="bg-white rounded-xl p-3 shadow-sm text-center">
-            <Apple className="w-5 h-5 text-green-600 mx-auto mb-1" />
+            <Apple className="w-5 h-5 text-[#f0813d] mx-auto mb-1" />
             <p className="text-xl font-bold text-gray-900">
               {activityLog.filter(a => a.type === "diet").length}
             </p>
             <p className="text-[10px] text-gray-500">Diets</p>
           </div>
           <div className="bg-white rounded-xl p-3 shadow-sm text-center">
-            <Dumbbell className="w-5 h-5 text-orange-600 mx-auto mb-1" />
+            <Dumbbell className="w-5 h-5 text-[#f0813d] mx-auto mb-1" />
             <p className="text-xl font-bold text-gray-900">
               {activityLog.filter(a => a.type === "workout").length}
             </p>
             <p className="text-[10px] text-gray-500">Workouts</p>
           </div>
           <div className="bg-white rounded-xl p-3 shadow-sm text-center">
-            <IndianRupee className="w-5 h-5 text-emerald-600 mx-auto mb-1" />
+            <IndianRupee className="w-5 h-5 text-[#f0813d] mx-auto mb-1" />
             <p className="text-xl font-bold text-gray-900">
               {formatCompactRupees(earningsSummary.total)}
             </p>
@@ -802,10 +802,10 @@ export default function TrainerDetailsPage({ params }) {
               className={`flex-1 py-2 rounded-lg text-xs font-medium transition-colors whitespace-nowrap px-1.5 ${
                 activeTab === tab
                   ? tab === "earnings"
-                    ? "bg-emerald-600 text-white"
+                    ? "bg-[#9c4400] text-white"
                     : tab === "attendance"
-                      ? "bg-purple-600 text-white"
-                      : "bg-blue-600 text-white"
+                      ? "bg-[#9c4400] text-white"
+                      : "bg-[#9c4400] text-white"
                   : "text-gray-600 hover:bg-gray-100"
               }`}
             >
@@ -826,7 +826,7 @@ export default function TrainerDetailsPage({ params }) {
                 </p>
                 <button
                   onClick={() => router.push(`/settings/trainers/${id}/assign`)}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#9c4400] text-white rounded-lg text-sm font-medium"
                 >
                   <UserPlus className="w-4 h-4" />
                   Assign Members
@@ -851,7 +851,7 @@ export default function TrainerDetailsPage({ params }) {
                         <span>{member.phone}</span>
                         <span className={`px-1.5 py-0.5 rounded-full ${
                           member.status === "active" 
-                            ? "bg-green-100 text-green-700" 
+                            ? "bg-[#f0813d]/15 text-[#9c4400]" 
                             : "bg-gray-100 text-gray-600"
                         }`}>
                           {member.status}
@@ -869,7 +869,7 @@ export default function TrainerDetailsPage({ params }) {
                       </button>
                       <button
                         onClick={() => setUnassignMember(member)}
-                        className="p-2 hover:bg-red-50 rounded-lg text-red-500"
+                        className="p-2 hover:bg-[#f0813d]/10 rounded-lg text-[#f0813d]"
                         title="Unassign"
                       >
                         <UserMinus className="w-4 h-4" />
@@ -881,28 +881,28 @@ export default function TrainerDetailsPage({ params }) {
                   {member.planName && (
                     <div className="mt-2 pt-2 border-t border-gray-100 flex items-center gap-3 flex-wrap">
                       <div className="flex items-center gap-1 text-xs">
-                        <Tag className="w-3 h-3 text-orange-500" />
+                        <Tag className="w-3 h-3 text-[#f0813d]" />
                         <span className="font-medium text-gray-700">{member.planName}</span>
                       </div>
                       {(member.paidAmount || member.planTotalAmount || member.planPrice) && (
                         <div className="flex items-center gap-1 text-xs">
-                          <IndianRupee className="w-3 h-3 text-green-600" />
-                          <span className="font-semibold text-green-700">Paid ₹{Number(member.paidAmount || 0).toLocaleString("en-IN")}</span>
+                          <IndianRupee className="w-3 h-3 text-[#f0813d]" />
+                          <span className="font-semibold text-[#9c4400]">Paid ₹{Number(member.paidAmount || 0).toLocaleString("en-IN")}</span>
                         </div>
                       )}
                       {member.pendingAmount > 0 && (
                         <div className="flex items-center gap-1 text-xs">
-                          <IndianRupee className="w-3 h-3 text-amber-600" />
-                          <span className="font-semibold text-amber-700">Due ₹{Number(member.pendingAmount || 0).toLocaleString("en-IN")}</span>
+                          <IndianRupee className="w-3 h-3 text-[#f0813d]" />
+                          <span className="font-semibold text-[#9c4400]">Due ₹{Number(member.pendingAmount || 0).toLocaleString("en-IN")}</span>
                         </div>
                       )}
                       {member.daysRemaining !== null && (
                         <div className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${
                           member.daysRemaining <= 0
-                            ? "bg-red-50 text-red-600"
+                            ? "bg-[#f0813d]/10 text-[#f0813d]"
                             : member.daysRemaining <= 7
-                              ? "bg-amber-50 text-amber-600"
-                              : "bg-blue-50 text-blue-600"
+                              ? "bg-[#f0813d]/10 text-[#f0813d]"
+                              : "bg-[#f0813d]/10 text-[#f0813d]"
                         }`}>
                           <CalendarDays className="w-3 h-3" />
                           <span className="font-medium">
@@ -916,7 +916,7 @@ export default function TrainerDetailsPage({ params }) {
                   )}
 
                   {member.nextPaymentDate && member.pendingAmount > 0 && (
-                    <div className="mt-1.5 text-xs text-amber-700 font-medium">
+                    <div className="mt-1.5 text-xs text-[#9c4400] font-medium">
                       Next PT due: {new Date(`${member.nextPaymentDate}T00:00:00`).toLocaleDateString("en-IN")}
                     </div>
                   )}
@@ -934,7 +934,7 @@ export default function TrainerDetailsPage({ params }) {
                           <button
                             type="button"
                             onClick={() => startEditingAssignment(member)}
-                            className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                            className="text-xs font-medium text-[#f0813d] hover:text-[#9c4400]"
                           >
                             Update Start Date
                           </button>
@@ -950,7 +950,7 @@ export default function TrainerDetailsPage({ params }) {
                                 type="date"
                                 value={editingAssignmentStartDate}
                                 onChange={(e) => setEditingAssignmentStartDate(e.target.value)}
-                                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:ring-2 focus:ring-[#f0813d]/20 outline-none"
                               />
                             </div>
                             <div>
@@ -978,7 +978,7 @@ export default function TrainerDetailsPage({ params }) {
                               type="button"
                               onClick={() => saveAssignmentDates(member)}
                               disabled={assignmentUpdating}
-                              className="flex-1 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-60"
+                              className="flex-1 rounded-lg bg-[#9c4400] px-3 py-2 text-sm font-medium text-white disabled:opacity-60"
                             >
                               {assignmentUpdating ? "Saving..." : "Save Dates"}
                             </button>
@@ -1003,7 +1003,7 @@ export default function TrainerDetailsPage({ params }) {
             {/* Add Plan Button */}
             <button
               onClick={() => { setEditingPlan(null); setShowPlanModal(true); }}
-              className="w-full py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white font-medium rounded-xl hover:shadow-lg active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2"
+              className="w-full py-3 bg-gradient-to-r from-[#f0813d] to-[#9c4400] text-white font-medium rounded-xl hover:shadow-lg active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2"
               style={{ minHeight: "44px" }}
             >
               <Plus className="w-5 h-5" />
@@ -1012,13 +1012,13 @@ export default function TrainerDetailsPage({ params }) {
 
             {plansLoading ? (
               <div className="bg-white rounded-xl p-8 shadow-sm text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#9c4400] mx-auto"></div>
                 <p className="text-gray-500 text-sm mt-3">Loading plans...</p>
               </div>
             ) : trainerPlans.length === 0 ? (
               <div className="bg-white rounded-xl p-8 shadow-sm text-center">
-                <div className="w-16 h-16 bg-gradient-to-br from-orange-100 to-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <Tag className="w-8 h-8 text-orange-500" />
+                <div className="w-16 h-16 bg-gradient-to-br from-[#f0813d]/10 to-[#f0813d]/15 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Tag className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="font-semibold text-gray-900 mb-1">No Plans Yet</h3>
                 <p className="text-gray-500 text-sm">
@@ -1035,7 +1035,7 @@ export default function TrainerDetailsPage({ params }) {
                     <div
                       className={`w-11 h-11 rounded-xl flex items-center justify-center text-white shadow-sm flex-shrink-0 ${
                         plan.is_active
-                          ? "bg-gradient-to-br from-orange-500 to-amber-600"
+                          ? "bg-gradient-to-br from-[#f0813d] to-[#9c4400]"
                           : "bg-gradient-to-br from-gray-400 to-gray-500"
                       }`}
                     >
@@ -1052,7 +1052,7 @@ export default function TrainerDetailsPage({ params }) {
                             <span
                               className={`px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${
                                 plan.is_active
-                                  ? "bg-emerald-50 text-emerald-700"
+                                  ? "bg-[#f0813d]/10 text-[#9c4400]"
                                   : "bg-gray-100 text-gray-600"
                               }`}
                             >
@@ -1093,7 +1093,7 @@ export default function TrainerDetailsPage({ params }) {
                       <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100 overflow-x-auto no-scrollbar -mx-1 px-1">
                         <button
                           onClick={() => { setEditingPlan(plan); setShowPlanModal(true); }}
-                          className="flex-shrink-0 px-3 py-1.5 bg-orange-50 text-orange-700 text-xs font-medium rounded-lg active:bg-orange-100 transition-all flex items-center gap-1.5"
+                          className="flex-shrink-0 px-3 py-1.5 bg-[#f0813d]/10 text-[#9c4400] text-xs font-medium rounded-lg active:bg-[#f0813d]/15 transition-all flex items-center gap-1.5"
                           style={{ minHeight: "32px" }}
                         >
                           <Edit2 className="w-3.5 h-3.5" />
@@ -1103,8 +1103,8 @@ export default function TrainerDetailsPage({ params }) {
                           onClick={() => togglePlanStatus(plan.id)}
                           className={`flex-shrink-0 px-3 py-1.5 text-xs font-medium rounded-lg active:scale-95 transition-all flex items-center gap-1.5 text-white ${
                             plan.is_active
-                              ? "bg-gradient-to-r from-amber-500 to-amber-600"
-                              : "bg-gradient-to-r from-emerald-500 to-emerald-600"
+                              ? "bg-gradient-to-r from-[#f0813d] to-[#9c4400]"
+                              : "bg-gradient-to-r from-[#f0813d] to-[#9c4400]"
                           }`}
                           style={{ minHeight: "32px" }}
                         >
@@ -1121,7 +1121,7 @@ export default function TrainerDetailsPage({ params }) {
                           className={`flex-shrink-0 px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1.5 ${
                             plan.subscribers > 0
                               ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                              : "bg-red-50 text-red-700 active:bg-red-100 transition-all"
+                              : "bg-[#f0813d]/10 text-[#9c4400] active:bg-[#f0813d]/15 transition-all"
                           }`}
                           style={{ minHeight: "32px" }}
                           title={
@@ -1146,8 +1146,8 @@ export default function TrainerDetailsPage({ params }) {
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">
             <div className="p-4 border-b border-gray-100 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <CalendarDays className="w-5 h-5 text-blue-600" />
+                <div className="p-2 bg-[#f0813d]/15 rounded-lg">
+                  <CalendarDays className="w-5 h-5 text-[#f0813d]" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-900">Weekly Schedule</h3>
@@ -1156,7 +1156,7 @@ export default function TrainerDetailsPage({ params }) {
               </div>
               <button
                 onClick={() => router.push(`/settings/trainers/${id}/edit`)}
-                className="text-xs text-blue-600 font-medium px-3 py-1.5 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                className="text-xs text-[#f0813d] font-medium px-3 py-1.5 bg-[#f0813d]/10 rounded-lg hover:bg-[#f0813d]/15 transition-colors"
               >
                 Edit
               </button>
@@ -1172,7 +1172,7 @@ export default function TrainerDetailsPage({ params }) {
                   return (
                     <div key={day} className={`px-4 py-3 flex items-start gap-3 ${!isAvailable ? 'opacity-40' : ''}`}>
                       <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
-                        isAvailable ? 'bg-green-500' : 'bg-gray-300'
+                        isAvailable ? 'bg-[#f0813d]' : 'bg-gray-300'
                       }`} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
@@ -1213,16 +1213,16 @@ export default function TrainerDetailsPage({ params }) {
                                     }}
                                     className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-md border transition-colors ${
                                       isSelectedSlot
-                                        ? "bg-blue-600 text-white border-blue-600"
+                                        ? "bg-[#9c4400] text-white border-[#9c4400]"
                                         : assignedCount > 0
-                                          ? "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
-                                          : "bg-blue-50 text-blue-700 border-blue-100 hover:bg-blue-100"
+                                          ? "bg-[#f0813d]/10 text-[#9c4400] border-[#f0813d]/20 hover:bg-[#f0813d]/15"
+                                          : "bg-[#f0813d]/10 text-[#9c4400] border-[#f0813d]/10 hover:bg-[#f0813d]/15"
                                     }`}
                                   >
                                     <Clock className="w-3 h-3" />
                                     {slot}
                                     {assignedCount > 0 && (
-                                      <span className={`ml-0.5 ${isSelectedSlot ? "text-blue-100" : "text-amber-700"}`}>
+                                      <span className={`ml-0.5 ${isSelectedSlot ? "text-white/75" : "text-[#9c4400]"}`}>
                                         ({assignedCount} member{assignedCount > 1 ? "s" : ""})
                                       </span>
                                     )}
@@ -1275,7 +1275,7 @@ export default function TrainerDetailsPage({ params }) {
                 </p>
                 <button
                   onClick={() => router.push(`/settings/trainers/${id}/edit`)}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-[#9c4400] text-white rounded-lg text-sm font-medium"
                 >
                   <Edit2 className="w-4 h-4" />
                   Set Availability
@@ -1288,8 +1288,8 @@ export default function TrainerDetailsPage({ params }) {
         {activeTab === "credentials" && (
           <div className="bg-white rounded-xl p-4 shadow-sm space-y-4">
             <div className="flex items-center gap-3 pb-3 border-b border-gray-100">
-              <div className="p-2 bg-amber-100 rounded-lg">
-                <Key className="w-5 h-5 text-amber-600" />
+              <div className="p-2 bg-[#f0813d]/15 rounded-lg">
+                <Key className="w-5 h-5 text-[#f0813d]" />
               </div>
               <div>
                 <h3 className="font-semibold text-gray-900">Login Credentials</h3>
@@ -1314,7 +1314,7 @@ export default function TrainerDetailsPage({ params }) {
                       className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
                     >
                       {copied === "email" ? (
-                        <CheckCircle className="w-4 h-4 text-green-600" />
+                        <CheckCircle className="w-4 h-4 text-[#f0813d]" />
                       ) : (
                         <Copy className="w-4 h-4 text-gray-400" />
                       )}
@@ -1338,7 +1338,7 @@ export default function TrainerDetailsPage({ params }) {
                       className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
                     >
                       {copied === "phone" ? (
-                        <CheckCircle className="w-4 h-4 text-green-600" />
+                        <CheckCircle className="w-4 h-4 text-[#f0813d]" />
                       ) : (
                         <Copy className="w-4 h-4 text-gray-400" />
                       )}
@@ -1375,7 +1375,7 @@ export default function TrainerDetailsPage({ params }) {
                         className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
                       >
                         {copied === "password" ? (
-                          <CheckCircle className="w-4 h-4 text-green-600" />
+                          <CheckCircle className="w-4 h-4 text-[#f0813d]" />
                         ) : (
                           <Copy className="w-4 h-4 text-gray-400" />
                         )}
@@ -1399,15 +1399,15 @@ export default function TrainerDetailsPage({ params }) {
           <div className="space-y-4">
             {/* Earnings Summary Cards */}
             <div className="grid grid-cols-3 gap-2">
-              <div className="bg-gradient-to-br from-emerald-50 to-green-50 border border-emerald-100 rounded-xl p-3 text-center">
-                <p className="text-[10px] text-emerald-600 font-semibold uppercase tracking-wider">Total Earned</p>
-                <p className="text-lg font-bold text-emerald-700 mt-1">
+              <div className="bg-gradient-to-br from-[#f0813d]/10 to-[#f0813d]/10 border border-[#f0813d]/10 rounded-xl p-3 text-center">
+                <p className="text-[10px] text-[#f0813d] font-semibold uppercase tracking-wider">Total Earned</p>
+                <p className="text-lg font-bold text-[#9c4400] mt-1">
                   ₹{earningsSummary.total.toLocaleString("en-IN")}
                 </p>
               </div>
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-3 text-center">
-                <p className="text-[10px] text-blue-600 font-semibold uppercase tracking-wider">This Month</p>
-                <p className="text-lg font-bold text-blue-700 mt-1">
+              <div className="bg-gradient-to-br from-[#f0813d]/10 to-[#f0813d]/10 border border-[#f0813d]/10 rounded-xl p-3 text-center">
+                <p className="text-[10px] text-[#f0813d] font-semibold uppercase tracking-wider">This Month</p>
+                <p className="text-lg font-bold text-[#9c4400] mt-1">
                   ₹{earningsSummary.thisMonth.toLocaleString("en-IN")}
                 </p>
               </div>
@@ -1423,14 +1423,14 @@ export default function TrainerDetailsPage({ params }) {
             {earningsSummary.thisMonth > 0 && earningsSummary.lastMonth > 0 && (
               <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
                 <div className="flex items-center gap-2">
-                  <TrendingUp className={`w-5 h-5 ${earningsSummary.thisMonth >= earningsSummary.lastMonth ? 'text-emerald-600' : 'text-red-500'}`} />
+                  <TrendingUp className={`w-5 h-5 ${earningsSummary.thisMonth >= earningsSummary.lastMonth ? 'text-[#f0813d]' : 'text-[#f0813d]'}`} />
                   <p className="text-sm text-gray-700">
                     {earningsSummary.thisMonth >= earningsSummary.lastMonth ? (
-                      <span className="text-emerald-700 font-medium">
+                      <span className="text-[#9c4400] font-medium">
                         +{Math.round(((earningsSummary.thisMonth - earningsSummary.lastMonth) / earningsSummary.lastMonth) * 100)}% from last month
                       </span>
                     ) : (
-                      <span className="text-red-600 font-medium">
+                      <span className="text-[#f0813d] font-medium">
                         -{Math.round(((earningsSummary.lastMonth - earningsSummary.thisMonth) / earningsSummary.lastMonth) * 100)}% from last month
                       </span>
                     )}
@@ -1448,13 +1448,13 @@ export default function TrainerDetailsPage({ params }) {
 
               {earningsLoading ? (
                 <div className="bg-white rounded-xl p-8 shadow-sm text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#9c4400] mx-auto"></div>
                   <p className="text-gray-500 text-sm mt-3">Loading earnings...</p>
                 </div>
               ) : trainerEarnings.length === 0 ? (
                 <div className="bg-white rounded-xl p-8 shadow-sm text-center">
-                  <div className="w-16 h-16 bg-gradient-to-br from-emerald-100 to-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <Wallet className="w-8 h-8 text-emerald-500" />
+                  <div className="w-16 h-16 bg-gradient-to-br from-[#f0813d]/10 to-[#f0813d]/15 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <Wallet className="w-8 h-8 text-white" />
                   </div>
                   <h3 className="font-semibold text-gray-900 mb-1">No Earnings Yet</h3>
                   <p className="text-gray-500 text-sm">
@@ -1466,7 +1466,7 @@ export default function TrainerDetailsPage({ params }) {
                   {trainerEarnings.map((earning) => (
                     <div key={earning.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-green-600 rounded-full flex items-center justify-center text-white flex-shrink-0">
+                        <div className="w-10 h-10 bg-gradient-to-br from-[#f0813d] to-[#9c4400] rounded-full flex items-center justify-center text-white flex-shrink-0">
                           <IndianRupee className="w-5 h-5" />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -1480,7 +1480,7 @@ export default function TrainerDetailsPage({ params }) {
                               </p>
                             </div>
                             <div className="text-right flex-shrink-0 ml-2">
-                              <p className="text-base font-bold text-emerald-700">
+                              <p className="text-base font-bold text-[#9c4400]">
                                 +₹{earning.trainer_amount.toLocaleString("en-IN")}
                               </p>
                               <p className="text-[10px] text-gray-400">
@@ -1520,7 +1520,7 @@ export default function TrainerDetailsPage({ params }) {
                     type="month"
                     value={attendanceMonth}
                     onChange={(e) => setAttendanceMonth(e.target.value)}
-                    className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#f0813d]/20 focus:border-transparent"
                   />
                   <button
                     onClick={fetchAttendanceSummary}
@@ -1537,25 +1537,25 @@ export default function TrainerDetailsPage({ params }) {
                   <p className="text-xs text-gray-500">Working Days</p>
                   <p className="mt-1 text-lg font-bold text-gray-900">{Number(attendanceData.month?.working_days || 0).toLocaleString("en-IN")}</p>
                 </div>
-                <div className="rounded-xl border border-blue-100 bg-blue-50 p-3">
-                  <p className="text-xs text-blue-600">Expected Hours</p>
-                  <p className="mt-1 text-lg font-bold text-blue-800">{formatHoursLabel(Number(attendanceData.summary?.expected_hours || 0) * 60)}</p>
+                <div className="rounded-xl border border-[#f0813d]/10 bg-[#f0813d]/10 p-3">
+                  <p className="text-xs text-[#f0813d]">Expected Hours</p>
+                  <p className="mt-1 text-lg font-bold text-[#9c4400]">{formatHoursLabel(Number(attendanceData.summary?.expected_hours || 0) * 60)}</p>
                 </div>
-                <div className="rounded-xl border border-sky-100 bg-sky-50 p-3">
-                  <p className="text-xs text-sky-600">Worked Hours</p>
-                  <p className="mt-1 text-lg font-bold text-sky-800">{formatHoursLabel(Number(attendanceData.summary?.worked_hours || 0) * 60)}</p>
+                <div className="rounded-xl border border-[#f0813d]/10 bg-[#f0813d]/10 p-3">
+                  <p className="text-xs text-[#f0813d]">Worked Hours</p>
+                  <p className="mt-1 text-lg font-bold text-[#9c4400]">{formatHoursLabel(Number(attendanceData.summary?.worked_hours || 0) * 60)}</p>
                 </div>
-                <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3">
-                  <p className="text-xs text-emerald-600">Salary Earned</p>
-                  <p className="mt-1 text-lg font-bold text-emerald-800">₹{Number(attendanceData.summary?.salary_earned || 0).toLocaleString("en-IN")}</p>
+                <div className="rounded-xl border border-[#f0813d]/10 bg-[#f0813d]/10 p-3">
+                  <p className="text-xs text-[#f0813d]">Salary Earned</p>
+                  <p className="mt-1 text-lg font-bold text-[#9c4400]">₹{Number(attendanceData.summary?.salary_earned || 0).toLocaleString("en-IN")}</p>
                 </div>
-                <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-3">
-                  <p className="text-xs text-indigo-600">PT Charges</p>
-                  <p className="mt-1 text-lg font-bold text-indigo-800">₹{Number(attendanceData.summary?.pt_charges || 0).toLocaleString("en-IN")}</p>
+                <div className="rounded-xl border border-[#f0813d]/10 bg-[#f0813d]/10 p-3">
+                  <p className="text-xs text-[#f0813d]">PT Charges</p>
+                  <p className="mt-1 text-lg font-bold text-[#9c4400]">₹{Number(attendanceData.summary?.pt_charges || 0).toLocaleString("en-IN")}</p>
                 </div>
-                <div className="rounded-xl border border-purple-100 bg-purple-50 p-3">
-                  <p className="text-xs text-purple-600">Total Payable</p>
-                  <p className="mt-1 text-lg font-bold text-purple-800">₹{Number(attendanceData.summary?.total_payable || 0).toLocaleString("en-IN")}</p>
+                <div className="rounded-xl border border-[#f0813d]/10 bg-[#f0813d]/10 p-3">
+                  <p className="text-xs text-[#f0813d]">Total Payable</p>
+                  <p className="mt-1 text-lg font-bold text-[#9c4400]">₹{Number(attendanceData.summary?.total_payable || 0).toLocaleString("en-IN")}</p>
                 </div>
               </div>
 
@@ -1578,8 +1578,8 @@ export default function TrainerDetailsPage({ params }) {
 
             <div className="bg-white rounded-xl p-4 shadow-sm space-y-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <CheckCircle className="w-5 h-5 text-purple-600" />
+                <div className="p-2 bg-[#f0813d]/15 rounded-lg">
+                  <CheckCircle className="w-5 h-5 text-[#f0813d]" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-900">Session Attendance</h3>
@@ -1602,15 +1602,15 @@ export default function TrainerDetailsPage({ params }) {
                         </div>
                         <div className="flex gap-2 flex-wrap text-xs">
                           <span className="rounded-full bg-gray-100 px-2.5 py-1 text-gray-700">Expected {formatHoursLabel(day.expected_minutes)}</span>
-                          <span className="rounded-full bg-blue-50 px-2.5 py-1 text-blue-700">Worked {formatHoursLabel(day.worked_minutes)}</span>
-                          <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">Salary ₹{Number(day.daily_salary || 0).toLocaleString("en-IN")}</span>
+                          <span className="rounded-full bg-[#f0813d]/10 px-2.5 py-1 text-[#9c4400]">Worked {formatHoursLabel(day.worked_minutes)}</span>
+                          <span className="rounded-full bg-[#f0813d]/10 px-2.5 py-1 text-[#9c4400]">Salary ₹{Number(day.daily_salary || 0).toLocaleString("en-IN")}</span>
                         </div>
                       </div>
 
                       {(day.expected_slots || []).length > 0 && (
                         <div className="flex flex-wrap gap-2">
                           {day.expected_slots.map((slot) => (
-                            <span key={slot} className="rounded-full bg-purple-50 px-2.5 py-1 text-xs font-medium text-purple-700">
+                            <span key={slot} className="rounded-full bg-[#f0813d]/10 px-2.5 py-1 text-xs font-medium text-[#9c4400]">
                               {slot}
                             </span>
                           ))}
@@ -1665,7 +1665,7 @@ export default function TrainerDetailsPage({ params }) {
                             type="button"
                             onClick={() => saveAttendanceDay(day)}
                             disabled={attendanceSaving}
-                            className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-3 py-2 text-xs font-medium text-white hover:bg-purple-700 disabled:opacity-60"
+                            className="inline-flex items-center gap-2 rounded-lg bg-[#9c4400] px-3 py-2 text-xs font-medium text-white hover:bg-[#9c4400] disabled:opacity-60"
                           >
                             <Save className="w-3.5 h-3.5" />
                             Save Day
@@ -1680,8 +1680,8 @@ export default function TrainerDetailsPage({ params }) {
 
             <div className="bg-white rounded-xl p-4 shadow-sm space-y-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Wallet className="w-5 h-5 text-blue-600" />
+                <div className="p-2 bg-[#f0813d]/15 rounded-lg">
+                  <Wallet className="w-5 h-5 text-[#f0813d]" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-900">PT Charges from Earnings</h3>
@@ -1708,7 +1708,7 @@ export default function TrainerDetailsPage({ params }) {
                         )}
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold text-blue-700">₹{Number(session.amount || 0).toLocaleString("en-IN")}</p>
+                        <p className="font-semibold text-[#9c4400]">₹{Number(session.amount || 0).toLocaleString("en-IN")}</p>
                         <p className="text-xs text-gray-500">Trainer share</p>
                       </div>
                     </div>
@@ -1734,13 +1734,13 @@ export default function TrainerDetailsPage({ params }) {
                 const getActivityIcon = () => {
                   switch (activity.type) {
                     case "diet":
-                      return { bg: "bg-green-100", icon: <Apple className="w-5 h-5 text-green-600" /> };
+                      return { bg: "bg-[#f0813d]/15", icon: <Apple className="w-5 h-5 text-[#f0813d]" /> };
                     case "workout":
-                      return { bg: "bg-orange-100", icon: <Dumbbell className="w-5 h-5 text-orange-600" /> };
+                      return { bg: "bg-[#f0813d]/15", icon: <Dumbbell className="w-5 h-5 text-[#f0813d]" /> };
                     case "payment":
-                      return { bg: "bg-blue-100", icon: <Wallet className="w-5 h-5 text-blue-600" /> };
+                      return { bg: "bg-[#f0813d]/15", icon: <Wallet className="w-5 h-5 text-[#f0813d]" /> };
                     case "member_assignment":
-                      return { bg: "bg-purple-100", icon: <UserCheck className="w-5 h-5 text-purple-600" /> };
+                      return { bg: "bg-[#f0813d]/15", icon: <UserCheck className="w-5 h-5 text-[#f0813d]" /> };
                     default:
                       return { bg: "bg-gray-100", icon: <Activity className="w-5 h-5 text-gray-600" /> };
                   }
@@ -1798,8 +1798,8 @@ export default function TrainerDetailsPage({ params }) {
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
               <div className="flex items-center gap-3 mb-4">
-                <div className="p-3 bg-red-100 rounded-full">
-                  <UserMinus className="w-6 h-6 text-red-600" />
+                <div className="p-3 bg-[#f0813d]/15 rounded-full">
+                  <UserMinus className="w-6 h-6 text-[#f0813d]" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-900">Unassign Member</h3>
@@ -1821,7 +1821,7 @@ export default function TrainerDetailsPage({ params }) {
                 </button>
                 <button
                   onClick={handleUnassignMember}
-                  className="flex-1 py-2 px-4 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 disabled:opacity-50"
+                  className="flex-1 py-2 px-4 bg-[#9c4400] text-white rounded-xl font-medium hover:bg-[#9c4400] disabled:opacity-50"
                   disabled={unassigning}
                 >
                   {unassigning ? "Removing..." : "Unassign"}
@@ -1981,13 +1981,13 @@ function TrainerPlanModal({ plan, gymId, trainerId, trainerName, onClose, onSave
                         onClick={() => selectPreset(preset)}
                         className={`py-2.5 px-2 rounded-xl text-xs font-medium transition-all duration-200 border-2 flex flex-col items-center gap-0.5 ${
                           isSelected
-                            ? "border-orange-500 bg-orange-50 text-orange-700 shadow-sm"
+                            ? "border-[#f0813d] bg-[#f0813d]/10 text-[#9c4400] shadow-sm"
                             : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
                         }`}
                       >
                         <Calendar
                           className={`w-3.5 h-3.5 ${
-                            isSelected ? "text-orange-600" : "text-gray-400"
+                            isSelected ? "text-[#f0813d]" : "text-gray-400"
                           }`}
                         />
                         <span>{preset.label}</span>
@@ -2005,7 +2005,7 @@ function TrainerPlanModal({ plan, gymId, trainerId, trainerName, onClose, onSave
               </label>
               <input
                 type="text"
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-sm"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all text-sm"
                 placeholder="e.g., 1 Month Training, Quarterly PT"
                 value={formData.name}
                 onChange={(e) => updateForm("name", e.target.value)}
@@ -2019,7 +2019,7 @@ function TrainerPlanModal({ plan, gymId, trainerId, trainerName, onClose, onSave
                 Description
               </label>
               <textarea
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all resize-none text-sm"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all resize-none text-sm"
                 placeholder="What's included in this plan..."
                 rows={2}
                 value={formData.description}
@@ -2038,7 +2038,7 @@ function TrainerPlanModal({ plan, gymId, trainerId, trainerName, onClose, onSave
                     type="text"
                     inputMode="numeric"
                     pattern="[0-9]*"
-                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-sm"
+                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all text-sm"
                     placeholder="e.g., 1"
                     value={formData.duration}
                     onChange={(e) => {
@@ -2051,7 +2051,7 @@ function TrainerPlanModal({ plan, gymId, trainerId, trainerName, onClose, onSave
                   <select
                     value={durationUnit}
                     onChange={(e) => setDurationUnit(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-sm"
+                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all text-sm"
                   >
                     <option value="days">Days</option>
                     <option value="weeks">Weeks</option>
@@ -2079,7 +2079,7 @@ function TrainerPlanModal({ plan, gymId, trainerId, trainerName, onClose, onSave
                     type="text"
                     inputMode="decimal"
                     pattern="[0-9]*\.?[0-9]*"
-                    className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-sm"
+                    className="w-full pl-9 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all text-sm"
                     placeholder="e.g., 3000"
                     value={formData.price}
                     onChange={(e) => {
@@ -2106,7 +2106,7 @@ function TrainerPlanModal({ plan, gymId, trainerId, trainerName, onClose, onSave
                   type="button"
                   onClick={() => updateForm("active", !formData.active)}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    formData.active ? "bg-orange-500" : "bg-gray-300"
+                    formData.active ? "bg-[#f0813d]" : "bg-gray-300"
                   }`}
                 >
                   <span
@@ -2133,7 +2133,7 @@ function TrainerPlanModal({ plan, gymId, trainerId, trainerName, onClose, onSave
             </button>
             <button
               type="submit"
-              className="flex-1 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white font-medium rounded-xl hover:shadow-lg active:scale-95 transition-all text-sm disabled:opacity-50"
+              className="flex-1 py-3 bg-gradient-to-r from-[#f0813d] to-[#9c4400] text-white font-medium rounded-xl hover:shadow-lg active:scale-95 transition-all text-sm disabled:opacity-50"
               disabled={saving}
               style={{ minHeight: "44px" }}
             >

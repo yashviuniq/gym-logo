@@ -381,6 +381,52 @@ function InsightsSkeleton() {
   );
 }
 
+function FinanceSparkline({ points = [] }) {
+  const normalized = points.length ? points : [0, 0, 0, 0, 0];
+  const maxValue = Math.max(...normalized, 1);
+  const polylinePoints = normalized
+    .map((value, index) => {
+      const x = normalized.length === 1 ? 100 : (index / (normalized.length - 1)) * 100;
+      const y = 92 - (Number(value || 0) / maxValue) * 72;
+      return `${x},${y}`;
+    })
+    .join(" ");
+
+  const areaPoints = `0,100 ${polylinePoints} 100,100`;
+
+  return (
+    <svg viewBox="0 0 100 100" className="h-24 w-full overflow-visible" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="financeSparkArea" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#f0813d" stopOpacity="0.32" />
+          <stop offset="100%" stopColor="#f0813d" stopOpacity="0.02" />
+        </linearGradient>
+      </defs>
+      <polygon points={areaPoints} fill="url(#financeSparkArea)" />
+      <polyline
+        points={polylinePoints}
+        fill="none"
+        stroke="#f0813d"
+        strokeWidth="4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function FinanceMetricPill({ icon, label, value }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/10 p-3 backdrop-blur">
+      <div className="mb-2 flex items-center gap-2 text-white/70">
+        {icon}
+        <span className="text-[10px] font-bold uppercase tracking-[0.18em]">{label}</span>
+      </div>
+      <p className="text-lg font-black text-white">{value}</p>
+    </div>
+  );
+}
+
 export default function FinanceInsightsPage() {
   const router = useRouter();
   const now = new Date();
@@ -1243,7 +1289,7 @@ export default function FinanceInsightsPage() {
         <Header title="Finance Insights" showBack backUrl="/finance" />
         <main className="px-4 py-4">
           <div className="text-center py-12">
-            <div className="w-20 h-20 bg-gradient-to-br from-violet-600 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <div className="w-20 h-20 bg-gradient-to-br from-[#f0813d] to-[#f0813d] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
               <BarChart3 className="w-10 h-10 text-white" />
             </div>
             <h2 className="text-lg font-bold text-gray-900 mb-2">No Gym Selected</h2>
@@ -1252,7 +1298,7 @@ export default function FinanceInsightsPage() {
             </p>
             <button
               onClick={() => router.push("/admin/dashboard")}
-              className="px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-xl font-semibold text-sm active:scale-95 transition-transform"
+              className="px-6 py-3 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white rounded-xl font-semibold text-sm active:scale-95 transition-transform"
             >
               Go to Dashboard
             </button>
@@ -1305,6 +1351,64 @@ bgColor: "bg-[#1f1f1f]/5",
     },
   ];
 
+  const weeklyFinanceData = data
+    ? getWeeksForMonth(selectedMonth, selectedYear).map((week) => ({
+        ...week,
+        ...computeWeekData(data, week.start, week.end),
+      }))
+    : [];
+  const maxWeeklyRevenue = Math.max(
+    ...weeklyFinanceData.map((week) => Number(week.revenue || 0)),
+    1
+  );
+  const monthRevenue = Number(data?.month_revenue || 0);
+  const avgMonthlyRevenue = Number(data?.avg_monthly_revenue || 0);
+  const revenueTarget = Math.max(monthRevenue, avgMonthlyRevenue, 1);
+  const revenuePace = Math.min(100, Math.round((monthRevenue / revenueTarget) * 100));
+  const bestWeek = weeklyFinanceData.reduce(
+    (best, week) => (Number(week.revenue || 0) > Number(best?.revenue || 0) ? week : best),
+    null
+  );
+  const cashFlowRevenue = Number(data?.total_revenue_all_time || 0);
+  const cashFlowSalary = Number(data?.total_salary_paid_all_time || 0);
+  const cashFlowDues = Number(data?.total_dues_all_time || 0);
+  const cashFlowProfit = Math.max(Number(data?.net_profit_all_time || 0), 0);
+  const cashFlowTotal = Math.max(cashFlowRevenue + cashFlowSalary + cashFlowDues + cashFlowProfit, 1);
+  const profitSlice = Math.round((cashFlowProfit / cashFlowTotal) * 100);
+  const salarySlice = Math.round((cashFlowSalary / cashFlowTotal) * 100);
+  const duesSlice = Math.round((cashFlowDues / cashFlowTotal) * 100);
+  const cashFlowGradient = `conic-gradient(#f0813d 0 ${profitSlice}%, #1f1f1f ${profitSlice}% ${
+    profitSlice + salarySlice
+  }%, #9c4400 ${profitSlice + salarySlice}% ${
+    profitSlice + salarySlice + duesSlice
+  }%, #f6d0b8 ${profitSlice + salarySlice + duesSlice}% 100%)`;
+  const memberMovementMax = Math.max(
+    Number(data?.month_new_joins || 0),
+    monthRenewalsCount,
+    Number(data?.month_active_members || 0),
+    1
+  );
+  const memberMovement = [
+    {
+      label: "New joins",
+      value: Number(data?.month_new_joins || 0),
+      icon: <UserPlus className="w-4 h-4" />,
+      color: "bg-[#f0813d]",
+    },
+    {
+      label: "Renewals",
+      value: monthRenewalsCount,
+      icon: <RefreshCw className="w-4 h-4" />,
+      color: "bg-[#1f1f1f]",
+    },
+    {
+      label: "Active",
+      value: Number(data?.month_active_members || 0),
+      icon: <Activity className="w-4 h-4" />,
+      color: "bg-[#92c83e]",
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-[#f6f3f1] text-[#1a1c1c] safe-area-inset-bottom pb-32">
       <Header title="Finance Insights" showBack backUrl="/finance" />
@@ -1320,7 +1424,7 @@ bgColor: "bg-[#1f1f1f]/5",
               <button
                 onClick={handleExportOverallExcel}
                 disabled={overallExcelExporting || loading || monthLoading || !data}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-orange-50 text-[#f0813d] border border-orange-200 hover:bg-orange-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-1.5"
                 title="Export overall multi-year report as Excel"
               >
                 {overallExcelExporting ? (
@@ -1335,7 +1439,7 @@ bgColor: "bg-[#1f1f1f]/5",
               <button
                 onClick={handleExportOverallPdf}
                 disabled={overallPdfExporting || loading || monthLoading || !data}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-orange-50 text-[#f0813d] border border-orange-200 hover:bg-orange-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-1.5"
                 title="Export overall multi-year revenue report"
               >
                 {overallPdfExporting ? (
@@ -1450,6 +1554,152 @@ bgColor: "bg-[#1f1f1f]/5",
         </section>
 
         {/* ─── Month Wise Breakdown ─── */}
+        {!monthLoading && data && (
+          <section className="space-y-3">
+            <div className="relative overflow-hidden rounded-[28px] bg-[#151515] p-5 text-white shadow-[0_24px_70px_rgba(0,0,0,0.24)]">
+              <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-[#f0813d]/35 to-transparent" />
+              <div className="relative grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
+                <div>
+                  <div className="mb-5 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[11px] font-black uppercase tracking-[0.24em] text-[#f7b27c]">Finance command center</p>
+                      <h2 className="mt-2 text-3xl font-black leading-none sm:text-4xl">{MONTHS[selectedMonth]} pulse</h2>
+                    </div>
+                    <button
+                      onClick={() => (data?.month_revenue_list?.length > 0) && setDrillDown("revenue")}
+                      disabled={!data?.month_revenue_list?.length}
+                      className="rounded-2xl bg-white px-4 py-3 text-xs font-black uppercase tracking-wide text-[#1f1f1f] shadow-lg transition active:scale-95 disabled:opacity-50"
+                    >
+                      View cash
+                    </button>
+                  </div>
+                  <div className="rounded-[24px] border border-white/10 bg-white/[0.08] p-4">
+                    <div className="mb-4 flex items-end justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-bold text-white/55">This month revenue</p>
+                        <p className="mt-1 text-4xl font-black tracking-normal text-white">{formatCurrency(monthRevenue)}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs font-bold text-white/55">Pace</p>
+                        <p className="text-2xl font-black text-[#f7b27c]">{revenuePace}%</p>
+                      </div>
+                    </div>
+                    <div className="h-3 overflow-hidden rounded-full bg-white/10">
+                      <div className="h-full rounded-full bg-gradient-to-r from-[#f0813d] via-[#ffb36f] to-white transition-all duration-700" style={{ width: `${revenuePace}%` }} />
+                    </div>
+                    <div className="mt-4 grid grid-cols-3 gap-2">
+                      <FinanceMetricPill icon={<Users className="w-3.5 h-3.5" />} label="Active" value={data?.month_active_members ?? 0} />
+                      <FinanceMetricPill icon={<UserPlus className="w-3.5 h-3.5" />} label="Joins" value={data?.month_new_joins ?? 0} />
+                      <FinanceMetricPill icon={<RefreshCw className="w-3.5 h-3.5" />} label="Renew" value={monthRenewalsCount} />
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-[24px] border border-white/10 bg-white/[0.07] p-4">
+                  <div className="mb-4 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-bold text-white/55">Weekly revenue wave</p>
+                      <p className="text-sm font-black text-white">
+                        Best: {bestWeek ? `${bestWeek.label} ${formatCurrency(bestWeek.revenue)}` : "No revenue yet"}
+                      </p>
+                    </div>
+                    <BarChart3 className="h-5 w-5 text-[#f7b27c]" />
+                  </div>
+                  <FinanceSparkline points={weeklyFinanceData.map((week) => week.revenue)} />
+                  <div className="mt-3 overflow-x-auto pb-1">
+                    <div className="flex h-28 min-w-[320px] items-end gap-2">
+                      {weeklyFinanceData.map((week) => {
+                        const height = Math.max(10, Math.round((Number(week.revenue || 0) / maxWeeklyRevenue) * 100));
+                        return (
+                          <button
+                            key={week.num}
+                            onClick={() => setWeekModal({ week, type: null })}
+                            className="group flex min-w-[52px] flex-1 flex-col items-center gap-2 rounded-xl p-1 transition hover:bg-white/10 active:scale-95"
+                            title={`${week.label}: ${formatCurrency(week.revenue)}`}
+                          >
+                            <span className="w-full rounded-t-2xl bg-gradient-to-t from-[#f0813d] to-[#ffd0a7] shadow-[0_8px_24px_rgba(240,129,61,0.28)] transition-all group-hover:brightness-110" style={{ height: `${height}%` }} />
+                            <span className="text-[10px] font-black text-white/60">W{week.num}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="grid gap-3 lg:grid-cols-[0.9fr_1.1fr]">
+              <div className="rounded-[24px] border border-[#ece7e2] bg-white p-5 shadow-[0_14px_45px_rgba(0,0,0,0.06)]">
+                <div className="mb-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#f0813d]">Cash-flow mix</p>
+                    <h3 className="text-xl font-black text-[#1f1f1f]">Profit, salary and dues</h3>
+                  </div>
+                  <IndianRupee className="h-5 w-5 text-[#f0813d]" />
+                </div>
+                <div className="flex items-center gap-5">
+                  <div className="relative grid h-36 w-36 shrink-0 place-items-center rounded-full" style={{ background: cashFlowGradient }}>
+                    <div className="grid h-24 w-24 place-items-center rounded-full bg-white text-center shadow-inner">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase text-[#7b746f]">Net profit</p>
+                        <p className="text-lg font-black text-[#1f1f1f]">{formatCurrency(data?.net_profit_all_time)}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-3">
+                    {[
+                      ["Revenue", data?.total_revenue_all_time, "bg-[#f6d0b8]"],
+                      ["Salary", data?.total_salary_paid_all_time, "bg-[#1f1f1f]"],
+                      ["Dues", data?.total_dues_all_time, "bg-[#9c4400]"],
+                    ].map(([label, value, color]) => (
+                      <div key={label} className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <span className={`h-3 w-3 rounded-full ${color}`} />
+                          <span className="text-xs font-bold text-[#7b746f]">{label}</span>
+                        </div>
+                        <span className="text-sm font-black text-[#1f1f1f]">{formatCurrency(value)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="rounded-[24px] border border-[#ece7e2] bg-white p-5 shadow-[0_14px_45px_rgba(0,0,0,0.06)]">
+                <div className="mb-5 flex items-center justify-between">
+                  <div>
+                    <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#f0813d]">Member movement</p>
+                    <h3 className="text-xl font-black text-[#1f1f1f]">Joins, renewals and active base</h3>
+                  </div>
+                  <Users className="h-5 w-5 text-[#f0813d]" />
+                </div>
+                <div className="space-y-4">
+                  {memberMovement.map((item) => {
+                    const width = Math.max(7, Math.round((item.value / memberMovementMax) * 100));
+                    return (
+                      <button
+                        key={item.label}
+                        onClick={() => {
+                          if (item.label === "New joins" && data?.month_new_joins_list?.length) setDrillDown("new_joins");
+                          if (item.label === "Renewals" && monthRenewalsList.length) setDrillDown("renewals");
+                        }}
+                        className="w-full rounded-2xl border border-[#f0ebe6] bg-[#faf8f6] p-3 text-left transition active:scale-[0.99]"
+                      >
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2 text-[#1f1f1f]">
+                            {item.icon}
+                            <span className="text-sm font-black">{item.label}</span>
+                          </div>
+                          <span className="text-lg font-black text-[#1f1f1f]">{item.value}</span>
+                        </div>
+                        <div className="h-3 overflow-hidden rounded-full bg-[#e8e1db]">
+                          <div className={`h-full rounded-full ${item.color}`} style={{ width: `${width}%` }} />
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
         <section>
           {monthLoading ? (
             <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm space-y-4">
@@ -1465,7 +1715,7 @@ bgColor: "bg-[#1f1f1f]/5",
                 className={`bg-white rounded-2xl p-5 border border-gray-100 shadow-sm ${data?.month_revenue_list?.length > 0 ? "cursor-pointer active:scale-[0.98] transition-transform" : ""}`}
               >
                 <div className="flex items-center gap-2 mb-4">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-sm">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#f0813d] to-[#f0813d] flex items-center justify-center shadow-sm">
                     <IndianRupee className="w-4 h-4 text-white" />
                   </div>
                   <h3 className="text-sm font-semibold text-gray-700">Revenue</h3>
@@ -1473,16 +1723,16 @@ bgColor: "bg-[#1f1f1f]/5",
                     {MONTHS[selectedMonth]} {selectedYear}
                   </span>
                 </div>
-                <div className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl p-4 border border-emerald-100">
+                <div className="bg-gradient-to-r from-orange-50 to-orange-50 rounded-xl p-4 border border-orange-100">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs font-medium text-emerald-600 mb-1">Total Revenue</p>
-                      <p className="text-2xl font-bold text-emerald-700">
+                      <p className="text-xs font-medium text-[#f0813d] mb-1">Total Revenue</p>
+                      <p className="text-2xl font-bold text-[#f0813d]">
                         {formatCurrency(data?.month_revenue)}
                       </p>
                     </div>
                     {data?.month_revenue_list?.length > 0 && (
-                      <ChevronRight className="w-5 h-5 text-emerald-400" />
+                      <ChevronRight className="w-5 h-5 text-[#f0813d]" />
                     )}
                   </div>
                 </div>
@@ -1491,7 +1741,7 @@ bgColor: "bg-[#1f1f1f]/5",
               {/* Members Card */}
               <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
                 <div className="flex items-center gap-2 mb-4">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-sm">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#f0813d] to-[#f0813d] flex items-center justify-center shadow-sm">
                     <Users className="w-4 h-4 text-white" />
                   </div>
                   <h3 className="text-sm font-semibold text-gray-700">Members</h3>
@@ -1503,21 +1753,21 @@ bgColor: "bg-[#1f1f1f]/5",
                 {/* New Joins - Clickable */}
                 <div
                   onClick={() => (data?.month_new_joins_list?.length > 0) && setDrillDown("new_joins")}
-                  className={`bg-gradient-to-r from-violet-50 to-purple-50 rounded-xl p-4 border border-violet-200 mb-3 ${data?.month_new_joins_list?.length > 0 ? "cursor-pointer active:scale-[0.98] transition-transform" : ""}`}
+                  className={`bg-gradient-to-r from-orange-50 to-orange-50 rounded-xl p-4 border border-orange-200 mb-3 ${data?.month_new_joins_list?.length > 0 ? "cursor-pointer active:scale-[0.98] transition-transform" : ""}`}
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <UserPlus className="w-4 h-4 text-violet-600" />
-                    <p className="text-xs font-semibold text-violet-600 uppercase tracking-wide">
+                    <UserPlus className="w-4 h-4 text-[#f0813d]" />
+                    <p className="text-xs font-semibold text-[#f0813d] uppercase tracking-wide">
                       New Joins
                     </p>
                     {data?.month_new_joins_list?.length > 0 && (
-                      <ChevronRight className="w-4 h-4 text-violet-400 ml-auto" />
+                      <ChevronRight className="w-4 h-4 text-[#f0813d] ml-auto" />
                     )}
                   </div>
-                  <p className="text-3xl font-extrabold text-violet-700">
+                  <p className="text-3xl font-extrabold text-[#f0813d]">
                     {data?.month_new_joins ?? 0}
                   </p>
-                  <p className="text-xs text-violet-500 mt-1">
+                  <p className="text-xs text-[#f0813d] mt-1">
                     Members joined in {MONTHS[selectedMonth]}
                   </p>
                 </div>
@@ -1530,7 +1780,7 @@ bgColor: "bg-[#1f1f1f]/5",
                     className={`bg-gray-50 rounded-xl p-3 border border-gray-100 ${monthRenewalsList.length > 0 ? "cursor-pointer active:scale-[0.98] transition-transform" : ""}`}
                   >
                     <div className="flex items-center gap-1.5 mb-1">
-                      <RefreshCw className="w-3.5 h-3.5 text-blue-500" />
+                      <RefreshCw className="w-3.5 h-3.5 text-[#f0813d]" />
                       <p className="text-xs font-medium text-gray-500">Renewals</p>
                       {monthRenewalsList.length > 0 && (
                         <ChevronRight className="w-3 h-3 text-gray-400 ml-auto" />
@@ -1542,7 +1792,7 @@ bgColor: "bg-[#1f1f1f]/5",
                   </div>
                   <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
                     <div className="flex items-center gap-1.5 mb-1">
-                      <Activity className="w-3.5 h-3.5 text-green-500" />
+                      <Activity className="w-3.5 h-3.5 text-[#f0813d]" />
                       <p className="text-xs font-medium text-gray-500">Active</p>
                     </div>
                     <p className="text-lg font-bold text-gray-800">
@@ -1581,31 +1831,31 @@ bgColor: "bg-[#1f1f1f]/5",
                       className={`p-4 ${hasData ? "cursor-pointer active:scale-[0.99] transition-transform" : ""}`}
                       onClick={() => hasData && setWeekModal({ week, type: null })}
                     >
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shadow-sm">
+                      <div className="flex items-center justify-between gap-3 mb-3">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <div className="w-8 h-8 shrink-0 rounded-lg bg-gradient-to-br from-[#f0813d] to-[#f0813d] flex items-center justify-center shadow-sm">
                             <span className="text-white text-xs font-bold">W{week.num}</span>
                           </div>
-                          <div>
+                          <div className="min-w-0">
                             <p className="text-sm font-semibold text-gray-800">{week.label}</p>
-                            <p className="text-xs text-gray-400">{week.range}</p>
+                            <p className="truncate text-xs text-gray-400">{week.range}</p>
                           </div>
                         </div>
-                        {hasData && <ChevronRight className="w-4 h-4 text-gray-400" />}
+                        {hasData && <ChevronRight className="w-4 h-4 shrink-0 text-gray-400" />}
                       </div>
                       {/* Week Stats */}
-                      <div className="grid grid-cols-3 gap-2">
-                        <div className="bg-emerald-50 rounded-xl p-2.5 border border-emerald-100 text-center">
-                          <p className="text-[10px] font-medium text-emerald-600 uppercase">Revenue</p>
-                          <p className="text-sm font-bold text-emerald-700">{formatCurrency(wd.revenue)}</p>
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                        <div className="min-w-0 bg-orange-50 rounded-xl p-2.5 border border-orange-100 text-center">
+                          <p className="text-[10px] font-medium text-[#f0813d] uppercase">Revenue</p>
+                          <p className="truncate text-sm font-bold text-[#f0813d]">{formatCurrency(wd.revenue)}</p>
                         </div>
-                        <div className="bg-violet-50 rounded-xl p-2.5 border border-violet-100 text-center">
-                          <p className="text-[10px] font-medium text-violet-600 uppercase">New Joins</p>
-                          <p className="text-sm font-bold text-violet-700">{wd.newJoinsList.length}</p>
+                        <div className="min-w-0 bg-orange-50 rounded-xl p-2.5 border border-orange-100 text-center">
+                          <p className="text-[10px] font-medium text-[#f0813d] uppercase">New Joins</p>
+                          <p className="text-sm font-bold text-[#f0813d]">{wd.newJoinsList.length}</p>
                         </div>
-                        <div className="bg-blue-50 rounded-xl p-2.5 border border-blue-100 text-center">
-                          <p className="text-[10px] font-medium text-blue-600 uppercase">Renewals</p>
-                          <p className="text-sm font-bold text-blue-700">{wd.renewalsList.length}</p>
+                        <div className="min-w-0 bg-orange-50 rounded-xl p-2.5 border border-orange-100 text-center">
+                          <p className="text-[10px] font-medium text-[#f0813d] uppercase">Renewals</p>
+                          <p className="text-sm font-bold text-[#f0813d]">{wd.renewalsList.length}</p>
                         </div>
                       </div>
                     </div>
@@ -1626,14 +1876,14 @@ bgColor: "bg-[#1f1f1f]/5",
           >
             {/* Modal Header */}
             <div className={`p-4 flex items-center gap-3 border-b border-gray-100 ${
-              drillDown === "revenue" ? "bg-gradient-to-r from-emerald-50 to-green-50" :
-              drillDown === "new_joins" ? "bg-gradient-to-r from-violet-50 to-purple-50" :
-              "bg-gradient-to-r from-blue-50 to-indigo-50"
+              drillDown === "revenue" ? "bg-gradient-to-r from-orange-50 to-orange-50" :
+              drillDown === "new_joins" ? "bg-gradient-to-r from-orange-50 to-orange-50" :
+              "bg-gradient-to-r from-orange-50 to-orange-50"
             }`}>
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm ${
-                drillDown === "revenue" ? "bg-gradient-to-br from-emerald-500 to-green-600" :
-                drillDown === "new_joins" ? "bg-gradient-to-br from-violet-500 to-purple-600" :
-                "bg-gradient-to-br from-blue-500 to-indigo-600"
+                drillDown === "revenue" ? "bg-gradient-to-br from-[#f0813d] to-[#f0813d]" :
+                drillDown === "new_joins" ? "bg-gradient-to-br from-[#f0813d] to-[#f0813d]" :
+                "bg-gradient-to-br from-[#f0813d] to-[#f0813d]"
               }`}>
                 {drillDown === "revenue" && <IndianRupee className="w-5 h-5 text-white" />}
                 {drillDown === "new_joins" && <UserPlus className="w-5 h-5 text-white" />}
@@ -1649,9 +1899,9 @@ bgColor: "bg-[#1f1f1f]/5",
               </div>
               <button
                 onClick={() => setDrillDown(null)}
-                className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 active:scale-90 transition-all"
+                className=" icon-badge w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 active:scale-90 transition-all"
               >
-                <X className="w-5 h-5 text-gray-600" />
+                <X className="w-5 h-5 text-white" />
               </button>
             </div>
 
@@ -1664,13 +1914,13 @@ bgColor: "bg-[#1f1f1f]/5",
                     <span className="text-xs font-medium text-gray-500">
                       {data?.month_revenue_list?.length || 0} payments
                     </span>
-                    <span className="text-sm font-bold text-emerald-600">
+                    <span className="text-sm font-bold text-[#f0813d]">
                       Total: {formatCurrency(data?.month_revenue)}
                     </span>
                   </div>
                   {(data?.month_revenue_list || []).map((p, i) => (
                     <div key={p.id || i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#f0813d] to-[#f0813d] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                         {(p.member_name || "?").charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -1687,7 +1937,7 @@ bgColor: "bg-[#1f1f1f]/5",
                           {new Date(p.paid_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                         </p>
                       </div>
-                      <p className="font-bold text-emerald-600 text-sm whitespace-nowrap">
+                      <p className="font-bold text-[#f0813d] text-sm whitespace-nowrap">
                         ₹{Number(p.amount).toLocaleString("en-IN")}
                       </p>
                     </div>
@@ -1709,7 +1959,7 @@ bgColor: "bg-[#1f1f1f]/5",
                       onClick={() => router.push(`/members/${m.id}`)}
                       className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer active:scale-[0.98] transition-transform"
                     >
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#f0813d] to-[#f0813d] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                         {(m.full_name || "?").charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -1729,7 +1979,7 @@ bgColor: "bg-[#1f1f1f]/5",
                         </p>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className="text-xs font-medium text-violet-600">{m.plan_name}</p>
+                        <p className="text-xs font-medium text-[#f0813d]">{m.plan_name}</p>
                         <ChevronRight className="w-4 h-4 text-gray-400 ml-auto mt-1" />
                       </div>
                     </div>
@@ -1747,7 +1997,7 @@ bgColor: "bg-[#1f1f1f]/5",
                   </div>
                   {monthRenewalsList.map((r, i) => (
                     <div key={r.id || i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#f0813d] to-[#f0813d] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                         {(r.member_name || "?").charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -1757,7 +2007,7 @@ bgColor: "bg-[#1f1f1f]/5",
                             <Phone className="w-3 h-3" />{r.phone}
                           </span>
                         )}
-                        <p className="text-xs text-blue-600 mt-0.5 font-medium">
+                        <p className="text-xs text-[#f0813d] mt-0.5 font-medium">
                           Renewed on {new Date(getRenewalEventDate(r)).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                         </p>
                         <p className="text-xs text-gray-400 mt-0.5">
@@ -1767,7 +2017,7 @@ bgColor: "bg-[#1f1f1f]/5",
                         </p>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <span className="px-2 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-lg border border-blue-100">
+                        <span className="px-2 py-1 bg-orange-50 text-[#f0813d] text-xs font-medium rounded-lg border border-orange-100">
                           {r.plan_name}
                         </span>
                       </div>
@@ -1801,48 +2051,48 @@ bgColor: "bg-[#1f1f1f]/5",
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal Header */}
-              <div className="p-4  flex items-center gap-3 border-b border-gray-100 bg-gradient-to-r from-indigo-50 to-blue-50">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shadow-sm">
+              <div className="p-4 flex items-center gap-3 border-b border-gray-100 bg-gradient-to-r from-orange-50 to-orange-50">
+                <div className="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-br from-[#f0813d] to-[#f0813d] flex items-center justify-center shadow-sm">
                   <span className="text-white text-sm font-bold">W{week.num}</span>
                 </div>
-                <div className="flex-1">
+                <div className="min-w-0 flex-1">
                   <h3 className="font-bold text-gray-900 text-base">{week.label}</h3>
-                  <p className="text-xs text-gray-500">{week.range}</p>
+                  <p className="truncate text-xs text-gray-500">{week.range}</p>
                 </div>
                 <button
                   onClick={() => setWeekModal(null)}
-                  className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 active:scale-90 transition-all"
+                  className=" icon-badge w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 active:scale-90 transition-all"
                 >
-                  <X className="w-5 h-5 text-gray-600" />
+                  <X className="w-5 h-5 text-white" />
                 </button>
               </div>
 
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {/* Week Summary Stats */}
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                   <div
                     onClick={() => wd.revenueList.length > 0 && setWeekModal({ week, type: "revenue" })}
-                    className={`bg-emerald-50 rounded-xl p-3 border border-emerald-100 text-center ${wd.revenueList.length > 0 ? "cursor-pointer active:scale-95 transition-transform" : ""}`}
+                    className={`min-w-0 bg-orange-50 rounded-xl p-3 border border-orange-100 text-center ${wd.revenueList.length > 0 ? "cursor-pointer active:scale-95 transition-transform" : ""}`}
                   >
-                    <IndianRupee className="w-4 h-4 text-emerald-600 mx-auto mb-1" />
-                    <p className="text-[10px] font-medium text-emerald-600 uppercase">Revenue</p>
-                    <p className="text-sm font-bold text-emerald-700">{formatCurrency(wd.revenue)}</p>
+                    <IndianRupee className="w-4 h-4 text-[#f0813d] mx-auto mb-1" />
+                    <p className="text-[10px] font-medium text-[#f0813d] uppercase">Revenue</p>
+                    <p className="truncate text-sm font-bold text-[#f0813d]">{formatCurrency(wd.revenue)}</p>
                   </div>
                   <div
                     onClick={() => wd.newJoinsList.length > 0 && setWeekModal({ week, type: "new_joins" })}
-                    className={`bg-violet-50 rounded-xl p-3 border border-violet-100 text-center ${wd.newJoinsList.length > 0 ? "cursor-pointer active:scale-95 transition-transform" : ""}`}
+                    className={`min-w-0 bg-orange-50 rounded-xl p-3 border border-orange-100 text-center ${wd.newJoinsList.length > 0 ? "cursor-pointer active:scale-95 transition-transform" : ""}`}
                   >
-                    <UserPlus className="w-4 h-4 text-violet-600 mx-auto mb-1" />
-                    <p className="text-[10px] font-medium text-violet-600 uppercase">New Joins</p>
-                    <p className="text-sm font-bold text-violet-700">{wd.newJoinsList.length}</p>
+                    <UserPlus className="w-4 h-4 text-[#f0813d] mx-auto mb-1" />
+                    <p className="text-[10px] font-medium text-[#f0813d] uppercase">New Joins</p>
+                    <p className="text-sm font-bold text-[#f0813d]">{wd.newJoinsList.length}</p>
                   </div>
                   <div
                     onClick={() => wd.renewalsList.length > 0 && setWeekModal({ week, type: "renewals" })}
-                    className={`bg-blue-50 rounded-xl p-3 border border-blue-100 text-center ${wd.renewalsList.length > 0 ? "cursor-pointer active:scale-95 transition-transform" : ""}`}
+                    className={`min-w-0 bg-orange-50 rounded-xl p-3 border border-orange-100 text-center ${wd.renewalsList.length > 0 ? "cursor-pointer active:scale-95 transition-transform" : ""}`}
                   >
-                    <RefreshCw className="w-4 h-4 text-blue-600 mx-auto mb-1" />
-                    <p className="text-[10px] font-medium text-blue-600 uppercase">Renewals</p>
-                    <p className="text-sm font-bold text-blue-700">{wd.renewalsList.length}</p>
+                    <RefreshCw className="w-4 h-4 text-[#f0813d] mx-auto mb-1" />
+                    <p className="text-[10px] font-medium text-[#f0813d] uppercase">Renewals</p>
+                    <p className="text-sm font-bold text-[#f0813d]">{wd.renewalsList.length}</p>
                   </div>
                 </div>
 
@@ -1851,11 +2101,11 @@ bgColor: "bg-[#1f1f1f]/5",
                   <div className="space-y-2">
                     <div className="flex items-center justify-between px-1 mb-2">
                       <span className="text-xs font-medium text-gray-500">{wd.revenueList.length} payments</span>
-                      <span className="text-sm font-bold text-emerald-600">Total: {formatCurrency(wd.revenue)}</span>
+                      <span className="text-sm font-bold text-[#f0813d]">Total: {formatCurrency(wd.revenue)}</span>
                     </div>
                     {wd.revenueList.map((p, i) => (
                       <div key={p.id || i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#f0813d] to-[#f0813d] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                           {(p.member_name || "?").charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -1863,7 +2113,7 @@ bgColor: "bg-[#1f1f1f]/5",
                           {p.phone && <span className="text-xs text-gray-500 flex items-center gap-1"><Phone className="w-3 h-3" />{p.phone}</span>}
                           <p className="text-xs text-gray-400 mt-0.5">{new Date(getPaymentDate(p)).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })} • {p.payment_mode}</p>
                         </div>
-                        <p className="font-bold text-emerald-600 text-sm whitespace-nowrap">₹{Number(p.amount).toLocaleString("en-IN")}</p>
+                        <p className="font-bold text-[#f0813d] text-sm whitespace-nowrap">₹{Number(p.amount).toLocaleString("en-IN")}</p>
                       </div>
                     ))}
                   </div>
@@ -1875,7 +2125,7 @@ bgColor: "bg-[#1f1f1f]/5",
                     </div>
                     {wd.newJoinsList.map((m, i) => (
                       <div key={m.id || i} onClick={() => router.push(`/members/${m.id}`)} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer active:scale-[0.98] transition-transform">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#f0813d] to-[#f0813d] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                           {(m.full_name || "?").charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -1884,7 +2134,7 @@ bgColor: "bg-[#1f1f1f]/5",
                           <p className="text-xs text-gray-400 mt-0.5">Joined {new Date(m.join_date + "T00:00:00").toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</p>
                         </div>
                         <div className="text-right flex-shrink-0">
-                          <p className="text-xs font-medium text-violet-600">{m.plan_name}</p>
+                          <p className="text-xs font-medium text-[#f0813d]">{m.plan_name}</p>
                           <ChevronRight className="w-4 h-4 text-gray-400 ml-auto mt-1" />
                         </div>
                       </div>
@@ -1898,13 +2148,13 @@ bgColor: "bg-[#1f1f1f]/5",
                     </div>
                     {wd.renewalsList.map((r, i) => (
                       <div key={r.id || i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#f0813d] to-[#f0813d] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                           {(r.member_name || "?").charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-gray-900 text-sm truncate">{r.member_name}</p>
                           {r.phone && <span className="text-xs text-gray-500 flex items-center gap-1 mt-0.5"><Phone className="w-3 h-3" />{r.phone}</span>}
-                          <p className="text-xs text-blue-600 mt-0.5 font-medium">
+                          <p className="text-xs text-[#f0813d] mt-0.5 font-medium">
                             Renewed on {new Date(getRenewalEventDate(r)).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                           </p>
                           <p className="text-xs text-gray-400 mt-0.5">
@@ -1913,7 +2163,7 @@ bgColor: "bg-[#1f1f1f]/5",
                             {new Date(r.end_date + "T00:00:00").toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                           </p>
                         </div>
-                        <span className="px-2 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-lg border border-blue-100">{r.plan_name}</span>
+                        <span className="px-2 py-1 bg-orange-50 text-[#f0813d] text-xs font-medium rounded-lg border border-orange-100">{r.plan_name}</span>
                       </div>
                     ))}
                   </div>
@@ -1941,18 +2191,18 @@ bgColor: "bg-[#1f1f1f]/5",
                               <p className="text-sm font-semibold text-gray-800">{dayLabel}</p>
                               {dayHasData && <ChevronRight className="w-4 h-4 text-gray-400" />}
                             </div>
-                            <div className="grid grid-cols-3 gap-2">
-                              <div className="text-center">
-                                <p className="text-[10px] text-emerald-600 font-medium">Revenue</p>
-                                <p className="text-xs font-bold text-emerald-700">{dd.revenue > 0 ? formatCurrency(dd.revenue) : "₹0"}</p>
+                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                              <div className="min-w-0 text-center">
+                                <p className="text-[10px] text-[#f0813d] font-medium">Revenue</p>
+                                <p className="truncate text-xs font-bold text-[#f0813d]">{dd.revenue > 0 ? formatCurrency(dd.revenue) : "₹0"}</p>
                               </div>
-                              <div className="text-center">
-                                <p className="text-[10px] text-violet-600 font-medium">New Joins</p>
-                                <p className="text-xs font-bold text-violet-700">{dd.newJoinsList.length}</p>
+                              <div className="min-w-0 text-center">
+                                <p className="text-[10px] text-[#f0813d] font-medium">New Joins</p>
+                                <p className="text-xs font-bold text-[#f0813d]">{dd.newJoinsList.length}</p>
                               </div>
-                              <div className="text-center">
-                                <p className="text-[10px] text-blue-600 font-medium">Renewals</p>
-                                <p className="text-xs font-bold text-blue-700">{dd.renewalsList.length}</p>
+                              <div className="min-w-0 text-center">
+                                <p className="text-[10px] text-[#f0813d] font-medium">Renewals</p>
+                                <p className="text-xs font-bold text-[#f0813d]">{dd.renewalsList.length}</p>
                               </div>
                             </div>
                           </div>
@@ -1978,8 +2228,8 @@ bgColor: "bg-[#1f1f1f]/5",
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal Header */}
-              <div className="p-4 flex items-center gap-3 border-b border-gray-100 bg-gradient-to-r from-amber-50 to-orange-50">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-sm">
+              <div className="p-4 flex items-center gap-3 border-b border-gray-100 bg-gradient-to-r from-orange-50 to-orange-50">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#f0813d] to-[#f0813d] flex items-center justify-center shadow-sm">
                   <Calendar className="w-5 h-5 text-white" />
                 </div>
                 <div className="flex-1">
@@ -1988,38 +2238,38 @@ bgColor: "bg-[#1f1f1f]/5",
                 </div>
                 <button
                   onClick={() => setDayModal(null)}
-                  className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 active:scale-90 transition-all"
+                  className=" icon-badge w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 active:scale-90 transition-all"
                 >
-                  <X className="w-5 h-5 text-gray-600" />
+                  <X className="w-5 h-5 text-white" />
                 </button>
               </div>
 
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {/* Day Summary */}
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                   <div
                     onClick={() => dd.revenueList.length > 0 && setDayModal({ day: dayModal.day, type: "revenue" })}
-                    className={`bg-emerald-50 rounded-xl p-3 border border-emerald-100 text-center ${dd.revenueList.length > 0 ? "cursor-pointer active:scale-95 transition-transform" : ""}`}
+                    className={`min-w-0 bg-orange-50 rounded-xl p-3 border border-orange-100 text-center ${dd.revenueList.length > 0 ? "cursor-pointer active:scale-95 transition-transform" : ""}`}
                   >
-                    <IndianRupee className="w-4 h-4 text-emerald-600 mx-auto mb-1" />
-                    <p className="text-[10px] font-medium text-emerald-600 uppercase">Revenue</p>
-                    <p className="text-sm font-bold text-emerald-700">{formatCurrency(dd.revenue)}</p>
+                    <IndianRupee className="w-4 h-4 text-[#f0813d] mx-auto mb-1" />
+                    <p className="text-[10px] font-medium text-[#f0813d] uppercase">Revenue</p>
+                    <p className="truncate text-sm font-bold text-[#f0813d]">{formatCurrency(dd.revenue)}</p>
                   </div>
                   <div
                     onClick={() => dd.newJoinsList.length > 0 && setDayModal({ day: dayModal.day, type: "new_joins" })}
-                    className={`bg-violet-50 rounded-xl p-3 border border-violet-100 text-center ${dd.newJoinsList.length > 0 ? "cursor-pointer active:scale-95 transition-transform" : ""}`}
+                    className={`min-w-0 bg-orange-50 rounded-xl p-3 border border-orange-100 text-center ${dd.newJoinsList.length > 0 ? "cursor-pointer active:scale-95 transition-transform" : ""}`}
                   >
-                    <UserPlus className="w-4 h-4 text-violet-600 mx-auto mb-1" />
-                    <p className="text-[10px] font-medium text-violet-600 uppercase">New Joins</p>
-                    <p className="text-sm font-bold text-violet-700">{dd.newJoinsList.length}</p>
+                    <UserPlus className="w-4 h-4 text-[#f0813d] mx-auto mb-1" />
+                    <p className="text-[10px] font-medium text-[#f0813d] uppercase">New Joins</p>
+                    <p className="text-sm font-bold text-[#f0813d]">{dd.newJoinsList.length}</p>
                   </div>
                   <div
                     onClick={() => dd.renewalsList.length > 0 && setDayModal({ day: dayModal.day, type: "renewals" })}
-                    className={`bg-blue-50 rounded-xl p-3 border border-blue-100 text-center ${dd.renewalsList.length > 0 ? "cursor-pointer active:scale-95 transition-transform" : ""}`}
+                    className={`min-w-0 bg-orange-50 rounded-xl p-3 border border-orange-100 text-center ${dd.renewalsList.length > 0 ? "cursor-pointer active:scale-95 transition-transform" : ""}`}
                   >
-                    <RefreshCw className="w-4 h-4 text-blue-600 mx-auto mb-1" />
-                    <p className="text-[10px] font-medium text-blue-600 uppercase">Renewals</p>
-                    <p className="text-sm font-bold text-blue-700">{dd.renewalsList.length}</p>
+                    <RefreshCw className="w-4 h-4 text-[#f0813d] mx-auto mb-1" />
+                    <p className="text-[10px] font-medium text-[#f0813d] uppercase">Renewals</p>
+                    <p className="text-sm font-bold text-[#f0813d]">{dd.renewalsList.length}</p>
                   </div>
                 </div>
 
@@ -2028,11 +2278,11 @@ bgColor: "bg-[#1f1f1f]/5",
                   <div className="space-y-2">
                     <div className="flex items-center justify-between px-1 mb-2">
                       <span className="text-xs font-medium text-gray-500">{dd.revenueList.length} payments</span>
-                      <span className="text-sm font-bold text-emerald-600">Total: {formatCurrency(dd.revenue)}</span>
+                      <span className="text-sm font-bold text-[#f0813d]">Total: {formatCurrency(dd.revenue)}</span>
                     </div>
                     {dd.revenueList.map((p, i) => (
                       <div key={p.id || i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#f0813d] to-[#f0813d] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                           {(p.member_name || "?").charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -2040,7 +2290,7 @@ bgColor: "bg-[#1f1f1f]/5",
                           {p.phone && <span className="text-xs text-gray-500 flex items-center gap-1"><Phone className="w-3 h-3" />{p.phone}</span>}
                           <p className="text-xs text-gray-400 mt-0.5 capitalize">{p.payment_mode}</p>
                         </div>
-                        <p className="font-bold text-emerald-600 text-sm whitespace-nowrap">₹{Number(p.amount).toLocaleString("en-IN")}</p>
+                        <p className="font-bold text-[#f0813d] text-sm whitespace-nowrap">₹{Number(p.amount).toLocaleString("en-IN")}</p>
                       </div>
                     ))}
                   </div>
@@ -2052,7 +2302,7 @@ bgColor: "bg-[#1f1f1f]/5",
                     </div>
                     {dd.newJoinsList.map((m, i) => (
                       <div key={m.id || i} onClick={() => router.push(`/members/${m.id}`)} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer active:scale-[0.98] transition-transform">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#f0813d] to-[#f0813d] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                           {(m.full_name || "?").charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -2060,7 +2310,7 @@ bgColor: "bg-[#1f1f1f]/5",
                           {m.phone && <span className="text-xs text-gray-500 flex items-center gap-1"><Phone className="w-3 h-3" />{m.phone}</span>}
                         </div>
                         <div className="text-right flex-shrink-0">
-                          <p className="text-xs font-medium text-violet-600">{m.plan_name}</p>
+                          <p className="text-xs font-medium text-[#f0813d]">{m.plan_name}</p>
                           <ChevronRight className="w-4 h-4 text-gray-400 ml-auto mt-1" />
                         </div>
                       </div>
@@ -2074,13 +2324,13 @@ bgColor: "bg-[#1f1f1f]/5",
                     </div>
                     {dd.renewalsList.map((r, i) => (
                       <div key={r.id || i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#f0813d] to-[#f0813d] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                           {(r.member_name || "?").charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-gray-900 text-sm truncate">{r.member_name}</p>
                           {r.phone && <span className="text-xs text-gray-500 flex items-center gap-1 mt-0.5"><Phone className="w-3 h-3" />{r.phone}</span>}
-                          <p className="text-xs text-blue-600 mt-0.5 font-medium">
+                          <p className="text-xs text-[#f0813d] mt-0.5 font-medium">
                             Renewed on {new Date(getRenewalEventDate(r)).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                           </p>
                           <p className="text-xs text-gray-400 mt-0.5">
@@ -2089,7 +2339,7 @@ bgColor: "bg-[#1f1f1f]/5",
                             {new Date(r.end_date + "T00:00:00").toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                           </p>
                         </div>
-                        <span className="px-2 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-lg border border-blue-100">{r.plan_name}</span>
+                        <span className="px-2 py-1 bg-orange-50 text-[#f0813d] text-xs font-medium rounded-lg border border-orange-100">{r.plan_name}</span>
                       </div>
                     ))}
                   </div>

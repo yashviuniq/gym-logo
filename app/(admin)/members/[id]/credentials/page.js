@@ -176,17 +176,17 @@ export default function MemberCredentialsPage() {
         switch (status) {
             case "active":
                 return {
-                    color: "bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200",
-                    text: "text-emerald-700",
-                    dot: "bg-emerald-500",
+                    color: "bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200",
+                    text: "text-[#f0813d]",
+                    dot: "bg-[#f0813d]",
                     label: "Active",
                     icon: <CheckCircle className="w-3.5 h-3.5" />
                 };
             case "expired":
                 return {
-                    color: "bg-gradient-to-br from-red-50 to-red-100 border-red-200",
-                    text: "text-red-700",
-                    dot: "bg-red-500",
+                    color: "bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200",
+                    text: "text-[#f0813d]",
+                    dot: "bg-[#f0813d]",
                     label: "Expired",
                     icon: <Clock className="w-3.5 h-3.5" />
                 };
@@ -215,8 +215,8 @@ export default function MemberCredentialsPage() {
                 <Header title="Member Credentials" />
                 <div className="flex flex-col items-center justify-center h-[60vh] p-6">
                     <div className="relative">
-                        <div className="w-14 h-14 border-4 border-blue-500/20 border-t-blue-600 rounded-full animate-spin"></div>
-                        <div className="absolute inset-0 w-14 h-14 border-4 border-transparent border-t-blue-500 rounded-full animate-spin animation-delay-200"></div>
+                        <div className="w-14 h-14 border-4 border-[#f0813d]/20 border-t-[#f0813d] rounded-full animate-spin"></div>
+                        <div className="absolute inset-0 w-14 h-14 border-4 border-transparent border-t-[#f0813d] rounded-full animate-spin animation-delay-200"></div>
                     </div>
                     <p className="mt-6 text-gray-600 font-medium text-sm">Loading credentials...</p>
                 </div>
@@ -230,7 +230,7 @@ export default function MemberCredentialsPage() {
                 <Header title="Member Credentials" />
                 <div className="flex flex-col items-center justify-center h-[60vh] p-6">
                     <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mb-6">
-                        <User className="w-10 h-10 text-gray-400" />
+                        <User className="w-10 h-10 text-white" />
                     </div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">Member Not Found</h3>
                     <p className="text-gray-500 text-center mb-6 max-w-sm">
@@ -238,7 +238,7 @@ export default function MemberCredentialsPage() {
                     </p>
                     <button
                         onClick={() => router.push("/members")}
-                        className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-xl hover:shadow-lg transition-all duration-300"
+                        className="px-6 py-3 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white font-medium rounded-xl hover:shadow-lg transition-all duration-300"
                     >
                         Back to Members
                     </button>
@@ -257,7 +257,7 @@ export default function MemberCredentialsPage() {
                 {/* Member Profile Header */}
                 <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
                     <div className="flex items-center gap-4 mb-4">
-                        <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-xl shadow-sm">
+                        <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-[#f0813d] to-[#f0813d] flex items-center justify-center text-white font-bold text-xl shadow-sm">
                             {member.name.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1">
@@ -299,7 +299,7 @@ export default function MemberCredentialsPage() {
                         </div>
                         <div>
                             <p className="text-gray-500 text-xs font-medium mb-1">App Access</p>
-                            <p className={`font-semibold text-sm ${member.credentials ? 'text-emerald-600' : 'text-red-600'}`}>
+                            <p className={`font-semibold text-sm ${member.credentials ? 'text-[#f0813d]' : 'text-[#f0813d]'}`}>
                                 {member.credentials ? 'Enabled' : 'Disabled'}
                             </p>
                         </div>
@@ -317,7 +317,7 @@ export default function MemberCredentialsPage() {
                             onClick={() => setActiveTab("credentials")}
                             className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
                                 activeTab === "credentials" 
-                                ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm" 
+                                ? "bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white shadow-sm" 
                                 : "text-gray-600 hover:text-gray-900"
                             }`}
                         >
@@ -328,7 +328,7 @@ export default function MemberCredentialsPage() {
                             onClick={() => setActiveTab("actions")}
                             className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
                                 activeTab === "actions" 
-                                ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm" 
+                                ? "bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white shadow-sm" 
                                 : "text-gray-600 hover:text-gray-900"
                             }`}
                         >
@@ -345,7 +345,7 @@ export default function MemberCredentialsPage() {
                         {!member.credentials && (
                             <div className="bg-white rounded-xl border border-gray-200 p-6 text-center shadow-sm">
                                 <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                                    <Key className="w-8 h-8 text-gray-400" />
+                                    <Key className="w-8 h-8 text-white" />
                                 </div>
                                 <h3 className="text-lg font-semibold text-gray-900 mb-2">No App Credentials</h3>
                                 <p className="text-gray-500 text-sm mb-6 max-w-sm mx-auto">
@@ -353,7 +353,7 @@ export default function MemberCredentialsPage() {
                                 </p>
                                 <button
                                     onClick={handleCreateCredentials}
-                                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg transition-all duration-300 flex items-center gap-2 mx-auto active:scale-95"
+                                    className="px-6 py-3 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white font-medium rounded-lg hover:shadow-lg transition-all duration-300 flex items-center gap-2 mx-auto active:scale-95"
                                 >
                                     <Key className="w-4 h-4" />
                                     Create Credentials
@@ -367,8 +367,8 @@ export default function MemberCredentialsPage() {
                                 <div className="p-4 border-b border-gray-100">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg flex items-center justify-center">
-                                                <Key className="w-5 h-5 text-blue-600" />
+                                            <div className="w-12 h-12 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg flex items-center justify-center">
+                                                <Key className="w-5 h-5 text-white" />
                                             </div>
                                             <div>
                                                 <h3 className="font-semibold text-gray-900">Mobile App Credentials</h3>
@@ -377,7 +377,7 @@ export default function MemberCredentialsPage() {
                                                 </p>
                                             </div>
                                         </div>
-                                        <div className="px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-medium">
+                                        <div className="px-3 py-1.5 bg-orange-50 text-[#f0813d] rounded-lg text-xs font-medium">
                                             Active
                                         </div>
                                     </div>
@@ -392,8 +392,8 @@ export default function MemberCredentialsPage() {
                                         </div>
                                         <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-50 rounded-lg flex items-center justify-center">
-                                                    <Phone className="w-4 h-4 text-blue-600" />
+                                                <div className="w-10 h-10 bg-gradient-to-br from-orange-100 to-orange-50 rounded-lg flex items-center justify-center">
+                                                    <Phone className="w-4 h-4 text-white" />
                                                 </div>
                                                 <div>
                                                     <p className="font-medium text-gray-900">{member.credentials.loginValue}</p>
@@ -426,11 +426,11 @@ export default function MemberCredentialsPage() {
                                                 </button>
                                                 <button
                                                     onClick={() => copyToClipboard(member.credentials.password, "password")}
-                                                    className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1.5"
+                                                    className="text-xs text-[#f0813d] hover:text-[#f0813d] flex items-center gap-1.5"
                                                 >
                                                     {copied.field === "password" ? (
                                                         <>
-                                                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                                            <Check className="w-3.5 h-3.5 text-[#f0813d]" />
                                                             Copied
                                                         </>
                                                     ) : (
@@ -460,8 +460,8 @@ export default function MemberCredentialsPage() {
                                         }}
                                         className={`w-full py-3 rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2 active:scale-95 ${
                                             copied.field === "all" 
-                                            ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white" 
-                                            : "bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:shadow-lg"
+                                            ? "bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white" 
+                                            : "bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white hover:shadow-lg"
                                         }`}
                                     >
                                         {copied.field === "all" ? (
@@ -512,18 +512,18 @@ export default function MemberCredentialsPage() {
                                     <>
                                         <button
                                             onClick={handleResetPassword}
-                                            className="p-3 bg-gradient-to-r from-amber-50 to-amber-100 border border-amber-200 rounded-lg text-amber-700 font-medium hover:shadow-sm transition-all duration-300 flex items-center justify-between group active:scale-95"
+                                            className="p-3 bg-gradient-to-r from-orange-50 to-orange-100 border border-orange-200 rounded-lg text-[#f0813d] font-medium hover:shadow-sm transition-all duration-300 flex items-center justify-between group active:scale-95"
                                         >
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center group-hover:bg-amber-200 transition-colors">
-                                                    <RefreshCw className="w-4 h-4 text-amber-600" />
+                                                <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center group-hover:bg-orange-200 transition-colors">
+                                                    <RefreshCw className="w-4 h-4 text-white" />
                                                 </div>
                                                 <div className="text-left">
                                                     <p className="font-medium text-sm">Reset Password</p>
-                                                    <p className="text-xs text-amber-600">Generate new password</p>
+                                                    <p className="text-xs text-[#f0813d]">Generate new password</p>
                                                 </div>
                                             </div>
-                                            <span className="text-amber-400 group-hover:text-amber-600">→</span>
+                                            <span className="text-[#f0813d] group-hover:text-[#f0813d]">→</span>
                                         </button>
 
                                         <button
@@ -532,24 +532,24 @@ export default function MemberCredentialsPage() {
                                                 navigator.clipboard.writeText(text);
                                                 showSuccess("Credentials copied to clipboard!");
                                             }}
-                                            className="p-3 bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg text-blue-700 font-medium hover:shadow-sm transition-all duration-300 flex items-center justify-between group active:scale-95"
+                                            className="p-3 bg-gradient-to-r from-orange-50 to-orange-100 border border-orange-200 rounded-lg text-[#f0813d] font-medium hover:shadow-sm transition-all duration-300 flex items-center justify-between group active:scale-95"
                                         >
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
-                                                    <Phone className="w-4 h-4 text-blue-600" />
+                                                <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center group-hover:bg-orange-200 transition-colors">
+                                                    <Phone className="w-4 h-4 text-white" />
                                                 </div>
                                                 <div className="text-left">
                                                     <p className="font-medium text-sm">Send via SMS</p>
-                                                    <p className="text-xs text-blue-600">Share via text message</p>
+                                                    <p className="text-xs text-[#f0813d]">Share via text message</p>
                                                 </div>
                                             </div>
-                                            <span className="text-blue-400 group-hover:text-blue-600">→</span>
+                                            <span className="text-[#f0813d] group-hover:text-[#f0813d]">→</span>
                                         </button>
                                     </>
                                 ) : (
                                     <button
                                         onClick={handleCreateCredentials}
-                                        className="col-span-full p-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-3 active:scale-95"
+                                        className="col-span-full p-3 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white font-medium rounded-lg hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-3 active:scale-95"
                                     >
                                         <Key className="w-4 h-4" />
                                         Create App Credentials
@@ -559,28 +559,28 @@ export default function MemberCredentialsPage() {
                         </div>
 
                         {/* Security Warning */}
-                        <div className="bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-xl p-4">
+                        <div className="bg-gradient-to-r from-orange-50 to-orange-50 border border-orange-200 rounded-xl p-4">
                             <div className="flex items-start gap-3">
-                                <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                    <Shield className="w-5 h-5 text-red-600" />
+                                <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <Shield className="w-5 h-5 text-white" />
                                 </div>
                                 <div>
-                                    <h4 className="font-semibold text-red-900 mb-2 text-sm">Security Guidelines</h4>
-                                    <ul className="space-y-1.5 text-xs text-red-700">
+                                    <h4 className="font-semibold text-orange-900 mb-2 text-sm">Security Guidelines</h4>
+                                    <ul className="space-y-1.5 text-xs text-[#f0813d]">
                                         <li className="flex items-start gap-2">
-                                            <span className="text-red-400 mt-0.5">•</span>
+                                            <span className="text-[#f0813d] mt-0.5">•</span>
                                             Share credentials only through secure channels
                                         </li>
                                         <li className="flex items-start gap-2">
-                                            <span className="text-red-400 mt-0.5">•</span>
+                                            <span className="text-[#f0813d] mt-0.5">•</span>
                                             Never share via public platforms or screenshots
                                         </li>
                                         <li className="flex items-start gap-2">
-                                            <span className="text-red-400 mt-0.5">•</span>
+                                            <span className="text-[#f0813d] mt-0.5">•</span>
                                             Ask member to change password on first login
                                         </li>
                                         <li className="flex items-start gap-2">
-                                            <span className="text-red-400 mt-0.5">•</span>
+                                            <span className="text-[#f0813d] mt-0.5">•</span>
                                             Report any suspicious activity immediately
                                         </li>
                                     </ul>
@@ -601,7 +601,7 @@ export default function MemberCredentialsPage() {
                     </button>
                     <button
                         onClick={() => router.push("/members")}
-                        className="py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 active:scale-95"
+                        className="py-3 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white font-medium rounded-lg hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 active:scale-95"
                     >
                         <ChevronLeft className="w-4 h-4" />
                         Back to Members

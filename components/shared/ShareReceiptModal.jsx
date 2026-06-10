@@ -207,14 +207,14 @@ export default function ShareReceiptModal({ member, gymData, onClose }) {
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-xl">
         {/* Header */}
-        <div className="bg-gradient-to-r from-green-600 to-emerald-600 p-4 flex items-center justify-between">
+        <div className="bg-gradient-to-r from-[#f0813d] to-[#f0813d] p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
               <FileText className="w-5 h-5 text-white" />
             </div>
             <div>
               <h2 className="text-lg font-bold text-white">Share Receipt</h2>
-              <p className="text-green-100 text-sm">{member?.name}</p>
+              <p className="text-orange-100 text-sm">{member?.name}</p>
             </div>
           </div>
           <button 
@@ -229,18 +229,18 @@ export default function ShareReceiptModal({ member, gymData, onClose }) {
           {/* Loading State */}
           {loading && (
             <div className="flex flex-col items-center justify-center py-8">
-              <Loader2 className="w-10 h-10 text-green-600 animate-spin mb-3" />
+              <Loader2 className="w-10 h-10 text-[#f0813d] animate-spin mb-3" />
               <p className="text-gray-600">Loading receipt data...</p>
             </div>
           )}
 
           {/* Error State */}
           {error && !loading && (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-[#f0813d] flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-red-800 font-medium">Error</p>
-                <p className="text-red-600 text-sm">{error}</p>
+                <p className="text-orange-800 font-medium">Error</p>
+                <p className="text-[#f0813d] text-sm">{error}</p>
               </div>
             </div>
           )}
@@ -248,8 +248,8 @@ export default function ShareReceiptModal({ member, gymData, onClose }) {
           {/* No Receipt - Can Generate */}
           {!loading && !receipt && latestPayment && (
             <div className="text-center py-4">
-              <div className="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <FileText className="w-8 h-8 text-amber-600" />
+              <div className="w-16 h-16 bg-orange-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <FileText className="w-8 h-8 text-white" />
               </div>
               <h3 className="font-semibold text-gray-900 mb-2">No Receipt Found</h3>
               <p className="text-gray-500 text-sm mb-4">
@@ -258,7 +258,7 @@ export default function ShareReceiptModal({ member, gymData, onClose }) {
               <button
                 onClick={handleGenerateReceipt}
                 disabled={generating}
-                className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-medium rounded-xl hover:shadow-lg active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2 mx-auto"
+                className="px-6 py-3 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white font-medium rounded-xl hover:shadow-lg active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2 mx-auto"
               >
                 {generating ? (
                   <>
@@ -279,7 +279,7 @@ export default function ShareReceiptModal({ member, gymData, onClose }) {
           {!loading && !receipt && !latestPayment && !error && (
             <div className="text-center py-8">
               <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <AlertCircle className="w-8 h-8 text-gray-400" />
+                <AlertCircle className="w-8 h-8 text-white" />
               </div>
               <h3 className="font-semibold text-gray-900 mb-2">No Payments Found</h3>
               <p className="text-gray-500 text-sm">
@@ -292,15 +292,15 @@ export default function ShareReceiptModal({ member, gymData, onClose }) {
           {!loading && receipt && (
             <>
               {/* Receipt Info Card */}
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
+              <div className="bg-gradient-to-br from-orange-50 to-orange-50 border border-orange-200 rounded-xl p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <p className="text-sm text-green-700 font-medium">Receipt #{receipt.receipt_number}</p>
-                    <p className="text-xs text-green-600 mt-1">
+                    <p className="text-sm text-[#f0813d] font-medium">Receipt #{receipt.receipt_number}</p>
+                    <p className="text-xs text-[#f0813d] mt-1">
                       Generated: {new Date(receipt.created_at).toLocaleDateString("en-IN")}
                     </p>
                   </div>
-                  <div className="bg-green-600 text-white text-xs font-medium px-2 py-1 rounded-lg flex items-center gap-1">
+                  <div className="bg-[#f0813d] text-white text-xs font-medium px-2 py-1 rounded-lg flex items-center gap-1">
                     <CheckCircle className="w-3 h-3" />
                     Valid
                   </div>
@@ -326,14 +326,14 @@ export default function ShareReceiptModal({ member, gymData, onClose }) {
               {expiryInfo && (
                 <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
                   expiryInfo.daysLeft <= 2 
-                    ? "bg-amber-50 border border-amber-200" 
-                    : "bg-blue-50 border border-blue-200"
+                    ? "bg-orange-50 border border-orange-200" 
+                    : "bg-orange-50 border border-orange-200"
                 }`}>
                   <Clock className={`w-4 h-4 ${
-                    expiryInfo.daysLeft <= 2 ? "text-amber-600" : "text-blue-600"
+                    expiryInfo.daysLeft <= 2 ? "text-[#f0813d]" : "text-[#f0813d]"
                   }`} />
                   <p className={`text-sm ${
-                    expiryInfo.daysLeft <= 2 ? "text-amber-700" : "text-blue-700"
+                    expiryInfo.daysLeft <= 2 ? "text-[#f0813d]" : "text-[#f0813d]"
                   }`}>
                     Expires in {expiryInfo.daysLeft} day{expiryInfo.daysLeft !== 1 ? 's' : ''}
                     <span className="text-xs ml-1 opacity-75">({expiryInfo.formattedDate})</span>
@@ -346,7 +346,7 @@ export default function ShareReceiptModal({ member, gymData, onClose }) {
                 {/* WhatsApp Share Button */}
                 <button
                   onClick={handleWhatsAppShare}
-                  className="w-full py-3.5 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-xl hover:shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                  className="w-full py-3.5 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white font-semibold rounded-xl hover:shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                 >
                   <MessageCircle className="w-5 h-5" />
                   Share on WhatsApp
@@ -363,7 +363,7 @@ export default function ShareReceiptModal({ member, gymData, onClose }) {
                   </button>
                   <button
                     onClick={() => window.open(receipt.receipt_url, '_blank')}
-                    className="py-3 bg-blue-50 text-blue-700 font-medium rounded-xl hover:bg-blue-100 active:scale-95 transition-all flex items-center justify-center gap-2"
+                    className="py-3 bg-orange-50 text-[#f0813d] font-medium rounded-xl hover:bg-orange-100 active:scale-95 transition-all flex items-center justify-center gap-2"
                   >
                     <ExternalLink className="w-4 h-4" />
                     Preview

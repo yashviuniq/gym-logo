@@ -117,9 +117,9 @@ export default function MessagingDashboard({ gymId }) {
       value: stats.expiry_3_days,
       icon: AlertTriangle,
       color: "red",
-      bgColor: "bg-red-50",
-      textColor: "text-red-600",
-      iconBg: "bg-red-100",
+      bgColor: "bg-orange-50",
+      textColor: "text-[#f0813d]",
+      iconBg: "bg-orange-100",
       filter: "expiry_3_days",
       urgent: true,
     },
@@ -128,10 +128,10 @@ export default function MessagingDashboard({ gymId }) {
       label: "Expiring in 7 Days",
       value: stats.expiry_7_days,
       icon: Clock,
-      color: "amber",
-      bgColor: "bg-amber-50",
-      textColor: "text-amber-600",
-      iconBg: "bg-amber-100",
+      color: "orange",
+      bgColor: "bg-orange-50",
+      textColor: "text-[#f0813d]",
+      iconBg: "bg-orange-100",
       filter: "expiry_7_days",
     },
     {
@@ -151,9 +151,9 @@ export default function MessagingDashboard({ gymId }) {
       value: stats.new_joins_today,
       icon: UserPlus,
       color: "green",
-      bgColor: "bg-green-50",
-      textColor: "text-green-600",
-      iconBg: "bg-green-100",
+      bgColor: "bg-orange-50",
+      textColor: "text-[#f0813d]",
+      iconBg: "bg-orange-100",
       filter: "joined_7_days",
     },
   ];
@@ -163,8 +163,8 @@ export default function MessagingDashboard({ gymId }) {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-            <MessageCircle className="w-4 h-4 text-green-600" />
+          <div className="w-8 h-8 bg-gradient-to-br from-[#f0813d] to-[#9c4400] rounded-lg flex items-center justify-center shadow-[0_8px_18px_rgba(240,129,61,0.22)]">
+            <MessageCircle className="w-4 h-4 text-white" />
           </div>
           <div>
             <h3 className="text-sm font-bold text-gray-900">Quick Messaging</h3>
@@ -173,7 +173,7 @@ export default function MessagingDashboard({ gymId }) {
         </div>
         <button
           onClick={() => router.push("/messaging")}
-          className="text-xs text-blue-600 font-medium flex items-center gap-1 active:text-blue-700"
+          className="text-xs text-[#f0813d] font-medium flex items-center gap-1 active:text-[#f0813d]"
         >
           View all
           <ChevronRight className="w-3 h-3" />
@@ -204,7 +204,7 @@ export default function MessagingDashboard({ gymId }) {
               >
                 {/* Urgent Badge */}
                 {stat.urgent && stat.value > 0 && (
-                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-[#f0813d] rounded-full animate-pulse" />
                 )}
 
                 <div className={`w-8 h-8 ${stat.iconBg} rounded-lg flex items-center justify-center mb-2`}>
@@ -229,7 +229,7 @@ export default function MessagingDashboard({ gymId }) {
       {/* Quick Send Button */}
       <button
         onClick={() => router.push("/messaging")}
-        className="w-full mt-3 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2 active:from-green-700 active:to-emerald-700 transition"
+        className="w-full mt-3 py-3 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2 active:from-[#f0813d] active:to-[#f0813d] transition"
       >
         <MessageCircle className="w-4 h-4" />
         Open Messaging Center

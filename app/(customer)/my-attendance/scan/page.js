@@ -53,10 +53,10 @@ export default function ScanAttendancePage() {
           </div>
 
           {/* Corner Markers */}
-          <div className="absolute top-4 left-4 w-12 h-12 border-l-4 border-t-4 border-green-500 rounded-tl-xl"></div>
-          <div className="absolute top-4 right-4 w-12 h-12 border-r-4 border-t-4 border-green-500 rounded-tr-xl"></div>
-          <div className="absolute bottom-4 left-4 w-12 h-12 border-l-4 border-b-4 border-green-500 rounded-bl-xl"></div>
-          <div className="absolute bottom-4 right-4 w-12 h-12 border-r-4 border-b-4 border-green-500 rounded-br-xl"></div>
+          <div className="absolute top-4 left-4 w-12 h-12 border-l-4 border-t-4 border-[#f0813d] rounded-tl-xl"></div>
+          <div className="absolute top-4 right-4 w-12 h-12 border-r-4 border-t-4 border-[#f0813d] rounded-tr-xl"></div>
+          <div className="absolute bottom-4 left-4 w-12 h-12 border-l-4 border-b-4 border-[#f0813d] rounded-bl-xl"></div>
+          <div className="absolute bottom-4 right-4 w-12 h-12 border-r-4 border-b-4 border-[#f0813d] rounded-br-xl"></div>
         </div>
 
         {/* Instructions */}
@@ -84,14 +84,14 @@ export default function ScanAttendancePage() {
 
         {/* Last Scanned Result */}
         {lastScanned && (
-          <div className="mt-6 bg-green-500 rounded-xl p-4 text-white">
+          <div className="mt-6 bg-[#f0813d] rounded-xl p-4 text-white">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-2xl">
                 ✓
               </div>
               <div className="flex-1">
                 <p className="font-semibold">{lastScanned.name}</p>
-                <p className="text-green-100 text-sm">
+                <p className="text-orange-100 text-sm">
                   {lastScanned.action === "check-in"
                     ? "Checked In"
                     : "Checked Out"}{" "}

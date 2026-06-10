@@ -485,21 +485,21 @@ export default function TrainersPage() {
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-white rounded-xl p-4 shadow-sm">
             <div className="flex items-center gap-2 mb-1">
-              <Users className="w-4 h-4 text-blue-600" />
+              <Users className="w-4 h-4 text-[#f0813d]" />
               <span className="text-xs text-gray-500">Total</span>
             </div>
             <p className="text-xl font-bold text-gray-900">{stats.total}</p>
           </div>
           <div className="bg-white rounded-xl p-4 shadow-sm">
             <div className="flex items-center gap-2 mb-1">
-              <CheckCircle className="w-4 h-4 text-green-600" />
+              <CheckCircle className="w-4 h-4 text-[#f0813d]" />
               <span className="text-xs text-gray-500">Active</span>
             </div>
             <p className="text-xl font-bold text-gray-900">{stats.active}</p>
           </div>
           <div className="bg-white rounded-xl p-4 shadow-sm">
             <div className="flex items-center gap-2 mb-1">
-              <UserCheck className="w-4 h-4 text-purple-600" />
+              <UserCheck className="w-4 h-4 text-[#f0813d]" />
               <span className="text-xs text-gray-500">Assigned</span>
             </div>
             <p className="text-xl font-bold text-gray-900">{stats.totalAssignments}</p>
@@ -515,13 +515,13 @@ export default function TrainersPage() {
               placeholder="Search trainers..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#f0813d]/20 focus:border-transparent"
             />
           </div>
           {canCreateTrainer && (
             <button
               onClick={() => router.push("/settings/trainers/add")}
-              className="px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl flex items-center gap-2 font-medium shadow-md hover:shadow-lg transition-shadow"
+              className="px-4 py-3 bg-gradient-to-r from-[#f0813d] to-[#9c4400] text-white rounded-xl flex items-center gap-2 font-medium shadow-md hover:shadow-lg transition-shadow"
             >
               <Plus className="w-5 h-5" />
               <span className="hidden sm:inline">Add</span>
@@ -540,7 +540,7 @@ export default function TrainersPage() {
                 <button
                   onClick={handleExportOverallTrainerExcel}
                   disabled={exportingOverallTrainerExcel || payrollLoading}
-                  className="px-3 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-sm font-medium flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="px-3 py-2 bg-[#f0813d]/10 text-[#9c4400] border border-[#f0813d]/20 rounded-lg text-sm font-medium flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <Download className="w-4 h-4" />
                   {exportingOverallTrainerExcel ? "Exporting..." : "Overall Excel"}
@@ -551,7 +551,7 @@ export default function TrainersPage() {
                     type="month"
                     value={payrollMonth}
                     onChange={(e) => setPayrollMonth(e.target.value)}
-                    className="pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#f0813d]/20 focus:border-transparent"
                   />
                 </div>
               </div>
@@ -567,30 +567,30 @@ export default function TrainersPage() {
                   {formatHoursLabel(Number(payrollData.summary?.total_worked_hours || 0) * 60)}
                 </p>
               </div>
-              <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3">
-                <div className="flex items-center gap-2 text-emerald-700 text-xs font-medium uppercase tracking-wide">
+              <div className="rounded-xl border border-[#f0813d]/10 bg-[#f0813d]/10 p-3">
+                <div className="flex items-center gap-2 text-[#9c4400] text-xs font-medium uppercase tracking-wide">
                   <IndianRupee className="w-4 h-4" />
                   Salary Earned
                 </div>
-                <p className="mt-2 text-lg font-bold text-emerald-800">
+                <p className="mt-2 text-lg font-bold text-[#9c4400]">
                   ₹{Number(payrollData.summary?.total_salary_earned || 0).toLocaleString("en-IN")}
                 </p>
               </div>
-              <div className="rounded-xl border border-blue-100 bg-blue-50 p-3">
-                <div className="flex items-center gap-2 text-blue-700 text-xs font-medium uppercase tracking-wide">
+              <div className="rounded-xl border border-[#f0813d]/10 bg-[#f0813d]/10 p-3">
+                <div className="flex items-center gap-2 text-[#9c4400] text-xs font-medium uppercase tracking-wide">
                   <Wallet className="w-4 h-4" />
                   PT Charges
                 </div>
-                <p className="mt-2 text-lg font-bold text-blue-800">
+                <p className="mt-2 text-lg font-bold text-[#9c4400]">
                   ₹{Number(payrollData.summary?.total_pt_charges || 0).toLocaleString("en-IN")}
                 </p>
               </div>
-              <div className="rounded-xl border border-purple-100 bg-purple-50 p-3">
-                <div className="flex items-center gap-2 text-purple-700 text-xs font-medium uppercase tracking-wide">
+              <div className="rounded-xl border border-[#f0813d]/10 bg-[#f0813d]/10 p-3">
+                <div className="flex items-center gap-2 text-[#9c4400] text-xs font-medium uppercase tracking-wide">
                   <IndianRupee className="w-4 h-4" />
                   Total Payable
                 </div>
-                <p className="mt-2 text-lg font-bold text-purple-800">
+                <p className="mt-2 text-lg font-bold text-[#9c4400]">
                   ₹{Number(payrollData.summary?.total_payable || 0).toLocaleString("en-IN")}
                 </p>
               </div>
@@ -635,9 +635,9 @@ export default function TrainersPage() {
                           <p>{formatHoursLabel(Number(row.worked_hours || 0) * 60)} / {formatHoursLabel(Number(row.expected_hours || 0) * 60)}</p>
                           <p className="text-xs text-gray-500">{Number(row.working_days || 0).toLocaleString("en-IN")} working days</p>
                         </td>
-                        <td className="px-4 py-3 font-medium text-emerald-700">₹{Number(row.salary_earned || 0).toLocaleString("en-IN")}</td>
-                        <td className="px-4 py-3 font-medium text-blue-700">₹{Number(row.pt_charges || 0).toLocaleString("en-IN")}</td>
-                        <td className="px-4 py-3 font-semibold text-purple-700">₹{Number(row.total_payable || 0).toLocaleString("en-IN")}</td>
+                        <td className="px-4 py-3 font-medium text-[#9c4400]">₹{Number(row.salary_earned || 0).toLocaleString("en-IN")}</td>
+                        <td className="px-4 py-3 font-medium text-[#9c4400]">₹{Number(row.pt_charges || 0).toLocaleString("en-IN")}</td>
+                        <td className="px-4 py-3 font-semibold text-[#9c4400]">₹{Number(row.total_payable || 0).toLocaleString("en-IN")}</td>
                       </tr>
                     ))
                   )}
@@ -665,7 +665,7 @@ export default function TrainersPage() {
         ) : filteredTrainers.length === 0 ? (
           <div className="bg-white rounded-xl p-8 shadow-sm text-center">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Users className="w-8 h-8 text-gray-400" />
+              <Users className="w-8 h-8 text-white" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               {searchQuery ? "No trainers found" : "No trainers yet"}
@@ -678,7 +678,7 @@ export default function TrainersPage() {
             {!searchQuery && canCreateTrainer && (
               <button
                 onClick={() => router.push("/settings/trainers/add")}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-[#9c4400] text-white rounded-lg font-medium"
               >
                 <UserPlus className="w-4 h-4" />
                 Add Trainer
@@ -696,7 +696,7 @@ export default function TrainersPage() {
                   {/* Avatar */}
                   <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg ${
                     trainer.isActive 
-                      ? "bg-gradient-to-br from-blue-500 to-indigo-600" 
+                      ? "bg-gradient-to-br from-[#f0813d] to-[#9c4400]" 
                       : "bg-gray-400"
                   }`}>
                     {trainer.name.charAt(0).toUpperCase()}
@@ -709,7 +709,7 @@ export default function TrainersPage() {
                         {trainer.name}
                       </h3>
                       {trainer.isActive ? (
-                        <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                        <span className="px-2 py-0.5 bg-[#f0813d]/15 text-[#9c4400] text-xs font-medium rounded-full">
                           Active
                         </span>
                       ) : (
@@ -720,12 +720,12 @@ export default function TrainersPage() {
                     </div>
 
                     {trainer.specialization && (
-                      <p className="text-sm text-blue-600 font-medium mb-1">
+                      <p className="text-sm text-[#f0813d] font-medium mb-1">
                         {trainer.specialization}
                       </p>
                     )}
 
-                    <p className="text-xs text-emerald-700 font-medium mb-2">
+                    <p className="text-xs text-[#9c4400] font-medium mb-2">
                       Monthly Salary: ₹{Number(trainer.monthlySalary || 0).toLocaleString("en-IN")}
                     </p>
 
@@ -747,19 +747,19 @@ export default function TrainersPage() {
                     {/* Stats */}
                     <div className="flex gap-4 text-sm">
                       <div className="flex items-center gap-1">
-                        <UserCheck className="w-4 h-4 text-purple-500" />
+                        <UserCheck className="w-4 h-4 text-[#f0813d]" />
                         <span className="text-gray-600">
                           <strong>{trainer.assignedMembers}</strong> members
                         </span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Apple className="w-4 h-4 text-green-500" />
+                        <Apple className="w-4 h-4 text-[#f0813d]" />
                         <span className="text-gray-600">
                           <strong>{trainer.dietPlans}</strong> diets
                         </span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Dumbbell className="w-4 h-4 text-orange-500" />
+                        <Dumbbell className="w-4 h-4 text-[#f0813d]" />
                         <span className="text-gray-600">
                           <strong>{trainer.workoutPlans}</strong> workouts
                         </span>
@@ -783,20 +783,20 @@ export default function TrainersPage() {
                 <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
                   <button
                     onClick={() => router.push(`/settings/trainers/${trainer.id}`)}
-                    className="flex-1 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                    className="flex-1 py-2 text-sm font-medium text-[#f0813d] bg-[#f0813d]/10 rounded-lg hover:bg-[#f0813d]/15 transition-colors"
                   >
                     View Details
                   </button>
                   <button
                     onClick={() => router.push(`/settings/trainers/${trainer.id}/assign`)}
-                    className="flex-1 py-2 text-sm font-medium text-purple-600 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors"
+                    className="flex-1 py-2 text-sm font-medium text-[#f0813d] bg-[#f0813d]/10 rounded-lg hover:bg-[#f0813d]/15 transition-colors"
                   >
                     Assign Members
                   </button>
                   {canCreateTrainer && (
                     <button
                       onClick={() => setDeleteConfirm(trainer)}
-                      className="py-2 px-3 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                      className="py-2 px-3 text-sm font-medium text-[#f0813d] bg-[#f0813d]/10 rounded-lg hover:bg-[#f0813d]/15 transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -812,8 +812,8 @@ export default function TrainersPage() {
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
               <div className="flex items-center gap-3 mb-4">
-                <div className="p-3 bg-red-100 rounded-full">
-                  <AlertCircle className="w-6 h-6 text-red-600" />
+                <div className="p-3 bg-[#f0813d]/15 rounded-full">
+                  <AlertCircle className="w-6 h-6 text-[#f0813d]" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-900">Delete Trainer</h3>
@@ -824,7 +824,7 @@ export default function TrainersPage() {
               <p className="text-gray-600 mb-6">
                 Are you sure you want to remove <strong>{deleteConfirm.name}</strong> from your gym?
                 {deleteConfirm.assignedMembers > 0 && (
-                  <span className="block mt-2 text-amber-600 text-sm">
+                  <span className="block mt-2 text-[#f0813d] text-sm">
                     ⚠️ This trainer has {deleteConfirm.assignedMembers} assigned member(s).
                   </span>
                 )}
@@ -840,7 +840,7 @@ export default function TrainersPage() {
                 </button>
                 <button
                   onClick={() => handleDeleteTrainer(deleteConfirm)}
-                  className="flex-1 py-2 px-4 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 disabled:opacity-50"
+                  className="flex-1 py-2 px-4 bg-[#9c4400] text-white rounded-xl font-medium hover:bg-[#9c4400] disabled:opacity-50"
                   disabled={deleting}
                 >
                   {deleting ? "Deleting..." : "Delete"}

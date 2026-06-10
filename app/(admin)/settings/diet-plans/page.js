@@ -26,10 +26,13 @@ import {
   AlertCircle,
   CheckCircle,
   Search,
-  ArrowLeft
+  ArrowLeft,
+  Image as ImageIcon,
+  Upload
 } from "lucide-react";
 
 const DAY_NAMES = ["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const DIET_HERO_IMAGE = "https://inkbd.com/wp-content/uploads/2024/08/Quick-and-Tasty-Mediterranean-Diet-Recipes-for-Weight-Loss-1.jpg";
 const MEAL_TYPES = [
   { value: "early_morning", label: "Early Morning", icon: <Clock className="w-4 h-4" /> },
   { value: "breakfast", label: "Breakfast", icon: <ChefHat className="w-4 h-4" /> },
@@ -48,7 +51,7 @@ export default function DietPlansSettingsPage() {
     <Suspense fallback={
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom flex flex-col items-center justify-center">
         <div className="relative">
-          <div className="w-14 h-14 border-4 border-blue-500/20 border-t-blue-600 rounded-full animate-spin"></div>
+          <div className="w-14 h-14 border-4 border-[#f0813d]/20 border-t-[#9c4400] rounded-full animate-spin"></div>
         </div>
         <p className="mt-6 text-gray-600 font-medium text-sm">Loading...</p>
       </div>
@@ -187,13 +190,18 @@ function DietPlansContent() {
 
   const activeTemplates = dietPlans.filter(p => p.is_template).length;
   const regularPlans = dietPlans.filter(p => !p.is_template).length;
+  const todayPlans = dietPlans.filter(p => {
+    const today = new Date().toDateString();
+    const createdDate = new Date(p.created_at).toDateString();
+    return createdDate === today;
+  }).length;
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom flex flex-col items-center justify-center">
         <div className="relative">
-          <div className="w-14 h-14 border-4 border-blue-500/20 border-t-blue-600 rounded-full animate-spin"></div>
-          <div className="absolute inset-0 w-14 h-14 border-4 border-transparent border-t-blue-500 rounded-full animate-spin animation-delay-200"></div>
+          <div className="w-14 h-14 border-4 border-[#f0813d]/20 border-t-[#9c4400] rounded-full animate-spin"></div>
+          <div className="absolute inset-0 w-14 h-14 border-4 border-transparent border-t-[#f0813d] rounded-full animate-spin animation-delay-200"></div>
         </div>
         <p className="mt-6 text-gray-600 font-medium text-sm">Loading diet plans...</p>
       </div>
@@ -206,7 +214,7 @@ function DietPlansContent() {
         <Header title="Diet Plans" showBack={false} />
         <main className="px-4 py-4">
           <div className="text-center py-12">
-            <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <div className="w-20 h-20 bg-gradient-to-br from-[#f0813d] to-[#9c4400] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
               <Apple className="w-10 h-10 text-white" />
             </div>
             <h2 className="text-lg font-bold text-gray-900 mb-2">No Gym Selected</h2>
@@ -215,7 +223,7 @@ function DietPlansContent() {
             </p>
             <button
               onClick={() => router.push("/admin/dashboard")}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold text-sm active:scale-95 transition-transform"
+              className="px-6 py-3 bg-gradient-to-r from-[#f0813d] to-[#9c4400] text-white rounded-xl font-semibold text-sm active:scale-95 transition-transform"
               style={{ minHeight: '44px' }}
             >
               Go to Dashboard
@@ -241,6 +249,49 @@ function DietPlansContent() {
           Back to Settings
         </button>
 
+        <section className="relative mx-1 overflow-hidden rounded-2xl border border-[#f0813d]/20 bg-[#1a1c1c] shadow-xl">
+          <img
+            src={DIET_HERO_IMAGE}
+            alt="Mediterranean diet meal inspiration"
+            className="absolute inset-0 h-full w-full object-cover opacity-55"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/15" />
+          <div className="relative p-5">
+            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/15 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
+              <ChefHat className="h-3.5 w-3.5" />
+              Diet command center
+            </div>
+            <h2 className="max-w-[16rem] text-2xl font-black leading-tight text-white">
+              Build cleaner, richer meal plans.
+            </h2>
+            <p className="mt-2 max-w-[18rem] text-sm font-medium text-white/80">
+              Templates, weekly meals, food items, timings, and calories in one focused workspace.
+            </p>
+            <div className="mt-5 grid grid-cols-3 gap-2">
+              {[
+                { label: "Plans", value: dietPlans.length },
+                { label: "Templates", value: activeTemplates },
+                { label: "Today", value: todayPlans },
+              ].map((stat) => (
+                <div key={stat.label} className="rounded-xl border border-white/15 bg-white/15 p-3 backdrop-blur">
+                  <p className="text-lg font-black text-white">{stat.value}</p>
+                  <p className="text-[11px] font-semibold text-white/75">{stat.label}</p>
+                </div>
+              ))}
+            </div>
+            {!isViewOnly && (
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-black text-[#1a1c1c] shadow-lg active:scale-95"
+                style={{ minHeight: '44px' }}
+              >
+                <Plus className="h-5 w-5" />
+                Create Diet Plan
+              </button>
+            )}
+          </div>
+        </section>
+
         {/* Stats Cards - Mobile Optimized */}
         <div className="grid grid-cols-2 gap-2 px-1">
           <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
@@ -249,8 +300,8 @@ function DietPlansContent() {
                 <p className="text-xs text-gray-500 font-medium">Total Plans</p>
                 <p className="text-xl font-bold text-gray-900 mt-0.5">{dietPlans.length}</p>
               </div>
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg flex items-center justify-center">
-                <Apple className="w-5 h-5 text-blue-600" />
+              <div className="w-10 h-10 bg-gradient-to-br from-[#f0813d]/10 to-[#f0813d]/15 rounded-lg flex items-center justify-center">
+                <Apple className="w-5 h-5 text-white" />
               </div>
             </div>
           </div>
@@ -259,10 +310,10 @@ function DietPlansContent() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-medium">Templates</p>
-                <p className="text-xl font-bold text-emerald-600 mt-0.5">{activeTemplates}</p>
+                <p className="text-xl font-bold text-[#f0813d] mt-0.5">{activeTemplates}</p>
               </div>
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-lg flex items-center justify-center">
-                <Tag className="w-5 h-5 text-emerald-600" />
+              <div className="w-10 h-10 bg-gradient-to-br from-[#f0813d]/10 to-[#f0813d]/15 rounded-lg flex items-center justify-center">
+                <Tag className="w-5 h-5 text-white" />
               </div>
             </div>
           </div>
@@ -271,10 +322,10 @@ function DietPlansContent() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-medium">Regular Plans</p>
-                <p className="text-xl font-bold text-indigo-600 mt-0.5">{regularPlans}</p>
+                <p className="text-xl font-bold text-[#f0813d] mt-0.5">{regularPlans}</p>
               </div>
-              <div className="w-10 h-10 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg flex items-center justify-center">
-                <Users className="w-5 h-5 text-indigo-600" />
+              <div className="w-10 h-10 bg-gradient-to-br from-[#f0813d]/10 to-[#f0813d]/15 rounded-lg flex items-center justify-center">
+                <Users className="w-5 h-5 text-white" />
               </div>
             </div>
           </div>
@@ -283,16 +334,12 @@ function DietPlansContent() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-medium">Today</p>
-                <p className="text-xl font-bold text-amber-600 mt-0.5">
-                  {dietPlans.filter(p => {
-                    const today = new Date().toDateString();
-                    const createdDate = new Date(p.created_at).toDateString();
-                    return createdDate === today;
-                  }).length}
+                <p className="text-xl font-bold text-[#f0813d] mt-0.5">
+                  {todayPlans}
                 </p>
               </div>
-              <div className="w-10 h-10 bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg flex items-center justify-center">
-                <Calendar className="w-5 h-5 text-amber-600" />
+              <div className="w-10 h-10 bg-gradient-to-br from-[#f0813d]/10 to-[#f0813d]/15 rounded-lg flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-white" />
               </div>
             </div>
           </div>
@@ -308,23 +355,18 @@ function DietPlansContent() {
             <input
               type="text"
               placeholder="Search diet plans..."
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm placeholder:text-gray-400"
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all text-sm placeholder:text-gray-400"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
 
-          {/* Add Plan Button */}
-          {!isViewOnly && (
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2"
-              style={{ minHeight: '44px' }}
-            >
-              <Plus className="w-5 h-5" />
-              Add New Diet Plan
-            </button>
-          )}
+          <div className="flex items-center gap-2 rounded-xl border border-[#f0813d]/15 bg-[#f0813d]/10 p-3">
+            <ImageIcon className="h-4 w-4 text-[#9c4400]" />
+            <p className="text-xs font-semibold text-[#9c4400]">
+              New plans open with a Mediterranean food reference image and optional local image preview.
+            </p>
+          </div>
         </div>
 
         {/* Filter Tabs */}
@@ -344,7 +386,7 @@ function DietPlansContent() {
                 onClick={() => setFilterType(filter.id)}
                 className={`py-2.5 rounded-lg text-xs font-medium transition-all duration-200 flex flex-col items-center justify-center ${
                   filterType === filter.id
-                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
+                    ? "bg-gradient-to-r from-[#f0813d] to-[#9c4400] text-white shadow-md"
                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
                 style={{ minHeight: '64px' }}
@@ -374,7 +416,7 @@ function DietPlansContent() {
           {filteredPlans.length === 0 ? (
             <div className="bg-white rounded-xl p-6 text-center border border-gray-200 shadow-sm mx-1">
               <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Apple className="w-8 h-8 text-gray-400" />
+                <Apple className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-base font-semibold text-gray-900 mb-2">No diet plans yet</h3>
               <p className="text-gray-500 text-sm mb-4">
@@ -383,7 +425,7 @@ function DietPlansContent() {
               {!isViewOnly && (
                 <button
                   onClick={() => setShowAddModal(true)}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 mx-auto"
+                  className="px-6 py-3 bg-gradient-to-r from-[#f0813d] to-[#9c4400] text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 mx-auto"
                   style={{ minHeight: '44px' }}
                 >
                   <Plus className="w-5 h-5" />
@@ -402,8 +444,8 @@ function DietPlansContent() {
                   <div className="flex-shrink-0">
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-sm ${
                       plan.is_template 
-                        ? "bg-gradient-to-br from-emerald-600 to-emerald-500" 
-                        : "bg-gradient-to-br from-blue-600 to-indigo-600"
+                        ? "bg-gradient-to-br from-[#f0813d] to-[#9c4400]" 
+                        : "bg-gradient-to-br from-[#f0813d] to-[#9c4400]"
                     }`}>
                       <Apple className="w-6 h-6" />
                     </div>
@@ -418,7 +460,7 @@ function DietPlansContent() {
                             {plan.title}
                           </h3>
                           {plan.is_template && (
-                            <div className="px-2 py-1 rounded-lg border bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200 text-emerald-700 flex items-center gap-1.5">
+                            <div className="px-2 py-1 rounded-lg border bg-gradient-to-br from-[#f0813d]/10 to-[#f0813d]/15 border-[#f0813d]/20 text-[#9c4400] flex items-center gap-1.5">
                               <Tag className="w-3.5 h-3.5" />
                               <span className="text-xs font-medium">Template</span>
                             </div>
@@ -440,13 +482,13 @@ function DietPlansContent() {
                         <div className="flex items-center gap-2">
                           <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
                             plan.creator.role === 'trainer'
-                              ? 'bg-purple-50'
-                              : 'bg-indigo-50'
+                              ? 'bg-[#f0813d]/10'
+                              : 'bg-[#f0813d]/10'
                           }`}>
                             <User className={`w-3.5 h-3.5 ${
                               plan.creator.role === 'trainer'
-                                ? 'text-purple-600'
-                                : 'text-indigo-600'
+                                ? 'text-[#f0813d]'
+                                : 'text-[#f0813d]'
                             }`} />
                           </div>
                           <div>
@@ -459,8 +501,8 @@ function DietPlansContent() {
                       )}
 
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
-                          <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                        <div className="w-8 h-8 bg-[#f0813d]/10 rounded-lg flex items-center justify-center">
+                          <Calendar className="w-3.5 h-3.5 text-white" />
                         </div>
                         <div>
                           <p className="text-xs text-gray-500">Created</p>
@@ -476,7 +518,7 @@ function DietPlansContent() {
 
                       <div className="flex items-center gap-2">
                         <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center">
-                          <Clock className="w-3.5 h-3.5 text-gray-600" />
+                          <Clock className="w-3.5 h-3.5 text-white" />
                         </div>
                         <div>
                           <p className="text-xs text-gray-500">Last Updated</p>
@@ -502,7 +544,7 @@ function DietPlansContent() {
                             setEditingPlan(plan);
                             setShowAddModal(true);
                           }}
-                          className="flex-shrink-0 px-3 py-2 bg-blue-50 text-blue-700 cursor-pointer text-xs font-medium rounded-lg active:bg-blue-100 transition-all flex items-center gap-2"
+                          className="flex-shrink-0 px-3 py-2 bg-[#f0813d]/10 text-[#9c4400] cursor-pointer text-xs font-medium rounded-lg active:bg-[#f0813d]/15 transition-all flex items-center gap-2"
                           style={{ minHeight: '36px' }}
                         >
                           <Edit2 className="w-3.5 h-3.5" />
@@ -516,7 +558,7 @@ function DietPlansContent() {
                             e.stopPropagation();
                             handleDelete(plan.id);
                           }}
-                          className="flex-shrink-0 px-3 py-2 bg-red-50 cursor-pointer text-red-700 text-xs font-medium rounded-lg active:bg-red-100 transition-all flex items-center gap-2"
+                          className="flex-shrink-0 px-3 py-2 bg-[#f0813d]/10 cursor-pointer text-[#9c4400] text-xs font-medium rounded-lg active:bg-[#f0813d]/15 transition-all flex items-center gap-2"
                           style={{ minHeight: '36px' }}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -564,6 +606,7 @@ function DietPlansContent() {
 function DietPlanModal({ plan, gymId, onClose, onSave }) {
   const { showSuccess, showError } = useToast();
   const [loading, setLoading] = useState(false);
+  const [coverPreview, setCoverPreview] = useState(DIET_HERO_IMAGE);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -850,25 +893,43 @@ function DietPlanModal({ plan, gymId, onClose, onSave }) {
     });
   };
 
+  const handleCoverUpload = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setCoverPreview(URL.createObjectURL(file));
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 mb-20">
       <div className="bg-white w-full sm:max-w-2xl rounded-t-2xl sm:rounded-2xl max-h-[85vh] overflow-hidden shadow-2xl animate-slide-up">
         {/* Modal Header */}
-        <div className="p-4 border-b border-gray-200 sticky top-0 bg-white z-10">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-lg font-bold text-gray-900">
+        <div className="border-b border-gray-200 sticky top-0 bg-white z-10">
+          <div className="relative h-36 overflow-hidden">
+            <img
+              src={coverPreview}
+              alt="Diet plan cover preview"
+              className="h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-transparent" />
+            <label className="absolute right-3 top-3 flex cursor-pointer items-center gap-2 rounded-xl border border-white/25 bg-white/20 px-3 py-2 text-xs font-bold text-white backdrop-blur active:scale-95">
+              <Upload className="h-3.5 w-3.5" />
+              Upload
+              <input type="file" accept="image/*" onChange={handleCoverUpload} className="hidden" />
+            </label>
+            <div className="absolute bottom-3 left-4 right-14">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-white/70">Meal plan builder</p>
+              <h3 className="text-lg font-bold text-white">
                 {plan ? "Edit Diet Plan" : "Create New Diet Plan"}
               </h3>
-              <p className="text-gray-500 text-xs mt-0.5">
+              <p className="text-white/75 text-xs mt-0.5">
                 {plan ? "Update your diet plan details" : "Add a new diet plan for your gym"}
               </p>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors active:scale-95"
+              className="absolute bottom-3 right-3 p-2 rounded-lg bg-white/15 hover:bg-white/25 transition-colors active:scale-95"
             >
-              <X className="w-5 h-5 text-gray-500" />
+              <X className="w-5 h-5 text-white" />
             </button>
           </div>
         </div>
@@ -885,7 +946,7 @@ function DietPlanModal({ plan, gymId, onClose, onSave }) {
                 </label>
                 <input
                   type="text"
-                  className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
+                  className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all text-sm"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   required
@@ -898,7 +959,7 @@ function DietPlanModal({ plan, gymId, onClose, onSave }) {
                   Description (Optional)
                 </label>
                 <textarea
-                  className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none text-sm"
+                  className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all resize-none text-sm"
                   rows={2}
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -915,7 +976,7 @@ function DietPlanModal({ plan, gymId, onClose, onSave }) {
                   type="button"
                   onClick={() => setFormData({ ...formData, is_template: !formData.is_template })}
                   className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                    formData.is_template ? "bg-emerald-500" : "bg-gray-300"
+                    formData.is_template ? "bg-[#f0813d]" : "bg-gray-300"
                   }`}
                 >
                   <span
@@ -935,16 +996,16 @@ function DietPlanModal({ plan, gymId, onClose, onSave }) {
                   <button
                     type="button"
                     onClick={() => setActiveDay(prev => Math.max(1, prev - 1))}
-                    className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center active:scale-95 transition-transform"
+                    className=" icon-badge w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center active:scale-95 transition-transform"
                   >
-                    <ChevronRight className="w-3.5 h-3.5 text-gray-600 rotate-180" />
+                    <ChevronRight className="w-3.5 h-3.5 text-white rotate-180" />
                   </button>
                   <button
                     type="button"
                     onClick={() => setActiveDay(prev => Math.min(7, prev + 1))}
-                    className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center active:scale-95 transition-transform"
+                    className=" icon-badge w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center active:scale-95 transition-transform"
                   >
-                    <ChevronRight className="w-3.5 h-3.5 text-gray-600" />
+                    <ChevronRight className="w-3.5 h-3.5 text-white" />
                   </button>
                 </div>
               </div>
@@ -957,7 +1018,7 @@ function DietPlanModal({ plan, gymId, onClose, onSave }) {
                     onClick={() => setActiveDay(dayNum)}
                     className={`flex-shrink-0 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 flex flex-col items-center justify-center min-w-[60px] ${
                       activeDay === dayNum
-                        ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
+                        ? "bg-gradient-to-r from-[#f0813d] to-[#9c4400] text-white shadow-md"
                         : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }`}
                     style={{ minHeight: '56px' }}
@@ -980,7 +1041,7 @@ function DietPlanModal({ plan, gymId, onClose, onSave }) {
                 <button
                   type="button"
                   onClick={() => addMealToDay(activeDay)}
-                  className="px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-xs font-medium active:scale-95 transition-transform flex items-center gap-1"
+                  className="px-3 py-1.5 bg-gradient-to-r from-[#f0813d] to-[#9c4400] text-white rounded-lg text-xs font-medium active:scale-95 transition-transform flex items-center gap-1"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   Add Meal
@@ -999,7 +1060,7 @@ function DietPlanModal({ plan, gymId, onClose, onSave }) {
                                 Meal Type *
                               </label>
                               <select
-                                className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all"
                                 value={meal.meal_type}
                                 onChange={(e) => updateMeal(activeDay, mealIndex, "meal_type", e.target.value)}
                                 required
@@ -1016,7 +1077,7 @@ function DietPlanModal({ plan, gymId, onClose, onSave }) {
                               </label>
                               <input
                                 type="time"
-                                className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all"
                                 value={meal.meal_time || ""}
                                 onChange={(e) => updateMeal(activeDay, mealIndex, "meal_time", e.target.value)}
                               />
@@ -1026,7 +1087,7 @@ function DietPlanModal({ plan, gymId, onClose, onSave }) {
                         <button
                           type="button"
                           onClick={() => removeMeal(activeDay, mealIndex)}
-                          className="ml-2 p-1.5 text-red-600 hover:bg-red-50 rounded-lg active:scale-95 transition-transform"
+                          className="ml-2 p-1.5 text-[#f0813d] hover:bg-[#f0813d]/10 rounded-lg active:scale-95 transition-transform"
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -1037,7 +1098,7 @@ function DietPlanModal({ plan, gymId, onClose, onSave }) {
                           Instructions (Optional)
                         </label>
                         <textarea
-                          className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none"
+                          className="w-full px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all resize-none"
                           rows={2}
                           value={meal.instructions || ""}
                           onChange={(e) => updateMeal(activeDay, mealIndex, "instructions", e.target.value)}
@@ -1051,7 +1112,7 @@ function DietPlanModal({ plan, gymId, onClose, onSave }) {
                           <button
                             type="button"
                             onClick={() => addItemToMeal(activeDay, mealIndex)}
-                            className="text-xs text-blue-600 hover:text-blue-700 font-medium active:scale-95 transition-transform"
+                            className="text-xs text-[#f0813d] hover:text-[#9c4400] font-medium active:scale-95 transition-transform"
                           >
                             + Add Item
                           </button>
@@ -1063,7 +1124,7 @@ function DietPlanModal({ plan, gymId, onClose, onSave }) {
                                 <div className="grid grid-cols-2 gap-2 mb-2">
                                   <input
                                     type="text"
-                                    className="px-2 py-1 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                    className="px-2 py-1 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all"
                                     placeholder="Food name *"
                                     value={item.food_name || ""}
                                     onChange={(e) => updateMealItem(activeDay, mealIndex, itemIndex, "food_name", e.target.value)}
@@ -1071,7 +1132,7 @@ function DietPlanModal({ plan, gymId, onClose, onSave }) {
                                   />
                                   <input
                                     type="text"
-                                    className="px-2 py-1 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                    className="px-2 py-1 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all"
                                     placeholder="Quantity"
                                     value={item.quantity || ""}
                                     onChange={(e) => updateMealItem(activeDay, mealIndex, itemIndex, "quantity", e.target.value)}
@@ -1080,7 +1141,7 @@ function DietPlanModal({ plan, gymId, onClose, onSave }) {
                                 <div className="grid grid-cols-2 gap-2">
                                   <input
                                     type="number"
-                                    className="px-2 py-1 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                    className="px-2 py-1 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all"
                                     placeholder="Calories"
                                     value={item.calories || ""}
                                     onChange={(e) => updateMealItem(activeDay, mealIndex, itemIndex, "calories", e.target.value)}
@@ -1088,7 +1149,7 @@ function DietPlanModal({ plan, gymId, onClose, onSave }) {
                                   <div className="flex gap-1">
                                     <input
                                       type="text"
-                                      className="flex-1 px-2 py-1 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                      className="flex-1 px-2 py-1 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all"
                                       placeholder="Notes"
                                       value={item.notes || ""}
                                       onChange={(e) => updateMealItem(activeDay, mealIndex, itemIndex, "notes", e.target.value)}
@@ -1096,7 +1157,7 @@ function DietPlanModal({ plan, gymId, onClose, onSave }) {
                                     <button
                                       type="button"
                                       onClick={() => removeMealItem(activeDay, mealIndex, itemIndex)}
-                                      className="px-2 py-1 text-red-600 hover:bg-red-50 rounded text-xs active:scale-95 transition-transform"
+                                      className="px-2 py-1 text-[#f0813d] hover:bg-[#f0813d]/10 rounded text-xs active:scale-95 transition-transform"
                                     >
                                       ×
                                     </button>
@@ -1128,7 +1189,7 @@ function DietPlanModal({ plan, gymId, onClose, onSave }) {
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 py-3 bg-gradient-to-r from-[#f0813d] to-[#9c4400] text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ minHeight: '44px' }}
             >
               {loading ? (

@@ -611,17 +611,17 @@ export default function MemberDetailPage() {
     switch (status) {
       case "active":
         return {
-          color: "bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200",
-          text: "text-emerald-700",
-          dot: "bg-emerald-500",
+          color: "bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200",
+          text: "text-[#f0813d]",
+          dot: "bg-[#f0813d]",
           label: "Active",
           icon: <CheckCircle className="w-3.5 h-3.5" />
         };
       case "expired":
         return {
-          color: "bg-gradient-to-br from-red-50 to-red-100 border-red-200",
-          text: "text-red-700",
-          dot: "bg-red-500",
+          color: "bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200",
+          text: "text-[#f0813d]",
+          dot: "bg-[#f0813d]",
           label: "Expired",
           icon: <Clock className="w-3.5 h-3.5" />
         };
@@ -803,8 +803,8 @@ export default function MemberDetailPage() {
         <main className="px-3 py-3">
           <div className="flex items-center justify-center py-12">
             <div className="relative">
-              <div className="w-14 h-14 border-4 border-blue-500/20 border-t-blue-600 rounded-full animate-spin"></div>
-              <div className="absolute inset-0 w-14 h-14 border-4 border-transparent border-t-blue-500 rounded-full animate-spin animation-delay-200"></div>
+              <div className="w-14 h-14 border-4 border-[#f0813d]/20 border-t-[#f0813d] rounded-full animate-spin"></div>
+              <div className="absolute inset-0 w-14 h-14 border-4 border-transparent border-t-[#f0813d] rounded-full animate-spin animation-delay-200"></div>
             </div>
           </div>
         </main>
@@ -819,7 +819,7 @@ export default function MemberDetailPage() {
         <main className="px-3 py-3">
           <div className="text-center py-12">
             <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
-              <Users className="w-10 h-10 text-gray-400" />
+              <Users className="w-10 h-10 text-white" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Member Not Found</h3>
             <p className="text-gray-500 text-center mb-6 max-w-sm mx-auto">
@@ -827,7 +827,7 @@ export default function MemberDetailPage() {
             </p>
             <button
               onClick={() => router.push("/members")}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg transition-all duration-300 flex items-center gap-2 mx-auto"
+              className="px-6 py-3 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white font-medium rounded-lg hover:shadow-lg transition-all duration-300 flex items-center gap-2 mx-auto"
             >
               <ChevronLeft className="w-4 h-4" />
               Back to Members
@@ -895,7 +895,7 @@ export default function MemberDetailPage() {
               <p className="text-xs text-gray-500">This Month</p>
             </div>
             <div className="text-center">
-              <p className={`text-lg font-bold ${member.dueAmount > 0 ? "text-red-600" : "text-emerald-600"}`}>
+              <p className={`text-lg font-bold ${member.dueAmount > 0 ? "text-[#f0813d]" : "text-[#f0813d]"}`}>
                 ₹{member.dueAmount}
               </p>
               <p className="text-xs text-gray-500">Due Amount</p>
@@ -904,12 +904,12 @@ export default function MemberDetailPage() {
 
           {member.adminNote && (
             <div className="mt-4 pt-4 border-t border-gray-100">
-              <div className="flex items-start gap-3 rounded-xl bg-blue-50 border border-blue-100 p-3">
-                <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
-                  <FileText className="w-4 h-4 text-blue-600" />
+              <div className="flex items-start gap-3 rounded-xl bg-orange-50 border border-orange-100 p-3">
+                <div className="w-9 h-9 rounded-lg bg-orange-100 flex items-center justify-center shrink-0">
+                  <FileText className="w-4 h-4 text-white" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-blue-700 mb-1">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[#f0813d] mb-1">
                     Admin Note
                   </p>
                   <p className="text-sm text-gray-700 leading-6 whitespace-pre-wrap wrap-break-word">
@@ -927,9 +927,9 @@ export default function MemberDetailPage() {
 
         {/* Due Amount Alert */}
         {assignedTrainer?.pendingAmount > 0 && (
-          <div className="bg-gradient-to-r from-violet-50 to-indigo-50 border border-violet-200 rounded-xl p-4">
+          <div className="bg-gradient-to-r from-orange-50 to-orange-50 border border-orange-200 rounded-xl p-4">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-lg flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#f0813d] to-[#f0813d] rounded-lg flex items-center justify-center shrink-0">
                 <Users className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1 min-w-0">
@@ -939,15 +939,15 @@ export default function MemberDetailPage() {
                 <p className="text-sm text-gray-600 mb-3">
                   ₹{Number(assignedTrainer.pendingAmount || 0).toLocaleString("en-IN")} left for trainer installment collection.
                 </p>
-                <div className="bg-white rounded-lg p-4 border border-violet-200">
+                <div className="bg-white rounded-lg p-4 border border-orange-200">
                   <div className="grid grid-cols-3 gap-2 text-center">
                     <div>
                       <p className="text-[11px] text-gray-500 uppercase tracking-wide">Paid</p>
-                      <p className="mt-1 text-sm font-bold text-green-700">₹{Number(assignedTrainer.totalPaidAmount || 0).toLocaleString("en-IN")}</p>
+                      <p className="mt-1 text-sm font-bold text-[#f0813d]">₹{Number(assignedTrainer.totalPaidAmount || 0).toLocaleString("en-IN")}</p>
                     </div>
                     <div>
                       <p className="text-[11px] text-gray-500 uppercase tracking-wide">Due</p>
-                      <p className="mt-1 text-sm font-bold text-violet-700">₹{Number(assignedTrainer.pendingAmount || 0).toLocaleString("en-IN")}</p>
+                      <p className="mt-1 text-sm font-bold text-[#f0813d]">₹{Number(assignedTrainer.pendingAmount || 0).toLocaleString("en-IN")}</p>
                     </div>
                     <div>
                       <p className="text-[11px] text-gray-500 uppercase tracking-wide">Plan</p>
@@ -955,12 +955,12 @@ export default function MemberDetailPage() {
                     </div>
                   </div>
                   {assignedTrainer.nextPaymentDate && (
-                    <div className="mt-3 p-3 bg-gradient-to-r from-violet-50 to-indigo-50 border border-violet-200 rounded-lg">
+                    <div className="mt-3 p-3 bg-gradient-to-r from-orange-50 to-orange-50 border border-orange-200 rounded-lg">
                       <div className="flex items-center gap-2 mb-1">
-                        <Calendar className="w-4 h-4 text-violet-600" />
-                        <p className="text-sm font-semibold text-violet-800">Next Trainer Due</p>
+                        <Calendar className="w-4 h-4 text-[#f0813d]" />
+                        <p className="text-sm font-semibold text-orange-800">Next Trainer Due</p>
                       </div>
-                      <p className="text-sm text-violet-700">
+                      <p className="text-sm text-[#f0813d]">
                         Collect on <span className="font-bold">{new Date(`${assignedTrainer.nextPaymentDate}T00:00:00`).toLocaleDateString("en-IN", {
                           day: "2-digit",
                           month: "short",
@@ -971,7 +971,7 @@ export default function MemberDetailPage() {
                   )}
                   <button
                     onClick={() => setShowAssignTrainerModal(true)}
-                    className="w-full mt-3 px-4 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all duration-300"
+                    className="w-full mt-3 px-4 py-3 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white font-semibold rounded-lg hover:shadow-lg transition-all duration-300"
                   >
                     Collect Trainer Installment
                   </button>
@@ -982,9 +982,9 @@ export default function MemberDetailPage() {
         )}
 
         {member.dueAmount > 0 && (
-          <div className="bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-xl p-4">
+          <div className="bg-gradient-to-r from-orange-50 to-orange-50 border border-orange-200 rounded-xl p-4">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-pink-500 rounded-lg flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#f0813d] to-[#f0813d] rounded-lg flex items-center justify-center flex-shrink-0">
                 <DollarSign className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1">
@@ -994,21 +994,21 @@ export default function MemberDetailPage() {
                 <p className="text-sm text-gray-600 mb-3">
                   This member has an outstanding balance that needs to be collected.
                 </p>
-                <div className="bg-white rounded-lg p-4 border border-red-200">
+                <div className="bg-white rounded-lg p-4 border border-orange-200">
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <p className="text-sm text-gray-500">Total Due Amount</p>
-                      <p className="text-2xl font-bold text-red-600">₹{member.dueAmount}</p>
+                      <p className="text-2xl font-bold text-[#f0813d]">₹{member.dueAmount}</p>
                     </div>
                   </div>
                   {/* Next Payment Date Display */}
                   {nextPaymentInfo && nextPaymentInfo.nextPaymentDate && (
-                    <div className="mb-3 p-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg">
+                    <div className="mb-3 p-3 bg-gradient-to-r from-orange-50 to-orange-50 border border-orange-200 rounded-lg">
                       <div className="flex items-center gap-2 mb-1">
-                        <Calendar className="w-4 h-4 text-amber-600" />
-                        <p className="text-sm font-semibold text-amber-800">Next Payment Due</p>
+                        <Calendar className="w-4 h-4 text-[#f0813d]" />
+                        <p className="text-sm font-semibold text-orange-800">Next Payment Due</p>
                       </div>
-                      <p className="text-sm text-amber-700">
+                      <p className="text-sm text-[#f0813d]">
                         ₹{nextPaymentInfo.remainingAmount} to be paid on{" "}
                         <span className="font-bold">
                           {new Date(nextPaymentInfo.nextPaymentDate).toLocaleDateString("en-IN", {
@@ -1022,7 +1022,7 @@ export default function MemberDetailPage() {
                   )}
                   <button
                     onClick={() => router.push(`/members/${member.id}/payment`)}
-                    className="w-full px-4 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white font-semibold rounded-lg hover:shadow-lg transition-all duration-300"
+                    className="w-full px-4 py-3 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white font-semibold rounded-lg hover:shadow-lg transition-all duration-300"
                   >
                     Collect Payment
                   </button>
@@ -1039,8 +1039,8 @@ export default function MemberDetailPage() {
               onClick={() => router.push(`/members/${member.id}/credentials`)}
               className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm flex flex-col items-center gap-1 hover:shadow-md transition-all duration-200 active:scale-95"
             >
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg flex items-center justify-center">
-                <Key className="w-5 h-5 text-blue-600" />
+              <div className="w-10 h-10 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg flex items-center justify-center">
+                <Key className="w-5 h-5 text-white" />
               </div>
               <span className="text-xs font-medium text-gray-600">Credentials</span>
             </button>
@@ -1050,8 +1050,8 @@ export default function MemberDetailPage() {
             href={`tel:${member.phone}`}
             className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm flex flex-col items-center gap-1 hover:shadow-md transition-all duration-200 active:scale-95"
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-green-50 to-green-100 rounded-lg flex items-center justify-center">
-              <PhoneCall className="w-5 h-5 text-green-600" />
+            <div className="w-10 h-10 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg flex items-center justify-center">
+              <PhoneCall className="w-5 h-5 text-white" />
             </div>
             <span className="text-xs font-medium text-gray-600">Call</span>
           </a>
@@ -1062,8 +1062,8 @@ export default function MemberDetailPage() {
             rel="noopener noreferrer"
             className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm flex flex-col items-center gap-1 hover:shadow-md transition-all duration-200 active:scale-95"
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-lg flex items-center justify-center">
-              <MessageCircle className="w-5 h-5 text-emerald-600" />
+            <div className="w-10 h-10 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg flex items-center justify-center">
+              <MessageCircle className="w-5 h-5 text-white" />
             </div>
             <span className="text-xs font-medium text-gray-600">WhatsApp</span>
           </a>
@@ -1072,8 +1072,8 @@ export default function MemberDetailPage() {
             onClick={() => router.push(`/members/${member.id}/payment`)}
             className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm flex flex-col items-center gap-1 hover:shadow-md transition-all duration-200 active:scale-95"
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg flex items-center justify-center">
-              <CreditCard className="w-5 h-5 text-amber-600" />
+            <div className="w-10 h-10 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg flex items-center justify-center">
+              <CreditCard className="w-5 h-5 text-white" />
             </div>
             <span className="text-xs font-medium text-gray-600">Payment</span>
           </button>
@@ -1096,8 +1096,8 @@ export default function MemberDetailPage() {
       
             className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm flex flex-col items-center gap-1 hover:shadow-md transition-all duration-200 active:scale-95"
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-orange-50 to-amber-100 rounded-lg flex items-center justify-center">
-              <Star className="w-5 h-5 text-amber-500" />
+            <div className="w-10 h-10 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg flex items-center justify-center">
+              <Star className="w-5 h-5 text-white" />
             </div>
             <span className="text-xs font-medium text-gray-600">Points</span>
           </button>
@@ -1114,7 +1114,7 @@ export default function MemberDetailPage() {
                   className="px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-100 active:scale-95 transition-all flex items-center justify-between"
                 >
                   <span className="flex items-center gap-2">
-                    <span className="w-7 h-7 rounded-full bg-emerald-200 text-emerald-800 flex items-center justify-center">
+                    <span className="w-7 h-7 rounded-full bg-orange-200 text-orange-800 flex items-center justify-center">
                       <Utensils className="w-3.5 h-3.5" />
                     </span>
                     Assign Diet
@@ -1127,7 +1127,7 @@ export default function MemberDetailPage() {
                   className="px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-100 active:scale-95 transition-all flex items-center justify-between"
                 >
                   <span className="flex items-center gap-2">
-                    <span className="w-7 h-7 rounded-full bg-blue-200 text-blue-800 flex items-center justify-center">
+                    <span className="w-7 h-7 rounded-full bg-orange-200 text-orange-800 flex items-center justify-center">
                       <Dumbbell className="w-3.5 h-3.5" />
                     </span>
                     Assign Workout
@@ -1141,7 +1141,7 @@ export default function MemberDetailPage() {
                     className="px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-100 active:scale-95 transition-all flex items-center justify-between"
                   >
                     <span className="flex items-center gap-2">
-                      <span className="w-7 h-7 rounded-full bg-violet-200 text-violet-800 flex items-center justify-center">
+                      <span className="w-7 h-7 rounded-full bg-orange-200 text-orange-800 flex items-center justify-center">
                         <Users className="w-3.5 h-3.5" />
                       </span>
                       {assignedTrainer ? "Change Trainer" : "Assign Trainer"}
@@ -1156,7 +1156,7 @@ export default function MemberDetailPage() {
                     className="px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-100 active:scale-95 transition-all flex items-center justify-between"
                   >
                     <span className="flex items-center gap-2">
-                      <span className="w-7 h-7 rounded-full bg-cyan-200 text-cyan-800 flex items-center justify-center">
+                      <span className="w-7 h-7 rounded-full bg-orange-200 text-orange-800 flex items-center justify-center">
                         <Package className="w-3.5 h-3.5" />
                       </span>
                       Assign Amenity
@@ -1187,15 +1187,15 @@ export default function MemberDetailPage() {
                 {!isTrainer && canWrite && (
                   <button
                     onClick={handleDeleteMember}
-                    className="px-3 py-2.5 bg-red-50 border border-red-300 rounded-lg text-sm font-medium text-red-700 hover:bg-red-100 active:bg-red-100 active:scale-95 transition-all flex items-center justify-between"
+                    className="px-3 py-2.5 bg-orange-50 border border-[#f0813d] rounded-lg text-sm font-medium text-[#f0813d] hover:bg-orange-100 active:bg-orange-100 active:scale-95 transition-all flex items-center justify-between"
                   >
                     <span className="flex items-center gap-2">
-                      <span className="w-7 h-7 rounded-full bg-red-200 text-red-700 flex items-center justify-center">
+                      <span className="w-7 h-7 rounded-full bg-orange-200 text-[#f0813d] flex items-center justify-center">
                         <Trash2 className="w-3.5 h-3.5" />
                       </span>
                       Delete Member
                     </span>
-                    <ChevronRight className="w-3.5 h-3.5 text-red-400" />
+                    <ChevronRight className="w-3.5 h-3.5 text-[#f0813d]" />
                   </button>
                 )}
               </div>
@@ -1210,7 +1210,7 @@ export default function MemberDetailPage() {
                   className="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-100 active:scale-95 transition-all flex items-center justify-between disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <span className="flex items-center gap-2">
-                    <span className="w-7 h-7 rounded-full bg-emerald-200 text-emerald-800 flex items-center justify-center">
+                    <span className="w-7 h-7 rounded-full bg-orange-200 text-orange-800 flex items-center justify-center">
                       <RefreshCw className="w-3.5 h-3.5" />
                     </span>
                     {member.dueAmount > 0 ? "Clear Due Before Renewal" : "Renew Membership"}
@@ -1218,7 +1218,7 @@ export default function MemberDetailPage() {
                   <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
                 </button>
                 {member.dueAmount > 0 && (
-                  <p className="mt-2 text-xs text-red-600">
+                  <p className="mt-2 text-xs text-[#f0813d]">
                     Renewal is blocked until current membership due is fully paid.
                   </p>
                 )}
@@ -1235,7 +1235,7 @@ export default function MemberDetailPage() {
             className="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-medium text-slate-800 hover:bg-slate-100 active:bg-slate-100 active:scale-95 transition-all flex items-center justify-between"
           >
             <span className="flex items-center gap-2">
-              <span className="w-7 h-7 rounded-full bg-blue-200 text-blue-800 flex items-center justify-center">
+              <span className="w-7 h-7 rounded-full bg-orange-200 text-orange-800 flex items-center justify-center">
                 <History className="w-3.5 h-3.5" />
               </span>
               View History
@@ -1257,7 +1257,7 @@ export default function MemberDetailPage() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
                   activeTab === tab.id 
-                  ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm" 
+                  ? "bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white shadow-sm" 
                   : "text-gray-600 hover:text-gray-900"
                 }`}
               >
@@ -1273,21 +1273,21 @@ export default function MemberDetailPage() {
           <div className="space-y-4">
             {/* Training Schedule Card - Prominent for trainers */}
             {assignedTrainer?.schedule?.length > 0 && (
-              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-200 shadow-sm p-4">
-                <h3 className="font-semibold text-purple-900 flex items-center gap-2 mb-3">
-                  <Clock className="w-4 h-4 text-purple-600" />
+              <div className="bg-gradient-to-r from-orange-50 to-orange-50 rounded-xl border border-orange-200 shadow-sm p-4">
+                <h3 className="font-semibold text-orange-900 flex items-center gap-2 mb-3">
+                  <Clock className="w-4 h-4 text-[#f0813d]" />
                   Training Schedule
-                  {isTrainer && <span className="text-xs font-normal text-purple-500 ml-1">— your sessions with {member.name}</span>}
+                  {isTrainer && <span className="text-xs font-normal text-[#f0813d] ml-1">— your sessions with {member.name}</span>}
                 </h3>
                 <div className="space-y-2">
                   {assignedTrainer.schedule.map((s) => (
                     <div key={s.day} className="flex items-center gap-3 bg-white/70 rounded-lg px-3 py-2">
-                      <span className="text-sm font-bold text-purple-700 w-12">{s.day.slice(0, 3)}</span>
+                      <span className="text-sm font-bold text-[#f0813d] w-12">{s.day.slice(0, 3)}</span>
                       <div className="flex flex-wrap gap-1.5">
                         {s.slots.map((slot) => (
                           <span
                             key={slot}
-                            className="px-2.5 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full"
+                            className="px-2.5 py-1 bg-orange-100 text-[#f0813d] text-xs font-semibold rounded-full"
                           >
                             {slot}
                           </span>
@@ -1316,14 +1316,14 @@ export default function MemberDetailPage() {
               </div>
               <div>
                 <p className="text-xs text-gray-500">Current Balance</p>
-                <p className={`text-sm font-medium ${member.balance >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                <p className={`text-sm font-medium ${member.balance >= 0 ? 'text-[#f0813d]' : 'text-[#f0813d]'}`}>
                   ₹{member.balance}
                 </p>
               </div>
               {member.createdByName && (
                 <div className="col-span-2">
                   <p className="text-xs text-gray-500">Created By</p>
-                  <p className="text-sm font-medium text-blue-600">{member.createdByName}</p>
+                  <p className="text-sm font-medium text-[#f0813d]">{member.createdByName}</p>
                 </div>
               )}
             </div>
@@ -1361,12 +1361,12 @@ export default function MemberDetailPage() {
             <div className="pt-3 border-t border-gray-100">
               <div className="flex items-center justify-between mb-3">
                 <h4 className="font-semibold text-gray-900 flex items-center gap-2">
-                  <Apple className="w-4 h-4 text-emerald-600" />
+                  <Apple className="w-4 h-4 text-[#f0813d]" />
                   Assigned Diet Plans
                 </h4>
                 <button
                   onClick={() => setShowAssignDietModal(true)}
-                  className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                  className="text-xs text-[#f0813d] hover:text-[#f0813d] font-medium flex items-center gap-1"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   Add
@@ -1378,7 +1378,7 @@ export default function MemberDetailPage() {
                   <p className="text-sm text-gray-500">No diet plans assigned</p>
                   <button
                     onClick={() => setShowAssignDietModal(true)}
-                    className="mt-2 text-xs text-blue-600 hover:text-blue-700 font-medium"
+                    className="mt-2 text-xs text-[#f0813d] hover:text-[#f0813d] font-medium"
                   >
                     Assign a diet plan
                   </button>
@@ -1388,19 +1388,19 @@ export default function MemberDetailPage() {
                   {assignedDietPlans.map((plan) => (
                     <div
                       key={plan.id}
-                      className="p-3 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200"
+                      className="p-3 bg-gradient-to-r from-orange-50 to-orange-50 rounded-lg border border-orange-200"
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <p className="font-medium text-gray-900 truncate">{plan.title}</p>
                             {plan.isCustom && (
-                              <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[10px] rounded-full font-medium">
+                              <span className="px-1.5 py-0.5 bg-orange-100 text-[#f0813d] text-[10px] rounded-full font-medium">
                                 Custom
                               </span>
                             )}
                             {plan.isTemplate && (
-                              <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-[10px] rounded-full font-medium">
+                              <span className="px-1.5 py-0.5 bg-orange-100 text-[#f0813d] text-[10px] rounded-full font-medium">
                                 Template
                               </span>
                             )}
@@ -1415,21 +1415,21 @@ export default function MemberDetailPage() {
                         <div className="flex items-center gap-1 ml-2">
                           <button
                             onClick={() => router.push(`/settings/diet-plans?view=${plan.planId}`)}
-                            className="p-1.5 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                            className="p-1.5 text-[#f0813d] hover:bg-orange-100 rounded-lg transition-colors"
                             title="View Plan"
                           >
                             <EyeIcon className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => router.push(`/settings/diet-plans?edit=${plan.planId}`)}
-                            className="p-1.5 text-amber-600 hover:bg-amber-100 rounded-lg transition-colors"
+                            className="p-1.5 text-[#f0813d] hover:bg-orange-100 rounded-lg transition-colors"
                             title="Edit Plan"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => handleRemoveDietPlan(plan.id)}
-                            className="p-1.5 text-red-500 hover:bg-red-100 rounded-lg transition-colors"
+                            className="p-1.5 text-[#f0813d] hover:bg-orange-100 rounded-lg transition-colors"
                             title="Remove Plan"
                           >
                             <TrashIcon className="w-3.5 h-3.5" />
@@ -1446,12 +1446,12 @@ export default function MemberDetailPage() {
             <div className="pt-3 border-t border-gray-100">
               <div className="flex items-center justify-between mb-3">
                 <h4 className="font-semibold text-gray-900 flex items-center gap-2">
-                  <Dumbbell className="w-4 h-4 text-blue-600" />
+                  <Dumbbell className="w-4 h-4 text-[#f0813d]" />
                   Assigned Workout Plans
                 </h4>
                 <button
                   onClick={() => setShowAssignWorkoutModal(true)}
-                  className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                  className="text-xs text-[#f0813d] hover:text-[#f0813d] font-medium flex items-center gap-1"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   Add
@@ -1463,7 +1463,7 @@ export default function MemberDetailPage() {
                   <p className="text-sm text-gray-500">No workout plans assigned</p>
                   <button
                     onClick={() => setShowAssignWorkoutModal(true)}
-                    className="mt-2 text-xs text-blue-600 hover:text-blue-700 font-medium"
+                    className="mt-2 text-xs text-[#f0813d] hover:text-[#f0813d] font-medium"
                   >
                     Assign a workout plan
                   </button>
@@ -1473,14 +1473,14 @@ export default function MemberDetailPage() {
                   {assignedWorkoutPlans.map((plan) => (
                     <div
                       key={plan.id}
-                      className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200"
+                      className="p-3 bg-gradient-to-r from-orange-50 to-orange-50 rounded-lg border border-orange-200"
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <p className="font-medium text-gray-900 truncate">{plan.title}</p>
                             {plan.isCustom && (
-                              <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[10px] rounded-full font-medium">
+                              <span className="px-1.5 py-0.5 bg-orange-100 text-[#f0813d] text-[10px] rounded-full font-medium">
                                 Custom
                               </span>
                             )}
@@ -1495,21 +1495,21 @@ export default function MemberDetailPage() {
                         <div className="flex items-center gap-1 ml-2">
                           <button
                             onClick={() => router.push(`/settings/workout-plans?view=${plan.planId}`)}
-                            className="p-1.5 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                            className="p-1.5 text-[#f0813d] hover:bg-orange-100 rounded-lg transition-colors"
                             title="View Plan"
                           >
                             <EyeIcon className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => router.push(`/settings/workout-plans?edit=${plan.planId}`)}
-                            className="p-1.5 text-amber-600 hover:bg-amber-100 rounded-lg transition-colors"
+                            className="p-1.5 text-[#f0813d] hover:bg-orange-100 rounded-lg transition-colors"
                             title="Edit Plan"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => handleRemoveWorkoutPlan(plan.id)}
-                            className="p-1.5 text-red-500 hover:bg-red-100 rounded-lg transition-colors"
+                            className="p-1.5 text-[#f0813d] hover:bg-orange-100 rounded-lg transition-colors"
                             title="Remove Plan"
                           >
                             <TrashIcon className="w-3.5 h-3.5" />
@@ -1526,7 +1526,7 @@ export default function MemberDetailPage() {
             <div className="pt-3 border-t border-gray-100">
               <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
                 <h4 className="font-semibold text-gray-900 flex items-center gap-2">
-                  <Users className="w-4 h-4 text-purple-600" />
+                  <Users className="w-4 h-4 text-[#f0813d]" />
                   Assigned Trainer
                 </h4>
                 {!isTrainer && canWrite && (
@@ -1539,7 +1539,7 @@ export default function MemberDetailPage() {
                             setTrainerAssignMode("renew");
                             setShowAssignTrainerModal(true);
                           }}
-                          className="text-xs text-violet-700 hover:text-violet-800 font-medium px-2 py-1 rounded-lg border border-violet-200 bg-violet-50"
+                          className="text-xs text-[#f0813d] hover:text-orange-800 font-medium px-2 py-1 rounded-lg border border-orange-200 bg-orange-50"
                         >
                           Renew Trainer
                         </button>
@@ -1549,7 +1549,7 @@ export default function MemberDetailPage() {
                             setTrainerAssignMode("change");
                             setShowAssignTrainerModal(true);
                           }}
-                          className="text-xs text-indigo-700 hover:text-indigo-800 font-medium px-2 py-1 rounded-lg border border-indigo-200 bg-indigo-50"
+                          className="text-xs text-[#f0813d] hover:text-orange-800 font-medium px-2 py-1 rounded-lg border border-orange-200 bg-orange-50"
                         >
                           Change Trainer
                         </button>
@@ -1560,7 +1560,7 @@ export default function MemberDetailPage() {
                         setTrainerAssignMode("default");
                         setShowAssignTrainerModal(true);
                       }}
-                      className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                      className="text-xs text-[#f0813d] hover:text-[#f0813d] font-medium flex items-center gap-1"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       {assignedTrainer ? "Assign / Update" : "Assign"}
@@ -1575,16 +1575,16 @@ export default function MemberDetailPage() {
                   {!isTrainer && canWrite && (
                     <button
                       onClick={() => setShowAssignTrainerModal(true)}
-                      className="mt-2 text-xs text-blue-600 hover:text-blue-700 font-medium"
+                      className="mt-2 text-xs text-[#f0813d] hover:text-[#f0813d] font-medium"
                     >
                       Assign a trainer
                     </button>
                   )}
                 </div>
               ) : (
-                <div className="p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+                <div className="p-3 bg-gradient-to-r from-orange-50 to-orange-50 rounded-lg border border-orange-200">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+                    <div className="w-10 h-10 bg-gradient-to-br from-[#f0813d] to-[#f0813d] rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
                       {assignedTrainer.name.charAt(0)}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -1599,7 +1599,7 @@ export default function MemberDetailPage() {
                     {!isTrainer && canWrite && (
                       <button
                         onClick={() => setShowAssignTrainerModal(true)}
-                        className="p-1.5 text-purple-600 hover:bg-purple-100 rounded-lg transition-colors"
+                        className="p-1.5 text-[#f0813d] hover:bg-orange-100 rounded-lg transition-colors"
                         title="Change Trainer"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
@@ -1608,15 +1608,15 @@ export default function MemberDetailPage() {
                   </div>
                   {/* Trainer Plan Expiry */}
                   {assignedTrainer.trainerPlanDaysRemaining !== null && (
-                    <div className="mt-2 pt-2 border-t border-purple-200">
+                    <div className="mt-2 pt-2 border-t border-orange-200">
                       <div className="flex items-center gap-2">
-                        <Calendar className="w-3.5 h-3.5 text-purple-400" />
+                        <Calendar className="w-3.5 h-3.5 text-[#f0813d]" />
                         <span className={`text-xs font-medium ${
                           assignedTrainer.trainerPlanDaysRemaining <= 0 
-                            ? 'text-red-600' 
+                            ? 'text-[#f0813d]' 
                             : assignedTrainer.trainerPlanDaysRemaining <= 3 
-                              ? 'text-amber-600' 
-                              : 'text-purple-600'
+                              ? 'text-[#f0813d]' 
+                              : 'text-[#f0813d]'
                         }`}>
                           {assignedTrainer.trainerPlanDaysRemaining > 0 
                             ? `Trainer plan expires in ${assignedTrainer.trainerPlanDaysRemaining} days`
@@ -1632,24 +1632,24 @@ export default function MemberDetailPage() {
                   )}
 
                   {(assignedTrainer.planName || assignedTrainer.planTotalAmount > 0) && (
-                    <div className="mt-2 pt-2 border-t border-purple-200">
-                      <p className="text-xs font-semibold text-purple-700 mb-2">PT Payment Status</p>
+                    <div className="mt-2 pt-2 border-t border-orange-200">
+                      <p className="text-xs font-semibold text-[#f0813d] mb-2">PT Payment Status</p>
                       <div className="grid grid-cols-3 gap-2 text-center">
-                        <div className="rounded-lg border border-green-100 bg-white/80 p-2">
+                        <div className="rounded-lg border border-orange-100 bg-white/80 p-2">
                           <p className="text-[10px] uppercase tracking-wide text-gray-500">Paid</p>
-                          <p className="mt-1 text-xs font-bold text-green-700">₹{Number(assignedTrainer.totalPaidAmount || 0).toLocaleString("en-IN")}</p>
+                          <p className="mt-1 text-xs font-bold text-[#f0813d]">₹{Number(assignedTrainer.totalPaidAmount || 0).toLocaleString("en-IN")}</p>
                         </div>
-                        <div className="rounded-lg border border-amber-100 bg-white/80 p-2">
+                        <div className="rounded-lg border border-orange-100 bg-white/80 p-2">
                           <p className="text-[10px] uppercase tracking-wide text-gray-500">Due</p>
-                          <p className="mt-1 text-xs font-bold text-amber-700">₹{Number(assignedTrainer.pendingAmount || 0).toLocaleString("en-IN")}</p>
+                          <p className="mt-1 text-xs font-bold text-[#f0813d]">₹{Number(assignedTrainer.pendingAmount || 0).toLocaleString("en-IN")}</p>
                         </div>
-                        <div className="rounded-lg border border-blue-100 bg-white/80 p-2">
+                        <div className="rounded-lg border border-orange-100 bg-white/80 p-2">
                           <p className="text-[10px] uppercase tracking-wide text-gray-500">Plan</p>
-                          <p className="mt-1 text-xs font-bold text-blue-700">₹{Number(assignedTrainer.planTotalAmount || 0).toLocaleString("en-IN")}</p>
+                          <p className="mt-1 text-xs font-bold text-[#f0813d]">₹{Number(assignedTrainer.planTotalAmount || 0).toLocaleString("en-IN")}</p>
                         </div>
                       </div>
                       {assignedTrainer.nextPaymentDate && Number(assignedTrainer.pendingAmount || 0) > 0 && (
-                        <p className="mt-2 text-[11px] text-purple-700">
+                        <p className="mt-2 text-[11px] text-[#f0813d]">
                           Next PT due on {new Date(`${assignedTrainer.nextPaymentDate}T00:00:00`).toLocaleDateString("en-IN")}
                         </p>
                       )}
@@ -1658,8 +1658,8 @@ export default function MemberDetailPage() {
 
                   {/* Training Schedule */}
                   {assignedTrainer.schedule && assignedTrainer.schedule.length > 0 && (
-                    <div className="mt-2 pt-2 border-t border-purple-200">
-                      <p className="text-xs font-semibold text-purple-700 mb-2 flex items-center gap-1.5">
+                    <div className="mt-2 pt-2 border-t border-orange-200">
+                      <p className="text-xs font-semibold text-[#f0813d] mb-2 flex items-center gap-1.5">
                         <Clock className="w-3.5 h-3.5" />
                         Training Schedule
                       </p>
@@ -1671,7 +1671,7 @@ export default function MemberDetailPage() {
                               {s.slots.map((slot) => (
                                 <span
                                   key={slot}
-                                  className="px-2 py-0.5 bg-purple-100 text-purple-700 text-[11px] font-medium rounded-full"
+                                  className="px-2 py-0.5 bg-orange-100 text-[#f0813d] text-[11px] font-medium rounded-full"
                                 >
                                   {slot}
                                 </span>
@@ -1705,7 +1705,7 @@ export default function MemberDetailPage() {
                       key={row.id}
                       className={`rounded-lg border p-2.5 text-xs ${
                         row.is_active
-                          ? "border-emerald-200 bg-emerald-50/80"
+                          ? "border-orange-200 bg-orange-50/80"
                           : "border-gray-200 bg-gray-50"
                       }`}
                     >
@@ -1729,7 +1729,7 @@ export default function MemberDetailPage() {
                         </div>
                         <div className="text-right flex-shrink-0">
                           {row.is_active && (
-                            <span className="text-[10px] font-semibold text-emerald-700 uppercase">Current</span>
+                            <span className="text-[10px] font-semibold text-[#f0813d] uppercase">Current</span>
                           )}
                           <p className="text-gray-700 mt-0.5">
                             {row.duration_days != null ? `${row.duration_days}d` : "—"}
@@ -1741,7 +1741,7 @@ export default function MemberDetailPage() {
                         </div>
                       </div>
                       {row.expires_within_3_days && row.is_active && (
-                        <p className="text-amber-700 font-medium mt-1.5">Plan ends in under 3 days</p>
+                        <p className="text-[#f0813d] font-medium mt-1.5">Plan ends in under 3 days</p>
                       )}
                     </div>
                   ))}
@@ -1770,15 +1770,15 @@ export default function MemberDetailPage() {
                         {record.checkIn} - {record.checkOut}
                       </p>
                     </div>
-                    <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
-                      <CheckCircle className="w-4 h-4 text-emerald-600" />
+                    <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                      <CheckCircle className="w-4 h-4 text-white" />
                     </div>
                   </div>
                 ))
               ) : (
                 <div className="p-8 text-center">
                   <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <BarChart3 className="w-8 h-8 text-gray-400" />
+                    <BarChart3 className="w-8 h-8 text-white" />
                   </div>
                   <p className="text-gray-500 text-sm">No attendance records found</p>
                 </div>
@@ -1802,8 +1802,8 @@ export default function MemberDetailPage() {
                   >
                     <div className="flex-1">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg flex items-center justify-center">
-                          <CreditCard className="w-4 h-4 text-blue-600" />
+                        <div className="w-10 h-10 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg flex items-center justify-center">
+                          <CreditCard className="w-4 h-4 text-white" />
                         </div>
                         <div>
                           <p className="font-medium text-gray-900">
@@ -1823,8 +1823,8 @@ export default function MemberDetailPage() {
                     <div className="flex items-center gap-2">
                       <span className={`px-2.5 py-1 text-xs rounded-lg border ${
                         payment.status === 'paid' 
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                          : 'bg-amber-50 text-amber-700 border-amber-200'
+                          ? 'bg-orange-50 text-[#f0813d] border-orange-200' 
+                          : 'bg-orange-50 text-[#f0813d] border-orange-200'
                       }`}>
                         {(payment.status || 'unknown').toLowerCase()}
                       </span>
@@ -1832,7 +1832,7 @@ export default function MemberDetailPage() {
                         <button
                           type="button"
                           onClick={() => handleUpdatePaymentAmount(payment)}
-                          className="px-2.5 py-1 text-xs rounded-lg border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"
+                          className="px-2.5 py-1 text-xs rounded-lg border border-orange-200 bg-orange-50 text-[#f0813d] hover:bg-orange-100"
                         >
                           Edit Amount
                         </button>
@@ -1843,12 +1843,12 @@ export default function MemberDetailPage() {
               ) : (
                 <div className="p-8 text-center">
                   <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <CreditCard className="w-8 h-8 text-gray-400" />
+                    <CreditCard className="w-8 h-8 text-white" />
                   </div>
                   <p className="text-gray-500 text-sm">No payment records found</p>
                   <button
                     onClick={() => router.push(`/members/${member.id}/payment`)}
-                    className="mt-4 px-4 py-2 text-blue-600 text-sm font-medium hover:text-blue-700"
+                    className="mt-4 px-4 py-2 text-[#f0813d] text-sm font-medium hover:text-[#f0813d]"
                   >
                     Add first payment
                   </button>

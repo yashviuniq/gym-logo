@@ -17,28 +17,28 @@ export default function Toast({ message, type = "success", isVisible, onClose })
 
   const typeStyles = {
     success: {
-      bg: "bg-green-50 border-green-200",
-      text: "text-green-800",
+      bg: "bg-orange-50 border-orange-200",
+      text: "text-orange-800",
       icon: "✓",
-      iconBg: "bg-green-500",
+      iconBg: "bg-[#f0813d]",
     },
     error: {
-      bg: "bg-red-50 border-red-200",
-      text: "text-red-800",
+      bg: "bg-orange-50 border-orange-200",
+      text: "text-orange-800",
       icon: "✕",
-      iconBg: "bg-red-500",
+      iconBg: "bg-[#f0813d]",
     },
     warning: {
-      bg: "bg-yellow-50 border-yellow-200",
-      text: "text-yellow-800",
+      bg: "bg-orange-50 border-orange-200",
+      text: "text-orange-800",
       icon: "⚠",
-      iconBg: "bg-yellow-500",
+      iconBg: "bg-[#f0813d]",
     },
     info: {
-      bg: "bg-blue-50 border-blue-200",
-      text: "text-blue-800",
+      bg: "bg-orange-50 border-orange-200",
+      text: "text-orange-800",
       icon: "ℹ",
-      iconBg: "bg-blue-500",
+      iconBg: "bg-[#f0813d]",
     },
   };
 

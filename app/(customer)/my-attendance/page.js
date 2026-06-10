@@ -220,7 +220,7 @@ export default function CustomerAttendancePage() {
       <div className="min-h-screen bg-gray-50 pb-24">
         <Header title="My Attendance" />
         <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#f0813d]"></div>
         </div>
       </div>
     );
@@ -233,19 +233,19 @@ export default function CustomerAttendancePage() {
       <main className="px-4 py-4">
         {/* Stats Cards */}
         <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white">
+          <div className="bg-gradient-to-br from-[#f0813d] to-[#f0813d] rounded-xl p-4 text-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-green-100 text-sm">This Month</p>
+                <p className="text-orange-100 text-sm">This Month</p>
                 <p className="text-3xl font-bold">{monthlyStats.presentDays}</p>
-                <p className="text-green-100 text-sm">
+                <p className="text-orange-100 text-sm">
                   of {monthlyStats.totalDays} days
                 </p>
               </div>
               <span className="text-4xl opacity-50">📅</span>
             </div>
           </div>
-          <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-4 text-white">
+          <div className="bg-gradient-to-br from-[#f0813d] to-[#f0813d] rounded-xl p-4 text-white">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-orange-100 text-sm">Current Streak</p>
@@ -330,11 +330,11 @@ export default function CustomerAttendancePage() {
                       </p>
                       <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
                         <span className="flex items-center gap-1">
-                          <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                          <span className="w-2 h-2 bg-[#f0813d] rounded-full"></span>
                           {record.checkIn}
                         </span>
                         <span className="flex items-center gap-1">
-                          <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                          <span className="w-2 h-2 bg-[#f0813d] rounded-full"></span>
                           {record.checkOut}
                         </span>
                       </div>
@@ -382,7 +382,7 @@ export default function CustomerAttendancePage() {
                       : day.isToday
                       ? "bg-black text-white"
                       : day.isPresent
-                      ? "bg-green-100 text-green-700"
+                      ? "bg-orange-100 text-[#f0813d]"
                       : "text-gray-400"
                   }`}
                 >
@@ -394,7 +394,7 @@ export default function CustomerAttendancePage() {
             {/* Legend */}
             <div className="flex items-center justify-center gap-6 mt-4 pt-4 border-t border-gray-100">
               <div className="flex items-center gap-2 text-sm">
-                <div className="w-3 h-3 rounded bg-green-100"></div>
+                <div className="w-3 h-3 rounded bg-orange-100"></div>
                 <span className="text-gray-600">Present</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
@@ -406,12 +406,12 @@ export default function CustomerAttendancePage() {
         )}
 
         {/* Motivation Card */}
-        <div className="mt-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl p-4 text-white">
+        <div className="mt-4 bg-gradient-to-r from-[#f0813d] to-[#f0813d] rounded-xl p-4 text-white">
           <div className="flex items-center gap-3">
             <span className="text-3xl">💪</span>
             <div>
               <p className="font-semibold">Keep it up!</p>
-              <p className="text-sm text-purple-100">
+              <p className="text-sm text-orange-100">
                 You're on a {monthlyStats.streak} day streak. Don t break the
                 chain!
               </p>

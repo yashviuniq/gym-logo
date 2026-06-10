@@ -16,6 +16,7 @@ import {
   Bell,
   Trophy,
   ShoppingBag,
+  BookOpen,
 } from "lucide-react";
 
 import { usePermissions } from "@/lib/hooks/usePermissions";
@@ -52,6 +53,12 @@ const allAdminNavItems = [
     icon: <ShoppingBag className="w-[1.2rem] h-[1.2rem]" />,
   },
   {
+    href: "/admin/knowledge",
+    label: "Know",
+    icon: <BookOpen className="w-[1.2rem] h-[1.2rem]" />,
+    permission: PERMISSIONS.ANNOUNCEMENTS,
+  },
+  {
     href: "/settings",
     label: "Settings",
     icon: <Settings className="w-[1.2rem] h-[1.2rem]" />,
@@ -66,24 +73,34 @@ const trainerNavItems = [
     icon: <Home className="w-[1.2rem] h-[1.2rem]" />,
   },
   {
-    href: "/trainer/all-members",
+    href: "/members",
     label: "Members",
     icon: <Users className="w-[1.2rem] h-[1.2rem]" />,
   },
   {
-    href: "/trainer/diet-plans",
+    href: "/attendance",
+    label: "Attend",
+    icon: <CalendarCheck className="w-[1.2rem] h-[1.2rem]" />,
+  },
+  {
+    href: "/settings/diet-plans",
     label: "Diet",
     icon: <Apple className="w-[1.2rem] h-[1.2rem]" />,
   },
   {
-    href: "/trainer/workout-plans",
+    href: "/settings/workout-plans",
     label: "Workout",
     icon: <Dumbbell className="w-[1.2rem] h-[1.2rem]" />,
   },
   {
-    href: "/trainer/profile",
-    label: "Profile",
-    icon: <User className="w-[1.2rem] h-[1.2rem]" />,
+    href: "/admin/knowledge",
+    label: "Know",
+    icon: <BookOpen className="w-[1.2rem] h-[1.2rem]" />,
+  },
+  {
+    href: "/settings",
+    label: "Settings",
+    icon: <Settings className="w-[1.2rem] h-[1.2rem]" />,
   },
 ];
 
@@ -112,6 +129,11 @@ const customerNavItems = [
     href: "/shop",
     label: "Shop",
     icon: <ShoppingBag className="w-[1.2rem] h-[1.2rem]" />,
+  },
+  {
+    href: "/knowledge",
+    label: "Know",
+    icon: <BookOpen className="w-[1.2rem] h-[1.2rem]" />,
   },
   {
     href: "/profile",
@@ -150,6 +172,7 @@ export default function BottomNav({ role = "admin" }) {
 
   const navItems = getNavItems();
   const homePath = navItems[0]?.href;
+  const isCompact = navItems.length > 5;
 
   return (
    <div className="fixed bottom-4 left-0 right-0 z-50 px-3 pointer-events-none md:hidden">
@@ -167,12 +190,12 @@ export default function BottomNav({ role = "admin" }) {
           "
         >
           {/* Ambient Glow */}
-          <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-transparent to-orange-400/5 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#f0813d]/5 via-transparent to-[#f0813d]/5 pointer-events-none" />
 
           {/* Top Highlight */}
           <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-white/70 to-transparent" />
 
-          <div className="relative flex items-center justify-around px-2 py-2">
+          <div className="relative flex items-center justify-around px-1.5 py-2">
             {navItems.map((item) => {
               const isActive =
                 pathname === item.href ||
@@ -182,7 +205,7 @@ export default function BottomNav({ role = "admin" }) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="relative flex flex-col items-center justify-center"
+                  className="relative flex min-w-0 flex-1 flex-col items-center justify-center"
                 >
                   <div
                     className={`
@@ -192,11 +215,12 @@ export default function BottomNav({ role = "admin" }) {
                       items-center
                       justify-center
                       rounded-2xl
-                      px-3
+                      ${isCompact ? "px-1" : "px-3"}
                       py-2
                       transition-all
                       duration-300
-                      min-w-[64px]
+                      w-full
+                      ${isCompact ? "min-w-0" : "min-w-[64px]"}
                       ${
                         isActive
                           ? "scale-105"
@@ -213,9 +237,9 @@ export default function BottomNav({ role = "admin" }) {
                             inset-0
                             rounded-2xl
                             bg-gradient-to-br
-                            from-orange-500
-                            via-orange-400
-                            to-orange-600
+                            from-[#f0813d]
+                            via-[#f0813d]
+                            to-[#f0813d]
                             shadow-[0_12px_30px_rgba(249,115,22,0.35)]
                           "
                         />
@@ -226,8 +250,8 @@ export default function BottomNav({ role = "admin" }) {
                             inset-[1px]
                             rounded-2xl
                             bg-gradient-to-br
-                            from-orange-400/90
-                            to-orange-600/90
+                            from-[#f0813d]/90
+                            to-[#f0813d]/90
                           "
                         />
                       </>
@@ -241,8 +265,7 @@ export default function BottomNav({ role = "admin" }) {
                         flex
                         items-center
                         justify-center
-                        w-10
-                        h-10
+                        ${isCompact ? "w-8 h-8" : "w-10 h-10"}
                         rounded-xl
                         transition-all
                         duration-300
@@ -262,12 +285,13 @@ export default function BottomNav({ role = "admin" }) {
                         relative
                         z-10
                         mt-1
-                        text-[10px]
+                        ${isCompact ? "text-[8px] tracking-normal" : "text-[10px] tracking-[0.12em]"}
                         font-bold
-                        tracking-[0.12em]
                         uppercase
                         transition-all
                         duration-300
+                        max-w-full
+                        truncate
                         ${
                           isActive
                             ? "text-white"

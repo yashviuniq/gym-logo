@@ -218,8 +218,8 @@ export default function AddTrainerPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl p-8 text-center max-w-sm w-full shadow-lg">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle className="w-8 h-8 text-green-600" />
+          <div className="w-16 h-16 bg-[#f0813d]/15 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CheckCircle className="w-8 h-8 text-white" />
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">Trainer Added!</h2>
           <p className="text-gray-500">Redirecting to trainers list...</p>
@@ -235,9 +235,9 @@ export default function AddTrainerPage() {
       <main className="px-4 py-4">
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <p className="text-red-700 text-sm">{error}</p>
+            <div className="bg-[#f0813d]/10 border border-[#f0813d]/20 rounded-xl p-4 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-[#f0813d] flex-shrink-0 mt-0.5" />
+              <p className="text-[#9c4400] text-sm">{error}</p>
             </div>
           )}
 
@@ -257,13 +257,13 @@ export default function AddTrainerPage() {
                     value={formData.firstName}
                     onChange={(e) => handleChange("firstName", e.target.value)}
                     className={`w-full pl-10 pr-4 py-3 rounded-xl border ${
-                      errors.firstName ? "border-red-300 bg-red-50" : "border-gray-200"
-                    } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                      errors.firstName ? "border-[#f0813d]/30 bg-[#f0813d]/10" : "border-gray-200"
+                    } focus:ring-2 focus:ring-[#f0813d]/20 focus:border-transparent`}
                     placeholder="First name"
                   />
                 </div>
                 {errors.firstName && (
-                  <p className="text-red-500 text-xs mt-1">{errors.firstName}</p>
+                  <p className="text-[#f0813d] text-xs mt-1">{errors.firstName}</p>
                 )}
               </div>
 
@@ -276,12 +276,12 @@ export default function AddTrainerPage() {
                   value={formData.lastName}
                   onChange={(e) => handleChange("lastName", e.target.value)}
                   className={`w-full px-4 py-3 rounded-xl border ${
-                    errors.lastName ? "border-red-300 bg-red-50" : "border-gray-200"
-                  } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                    errors.lastName ? "border-[#f0813d]/30 bg-[#f0813d]/10" : "border-gray-200"
+                  } focus:ring-2 focus:ring-[#f0813d]/20 focus:border-transparent`}
                   placeholder="Last name"
                 />
                 {errors.lastName && (
-                  <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>
+                  <p className="text-[#f0813d] text-xs mt-1">{errors.lastName}</p>
                 )}
               </div>
             </div>
@@ -297,13 +297,13 @@ export default function AddTrainerPage() {
                   value={formData.email}
                   onChange={(e) => handleChange("email", e.target.value)}
                   className={`w-full pl-10 pr-4 py-3 rounded-xl border ${
-                    errors.email ? "border-red-300 bg-red-50" : "border-gray-200"
-                  } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                    errors.email ? "border-[#f0813d]/30 bg-[#f0813d]/10" : "border-gray-200"
+                  } focus:ring-2 focus:ring-[#f0813d]/20 focus:border-transparent`}
                   placeholder="trainer@email.com"
                 />
               </div>
               {errors.email && (
-                <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+                <p className="text-[#f0813d] text-xs mt-1">{errors.email}</p>
               )}
             </div>
 
@@ -323,21 +323,21 @@ export default function AddTrainerPage() {
                   maxLength="10"
                   inputMode="numeric"
                   className={`w-full pl-10 pr-4 py-3 rounded-xl border ${
-                    errors.phone ? "border-red-300 bg-red-50" : "border-gray-200"
-                  } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                    errors.phone ? "border-[#f0813d]/30 bg-[#f0813d]/10" : "border-gray-200"
+                  } focus:ring-2 focus:ring-[#f0813d]/20 focus:border-transparent`}
                   placeholder="9876543210"
                 />
               </div>
               <div className="flex items-center justify-between mt-1">
                 <p className="text-gray-500 text-xs">Enter 10 digit mobile number</p>
                 {formData.phone && (
-                  <p className={`text-xs ${formData.phone.length === 10 ? "text-green-600" : "text-orange-600"}`}>
+                  <p className={`text-xs ${formData.phone.length === 10 ? "text-[#f0813d]" : "text-[#f0813d]"}`}>
                     {formData.phone.length}/10 digits
                   </p>
                 )}
               </div>
               {errors.phone && (
-                <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
+                <p className="text-[#f0813d] text-xs mt-1">{errors.phone}</p>
               )}
             </div>
           </div>
@@ -357,8 +357,8 @@ export default function AddTrainerPage() {
                   value={formData.password}
                   onChange={(e) => handleChange("password", e.target.value)}
                   className={`w-full pl-10 pr-12 py-3 rounded-xl border ${
-                    errors.password ? "border-red-300 bg-red-50" : "border-gray-200"
-                  } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                    errors.password ? "border-[#f0813d]/30 bg-[#f0813d]/10" : "border-gray-200"
+                  } focus:ring-2 focus:ring-[#f0813d]/20 focus:border-transparent`}
                   placeholder="Minimum 6 characters"
                 />
                 <button
@@ -370,7 +370,7 @@ export default function AddTrainerPage() {
                 </button>
               </div>
               {errors.password && (
-                <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+                <p className="text-[#f0813d] text-xs mt-1">{errors.password}</p>
               )}
             </div>
 
@@ -385,13 +385,13 @@ export default function AddTrainerPage() {
                   value={formData.confirmPassword}
                   onChange={(e) => handleChange("confirmPassword", e.target.value)}
                   className={`w-full pl-10 pr-4 py-3 rounded-xl border ${
-                    errors.confirmPassword ? "border-red-300 bg-red-50" : "border-gray-200"
-                  } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                    errors.confirmPassword ? "border-[#f0813d]/30 bg-[#f0813d]/10" : "border-gray-200"
+                  } focus:ring-2 focus:ring-[#f0813d]/20 focus:border-transparent`}
                   placeholder="Re-enter password"
                 />
               </div>
               {errors.confirmPassword && (
-                <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>
+                <p className="text-[#f0813d] text-xs mt-1">{errors.confirmPassword}</p>
               )}
             </div>
           </div>
@@ -409,7 +409,7 @@ export default function AddTrainerPage() {
                 <select
                   value={formData.specialization}
                   onChange={(e) => handleChange("specialization", e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#f0813d]/20 focus:border-transparent appearance-none bg-white"
                 >
                   <option value="">Select specialization</option>
                   {specializations.map((spec) => (
@@ -429,7 +429,7 @@ export default function AddTrainerPage() {
                   value={formData.bio}
                   onChange={(e) => handleChange("bio", e.target.value)}
                   rows={3}
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#f0813d]/20 focus:border-transparent resize-none"
                   placeholder="Brief description about the trainer..."
                 />
               </div>
@@ -448,14 +448,14 @@ export default function AddTrainerPage() {
                   value={formData.monthlySalary}
                   onChange={(e) => handleChange("monthlySalary", e.target.value)}
                   className={`w-full pl-8 pr-4 py-3 rounded-xl border ${
-                    errors.monthlySalary ? "border-red-300 bg-red-50" : "border-gray-200"
-                  } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                    errors.monthlySalary ? "border-[#f0813d]/30 bg-[#f0813d]/10" : "border-gray-200"
+                  } focus:ring-2 focus:ring-[#f0813d]/20 focus:border-transparent`}
                   placeholder="25000"
                 />
               </div>
               <p className="text-xs text-gray-500 mt-1">Used in monthly trainer payroll reports</p>
               {errors.monthlySalary && (
-                <p className="text-red-500 text-xs mt-1">{errors.monthlySalary}</p>
+                <p className="text-[#f0813d] text-xs mt-1">{errors.monthlySalary}</p>
               )}
             </div>
 
@@ -465,7 +465,7 @@ export default function AddTrainerPage() {
           {/* Availability Schedule */}
           <div className="bg-white rounded-xl p-4 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
-              <CalendarDays className="w-5 h-5 text-green-600" />
+              <CalendarDays className="w-5 h-5 text-[#f0813d]" />
               <h3 className="font-semibold text-gray-900">Availability Schedule</h3>
             </div>
 
@@ -482,7 +482,7 @@ export default function AddTrainerPage() {
                     onClick={() => toggleDay(day)}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                       formData.availableDays.includes(day)
-                        ? "bg-green-600 text-white shadow-sm"
+                        ? "bg-[#9c4400] text-white shadow-sm"
                         : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }`}
                   >
@@ -502,7 +502,7 @@ export default function AddTrainerPage() {
                 {formData.availableDays.map((day) => (
                   <div key={day} className="border border-gray-100 rounded-xl p-3">
                     <h4 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
-                      <CalendarDays className="w-4 h-4 text-green-500" />
+                      <CalendarDays className="w-4 h-4 text-[#f0813d]" />
                       {day}
                       <span className="text-xs text-gray-500 font-normal">
                         ({(formData.availableTimeSlots[day] || []).length} slots)
@@ -518,7 +518,7 @@ export default function AddTrainerPage() {
                             onClick={() => toggleTimeSlot(day, slot)}
                             className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                               isSelected
-                                ? "bg-blue-600 text-white"
+                                ? "bg-[#9c4400] text-white"
                                 : "bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200"
                             }`}
                           >
@@ -537,7 +537,7 @@ export default function AddTrainerPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-4 bg-gradient-to-r from-[#f0813d] to-[#9c4400] text-white rounded-xl font-semibold flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
               <>

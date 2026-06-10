@@ -2,10 +2,10 @@
 
 const COLOR_MAP = {
   blue: {
-    accent: "from-[#4F46E5] to-[#6366F1]",
-    softBg: "bg-indigo-50",
-    iconBg: "bg-indigo-100 text-indigo-600",
-    badge: "bg-indigo-100 text-indigo-700",
+    accent: "from-[#f0813d] to-[#9c4400]",
+    softBg: "bg-orange-50",
+    iconBg: "bg-orange-100 text-[#f0813d]",
+    badge: "bg-orange-100 text-[#f0813d]",
   },
 
   green: {
@@ -15,18 +15,18 @@ const COLOR_MAP = {
     badge: "bg-orange-100 text-[#9c4400]",
   },
 
-  amber: {
-    accent: "from-[#fb923c] to-[#ea580c]",
+  orange: {
+    accent: "from-[#fb923c] to-[#f0813d]",
     softBg: "bg-orange-50",
-    iconBg: "bg-orange-100 text-orange-600",
-    badge: "bg-orange-100 text-orange-700",
+    iconBg: "bg-orange-100 text-[#f0813d]",
+    badge: "bg-orange-100 text-[#f0813d]",
   },
 
-  indigo: {
-    accent: "from-[#6366F1] to-[#8B5CF6]",
-    softBg: "bg-violet-50",
-    iconBg: "bg-violet-100 text-violet-600",
-    badge: "bg-violet-100 text-violet-700",
+  orangeDeep: {
+    accent: "from-[#9c4400] to-[#9c4400]",
+    softBg: "bg-orange-50",
+    iconBg: "bg-orange-100 text-[#f0813d]",
+    badge: "bg-orange-100 text-[#f0813d]",
   },
 };
 

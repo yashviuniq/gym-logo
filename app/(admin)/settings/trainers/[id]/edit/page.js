@@ -257,7 +257,7 @@ export default function EditTrainerPage({ params }) {
       <div className="min-h-screen bg-gray-50 pb-24">
         <Header title="Edit Trainer" />
         <div className="flex items-center justify-center py-20">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#9c4400]"></div>
         </div>
       </div>
     );
@@ -269,16 +269,16 @@ export default function EditTrainerPage({ params }) {
 
       <form onSubmit={handleSubmit} className="px-4 py-4 space-y-4">
         {error && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-red-700">{error}</p>
+          <div className="p-4 bg-[#f0813d]/10 border border-[#f0813d]/20 rounded-xl flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-[#f0813d] flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-[#9c4400]">{error}</p>
           </div>
         )}
 
         {/* Personal Information */}
         <div className="bg-white rounded-xl p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
-            <User className="w-5 h-5 text-blue-600" />
+            <User className="w-5 h-5 text-[#f0813d]" />
             <h2 className="font-semibold text-gray-900">Personal Information</h2>
           </div>
 
@@ -293,7 +293,7 @@ export default function EditTrainerPage({ params }) {
                   name="firstName"
                   value={formData.firstName}
                   onChange={handleChange}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#f0813d]/20 focus:border-transparent"
                   required
                 />
               </div>
@@ -306,7 +306,7 @@ export default function EditTrainerPage({ params }) {
                   name="lastName"
                   value={formData.lastName}
                   onChange={handleChange}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#f0813d]/20 focus:border-transparent"
                 />
               </div>
             </div>
@@ -320,7 +320,7 @@ export default function EditTrainerPage({ params }) {
                 name="hireDate"
                 value={formData.hireDate}
                 onChange={handleChange}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#f0813d]/20 focus:border-transparent"
               />
             </div>
 
@@ -331,7 +331,7 @@ export default function EditTrainerPage({ params }) {
                 name="isActive"
                 checked={formData.isActive}
                 onChange={handleChange}
-                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
+                className="w-4 h-4 rounded text-[#f0813d] focus:ring-[#f0813d]/20"
               />
               <label htmlFor="isActive" className="text-sm text-gray-700">
                 Trainer is active
@@ -343,7 +343,7 @@ export default function EditTrainerPage({ params }) {
         {/* Login Credentials */}
         <div className="bg-white rounded-xl p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
-            <Key className="w-5 h-5 text-amber-600" />
+            <Key className="w-5 h-5 text-[#f0813d]" />
             <h2 className="font-semibold text-gray-900">Login Credentials</h2>
           </div>
 
@@ -359,7 +359,7 @@ export default function EditTrainerPage({ params }) {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#f0813d]/20 focus:border-transparent"
                   placeholder="trainer@example.com"
                 />
               </div>
@@ -376,7 +376,7 @@ export default function EditTrainerPage({ params }) {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#f0813d]/20 focus:border-transparent"
                   placeholder="9876543210"
                 />
               </div>
@@ -393,7 +393,7 @@ export default function EditTrainerPage({ params }) {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#f0813d]/20 focus:border-transparent"
                   placeholder="Enter password"
                   required
                 />
@@ -412,7 +412,7 @@ export default function EditTrainerPage({ params }) {
         {/* Specialization */}
         <div className="bg-white rounded-xl p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
-            <Briefcase className="w-5 h-5 text-purple-600" />
+            <Briefcase className="w-5 h-5 text-[#f0813d]" />
             <h2 className="font-semibold text-gray-900">Specialization</h2>
           </div>
 
@@ -424,7 +424,7 @@ export default function EditTrainerPage({ params }) {
                 onClick={() => toggleSpecialization(spec)}
                 className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
                   formData.specialization.includes(spec)
-                    ? "bg-purple-600 text-white"
+                    ? "bg-[#9c4400] text-white"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >
@@ -437,7 +437,7 @@ export default function EditTrainerPage({ params }) {
         {/* Bio */}
         <div className="bg-white rounded-xl p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
-            <FileText className="w-5 h-5 text-green-600" />
+            <FileText className="w-5 h-5 text-[#f0813d]" />
             <h2 className="font-semibold text-gray-900">Bio</h2>
           </div>
 
@@ -447,13 +447,13 @@ export default function EditTrainerPage({ params }) {
             onChange={handleChange}
             rows={4}
             placeholder="Brief description about the trainer..."
-            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#f0813d]/20 focus:border-transparent resize-none"
           />
         </div>
 
         <div className="bg-white rounded-xl p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
-            <IndianRupee className="w-5 h-5 text-emerald-600" />
+            <IndianRupee className="w-5 h-5 text-[#f0813d]" />
             <h2 className="font-semibold text-gray-900">Payroll</h2>
           </div>
 
@@ -470,7 +470,7 @@ export default function EditTrainerPage({ params }) {
                 name="monthlySalary"
                 value={formData.monthlySalary}
                 onChange={handleChange}
-                className="w-full pl-8 pr-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-8 pr-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#f0813d]/20 focus:border-transparent"
                 placeholder="25000"
               />
             </div>
@@ -481,7 +481,7 @@ export default function EditTrainerPage({ params }) {
         {/* Availability Schedule */}
         <div className="bg-white rounded-xl p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
-            <CalendarDays className="w-5 h-5 text-green-600" />
+            <CalendarDays className="w-5 h-5 text-[#f0813d]" />
             <h2 className="font-semibold text-gray-900">Availability Schedule</h2>
           </div>
 
@@ -498,7 +498,7 @@ export default function EditTrainerPage({ params }) {
                   onClick={() => toggleDay(day)}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                     formData.availableDays.includes(day)
-                      ? "bg-green-600 text-white shadow-sm"
+                      ? "bg-[#9c4400] text-white shadow-sm"
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                 >
@@ -518,7 +518,7 @@ export default function EditTrainerPage({ params }) {
               {formData.availableDays.map((day) => (
                 <div key={day} className="border border-gray-100 rounded-xl p-3">
                   <h4 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
-                    <CalendarDays className="w-4 h-4 text-green-500" />
+                    <CalendarDays className="w-4 h-4 text-[#f0813d]" />
                     {day}
                     <span className="text-xs text-gray-500 font-normal">
                       ({(formData.availableTimeSlots[day] || []).length} slots)
@@ -534,7 +534,7 @@ export default function EditTrainerPage({ params }) {
                           onClick={() => toggleTimeSlot(day, slot)}
                           className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                             isSelected
-                              ? "bg-blue-600 text-white"
+                              ? "bg-[#9c4400] text-white"
                               : "bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200"
                           }`}
                         >
@@ -553,7 +553,7 @@ export default function EditTrainerPage({ params }) {
         <button
           type="submit"
           disabled={saving}
-          className="w-full py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+          className="w-full py-3 bg-[#9c4400] text-white rounded-xl font-medium hover:bg-[#9c4400] transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
         >
           {saving ? (
             <>

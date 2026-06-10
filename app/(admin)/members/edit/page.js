@@ -9,7 +9,7 @@ export default function Page() {
           {/* Header Placeholder */}
           <div className="bg-white border-b border-gray-200 px-4 py-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg animate-pulse"></div>
+              <div className="w-10 h-10 bg-gradient-to-br from-orange-100 to-orange-100 rounded-lg animate-pulse"></div>
               <div className="flex-1">
                 <div className="h-6 w-32 bg-gray-200 rounded animate-pulse"></div>
                 <div className="h-4 w-24 bg-gray-100 rounded mt-1 animate-pulse"></div>
@@ -32,7 +32,7 @@ export default function Page() {
               
               {/* Button Placeholder */}
               <div className="mt-6 space-y-3">
-                <div className="h-12 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-lg"></div>
+                <div className="h-12 bg-gradient-to-r from-orange-100 to-orange-100 rounded-lg"></div>
                 <div className="h-12 bg-gray-100 rounded-lg"></div>
               </div>
             </div>

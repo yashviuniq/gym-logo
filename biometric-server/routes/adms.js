@@ -36,7 +36,7 @@ async function getGymFromDeviceSN(deviceSN, logger) {
   try {
     // Query device from database (no is_active column in your schema)
     const { data, error } = await supabase
-      .from('devices')
+      .from('biometric_devices')
       .select('id, gym_id, device_sn')
       .eq('device_sn', deviceSN)
       .single();
@@ -47,7 +47,7 @@ async function getGymFromDeviceSN(deviceSN, logger) {
         logger.warn({
           msg: '⚠️ UNKNOWN DEVICE - Not registered in system',
           deviceSN,
-          action: 'Register this device in Supabase: INSERT INTO devices (gym_id, device_sn, location) VALUES (...)'
+          action: 'Register this device in Supabase: INSERT INTO biometric_devices (gym_id, device_sn, location) VALUES (...)'
         });
         return { gym_id: null, device_id: null, error: 'DEVICE_NOT_REGISTERED' };
       }
@@ -57,7 +57,7 @@ async function getGymFromDeviceSN(deviceSN, logger) {
     
     // Update last_seen_at (async, don't wait)
     supabase
-      .from('devices')
+      .from('biometric_devices')
       .update({ last_seen_at: new Date().toISOString() })
       .eq('id', data.id)
       .then(() => {});
@@ -88,19 +88,36 @@ async function getGymFromDeviceSN(deviceSN, logger) {
  */
 async function getMemberInfo(gymId, fingerprintId, logger) {
   try {
-    // Step 1: Find member by gym_id and fingerprint_id
-    const { data: member, error: memberError } = await supabase
-      .from('members')
-      .select('id, full_name')
+    // Step 1: Map the machine User ID to an existing member without changing members table.
+    const { data: mapping, error: mappingError } = await supabase
+      .from('biometric_member_map')
+      .select('member_id')
       .eq('gym_id', gymId)
       .eq('fingerprint_id', fingerprintId)
       .single();
     
-    if (memberError || !member) {
+    if (mappingError || !mapping) {
       logger.info({
-        msg: 'Member not found by fingerprint_id',
+        msg: 'Member not found in biometric_member_map',
         gymId,
         fingerprintId
+      });
+      return { member_id: null, membership_status: 'UNKNOWN_MEMBER', member_name: null };
+    }
+
+    const { data: member, error: memberError } = await supabase
+      .from('members')
+      .select('id, full_name')
+      .eq('id', mapping.member_id)
+      .eq('gym_id', gymId)
+      .single();
+
+    if (memberError || !member) {
+      logger.warn({
+        msg: 'Biometric mapping points to missing member',
+        gymId,
+        fingerprintId,
+        memberId: mapping.member_id
       });
       return { member_id: null, membership_status: 'UNKNOWN_MEMBER', member_name: null };
     }
@@ -265,58 +282,74 @@ async function updateDailyAttendance({ gym_id, member_id, status, timestamp, mem
     if (status === 'CHECK_IN') {
       if (!existing) {
         // First check-in of the day
-        const { error: insertErr } = await supabase
-          .from('attendance')
-          .insert({
-            gym_id,
-            member_id,
-            check_in_date: dateStr,
-            check_in_time: timeStr,
-            count: 1,
-            membership_status: membership_status || 'ACTIVE', // Store membership status
-          });
+        const insertData = {
+          gym_id,
+          member_id,
+          check_in_date: dateStr,
+          check_in_time: timeStr,
+          count: 1,
+          membership_status: membership_status || 'ACTIVE',
+        };
+        let { error: insertErr } = await supabase.from('attendance').insert(insertData);
+        if (isMissingMembershipStatusColumn(insertErr)) {
+          delete insertData.membership_status;
+          ({ error: insertErr } = await supabase.from('attendance').insert(insertData));
+        }
         if (insertErr) logger.error({ msg: 'Attendance insert error', error: insertErr });
       } else {
         // Subsequent check-in: increment count, keep earliest check_in_time, update membership_status
-        const { error: updErr } = await supabase
-          .from('attendance')
-          .update({ 
-            count: (existing.count || 1) + 1,
-            membership_status: membership_status || 'ACTIVE', // Always update to latest status
-          })
-          .eq('id', existing.id);
+        const updateData = {
+          count: (existing.count || 1) + 1,
+          membership_status: membership_status || 'ACTIVE',
+        };
+        let { error: updErr } = await supabase.from('attendance').update(updateData).eq('id', existing.id);
+        if (isMissingMembershipStatusColumn(updErr)) {
+          delete updateData.membership_status;
+          ({ error: updErr } = await supabase.from('attendance').update(updateData).eq('id', existing.id));
+        }
         if (updErr) logger.error({ msg: 'Attendance update error', error: updErr });
       }
     } else if (status === 'CHECK_OUT') {
       if (!existing) {
         // No prior check-in; create a row and set check_out_time
-        const { error: insertErr } = await supabase
-          .from('attendance')
-          .insert({
-            gym_id,
-            member_id,
-            check_in_date: dateStr,
-            check_in_time: timeStr,
-            check_out_time: timeStr,
-            count: 1,
-            membership_status: membership_status || 'ACTIVE',
-          });
+        const insertData = {
+          gym_id,
+          member_id,
+          check_in_date: dateStr,
+          check_in_time: timeStr,
+          check_out_time: timeStr,
+          count: 1,
+          membership_status: membership_status || 'ACTIVE',
+        };
+        let { error: insertErr } = await supabase.from('attendance').insert(insertData);
+        if (isMissingMembershipStatusColumn(insertErr)) {
+          delete insertData.membership_status;
+          ({ error: insertErr } = await supabase.from('attendance').insert(insertData));
+        }
         if (insertErr) logger.error({ msg: 'Attendance insert (checkout) error', error: insertErr });
       } else {
         // Update today's record with checkout time and membership status
-        const { error: updErr } = await supabase
-          .from('attendance')
-          .update({ 
-            check_out_time: timeStr,
-            membership_status: membership_status || 'ACTIVE', // Update status on checkout too
-          })
-          .eq('id', existing.id);
+        const updateData = {
+          check_out_time: timeStr,
+          membership_status: membership_status || 'ACTIVE',
+        };
+        let { error: updErr } = await supabase.from('attendance').update(updateData).eq('id', existing.id);
+        if (isMissingMembershipStatusColumn(updErr)) {
+          delete updateData.membership_status;
+          ({ error: updErr } = await supabase.from('attendance').update(updateData).eq('id', existing.id));
+        }
         if (updErr) logger.error({ msg: 'Attendance checkout update error', error: updErr });
       }
     }
   } catch (e) {
     logger.error({ msg: 'Exception in updateDailyAttendance', error: e.message });
   }
+}
+
+function isMissingMembershipStatusColumn(error) {
+  if (!error) return false;
+  const message = `${error.message || ''} ${error.details || ''} ${error.hint || ''}`.toLowerCase();
+  return message.includes('membership_status') && message.includes('column');
 }
 
 export default async function admsRoutes(fastify, options) {
@@ -415,7 +448,7 @@ export default async function admsRoutes(fastify, options) {
       // STEP 4: Insert into Supabase
       // ============================================
       const { data, error } = await supabase
-        .from('attendance_logs')
+        .from('biometric_attendance_logs')
         .insert(dbRecords)
         .select();
       
@@ -517,7 +550,7 @@ export default async function admsRoutes(fastify, options) {
       
       // Query for pending commands for this device AND gym
       const { data: commands, error } = await supabase
-        .from('device_commands')
+        .from('biometric_device_commands')
         .select('id, command_string')
         .eq('gym_id', gym_id)
         .eq('device_sn', deviceSN)
@@ -539,7 +572,7 @@ export default async function admsRoutes(fastify, options) {
       
       // Update command status to SENT
       const { error: updateError } = await supabase
-        .from('device_commands')
+        .from('biometric_device_commands')
         .update({ 
           status: 'SENT',
           updated_at: new Date().toISOString()
@@ -597,7 +630,7 @@ export default async function admsRoutes(fastify, options) {
       if (commandId) {
         // Update command status to SUCCESS
         const { error } = await supabase
-          .from('device_commands')
+          .from('biometric_device_commands')
           .update({ 
             status: 'SUCCESS',
             updated_at: new Date().toISOString()

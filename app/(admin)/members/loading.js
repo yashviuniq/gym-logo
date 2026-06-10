@@ -1,5 +1,5 @@
-import { MembersPageSkeleton } from "@/components/shared/Skeleton";
+import RouteLoadingScreen from "@/components/shared/RouteLoadingScreen";
 
 export default function Loading() {
-  return <MembersPageSkeleton />;
+  return <RouteLoadingScreen variant="members" />;
 }

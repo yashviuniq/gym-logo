@@ -816,14 +816,14 @@ export default function AssignTrainerModal({
       {/* Modal Container */}
       <div className="relative w-full max-w-md transform transition-all animate-slideUp max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-t-2xl p-5 flex items-center justify-between shadow-lg">
+        <div className="bg-gradient-to-r from-[#f0813d] to-[#f0813d] rounded-t-2xl p-5 flex items-center justify-between shadow-lg">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/20 rounded-lg">
               <User className="w-5 h-5 text-white" />
             </div>
             <div>
               <h2 className="text-lg font-bold text-white">{modalTitle}</h2>
-              <p className="text-blue-100 text-sm opacity-90">{modalSubtitle}</p>
+              <p className="text-orange-100 text-sm opacity-90">{modalSubtitle}</p>
             </div>
           </div>
           <button
@@ -843,17 +843,17 @@ export default function AssignTrainerModal({
             <div className="border-b border-gray-100 p-5">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Current Trainer</h3>
-                <span className="px-2 py-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs font-medium rounded-full">
+                <span className="px-2 py-1 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white text-xs font-medium rounded-full">
                   ACTIVE
                 </span>
               </div>
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
+              <div className="bg-gradient-to-r from-orange-50 to-orange-50 rounded-xl p-4 border border-orange-100">
                 <div className="flex items-center gap-4">
                   <div className="relative">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                    <div className="w-12 h-12 bg-gradient-to-br from-[#f0813d] to-[#f0813d] rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">
                       {currentTrainer.name.charAt(0)}
                     </div>
-                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
+                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#f0813d] rounded-full border-2 border-white flex items-center justify-center">
                       <Check className="w-3 h-3 text-white" />
                     </div>
                   </div>
@@ -868,7 +868,7 @@ export default function AssignTrainerModal({
                       )}
                     </div>
                     {currentBooking && Array.isArray(currentBooking) && currentBooking.length > 0 && (
-                      <div className="text-blue-600 text-xs mt-1 flex items-center gap-1 flex-wrap">
+                      <div className="text-[#f0813d] text-xs mt-1 flex items-center gap-1 flex-wrap">
                         <CalendarDays className="w-3 h-3" />
                         {currentBooking.map((b, i) => (
                           <span key={i}>{b.day} · {b.time_slot}{i < currentBooking.length - 1 ? ' | ' : ''}</span>
@@ -877,8 +877,8 @@ export default function AssignTrainerModal({
                     )}
                   </div>
                 </div>
-                <div className="mt-4 p-3 bg-amber-50/80 border border-amber-200 rounded-lg">
-                  <p className="text-sm text-amber-800 flex items-start gap-2">
+                <div className="mt-4 p-3 bg-orange-50/80 border border-orange-200 rounded-lg">
+                  <p className="text-sm text-orange-800 flex items-start gap-2">
                     <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                     <span>Selecting a different trainer will remove this assignment</span>
                   </p>
@@ -899,15 +899,15 @@ export default function AssignTrainerModal({
             {fetching ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <div className="relative">
-                  <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-                  <Sparkles className="absolute -top-1 -right-1 w-4 h-4 text-blue-400 animate-pulse" />
+                  <Loader2 className="w-8 h-8 text-[#f0813d] animate-spin" />
+                  <Sparkles className="absolute -top-1 -right-1 w-4 h-4 text-[#f0813d] animate-pulse" />
                 </div>
                 <p className="mt-4 text-gray-500 text-sm">Loading trainers...</p>
               </div>
             ) : trainers.length === 0 ? (
               <div className="text-center py-10 bg-gray-50 rounded-xl">
                 <div className="w-16 h-16 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <User className="w-8 h-8 text-gray-400" />
+                  <User className="w-8 h-8 text-white" />
                 </div>
                 <h4 className="font-medium text-gray-700">No trainers available</h4>
                 <p className="text-sm text-gray-500 mt-1">Add trainers to this gym first</p>
@@ -929,7 +929,7 @@ export default function AssignTrainerModal({
                       }}
                       className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
                         isSelected
-                          ? 'border-blue-500 bg-gradient-to-r from-blue-50/50 to-blue-100/50 shadow-sm'
+                          ? 'border-[#f0813d] bg-gradient-to-r from-orange-50/50 to-orange-100/50 shadow-sm'
                           : 'border-gray-100 bg-gray-50/50 hover:border-gray-300 hover:bg-gray-50'
                       } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
@@ -937,7 +937,7 @@ export default function AssignTrainerModal({
                         {/* Selection Indicator */}
                         <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
                           isSelected
-                            ? 'border-blue-500 bg-blue-500'
+                            ? 'border-[#f0813d] bg-[#f0813d]'
                             : 'border-gray-300 bg-white'
                         }`}>
                           {isSelected && (
@@ -950,8 +950,8 @@ export default function AssignTrainerModal({
                           isSelected ? 'scale-105' : ''
                         } ${
                           isCurrent
-                            ? 'bg-gradient-to-br from-green-500 to-emerald-600'
-                            : 'bg-gradient-to-br from-blue-500 to-indigo-600'
+                            ? 'bg-gradient-to-br from-[#f0813d] to-[#f0813d]'
+                            : 'bg-gradient-to-br from-[#f0813d] to-[#f0813d]'
                         }`}>
                           {trainer.name.charAt(0)}
                         </div>
@@ -961,7 +961,7 @@ export default function AssignTrainerModal({
                           <div className="flex items-center gap-2">
                             <h4 className="font-semibold text-gray-900 truncate">{trainer.name}</h4>
                             {isCurrent && (
-                              <span className="px-2 py-0.5 bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 text-xs font-medium rounded-full flex-shrink-0">
+                              <span className="px-2 py-0.5 bg-gradient-to-r from-orange-100 to-orange-100 text-[#f0813d] text-xs font-medium rounded-full flex-shrink-0">
                                 Current
                               </span>
                             )}
@@ -977,7 +977,7 @@ export default function AssignTrainerModal({
                           {trainer.availableDays?.length > 0 && (
                             <div className="flex gap-1 mt-1.5 flex-wrap">
                               {trainer.availableDays.map((d) => (
-                                <span key={d} className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded font-medium">
+                                <span key={d} className="text-[10px] px-1.5 py-0.5 bg-orange-50 text-[#f0813d] rounded font-medium">
                                   {d.slice(0, 3)}
                                 </span>
                               ))}
@@ -986,7 +986,7 @@ export default function AssignTrainerModal({
                         </div>
 
                         <ChevronRight className={`w-5 h-5 text-gray-400 transition-transform md:hidden ${
-                          isSelected ? 'rotate-90 text-blue-500' : ''
+                          isSelected ? 'rotate-90 text-[#f0813d]' : ''
                         }`} />
                       </div>
                     </div>
@@ -1007,12 +1007,12 @@ export default function AssignTrainerModal({
                       <Tag className="w-4 h-4" />
                       Assigned Plan
                     </h3>
-                    <div className="p-3 rounded-xl border-2 border-green-400 bg-gradient-to-r from-green-50 to-emerald-50 shadow-sm">
+                    <div className="p-3 rounded-xl border-2 border-[#f0813d] bg-gradient-to-r from-orange-50 to-orange-50 shadow-sm">
                       <div className="flex items-center gap-3">
-                        <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                        <div className="w-5 h-5 rounded-full bg-[#f0813d] flex items-center justify-center flex-shrink-0">
                           <Check className="w-3 h-3 text-white" />
                         </div>
-                        <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white flex-shrink-0 bg-gradient-to-br from-green-500 to-emerald-600">
+                        <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white flex-shrink-0 bg-gradient-to-br from-[#f0813d] to-[#f0813d]">
                           <Award className="w-4 h-4" />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -1025,10 +1025,10 @@ export default function AssignTrainerModal({
                             {currentAssignment.daysRemaining !== null && (
                               <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${
                                 currentAssignment.daysRemaining <= 0
-                                  ? "bg-red-100 text-red-600"
+                                  ? "bg-orange-100 text-[#f0813d]"
                                   : currentAssignment.daysRemaining <= 7
-                                    ? "bg-amber-100 text-amber-600"
-                                    : "bg-green-100 text-green-600"
+                                    ? "bg-orange-100 text-[#f0813d]"
+                                    : "bg-orange-100 text-[#f0813d]"
                               }`}>
                                 {currentAssignment.daysRemaining <= 0
                                   ? "Expired"
@@ -1045,27 +1045,27 @@ export default function AssignTrainerModal({
                         </div>
                       </div>
                         <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-                          <div className="rounded-lg border border-green-100 bg-white p-2">
+                          <div className="rounded-lg border border-orange-100 bg-white p-2">
                             <p className="text-[10px] uppercase tracking-wide text-gray-500">Paid</p>
-                            <p className="mt-1 text-sm font-bold text-green-700">₹{Number(currentAssignment.totalPaidAmount || 0).toLocaleString("en-IN")}</p>
+                            <p className="mt-1 text-sm font-bold text-[#f0813d]">₹{Number(currentAssignment.totalPaidAmount || 0).toLocaleString("en-IN")}</p>
                           </div>
-                          <div className="rounded-lg border border-amber-100 bg-white p-2">
+                          <div className="rounded-lg border border-orange-100 bg-white p-2">
                             <p className="text-[10px] uppercase tracking-wide text-gray-500">Due</p>
-                            <p className="mt-1 text-sm font-bold text-amber-700">₹{Number(currentAssignment.pendingAmount || 0).toLocaleString("en-IN")}</p>
+                            <p className="mt-1 text-sm font-bold text-[#f0813d]">₹{Number(currentAssignment.pendingAmount || 0).toLocaleString("en-IN")}</p>
                           </div>
-                          <div className="rounded-lg border border-blue-100 bg-white p-2">
+                          <div className="rounded-lg border border-orange-100 bg-white p-2">
                             <p className="text-[10px] uppercase tracking-wide text-gray-500">Next Due</p>
-                            <p className="mt-1 text-xs font-bold text-blue-700">
+                            <p className="mt-1 text-xs font-bold text-[#f0813d]">
                               {currentAssignment.nextPaymentDate
                                 ? new Date(`${currentAssignment.nextPaymentDate}T00:00:00`).toLocaleDateString("en-IN")
                                 : "Cleared"}
                             </p>
                           </div>
                         </div>
-                        <div className="mt-3 space-y-3 border-t border-green-200 pt-3">
+                        <div className="mt-3 space-y-3 border-t border-orange-200 pt-3">
                           <div className="bg-gray-50 rounded-xl p-3 space-y-2">
                             <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
-                              <IndianRupee className="w-4 h-4 text-green-600" />
+                              <IndianRupee className="w-4 h-4 text-[#f0813d]" />
                               Record Installment
                             </div>
                             <input
@@ -1090,7 +1090,7 @@ export default function AssignTrainerModal({
                           {ptOutstandingAfterPayment > 0 && (
                             <div className="bg-gray-50 rounded-xl p-3 space-y-2">
                               <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
-                                <CalendarDays className="w-4 h-4 text-blue-600" />
+                                <CalendarDays className="w-4 h-4 text-[#f0813d]" />
                                 Next Due Date
                               </div>
                               <input
@@ -1103,26 +1103,26 @@ export default function AssignTrainerModal({
                             </div>
                           )}
 
-                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-3">
-                            <p className="text-xs font-semibold text-blue-800 mb-2">Installment Summary:</p>
+                          <div className="bg-gradient-to-r from-orange-50 to-orange-50 border border-orange-100 rounded-xl p-3">
+                            <p className="text-xs font-semibold text-orange-800 mb-2">Installment Summary:</p>
                             <div className="flex items-center gap-3">
-                              <div className="flex-1 bg-white rounded-lg p-2 text-center border border-blue-100">
+                              <div className="flex-1 bg-white rounded-lg p-2 text-center border border-orange-100">
                                 <p className="text-[10px] text-gray-500 uppercase">Collected</p>
-                                <p className="text-sm font-bold text-blue-700">₹{ptReceivedAmount.toLocaleString("en-IN")}</p>
+                                <p className="text-sm font-bold text-[#f0813d]">₹{ptReceivedAmount.toLocaleString("en-IN")}</p>
                               </div>
                               <div className="text-gray-400 text-xs">+</div>
                               <div className="flex-1 bg-white rounded-lg p-2 text-center border border-orange-100">
                                 <p className="text-[10px] text-gray-500 uppercase">Remaining</p>
-                                <p className="text-sm font-bold text-orange-700">₹{ptOutstandingAfterPayment.toLocaleString("en-IN")}</p>
+                                <p className="text-sm font-bold text-[#f0813d]">₹{ptOutstandingAfterPayment.toLocaleString("en-IN")}</p>
                               </div>
                               <div className="text-gray-400 text-xs">=</div>
-                              <div className="flex-1 bg-white rounded-lg p-2 text-center border border-green-100">
+                              <div className="flex-1 bg-white rounded-lg p-2 text-center border border-orange-100">
                                 <p className="text-[10px] text-gray-500 uppercase">Contract</p>
-                                <p className="text-sm font-bold text-green-700">₹{ptPlanTotalAmount.toLocaleString("en-IN")}</p>
+                                <p className="text-sm font-bold text-[#f0813d]">₹{ptPlanTotalAmount.toLocaleString("en-IN")}</p>
                               </div>
                             </div>
                             {ptPlanDuration ? (
-                              <p className="mt-2 text-[11px] text-blue-700">
+                              <p className="mt-2 text-[11px] text-[#f0813d]">
                                 {ptPlanName} • {formatDuration(ptPlanDuration)}
                               </p>
                             ) : null}
@@ -1138,7 +1138,7 @@ export default function AssignTrainerModal({
                                   onClick={() => setPaymentMode(mode)}
                                   className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all border ${
                                     paymentMode === mode
-                                      ? "border-blue-500 bg-blue-50 text-blue-700"
+                                      ? "border-[#f0813d] bg-orange-50 text-[#f0813d]"
                                       : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
                                   }`}
                                 >
@@ -1166,7 +1166,7 @@ export default function AssignTrainerModal({
                         router.push(`/settings/trainers/${gymTrainerId}?tab=plans`);
                       }
                     }}
-                    className="text-xs text-orange-600 font-medium flex items-center gap-1 hover:text-orange-700 transition-colors px-2 py-1 bg-orange-50 rounded-lg"
+                    className="text-xs text-[#f0813d] font-medium flex items-center gap-1 hover:text-[#f0813d] transition-colors px-2 py-1 bg-orange-50 rounded-lg"
                   >
                     <Plus className="w-3 h-3" />
                     Create New Plan
@@ -1176,7 +1176,7 @@ export default function AssignTrainerModal({
 
                 {plansLoading ? (
                   <div className="flex items-center justify-center py-6">
-                    <Loader2 className="w-5 h-5 text-orange-500 animate-spin" />
+                    <Loader2 className="w-5 h-5 text-[#f0813d] animate-spin" />
                     <span className="ml-2 text-sm text-gray-500">Loading plans...</span>
                   </div>
                 ) : trainerPlans.length === 0 ? (
@@ -1192,7 +1192,7 @@ export default function AssignTrainerModal({
                           router.push(`/settings/trainers/${gymTrainerId}?tab=plans`);
                         }
                       }}
-                      className="mt-2 text-xs text-orange-600 font-medium flex items-center gap-1 mx-auto hover:text-orange-700"
+                      className="mt-2 text-xs text-[#f0813d] font-medium flex items-center gap-1 mx-auto hover:text-[#f0813d]"
                     >
                       <Plus className="w-3 h-3" />
                       Create a plan first
@@ -1216,21 +1216,21 @@ export default function AssignTrainerModal({
                           }}
                           className={`p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
                             isSelected
-                              ? "border-orange-500 bg-gradient-to-r from-orange-50 to-amber-50 shadow-sm"
+                              ? "border-[#f0813d] bg-gradient-to-r from-orange-50 to-orange-50 shadow-sm"
                               : "border-gray-100 bg-gray-50/50 hover:border-gray-300"
                           } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
                         >
                           <div className="flex items-center gap-3">
                             <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${
                               isSelected
-                                ? "border-orange-500 bg-orange-500"
+                                ? "border-[#f0813d] bg-[#f0813d]"
                                 : "border-gray-300 bg-white"
                             }`}>
                               {isSelected && <Check className="w-3 h-3 text-white" />}
                             </div>
                             <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-white flex-shrink-0 ${
                               isSelected
-                                ? "bg-gradient-to-br from-orange-500 to-amber-600"
+                                ? "bg-gradient-to-br from-[#f0813d] to-[#f0813d]"
                                 : "bg-gradient-to-br from-gray-400 to-gray-500"
                             }`}>
                               <Award className="w-4 h-4" />
@@ -1261,7 +1261,7 @@ export default function AssignTrainerModal({
                     {!isCurrentAssignmentSelected && (
                     <div className="bg-gray-50 rounded-xl p-3 space-y-2">
                       <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
-                        <CalendarDays className="w-4 h-4 text-orange-500" />
+                        <CalendarDays className="w-4 h-4 text-[#f0813d]" />
                         Start Date
                       </div>
                       <input
@@ -1271,7 +1271,7 @@ export default function AssignTrainerModal({
                         onChange={(e) => setCustomStartDate(e.target.value)}
                       />
                       {calculatePlanEndDate() && (
-                        <p className="text-xs text-blue-600">
+                        <p className="text-xs text-[#f0813d]">
                           Validity: {new Date(`${customStartDate}T00:00:00`).toLocaleDateString("en-IN")} to {new Date(`${calculatePlanEndDate()}T00:00:00`).toLocaleDateString("en-IN")}
                         </p>
                       )}
@@ -1318,7 +1318,7 @@ export default function AssignTrainerModal({
 
                     <div className="bg-gray-50 rounded-xl p-3 space-y-2">
                       <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
-                        <IndianRupee className="w-4 h-4 text-green-600" />
+                        <IndianRupee className="w-4 h-4 text-[#f0813d]" />
                         {isCurrentAssignmentSelected ? "Record Installment" : "Amount Received"}
                       </div>
                       <input
@@ -1345,7 +1345,7 @@ export default function AssignTrainerModal({
                     {ptOutstandingAfterPayment > 0 && (
                       <div className="bg-gray-50 rounded-xl p-3 space-y-2">
                         <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
-                          <CalendarDays className="w-4 h-4 text-blue-600" />
+                          <CalendarDays className="w-4 h-4 text-[#f0813d]" />
                           Next Due Date
                         </div>
                         <input
@@ -1359,30 +1359,30 @@ export default function AssignTrainerModal({
                     )}
 
                     {/* Payment Split Info */}
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-3">
-                      <p className="text-xs font-semibold text-blue-800 mb-2">
+                    <div className="bg-gradient-to-r from-orange-50 to-orange-50 border border-orange-100 rounded-xl p-3">
+                      <p className="text-xs font-semibold text-orange-800 mb-2">
                         {isCurrentAssignmentSelected ? "Installment Summary:" : "Payment Summary:"}
                       </p>
                       {ptPlanName && (
                           <div className="flex items-center gap-3">
-                            <div className="flex-1 bg-white rounded-lg p-2 text-center border border-blue-100">
+                            <div className="flex-1 bg-white rounded-lg p-2 text-center border border-orange-100">
                               <p className="text-[10px] text-gray-500 uppercase">Collected</p>
-                              <p className="text-sm font-bold text-blue-700">₹{ptReceivedAmount.toLocaleString("en-IN")}</p>
+                              <p className="text-sm font-bold text-[#f0813d]">₹{ptReceivedAmount.toLocaleString("en-IN")}</p>
                             </div>
                             <div className="text-gray-400 text-xs">+</div>
                             <div className="flex-1 bg-white rounded-lg p-2 text-center border border-orange-100">
                               <p className="text-[10px] text-gray-500 uppercase">Remaining</p>
-                              <p className="text-sm font-bold text-orange-700">₹{ptOutstandingAfterPayment.toLocaleString("en-IN")}</p>
+                              <p className="text-sm font-bold text-[#f0813d]">₹{ptOutstandingAfterPayment.toLocaleString("en-IN")}</p>
                             </div>
                             <div className="text-gray-400 text-xs">=</div>
-                            <div className="flex-1 bg-white rounded-lg p-2 text-center border border-green-100">
+                            <div className="flex-1 bg-white rounded-lg p-2 text-center border border-orange-100">
                               <p className="text-[10px] text-gray-500 uppercase">Contract</p>
-                              <p className="text-sm font-bold text-green-700">₹{ptPlanTotalAmount.toLocaleString("en-IN")}</p>
+                              <p className="text-sm font-bold text-[#f0813d]">₹{ptPlanTotalAmount.toLocaleString("en-IN")}</p>
                             </div>
                           </div>
                       )}
                       {ptPlanDuration ? (
-                        <p className="mt-2 text-[11px] text-blue-700">
+                        <p className="mt-2 text-[11px] text-[#f0813d]">
                           {ptPlanName} • {formatDuration(ptPlanDuration)}
                         </p>
                       ) : null}
@@ -1399,7 +1399,7 @@ export default function AssignTrainerModal({
                             onClick={() => setPaymentMode(mode)}
                             className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all border ${
                               paymentMode === mode
-                                ? "border-blue-500 bg-blue-50 text-blue-700"
+                                ? "border-[#f0813d] bg-orange-50 text-[#f0813d]"
                                 : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
                             }`}
                           >
@@ -1424,7 +1424,7 @@ export default function AssignTrainerModal({
                   <CalendarDays className="w-4 h-4" />
                   Select Schedule
                   {totalSelections > 0 && (
-                    <span className="ml-auto text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
+                    <span className="ml-auto text-xs bg-orange-100 text-[#f0813d] px-2 py-0.5 rounded-full font-medium">
                       {totalSelections} slot{totalSelections > 1 ? 's' : ''} selected
                     </span>
                   )}
@@ -1447,16 +1447,16 @@ export default function AssignTrainerModal({
                           disabled={loading}
                           className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 relative ${
                             isActive
-                              ? 'bg-blue-600 text-white shadow-sm'
+                              ? 'bg-[#f0813d] text-white shadow-sm'
                               : dayCount > 0
-                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                ? 'bg-orange-50 text-[#f0813d] border border-orange-200'
                                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                           } disabled:opacity-50`}
                         >
                           {day.slice(0, 3)}
                           {dayCount > 0 && (
                             <span className={`ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold ${
-                              isActive ? 'bg-white text-blue-600' : 'bg-blue-600 text-white'
+                              isActive ? 'bg-white text-[#f0813d]' : 'bg-[#f0813d] text-white'
                             }`}>
                               {dayCount}
                             </span>
@@ -1478,7 +1478,7 @@ export default function AssignTrainerModal({
 
                     {fetchingSlots ? (
                       <div className="flex items-center justify-center py-6">
-                        <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+                        <Loader2 className="w-5 h-5 text-[#f0813d] animate-spin" />
                         <span className="ml-2 text-sm text-gray-500">Checking availability...</span>
                       </div>
                     ) : activeDaySlots.length === 0 ? (
@@ -1511,12 +1511,12 @@ export default function AssignTrainerModal({
                               className={`
                                 px-2 py-2 rounded-lg text-xs font-medium transition-all duration-150 text-center
                                 ${isSlotSelected
-                                    ? 'bg-blue-600 text-white shadow-md scale-[1.02]'
+                                    ? 'bg-[#f0813d] text-white shadow-md scale-[1.02]'
                                     : isMemberSlot
-                                      ? 'bg-green-50 text-green-700 border-2 border-green-300 hover:bg-green-100'
+                                      ? 'bg-orange-50 text-[#f0813d] border-2 border-[#f0813d] hover:bg-orange-100'
                                       : hasAssignedMembers
-                                        ? 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100'
-                                      : 'bg-white text-gray-700 border border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                                        ? 'bg-orange-50 text-[#f0813d] border border-orange-200 hover:bg-orange-100'
+                                      : 'bg-white text-gray-700 border border-gray-200 hover:border-[#f0813d] hover:bg-orange-50'
                                 }
                               `}
                               title={
@@ -1534,7 +1534,7 @@ export default function AssignTrainerModal({
                                 </span>
                               )}
                               {isMemberSlot && !isSlotSelected && (
-                                <span className="block text-[9px] text-green-600 mt-0.5">Your slot</span>
+                                <span className="block text-[9px] text-[#f0813d] mt-0.5">Your slot</span>
                               )}
                             </button>
                           );
@@ -1548,10 +1548,10 @@ export default function AssignTrainerModal({
                         <span className="w-2.5 h-2.5 rounded-sm bg-white border border-gray-200" /> Available
                       </span>
                       <span className="flex items-center gap-1">
-                        <span className="w-2.5 h-2.5 rounded-sm bg-amber-50 border border-amber-200" /> Assigned (shared)
+                        <span className="w-2.5 h-2.5 rounded-sm bg-orange-50 border border-orange-200" /> Assigned (shared)
                       </span>
                       <span className="flex items-center gap-1">
-                        <span className="w-2.5 h-2.5 rounded-sm bg-blue-600" /> Selected
+                        <span className="w-2.5 h-2.5 rounded-sm bg-[#f0813d]" /> Selected
                       </span>
                     </div>
                   </div>
@@ -1559,13 +1559,13 @@ export default function AssignTrainerModal({
 
                 {/* Selected Slots Summary */}
                 {totalSelections > 0 && (
-                  <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-xl">
-                    <p className="text-xs font-semibold text-blue-800 mb-1.5">Selected Schedule:</p>
+                  <div className="mt-4 p-3 bg-orange-50 border border-orange-100 rounded-xl">
+                    <p className="text-xs font-semibold text-orange-800 mb-1.5">Selected Schedule:</p>
                     <div className="space-y-1">
                       {Object.entries(selectedSlots)
                         .filter(([, slots]) => slots.length > 0)
                         .map(([day, slots]) => (
-                          <p key={day} className="text-xs text-blue-700">
+                          <p key={day} className="text-xs text-[#f0813d]">
                             <span className="font-medium">{day}:</span> {slots.join(', ')}
                           </p>
                         ))}
@@ -1581,14 +1581,14 @@ export default function AssignTrainerModal({
         <div className="bg-gradient-to-t from-white via-white to-gray-50 p-5 rounded-b-2xl border-t border-gray-200/60 shadow-lg">
           {showWarning ? (
             <div className="space-y-4">
-              <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">
+              <div className="bg-gradient-to-r from-orange-50 to-orange-50 border border-orange-200 rounded-xl p-4">
                 <div className="flex items-start gap-3">
-                  <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg">
+                  <div className="p-2 bg-gradient-to-br from-[#f0813d] to-[#f0813d] rounded-lg">
                     <AlertCircle className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-amber-900 text-sm">Switch Trainer?</h4>
-                    <p className="text-xs text-amber-800 mt-2 leading-relaxed">
+                    <h4 className="font-bold text-orange-900 text-sm">Switch Trainer?</h4>
+                    <p className="text-xs text-orange-800 mt-2 leading-relaxed">
                       This will remove <span className="font-semibold">{currentTrainer?.name}</span> and assign this member to{' '}
                       <span className="font-semibold">{selectedTrainer?.name}</span>.
                       {totalSelections > 0 && (
@@ -1620,7 +1620,7 @@ export default function AssignTrainerModal({
                 <button
                   onClick={handleSave}
                   disabled={loading || !canWrite}
-                  className="flex-1 px-5 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-amber-200 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 px-5 py-3 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white rounded-xl font-medium hover:shadow-lg hover:shadow-orange-200 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -1639,7 +1639,7 @@ export default function AssignTrainerModal({
                 <button
                   onClick={handleRemoveTrainer}
                   disabled={loading || !canWrite}
-                  className="w-full px-5 py-3 bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 text-red-600 rounded-xl font-medium hover:from-red-100 hover:to-rose-100 hover:border-red-300 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full px-5 py-3 bg-gradient-to-r from-orange-50 to-orange-50 border border-orange-200 text-[#f0813d] rounded-xl font-medium hover:from-orange-100 hover:to-orange-100 hover:border-[#f0813d] transition-all duration-200 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -1666,7 +1666,7 @@ export default function AssignTrainerModal({
                     !canWrite ||
                         (trainerDays.length > 0 && totalSelections === 0)
                       }
-                      className="w-full px-5 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-green-200 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      className="w-full px-5 py-3 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white rounded-xl font-medium hover:shadow-lg hover:shadow-orange-200 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                       {loading ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -1680,7 +1680,7 @@ export default function AssignTrainerModal({
                     <button
                       onClick={handleRecordInstallment}
                       disabled={loading || !canWrite || ptOutstandingBeforePayment <= 0}
-                      className="w-full px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-blue-200 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      className="w-full px-5 py-3 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white rounded-xl font-medium hover:shadow-lg hover:shadow-orange-200 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                       {loading ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -1702,7 +1702,7 @@ export default function AssignTrainerModal({
                       selectedTrainerId === currentTrainerId ||
                       (trainerDays.length > 0 && totalSelections === 0)
                     }
-                    className="w-full px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-blue-200 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full px-5 py-3 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white rounded-xl font-medium hover:shadow-lg hover:shadow-orange-200 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {loading ? (
                       <Loader2 className="w-4 h-4 animate-spin" />

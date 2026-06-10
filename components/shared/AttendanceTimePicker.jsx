@@ -31,7 +31,7 @@ export default function AttendanceTimePicker({
           value={parts?.hour || ""}
           onChange={(e) => onPartChange("hour", e.target.value)}
           disabled={disabled}
-          className="w-full min-w-0 rounded-lg border border-gray-200 bg-white px-2 py-2 text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+          className="w-full min-w-0 rounded-lg border border-gray-200 bg-white px-2 py-2 text-sm focus:ring-2 focus:ring-[#f0813d] focus:border-transparent"
         >
           <option value="">Hour</option>
           {ATTENDANCE_HOUR_OPTIONS.map((hour) => (
@@ -43,7 +43,7 @@ export default function AttendanceTimePicker({
           value={parts?.minute || ""}
           onChange={(e) => onPartChange("minute", e.target.value)}
           disabled={disabled}
-          className="w-full min-w-0 rounded-lg border border-gray-200 bg-white px-2 py-2 text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+          className="w-full min-w-0 rounded-lg border border-gray-200 bg-white px-2 py-2 text-sm focus:ring-2 focus:ring-[#f0813d] focus:border-transparent"
         >
           <option value="">Min</option>
           {ATTENDANCE_MINUTE_OPTIONS.map((minute) => (
@@ -55,7 +55,7 @@ export default function AttendanceTimePicker({
           value={parts?.meridiem || ""}
           onChange={(e) => onPartChange("meridiem", e.target.value)}
           disabled={disabled}
-          className="col-span-2 w-full min-w-0 rounded-lg border border-gray-200 bg-white px-2 py-2 text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent sm:col-span-1"
+          className="col-span-2 w-full min-w-0 rounded-lg border border-gray-200 bg-white px-2 py-2 text-sm focus:ring-2 focus:ring-[#f0813d] focus:border-transparent sm:col-span-1"
         >
           <option value="">AM/PM</option>
           {ATTENDANCE_MERIDIEM_OPTIONS.map((meridiem) => (

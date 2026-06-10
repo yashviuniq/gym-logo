@@ -17,9 +17,9 @@ export default function ConfirmationDialog({
     // Icon configurations based on type
     const icons = {
         success: (
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-green-100 flex items-center justify-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-orange-100 flex items-center justify-center">
                 <svg
-                    className="w-8 h-8 text-green-600"
+                    className="w-8 h-8 text-white"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -34,9 +34,9 @@ export default function ConfirmationDialog({
             </div>
         ),
         warning: (
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-yellow-100 flex items-center justify-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-orange-100 flex items-center justify-center">
                 <svg
-                    className="w-8 h-8 text-yellow-600"
+                    className="w-8 h-8 text-white"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -51,9 +51,9 @@ export default function ConfirmationDialog({
             </div>
         ),
         error: (
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-red-100 flex items-center justify-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-orange-100 flex items-center justify-center">
                 <svg
-                    className="w-8 h-8 text-red-600"
+                    className="w-8 h-8 text-white"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -68,9 +68,9 @@ export default function ConfirmationDialog({
             </div>
         ),
         info: (
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-blue-100 flex items-center justify-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-orange-100 flex items-center justify-center">
                 <svg
-                    className="w-8 h-8 text-blue-600"
+                    className="w-8 h-8 text-white"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"

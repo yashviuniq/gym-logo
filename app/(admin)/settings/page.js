@@ -42,6 +42,8 @@ import {
   RefreshCw,
   Package,
   ShieldAlert,
+  Sparkles,
+  Zap,
 } from "lucide-react";
 
 const settingsSections = [
@@ -51,7 +53,7 @@ const settingsSections = [
     description: "Add, remove, toggle admin access & permissions",
     icon: ShieldAlert,
     href: "/settings/admins",
-    color: "from-purple-600 to-indigo-600",
+    color: "from-[#f0813d] to-[#9c4400]",
     superadminOnly: true,
   },
   {
@@ -60,7 +62,7 @@ const settingsSections = [
     description: "Name, address, operating hours, QR code",
     icon: Building,
     href: "/settings/gym",
-    color: "from-blue-600 to-indigo-600"
+    color: "from-[#f0813d] to-[#9c4400]"
   },
   {
     id: "inquiries",
@@ -68,7 +70,7 @@ const settingsSections = [
     description: "Track walk-ins, follow-ups & conversions",
     icon: ClipboardList,
     href: "/inquiries",
-    color: "from-purple-600 to-indigo-600"
+    color: "from-[#f0813d] to-[#9c4400]"
   },
   {
     id: "plans",
@@ -76,7 +78,7 @@ const settingsSections = [
     description: "Create, edit plans, pricing, freeze options",
     icon: FileText,
     href: "/settings/plans",
-    color: "from-blue-600 to-indigo-600"
+    color: "from-[#f0813d] to-[#9c4400]"
   },
   {
     id: "diet-plans",
@@ -84,7 +86,7 @@ const settingsSections = [
     description: "Create and manage diet plans with meals",
     icon: Utensils,
     href: "/settings/diet-plans",
-    color: "from-blue-600 to-indigo-600"
+    color: "from-[#f0813d] to-[#9c4400]"
   },
   {
     id: "workout-plans",
@@ -92,7 +94,7 @@ const settingsSections = [
     description: "Create and manage workout routines",
     icon: Dumbbell,
     href: "/settings/workout-plans",
-    color: "from-blue-600 to-indigo-600"
+    color: "from-[#f0813d] to-[#9c4400]"
   },
   {
     id: "notifications",
@@ -100,7 +102,7 @@ const settingsSections = [
     description: "Reminders, alerts, payment notifications",
     icon: Bell,
     href: "/settings/notifications",
-    color: "from-blue-600 to-indigo-600"
+    color: "from-[#f0813d] to-[#9c4400]"
   },
   {
     id: "trainers",
@@ -108,7 +110,7 @@ const settingsSections = [
     description: "Manage trainers, plans & member assignments",
     icon: Shield,
     href: "/settings/trainers",
-    color: "from-blue-600 to-indigo-600"
+    color: "from-[#f0813d] to-[#9c4400]"
   },
   {
     id: "amenities",
@@ -116,7 +118,7 @@ const settingsSections = [
     description: "Locker, towel, parking & other amenities",
     icon: Package,
     href: "/settings/amenities",
-    color: "from-blue-600 to-indigo-600"
+    color: "from-[#f0813d] to-[#9c4400]"
   },
 ];
 
@@ -126,14 +128,14 @@ const quickActions = [
     icon: Database,
     action: "backup",
     description: "Create backup",
-    color: "bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-200"
+    color: "bg-gradient-to-br from-[#f0813d]/10 to-[#f0813d]/15 border border-[#f0813d]/20"
   },
   {
     label: "Help",
     icon: HelpCircle,
     action: "help",
     description: "Get support",
-    color: "bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200"
+    color: "bg-gradient-to-br from-[#f0813d]/10 to-[#f0813d]/15 border border-[#f0813d]/20"
   },
 ];
 
@@ -152,6 +154,18 @@ export default function SettingsPage() {
 
   // Filter quick actions based on role
   const filteredQuickActions = quickActions;
+  const visibleSections = settingsSections.filter((section) => {
+    if (section.superadminOnly && user?.role !== "superadmin") {
+      return false;
+    }
+    if (!hasPermission(permissions, PERMISSIONS.MEMBERS)) {
+      return !['plans', 'diet-plans', 'workout-plans'].includes(section.id);
+    }
+    if (!canCreateTrainer) {
+      return !['gym', 'plans', 'trainers'].includes(section.id);
+    }
+    return true;
+  });
 
   useEffect(() => {
     fetchGymData();
@@ -207,8 +221,44 @@ export default function SettingsPage() {
       <Header title="Settings" showBack={false} />
 
       <main className="px-3 py-3 space-y-4">
+        <section className="relative mx-1 overflow-hidden rounded-2xl border border-[#f0813d]/20 bg-[#1a1c1c] p-5 shadow-xl">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(240,129,61,0.38),transparent_32%),linear-gradient(135deg,rgba(255,255,255,0.08),transparent_45%)]" />
+          <div className="relative">
+            <div className="mb-5 flex items-start justify-between gap-3">
+              <div>
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-bold text-white/85">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Advanced admin suite
+                </div>
+                <h1 className="max-w-[16rem] text-2xl font-black leading-tight text-white">
+                  Control every gym operation from one hub.
+                </h1>
+              </div>
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-[#1a1c1c] shadow-lg">
+                <SettingsIcon className="h-6 w-6" />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { label: "Tools", value: visibleSections.length, icon: Wrench },
+                { label: "Members", value: loading ? "..." : totalMembers, icon: Users },
+                { label: "Version", value: appStats.version, icon: Zap },
+              ].map((stat) => {
+                const Icon = stat.icon;
+                return (
+                  <div key={stat.label} className="rounded-xl border border-white/15 bg-white/10 p-3 backdrop-blur">
+                    <Icon className="mb-2 h-4 w-4 text-white/75" />
+                    <p className="truncate text-base font-black text-white">{stat.value}</p>
+                    <p className="text-[11px] font-semibold text-white/65">{stat.label}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
         {/* Gym Profile Card - Updated to Indigo Theme */}
-        <div className="bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl p-4 shadow-lg mx-1">
+        <div className="bg-gradient-to-br from-[#f0813d] to-[#9c4400] rounded-xl p-4 shadow-lg mx-1">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center border-2 border-white/30">
               <Building className="w-8 h-8 text-white" />
@@ -260,37 +310,21 @@ export default function SettingsPage() {
           </div>
           
           <div className="space-y-3">
-            {settingsSections
-              .filter((section) => {
-                // Only show superadmin sections to superadmins
-                if (section.superadminOnly && user?.role !== "superadmin") {
-                  return false;
-                }
-                // Hide membership plans, diet plans, and workout plans if members permission is false
-                if (!hasPermission(permissions, PERMISSIONS.MEMBERS)) {
-                  return !['plans', 'diet-plans', 'workout-plans'].includes(section.id);
-                }
-                // Hide gym settings, membership plans and trainers section for trainers
-                if (!canCreateTrainer) {
-                  return !['gym', 'plans', 'trainers'].includes(section.id);
-                }
-                return true;
-              })
-              .map((section) => {
+            {visibleSections.map((section) => {
               const Icon = section.icon;
               return (
                 <div
                   key={section.id}
                   onClick={() => !section.badge && router.push(section.href)}
-                  className={`bg-white rounded-xl border border-gray-200 p-3 hover:shadow-md active:scale-95 transition-all duration-200 ${section.badge ? "opacity-70 cursor-not-allowed" : "cursor-pointer"}`}
+                  className={`bg-white rounded-2xl border border-gray-200 p-3 hover:border-[#f0813d]/30 hover:shadow-lg active:scale-95 transition-all duration-200 ${section.badge ? "opacity-70 cursor-not-allowed" : "cursor-pointer"}`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${section.color} flex items-center justify-center`}>
+                    <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${section.color} flex items-center justify-center shadow-md`}>
                       <Icon className="w-6 h-6 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
-                        <h3 className="font-semibold text-gray-900 text-sm truncate">
+                        <h3 className="font-black text-gray-900 text-sm truncate">
                           {section.title}
                         </h3>
                         {section.badge && (
@@ -303,7 +337,7 @@ export default function SettingsPage() {
                         {section.description}
                       </p>
                       {!section.badge && (
-                        <div className="flex items-center text-blue-600 text-xs font-medium">
+                        <div className="flex items-center text-[#f0813d] text-xs font-bold">
                           <span>Configure</span>
                           <ChevronRight className="w-3 h-3 ml-1" />
                         </div>
@@ -374,7 +408,7 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center">
-                  <Clock className="w-5 h-5 text-gray-600" />
+                  <Clock className="w-5 h-5 text-white" />
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-700">Last Updated</p>
@@ -388,7 +422,7 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center">
-                  <Users className="w-5 h-5 text-gray-600" />
+                  <Users className="w-5 h-5 text-white" />
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-700">Total Members</p>
@@ -411,7 +445,7 @@ export default function SettingsPage() {
           {/* Back to Dashboard - Updated to Indigo Theme */}
           <button
             onClick={() => router.push("/admin/dashboard")}
-            className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2"
+            className="w-full py-3 bg-gradient-to-r from-[#f0813d] to-[#9c4400] text-white rounded-xl font-medium hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2"
             style={{ minHeight: '44px' }}
           >
             <ArrowLeft className="w-5 h-5" />
@@ -434,7 +468,7 @@ export default function SettingsPage() {
                 router.replace("/auth/login");
               }
             }}
-            className="w-full py-3 bg-gradient-to-br from-red-50 to-pink-50 border border-red-200 text-red-600 rounded-xl font-medium hover:shadow-sm active:scale-95 transition-all duration-200 flex items-center justify-center gap-2"
+            className="w-full py-3 bg-gradient-to-br from-[#f0813d]/10 to-[#f0813d]/10 border border-[#f0813d]/20 text-[#f0813d] rounded-xl font-medium hover:shadow-sm active:scale-95 transition-all duration-200 flex items-center justify-center gap-2"
             style={{ minHeight: '44px' }}
           >
             <LogOut className="w-5 h-5" />
@@ -448,7 +482,7 @@ export default function SettingsPage() {
             Need help?{" "}
             <button 
               onClick={() => handleQuickAction("help")}
-              className="text-blue-600 font-medium hover:text-blue-700 active:text-blue-800"
+              className="text-[#f0813d] font-medium hover:text-[#9c4400] active:text-[#9c4400]"
             >
               Contact Support
             </button>

@@ -58,7 +58,7 @@ export default function CustomerRenewPage() {
 
             <main className="px-4 py-4 space-y-4">
                 {/* Current Membership Info */}
-                <div className="bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl p-5 text-white shadow-lg">
+                <div className="bg-gradient-to-r from-[#f0813d] to-[#f0813d] rounded-2xl p-5 text-white shadow-lg">
                     <div className="flex items-center justify-between mb-3">
                         <div>
                             <p className="text-white/80 text-sm">Current Plan</p>
@@ -81,7 +81,7 @@ export default function CustomerRenewPage() {
                         <span className="text-2xl">💡</span>
                         <div>
                             <p className="font-semibold text-orange-900 mb-1">How it works</p>
-                            <p className="text-sm text-orange-700">
+                            <p className="text-sm text-[#f0813d]">
                                 Select a plan and payment mode. Your renewal request will be sent to the gym admin.
                                 Once payment is confirmed, your membership will be extended.
                             </p>
@@ -117,7 +117,7 @@ export default function CustomerRenewPage() {
                                 <div className="space-y-1">
                                     {p.features.map((feature, idx) => (
                                         <div key={idx} className="flex items-center gap-2 text-sm text-gray-600">
-                                            <span className="text-green-500">✓</span>
+                                            <span className="text-[#f0813d]">✓</span>
                                             <span>{feature}</span>
                                         </div>
                                     ))}
@@ -129,15 +129,15 @@ export default function CustomerRenewPage() {
 
                 {/* New End Date Preview */}
                 {selectedPlan && (
-                    <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                    <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
                         <div className="flex items-center gap-3">
                             <span className="text-3xl">📅</span>
                             <div className="flex-1">
-                                <p className="text-sm text-green-600 mb-1">New Membership Validity</p>
-                                <p className="font-bold text-green-900 text-lg">
+                                <p className="text-sm text-[#f0813d] mb-1">New Membership Validity</p>
+                                <p className="font-bold text-orange-900 text-lg">
                                     {mockCurrentMembership.endDate} → {calculateNewEndDate()}
                                 </p>
-                                <p className="text-xs text-green-600 mt-1">
+                                <p className="text-xs text-[#f0813d] mt-1">
                                     +{plan.duration} days extension
                                 </p>
                             </div>
@@ -231,8 +231,8 @@ export default function CustomerRenewPage() {
                             </p>
                         </div>
 
-                        <div className="bg-blue-50 rounded-lg p-3 mb-4">
-                            <p className="text-xs text-blue-700 text-center">
+                        <div className="bg-orange-50 rounded-lg p-3 mb-4">
+                            <p className="text-xs text-[#f0813d] text-center">
                                 Please make the payment of <span className="font-bold">₹{plan?.price}</span> via {paymentMode.toUpperCase()}
                                 at the gym reception or as instructed by admin.
                             </p>

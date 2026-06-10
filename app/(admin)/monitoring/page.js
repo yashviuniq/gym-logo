@@ -70,7 +70,7 @@ export default function MonitoringPage() {
             <p className="text-sm text-gray-500">Currently In Gym</p>
           </div>
           <div className="bg-white rounded-xl p-4 shadow-sm text-center">
-            <p className="text-3xl font-bold text-green-600">
+            <p className="text-3xl font-bold text-[#f0813d]">
               {recentActivity.filter((a) => a.type === "check-in").length}
             </p>
             <p className="text-sm text-gray-500">Today's Check-ins</p>
@@ -106,7 +106,7 @@ export default function MonitoringPage() {
                       <p className="text-sm font-medium text-gray-900">
                         {member.duration}
                       </p>
-                      <span className="inline-block w-2 h-2 bg-green-500 rounded-full mt-1"></span>
+                      <span className="inline-block w-2 h-2 bg-[#f0813d] rounded-full mt-1"></span>
                     </div>
                   </div>
                 </div>

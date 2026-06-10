@@ -1,15 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { Activity, Clock } from "lucide-react";
+import { Activity, Clock, Dumbbell } from "lucide-react";
 import ListModal from "./ListModal";
 
 function ActivityRow({ activity }) {
+  const isMemberActivity = activity.type === "member";
+
   return (
     <div className="flex items-center justify-between p-3 rounded-2xl border border-[#ececec] bg-[#fafafa] hover:bg-white transition-all duration-300">
       <div className="flex items-center gap-3 flex-1 min-w-0">
         <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-orange-50 border border-orange-100 shadow-sm">
-          <span className="text-base">{activity.icon}</span>
+          {isMemberActivity ? (
+            <Dumbbell className="w-5 h-5 text-[#1a1c1c]" />
+          ) : (
+            <span className="text-base">{activity.icon}</span>
+          )}
         </div>
 
         <div className="flex-1 min-w-0">
@@ -41,8 +47,8 @@ export default function RecentActivitySection({ topActivity, allActivity }) {
       <div className="bg-white border border-[#ececec] rounded-3xl p-5 shadow-[0_10px_40px_rgba(0,0,0,0.05)]">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-orange-50 text-[#f0813d] border border-orange-100 rounded-2xl flex items-center justify-center">
-              <Activity className="w-5 h-5" />
+            <div className="w-12 h-12 bg-gradient-to-br from-[#f0813d] to-[#9c4400] text-white border border-[#f0813d]/30 rounded-2xl flex items-center justify-center shadow-[0_10px_24px_rgba(240,129,61,0.24)]">
+              <Activity className="w-5 h-5 text-white" />
             </div>
 
             <div>

@@ -74,7 +74,7 @@ export default function AnnouncementDetailPage() {
       <div className="min-h-screen bg-gray-50 pb-24">
         <Header title="Announcement" showBack={true} />
         <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#f0813d]"></div>
         </div>
       </div>
     );
@@ -88,7 +88,7 @@ export default function AnnouncementDetailPage() {
           <p className="text-gray-500">Announcement not found</p>
           <button
             onClick={() => router.push("/user/dashboard")}
-            className="mt-4 px-4 py-2 bg-orange-500 text-white rounded-lg"
+            className="mt-4 px-4 py-2 bg-[#f0813d] text-white rounded-lg"
           >
             Go Back
           </button>
@@ -104,7 +104,7 @@ export default function AnnouncementDetailPage() {
       <main className="px-4 py-4">
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           {/* Header */}
-          <div className="bg-gradient-to-r from-orange-500 to-orange-600 p-5 text-white">
+          <div className="bg-gradient-to-r from-[#f0813d] to-[#f0813d] p-5 text-white">
             <div className="flex items-start gap-3">
               <span className="text-3xl">📢</span>
               <div className="flex-1">

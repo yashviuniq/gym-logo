@@ -5,11 +5,20 @@
 
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // Load environment variables
 dotenv.config();
+dotenv.config({
+  path: resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '.env'),
+});
+dotenv.config({
+  path: resolve(dirname(fileURLToPath(import.meta.url)), '..', '.env'),
+  override: true,
+});
 
-const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // Validate environment variables
@@ -39,7 +48,7 @@ export const supabase = createClient(supabaseUrl, supabaseServiceKey, {
 export async function testConnection() {
   try {
     const { data, error } = await supabase
-      .from('attendance_logs')
+      .from('biometric_attendance_logs')
       .select('count')
       .limit(1);
     

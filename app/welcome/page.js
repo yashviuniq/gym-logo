@@ -2,54 +2,54 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { 
-  Dumbbell, 
-  Users, 
-  TrendingUp, 
-  Target, 
+import {
+  Dumbbell,
+  Users,
+  TrendingUp,
+  Target,
   Calendar,
   Clock,
-  Shield,
   Sparkles,
   ChevronRight,
   CheckCircle,
   Award,
   BarChart3,
   Smartphone,
-  Cloud
+  Cloud,
 } from "lucide-react";
+import SSLogo from "@/components/shared/SSLogo";
 
 export default function WelcomePage() {
   const [currentFeature, setCurrentFeature] = useState(0);
-  
+
   const features = [
     {
-      icon: <Dumbbell className="w-6 h-6" />,
+      icon: <Dumbbell className="h-6 w-6" />,
       title: "Smart Workout Plans",
-      description: "AI-powered workout routines tailored to your members' goals"
+      description: "Workout routines tailored to member goals and trainer flow.",
     },
     {
-      icon: <Users className="w-6 h-6" />,
+      icon: <Users className="h-6 w-6" />,
       title: "Member Management",
-      description: "Track attendance, memberships, and payments effortlessly"
+      description: "Attendance, memberships, dues, and profiles in one command center.",
     },
     {
-      icon: <TrendingUp className="w-6 h-6" />,
+      icon: <TrendingUp className="h-6 w-6" />,
       title: "Growth Analytics",
-      description: "Real-time insights to help your gym thrive"
+      description: "Revenue and retention signals built for fast daily decisions.",
     },
     {
-      icon: <Target className="w-6 h-6" />,
+      icon: <Target className="h-6 w-6" />,
       title: "Goal Tracking",
-      description: "Monitor member progress and celebrate achievements"
-    }
+      description: "Progress, streaks, points, and milestones for every member.",
+    },
   ];
 
   const stats = [
     { value: "24/7", label: "Access" },
     { value: "100+", label: "Gyms" },
     { value: "10K+", label: "Members" },
-    { value: "99%", label: "Satisfaction" }
+    { value: "99%", label: "Satisfaction" },
   ];
 
   useEffect(() => {
@@ -57,256 +57,180 @@ export default function WelcomePage() {
       setCurrentFeature((prev) => (prev + 1) % features.length);
     }, 3000);
     return () => clearInterval(interval);
-  }, []);
+  }, [features.length]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 overflow-hidden ">
-      {/* Animated Background Elements */}
+    <div className="min-h-screen overflow-hidden bg-[#050505] text-white">
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute top-60 -left-40 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-40 right-1/4 w-60 h-60 bg-purple-500/10 rounded-full blur-3xl"></div>
-        
-        {/* Grid Pattern */}
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute inset-0" style={{
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-45"
+          style={{ backgroundImage: "url('/bgimages/loginbgdesktop.png')" }}
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,#050505_0%,rgba(5,5,5,0.94)_36%,rgba(5,5,5,0.72)_64%,rgba(5,5,5,0.92)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_68%_22%,rgba(240,129,61,0.24),transparent_28%),linear-gradient(180deg,rgba(5,5,5,0.35),#050505_92%)]" />
+        <div
+          className="absolute inset-0 opacity-[0.08]"
+          style={{
             backgroundImage: `linear-gradient(to right, #ffffff 1px, transparent 1px),
                               linear-gradient(to bottom, #ffffff 1px, transparent 1px)`,
-            backgroundSize: '50px 50px'
-          }}></div>
-        </div>
+            backgroundSize: "56px 56px",
+          }}
+        />
       </div>
 
-      <main className="relative z-10 px-4 py-8 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
-            {/* Left Content */}
-            <div className="flex-1 space-y-8 lg:space-y-12 pt-1 lg:pt-10">
-              {/* Logo & Tagline */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg">
-                    <Dumbbell className="w-6 h-6 text-white" />
-                  </div>
-                  <span className="text-2xl font-bold text-white">SFit.ai</span>
-                </div>
-                
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
-                  <Sparkles className="w-4 h-4 text-blue-400" />
-                  <span className="text-sm font-medium text-white/90">AI-Powered Gym Management</span>
-                </div>
-              </div>
+      <main className="relative z-10">
+        <nav className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-5 sm:px-6 lg:px-8">
+          <SSLogo size="md" />
+          <Link
+            href="/auth/login"
+            className="rounded-full border border-white/15 bg-white/8 px-5 py-2 text-sm font-bold text-white backdrop-blur-md transition hover:border-[#f0813d]/70 hover:text-[#f0813d]"
+          >
+            Login
+          </Link>
+        </nav>
 
-              {/* Hero Text */}
-              <div className="space-y-6">
-                <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold text-white leading-tight">
-                  Transform Your<br />
-                  <span className="bg-gradient-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent">
-                    Gym Management
-                  </span>
-                </h1>
-                
-                <p className="text-xl text-gray-300 max-w-2xl">
-                  The complete solution for modern gyms. Manage members, track workouts, and grow your business with our intelligent platform.
-                </p>
-              </div>
-
-              {/* Stats */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {stats.map((stat, index) => (
-                  <div key={index} className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
-                    <div className="text-2xl font-bold text-white mb-1">{stat.value}</div>
-                    <div className="text-sm text-gray-400">{stat.label}</div>
-                  </div>
-                ))}
-              </div>
-
-              {/* CTA Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                <Link
-                  href="/auth/login"
-                  className="group px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:shadow-xl hover:shadow-blue-500/25 active:scale-95 transition-all duration-300 flex items-center justify-center gap-2"
-                >
-                  <span>Get Started</span>
-                  <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </Link>
-                
-                <Link
-                  href="#features"
-                  className="px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-xl border border-white/20 hover:bg-white/20 active:scale-95 transition-all duration-300"
-                >
-                  Explore Features
-                </Link>
-              </div>
+        <section className="mx-auto grid min-h-[calc(100vh-88px)] w-full max-w-7xl grid-cols-1 items-center gap-10 px-4 pb-16 pt-6 sm:px-6 lg:grid-cols-[1.02fr_0.98fr] lg:px-8 lg:pb-20">
+          <div className="max-w-3xl">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#f0813d]/30 bg-[#f0813d]/10 px-4 py-2 text-sm font-bold text-[#f0813d] backdrop-blur">
+              <Sparkles className="h-4 w-4" />
+              Premium Gym Operating System
             </div>
 
-            {/* Right Content - Feature Showcase */}
-            <div className="flex-1 relative lg:pl-12">
-              <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-xl rounded-2xl border border-white/10 p-6 shadow-2xl">
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-white">Smart Dashboard</h3>
-                    <div className="flex space-x-1">
-                      {features.map((_, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => setCurrentFeature(idx)}
-                          className={`w-2 h-2 rounded-full transition-all ${
-                            currentFeature === idx 
-                              ? "bg-blue-500 w-4" 
-                              : "bg-white/30"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  </div>
+            <h1 className="text-5xl font-black leading-[0.95] tracking-normal text-white sm:text-6xl lg:text-7xl">
+              Command your gym with
+              <span className="block text-[#f0813d]">SS precision.</span>
+            </h1>
 
-                  {/* Feature Display */}
-                  <div className="relative h-48 overflow-hidden rounded-xl bg-gradient-to-br from-gray-900 to-gray-800 border border-white/10">
-                    <div className="absolute inset-0 p-4">
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center">
-                            {features[currentFeature].icon}
-                          </div>
-                          <div>
-                            <h4 className="font-semibold text-white">
-                              {features[currentFeature].title}
-                            </h4>
-                            <p className="text-sm text-gray-400">
-                              {features[currentFeature].description}
-                            </p>
-                          </div>
-                        </div>
-                        
-                        {/* Mock Dashboard Preview */}
-                        <div className="grid grid-cols-3 gap-2">
-                          {[1, 2, 3].map((i) => (
-                            <div key={i} className="h-6 bg-gradient-to-r from-gray-700 to-gray-800 rounded animate-pulse"></div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-white/72 sm:text-xl">
+              A polished control room for memberships, attendance, trainers, payments, and member progress.
+              Built for gyms that want speed, clarity, and a premium brand feel from the first screen.
+            </p>
 
-                  {/* Feature List */}
-                  <div className="space-y-3">
-                    {[
-                      "Real-time member tracking",
-                      "Automated billing & payments",
-                      "Smart workout planning",
-                      "Progress analytics"
-                    ].map((item, index) => (
-                      <div key={index} className="flex items-center gap-3">
-                        <CheckCircle className="w-5 h-5 text-green-500" />
-                        <span className="text-sm text-gray-300">{item}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Features Section */}
-          <div id="features" className="pt-24 lg:pt-32 pb-16">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">
-                Everything You Need to Succeed
-              </h2>
-              <p className="text-gray-400 max-w-2xl mx-auto">
-                From member management to advanced analytics, we've got you covered
-              </p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Link
+                href="/auth/login"
+                className="group inline-flex items-center justify-center gap-2 rounded-xl bg-[#f0813d] px-7 py-4 text-sm font-black uppercase tracking-[0.16em] text-black shadow-[0_18px_42px_rgba(240,129,61,0.28)] transition hover:bg-white active:scale-95"
+              >
+                Enter Dashboard
+                <ChevronRight className="h-5 w-5 transition group-hover:translate-x-1" />
+              </Link>
+              <Link
+                href="#features"
+                className="inline-flex items-center justify-center rounded-xl border border-white/14 bg-white/8 px-7 py-4 text-sm font-bold text-white backdrop-blur transition hover:border-white/30 hover:bg-white/12 active:scale-95"
+              >
+                View System
+              </Link>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[
-                {
-                  icon: <Calendar className="w-8 h-8" />,
-                  title: "Attendance Tracking",
-                  description: "QR-based check-ins, real-time monitoring",
-                  color: "from-blue-500 to-blue-600"
-                },
-                {
-                  icon: <BarChart3 className="w-8 h-8" />,
-                  title: "Business Analytics",
-                  description: "Revenue reports, growth insights",
-                  color: "from-indigo-500 to-indigo-600"
-                },
-                {
-                  icon: <Smartphone className="w-8 h-8" />,
-                  title: "Mobile App",
-                  description: "Member app for bookings & progress",
-                  color: "from-purple-500 to-purple-600"
-                },
-                {
-                  icon: <Clock className="w-8 h-8" />,
-                  title: "Class Scheduling",
-                  description: "Automated booking and reminders",
-                  color: "from-pink-500 to-pink-600"
-                },
-                {
-                  icon: <Award className="w-8 h-8" />,
-                  title: "Goal Achievement",
-                  description: "Track and celebrate member milestones",
-                  color: "from-emerald-500 to-emerald-600"
-                },
-                {
-                  icon: <Cloud className="w-8 h-8" />,
-                  title: "Cloud Sync",
-                  description: "Access data anywhere, anytime",
-                  color: "from-cyan-500 to-cyan-600"
-                }
-              ].map((feature, index) => (
-                <div
-                  key={index}
-                  className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/30 hover:scale-[1.02] transition-all duration-300 group"
-                >
-                  <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-4 group-hover:shadow-lg group-hover:shadow-blue-500/25 transition-shadow`}>
-                    {feature.icon}
-                  </div>
-                  <h3 className="text-xl font-semibold text-white mb-2">
-                    {feature.title}
-                  </h3>
-                  <p className="text-gray-400 text-sm">
-                    {feature.description}
-                  </p>
+            <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {stats.map((stat) => (
+                <div key={stat.label} className="border-l border-[#f0813d]/60 bg-white/[0.04] px-4 py-3">
+                  <div className="text-2xl font-black text-white">{stat.value}</div>
+                  <div className="mt-1 text-xs font-bold uppercase tracking-[0.14em] text-white/45">{stat.label}</div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Final CTA */}
-          <div className="bg-gradient-to-r from-blue-600/20 to-indigo-600/20 backdrop-blur-sm rounded-2xl p-8 lg:p-12 text-center border border-white/10 mt-12">
-            <div className="max-w-2xl mx-auto space-y-6">
-              <h2 className="text-3xl lg:text-4xl font-bold text-white">
-                Ready to Transform Your Gym?
-              </h2>
-              <p className="text-gray-300 text-lg">
-                Join thousands of successful gyms using our platform
-              </p>
-              <Link
-                href="/auth/login"
-                className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl hover:shadow-xl hover:shadow-blue-500/25 active:scale-95 transition-all duration-300"
-              >
-                <span>Start Free </span>
-                <ChevronRight className="w-5 h-5" />
-              </Link>
-              
-            </div>
-          </div>
+          <div className="relative">
+            <div className="overflow-hidden rounded-[28px] border border-white/12 bg-[#0d0d0d]/82 shadow-[0_28px_80px_rgba(0,0,0,0.55)] backdrop-blur-xl">
+              <div className="border-b border-white/10 px-5 py-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.24em] text-[#f0813d]">Live Overview</p>
+                    <h2 className="mt-1 text-xl font-black text-white">SS Command Deck</h2>
+                  </div>
+                  <SSLogo size="sm" showWordmark={false} />
+                </div>
+              </div>
 
-          {/* Footer */}
-          <div className="pt-12 pb-8 text-center">
-            <div className="text-gray-500 text-sm mb-2">
-              © {new Date().getFullYear()} SFit.ai • All rights reserved
-            </div>
-            <div className="text-gray-400 text-xs">
-              Created by Shabiya Solutions
+              <div className="space-y-5 p-5">
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    ["Revenue", "$48.2K"],
+                    ["Members", "1,284"],
+                    ["Check-ins", "326"],
+                  ].map(([label, value]) => (
+                    <div key={label} className="rounded-xl border border-white/10 bg-white/[0.05] p-4">
+                      <p className="text-xs font-bold text-white/45">{label}</p>
+                      <p className="mt-2 text-xl font-black text-white">{value}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="rounded-2xl border border-[#f0813d]/20 bg-[#f0813d]/10 p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="grid h-11 w-11 place-items-center rounded-xl bg-[#1a1c1c] text-white">
+                      {features[currentFeature].icon}
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-black text-white">{features[currentFeature].title}</h3>
+                      <p className="mt-1 text-sm leading-6 text-white/60">{features[currentFeature].description}</p>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex gap-1.5">
+                    {features.map((_, idx) => (
+                      <button
+                        key={idx}
+                        aria-label={`Show feature ${idx + 1}`}
+                        onClick={() => setCurrentFeature(idx)}
+                        className={`h-1.5 rounded-full transition-all ${
+                          currentFeature === idx ? "w-8 bg-[#f0813d]" : "w-4 bg-white/18"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid gap-3">
+                  {[
+                    "Real-time attendance and member status",
+                    "Billing, renewals, and payment intelligence",
+                    "Trainer, diet, workout, and progress control",
+                  ].map((item) => (
+                    <div key={item} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3">
+                      <CheckCircle className="h-5 w-5 text-[#f0813d]" />
+                      <span className="text-sm font-semibold text-white/78">{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        </section>
+
+        <section id="features" className="border-t border-white/10 bg-[#080808] px-4 py-16 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-7xl">
+            <div className="mb-10 max-w-2xl">
+              <p className="text-xs font-black uppercase tracking-[0.28em] text-[#f0813d]">Built for daily control</p>
+              <h2 className="mt-3 text-3xl font-black text-white sm:text-4xl">Everything stays sharp, fast, and on brand.</h2>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {[
+                [Calendar, "Attendance Tracking", "QR check-ins and live monitoring"],
+                [BarChart3, "Business Analytics", "Revenue, dues, growth, and retention"],
+                [Smartphone, "Member App", "Progress, bookings, and updates"],
+                [Clock, "Class Scheduling", "Trainer calendars and session flow"],
+                [Award, "Achievement Engine", "Goals, streaks, points, and motivation"],
+                [Cloud, "Cloud Sync", "Every team role stays aligned"],
+              ].map(([Icon, title, description]) => (
+                <div key={title} className="rounded-2xl border border-white/10 bg-white/[0.035] p-5 transition hover:border-[#f0813d]/40 hover:bg-white/[0.055]">
+                  <div className="mb-5 grid h-12 w-12 place-items-center rounded-xl bg-[#1a1c1c] text-white ring-1 ring-white/10">
+                    <Icon className="h-6 w-6" />
+                  </div>
+                  <h3 className="text-lg font-black text-white">{title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-white/55">{description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <footer className="border-t border-white/10 bg-[#050505] px-4 py-8 text-center text-xs text-white/38">
+          <p>(c) {new Date().getFullYear()} SS Fitness. All rights reserved.</p>
+          <p className="mt-1">Created by Shabiya Solutions</p>
+        </footer>
       </main>
     </div>
   );

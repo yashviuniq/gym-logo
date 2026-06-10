@@ -180,11 +180,11 @@ export default function WorkoutPage() {
   const getLevelBadge = (level) => {
     switch (level?.toLowerCase()) {
       case "beginner":
-        return <span className="px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-md bg-[#C8FF00]/15 text-[#C8FF00] border border-[#C8FF00]/20">Beginner</span>;
+        return <span className="px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-md bg-[#f0813d]/15 text-[#f0813d] border border-[#f0813d]/20">Beginner</span>;
       case "intermediate":
-        return <span className="px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-md bg-[#FF7A00]/15 text-[#FF7A00] border border-[#FF7A00]/20">Intermediate</span>;
+        return <span className="px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-md bg-[#9c4400]/15 text-[#9c4400] border border-[#9c4400]/20">Intermediate</span>;
       case "advanced":
-        return <span className="px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-md bg-red-500/15 text-red-500 border border-red-500/20">Advanced</span>;
+        return <span className="px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-md bg-[#f0813d]/15 text-[#f0813d] border border-[#f0813d]/20">Advanced</span>;
       default:
         return <span className="px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-md bg-zinc-800 text-zinc-400 border border-white/5">{level}</span>;
     }
@@ -193,13 +193,13 @@ export default function WorkoutPage() {
   const getGoalBadge = (goal) => {
     switch (goal?.toLowerCase()) {
       case "fat loss":
-        return <span className="px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-md bg-orange-500/15 text-orange-400 border border-orange-500/20">Fat Loss</span>;
+        return <span className="px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-md bg-[#f0813d]/15 text-[#f0813d] border border-[#f0813d]/20">Fat Loss</span>;
       case "muscle gain":
-        return <span className="px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-md bg-blue-500/15 text-blue-400 border border-blue-500/20">Muscle Gain</span>;
+        return <span className="px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-md bg-[#f0813d]/15 text-[#f0813d] border border-[#f0813d]/20">Muscle Gain</span>;
       case "strength":
-        return <span className="px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-md bg-purple-500/15 text-purple-400 border border-purple-500/20">Strength</span>;
+        return <span className="px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-md bg-[#f0813d]/15 text-[#f0813d] border border-[#f0813d]/20">Strength</span>;
       case "endurance":
-        return <span className="px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-md bg-teal-500/15 text-teal-400 border border-teal-500/20">Endurance</span>;
+        return <span className="px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-md bg-[#f0813d]/15 text-[#f0813d] border border-[#f0813d]/20">Endurance</span>;
       default:
         return <span className="px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-md bg-zinc-800 text-zinc-400 border border-white/5">{goal}</span>;
     }
@@ -207,10 +207,10 @@ export default function WorkoutPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#090A0C] text-white pb-24">
+      <div className="min-h-screen bg-[#1a1c1c] text-white pb-24">
         <Header title="Workout" showBack={false} />
         <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#C8FF00]"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#f0813d]"></div>
           <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider">Loading workouts...</p>
         </div>
       </div>
@@ -219,14 +219,14 @@ export default function WorkoutPage() {
 
   if (!membershipActive) {
     return (
-      <div className="min-h-screen bg-[#090A0C] text-white pb-24 animate-fadeIn">
+      <div className="min-h-screen bg-[#1a1c1c] text-white pb-24 animate-fadeIn">
         <Header title="Workout" showBack={false} />
         <main className="px-4 py-8 max-w-md mx-auto">
           <div className="glass-panel p-8 text-center border-white/8 shadow-2xl relative overflow-hidden">
-            <div className="absolute -top-10 -left-10 w-36 h-36 bg-red-500 rounded-full blur-[80px] opacity-10"></div>
+            <div className="absolute -top-10 -left-10 w-36 h-36 bg-[#f0813d] rounded-full blur-[80px] opacity-10"></div>
             
-            <div className="w-20 h-20 bg-red-500/10 border border-red-500/25 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Lock className="w-10 h-10 text-red-500" />
+            <div className="w-20 h-20 bg-[#f0813d]/10 border border-[#f0813d]/25 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Lock className="w-10 h-10 text-white" />
             </div>
             
             <h2 className="text-2xl font-black font-heading tracking-tight mb-2 uppercase text-white">Membership Required</h2>
@@ -247,22 +247,22 @@ export default function WorkoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#090A0C] text-white pb-28 animate-fadeIn">
+    <div className="min-h-screen bg-[#1a1c1c] text-white pb-28 animate-fadeIn">
       <Header title="Workout" showBack={false} />
 
       <main className="px-4 py-5 space-y-6">
         {/* Create Own Workout Plan Options */}
         {canEditWorkoutPlan && (
-          <div className="relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-purple-950/40 via-purple-900/20 to-black border border-purple-500/25 shadow-lg group">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500 rounded-full blur-[50px] opacity-10"></div>
+          <div className="relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-orange-950/40 via-orange-900/20 to-black border border-[#f0813d]/25 shadow-lg group">
+            <div className="absolute top-0 right-0 w-24 h-24 bg-[#f0813d] rounded-full blur-[50px] opacity-10"></div>
             <div className="flex items-center justify-between relative">
               <div className="space-y-1">
-                <span className="text-[9px] font-black tracking-widest text-purple-400 uppercase">Self Plan Creator</span>
+                <span className="text-[9px] font-black tracking-widest text-[#f0813d] uppercase">Self Plan Creator</span>
                 <p className="text-sm font-extrabold text-white tracking-tight">Design Your Custom Workouts</p>
               </div>
               <button
                 onClick={() => router.push("/workout/create")}
-                className="py-2.5 px-4 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-extrabold text-xs tracking-wider uppercase transition-all duration-300 active-scale shadow-lg flex items-center gap-1"
+                className="py-2.5 px-4 bg-[#f0813d] hover:bg-[#f0813d] text-white rounded-xl font-extrabold text-xs tracking-wider uppercase transition-all duration-300 active-scale shadow-lg flex items-center gap-1"
               >
                 <Plus className="w-3.5 h-3.5" /> Create
               </button>
@@ -284,7 +284,7 @@ export default function WorkoutPage() {
             ></div>
           )}
           
-          <div className="absolute top-0 right-0 w-36 h-36 bg-[#C8FF00] rounded-full blur-[80px] opacity-10"></div>
+          <div className="absolute top-0 right-0 w-36 h-36 bg-[#f0813d] rounded-full blur-[80px] opacity-10"></div>
 
           <div className="relative flex justify-between items-start mb-4">
             <div className="space-y-1">
@@ -304,8 +304,8 @@ export default function WorkoutPage() {
           </div>
 
           {!todayWorkout?.isRestDay && todayWorkout?.exercises?.length > 0 && (
-            <div className="relative flex items-center gap-4 text-xs text-[#C8FF00] font-bold">
-              <span className="flex items-center gap-1.5 px-3 py-1.5 bg-[#C8FF00]/10 border border-[#C8FF00]/15 rounded-xl">
+            <div className="relative flex items-center gap-4 text-xs text-[#f0813d] font-bold">
+              <span className="flex items-center gap-1.5 px-3 py-1.5 bg-[#f0813d]/10 border border-[#f0813d]/15 rounded-xl">
                 <Dumbbell className="w-4 h-4" />
                 {todayWorkout.exercises.length} Exercises Scheduled
               </span>
@@ -324,7 +324,7 @@ export default function WorkoutPage() {
                     <div className="flex items-start justify-between">
                       <div className="flex-1 space-y-2">
                         <div className="flex items-center gap-2">
-                          <span className="w-5 h-5 bg-[#C8FF00] text-[#090A0C] font-black rounded-lg flex items-center justify-center text-[10px]">
+                          <span className="w-5 h-5 bg-[#f0813d] text-[#1a1c1c] font-black rounded-lg flex items-center justify-center text-[10px]">
                             {idx + 1}
                           </span>
                           <p className="font-extrabold text-sm text-white tracking-tight">{exercise.exercise_name}</p>
@@ -342,7 +342,7 @@ export default function WorkoutPage() {
                             </span>
                           )}
                           {exercise.weight && (
-                            <span className="px-2 py-0.5 bg-[#FF7A00]/10 border border-[#FF7A00]/15 text-[#FF7A00] text-[10px] font-bold rounded-md">
+                            <span className="px-2 py-0.5 bg-[#9c4400]/10 border border-[#9c4400]/15 text-[#9c4400] text-[10px] font-bold rounded-md">
                               {exercise.weight}
                             </span>
                           )}
@@ -355,7 +355,7 @@ export default function WorkoutPage() {
                         </div>
                         {exercise.notes && (
                           <p className="text-xs text-zinc-400 ml-7 leading-relaxed bg-white/3 p-2.5 rounded-xl border border-white/5">
-                            <span className="text-[#C8FF00] font-bold">Note:</span> {exercise.notes}
+                            <span className="text-[#f0813d] font-bold">Note:</span> {exercise.notes}
                           </p>
                         )}
                       </div>
@@ -372,7 +372,7 @@ export default function WorkoutPage() {
         {workoutPlans.length === 0 ? (
           <div className="glass-panel p-8 border-white/6 text-center shadow-lg">
             <div className="w-16 h-16 bg-zinc-800 border border-white/8 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Dumbbell className="w-6 h-6 text-zinc-500" />
+              <Dumbbell className="w-6 h-6 text-white" />
             </div>
             <p className="text-white font-extrabold text-sm uppercase mb-1">No Workouts Assigned</p>
             <p className="text-zinc-400 text-xs leading-relaxed max-w-xs mx-auto">
@@ -405,7 +405,7 @@ export default function WorkoutPage() {
                     </p>
                   </div>
                   {expandedPlan === plan.id ? (
-                    <ChevronUp className="text-[#C8FF00]" size={20} />
+                    <ChevronUp className="text-[#f0813d]" size={20} />
                   ) : (
                     <ChevronDown className="text-zinc-500" size={20} />
                   )}
@@ -435,7 +435,7 @@ export default function WorkoutPage() {
                             >
                               <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 bg-gradient-to-br from-zinc-800 to-zinc-950 border border-white/8 rounded-xl flex items-center justify-center">
-                                  <span className="text-[#C8FF00] font-black text-xs font-heading">
+                                  <span className="text-[#f0813d] font-black text-xs font-heading">
                                     {day.day_name?.slice(0, 3).toUpperCase()}
                                   </span>
                                 </div>
@@ -449,7 +449,7 @@ export default function WorkoutPage() {
                                   {day.workout_exercises?.length || 0} exercises
                                 </span>
                                 {expandedDay === day.id ? (
-                                  <ChevronUp className="text-[#C8FF00]" size={16} />
+                                  <ChevronUp className="text-[#f0813d]" size={16} />
                                 ) : (
                                   <ChevronDown className="text-zinc-500" size={16} />
                                 )}
@@ -462,12 +462,12 @@ export default function WorkoutPage() {
                                 {day.workout_exercises.map((exercise, exIdx) => (
                                   <div 
                                     key={exercise.id || exIdx}
-                                    className="bg-[#111214] rounded-2xl p-4 border border-white/5 shadow-md"
+                                    className="bg-[#2d2926] rounded-2xl p-4 border border-white/5 shadow-md"
                                   >
                                     <div className="flex items-start justify-between">
                                       <div className="flex-1 space-y-2">
                                         <div className="flex items-center gap-2.5">
-                                          <span className="w-5.5 h-5.5 bg-[#C8FF00]/15 text-[#C8FF00] border border-[#C8FF00]/25 rounded-lg flex items-center justify-center text-[10px] font-black font-heading">
+                                          <span className="w-5.5 h-5.5 bg-[#f0813d]/15 text-[#f0813d] border border-[#f0813d]/25 rounded-lg flex items-center justify-center text-[10px] font-black font-heading">
                                             {exIdx + 1}
                                           </span>
                                           <p className="font-extrabold text-sm text-white tracking-tight">{exercise.exercise_name}</p>
@@ -485,7 +485,7 @@ export default function WorkoutPage() {
                                             </span>
                                           )}
                                           {exercise.weight && (
-                                            <span className="px-2 py-0.5 bg-[#FF7A00]/10 border border-[#FF7A00]/15 text-[#FF7A00] text-[10px] font-bold rounded-md">
+                                            <span className="px-2 py-0.5 bg-[#9c4400]/10 border border-[#9c4400]/15 text-[#9c4400] text-[10px] font-bold rounded-md">
                                               {exercise.weight}
                                             </span>
                                           )}
@@ -497,7 +497,7 @@ export default function WorkoutPage() {
                                         </div>
                                         {exercise.notes && (
                                           <p className="text-xs text-zinc-400 ml-8 leading-relaxed bg-white/3 p-2.5 rounded-xl border border-white/5">
-                                            <span className="text-[#C8FF00] font-bold">💡 Note:</span> {exercise.notes}
+                                            <span className="text-[#f0813d] font-bold">💡 Note:</span> {exercise.notes}
                                           </p>
                                         )}
                                       </div>

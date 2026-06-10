@@ -188,7 +188,7 @@ export default function ProfileImageUpload({
         {/* Profile Image */}
         <div
           onClick={openImagePreview}
-          className={`${sizeClasses[size]} rounded-full overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold relative ${
+          className={`${sizeClasses[size]} rounded-full overflow-hidden bg-gradient-to-br from-[#f0813d] to-[#f0813d] flex items-center justify-center text-white font-bold relative ${
             previewUrl && !uploading ? "cursor-pointer" : ""
           }`}
           role={previewUrl ? "button" : undefined}
@@ -235,7 +235,7 @@ export default function ProfileImageUpload({
           <button
             type="button"
             onClick={handleRemoveImage}
-            className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 rounded-full shadow-lg flex items-center justify-center hover:bg-red-600 active:scale-95 transition-all"
+            className="absolute -top-1 -right-1 w-6 h-6 bg-[#f0813d] rounded-full shadow-lg flex items-center justify-center hover:bg-[#f0813d] active:scale-95 transition-all"
           >
             <X className="w-3 h-3 text-white" />
           </button>
@@ -262,7 +262,7 @@ export default function ProfileImageUpload({
 
       {/* Error message */}
       {error && (
-        <p className={`text-xs text-red-500 mt-2 ${align === "left" ? "text-left" : "text-center"}`}>{error}</p>
+        <p className={`text-xs text-[#f0813d] mt-2 ${align === "left" ? "text-left" : "text-center"}`}>{error}</p>
       )}
 
       {/* WhatsApp-style profile preview modal */}

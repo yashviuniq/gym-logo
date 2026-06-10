@@ -94,10 +94,10 @@ export default function ExerciseDetailPage() {
         </div>
 
         {/* Set Tracker */}
-        <div className="bg-blue-50 rounded-xl p-4">
+        <div className="bg-orange-50 rounded-xl p-4">
           <div className="flex items-center justify-between mb-3">
-            <span className="font-medium text-blue-900">Current Set</span>
-            <span className="text-blue-600">
+            <span className="font-medium text-orange-900">Current Set</span>
+            <span className="text-[#f0813d]">
               {currentSet} of {exercise.sets}
             </span>
           </div>
@@ -106,7 +106,7 @@ export default function ExerciseDetailPage() {
               <div
                 key={i}
                 className={`flex-1 h-2 rounded-full ${
-                  i < currentSet ? "bg-blue-500" : "bg-blue-200"
+                  i < currentSet ? "bg-[#f0813d]" : "bg-orange-200"
                 }`}
               ></div>
             ))}
@@ -114,13 +114,13 @@ export default function ExerciseDetailPage() {
 
           {isResting ? (
             <div className="text-center py-4">
-              <p className="text-sm text-blue-600 mb-2">Rest Time</p>
-              <p className="text-4xl font-bold text-blue-900">{restTime}s</p>
+              <p className="text-sm text-[#f0813d] mb-2">Rest Time</p>
+              <p className="text-4xl font-bold text-orange-900">{restTime}s</p>
             </div>
           ) : (
             <button
               onClick={completeSet}
-              className="w-full py-3 bg-blue-600 text-white rounded-xl font-medium"
+              className="w-full py-3 bg-[#f0813d] text-white rounded-xl font-medium"
             >
               {currentSet >= exercise.sets
                 ? "Complete Exercise"
@@ -145,12 +145,12 @@ export default function ExerciseDetailPage() {
         </div>
 
         {/* Tips */}
-        <div className="bg-yellow-50 rounded-xl p-4">
+        <div className="bg-orange-50 rounded-xl p-4">
           <div className="flex items-start gap-3">
             <span className="text-xl">💡</span>
             <div>
-              <p className="font-medium text-yellow-900">Pro Tip</p>
-              <p className="text-sm text-yellow-700">{exercise.tips}</p>
+              <p className="font-medium text-orange-900">Pro Tip</p>
+              <p className="text-sm text-[#f0813d]">{exercise.tips}</p>
             </div>
           </div>
         </div>

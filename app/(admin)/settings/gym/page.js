@@ -6,13 +6,24 @@ import Header from "@/components/layout/Header";
 import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/contexts/ToastContext";
 import { useUserRole } from "@/lib/hooks/useUserRole";
-import { Plus, X, Building } from "lucide-react";
+import {
+  Plus,
+  X,
+  Building,
+  Bell,
+  ChevronRight,
+  Dumbbell,
+  Package,
+} from "lucide-react";
 import { compressMemberImage, fileToDataUrl, validateMemberImage } from "@/lib/utils/memberImageUpload";
+
+const TRAINER_IMAGE = "https://tse4.mm.bing.net/th/id/OIP.9JOpiI5vM2oeFguZ6WXhPQHaF4?r=0&cb=thfvnextfalcon&w=872&h=693&rs=1&pid=ImgDetMain&o=7&rm=3";
+const AMENITIES_IMAGE = "https://tse4.mm.bing.net/th/id/OIP.K28hjULOuNukcO4HB2VA-wHaE8?r=0&cb=thfvnextfalcon&rs=1&pid=ImgDetMain&o=7&rm=3";
 
 export default function GymSettingsPage() {
   const router = useRouter();
   const { showSuccess, showError } = useToast();
-  const { canCreateTrainer, isLoading: roleLoading } = useUserRole();
+  const { canCreateTrainer, isLoading: roleLoading, user } = useUserRole();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [gymId, setGymId] = useState(null);
@@ -37,15 +48,50 @@ export default function GymSettingsPage() {
     qrType: "dynamic",
   });
 
-  // Redirect trainers away from this page
+  const managementCards = [
+    {
+      title: "Personal Trainers",
+      description: "Add trainers, salary, assignments, attendance and payroll.",
+      href: "/settings/trainers",
+      image: TRAINER_IMAGE,
+      icon: Dumbbell,
+    },
+    {
+      title: "Gym Amenities",
+      description: "Create paid amenities, update pricing and manage active status.",
+      href: "/settings/amenities",
+      image: AMENITIES_IMAGE,
+      icon: Package,
+    },
+    {
+      title: "Notifications",
+      description: "Control WhatsApp, SMS, push, attendance and payment alerts.",
+      href: "/settings/notifications",
+      image: null,
+      icon: Bell,
+    },
+  ];
+
+  // Redirect only roles that cannot manage gym settings.
   useEffect(() => {
-    const role=JSON.parse(localStorage.getItem("gymUser")).role;
-    console.log(role)
-    if (role!="admin") {
-      console.log("idar probelm haiiii")
+    if (roleLoading) return;
+
+    const storedUser = localStorage.getItem("gymUser");
+    let localUser = null;
+    if (storedUser) {
+      try {
+        localUser = JSON.parse(storedUser);
+      } catch (error) {
+        console.warn("Could not parse stored gym user", error);
+      }
+    }
+    const role = user?.role || localUser?.role;
+    const canManageGym = canCreateTrainer || role === "admin" || role === "superadmin";
+
+    if (!canManageGym) {
       router.push("/admin/dashboard");
     }
-  }, []);
+  }, [canCreateTrainer, roleLoading, router, user?.role]);
 
   useEffect(() => {
     fetchGymData();
@@ -256,7 +302,7 @@ export default function GymSettingsPage() {
       <div className="min-h-screen bg-gray-50 pb-24">
         <Header title="Gym Settings" showBack={true} />
         <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#f0813d]"></div>
         </div>
       </div>
     );
@@ -267,6 +313,105 @@ export default function GymSettingsPage() {
       <Header title="Gym Settings" showBack={true} />
 
       <form onSubmit={handleSubmit} className="px-4 py-4 space-y-4">
+        <section className="relative overflow-hidden rounded-2xl border border-[#f0813d]/20 bg-[#1a1c1c] p-5 shadow-xl">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(240,129,61,0.38),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.08),transparent_46%)]" />
+          <div className="relative">
+            <div className="mb-5 flex items-start justify-between gap-3">
+              <div>
+                <p className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-white/60">
+                  Gym control center
+                </p>
+                <h2 className="max-w-[16rem] text-2xl font-black leading-tight text-white">
+                  Update gym profile, services and member alerts.
+                </h2>
+              </div>
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-[#1a1c1c] shadow-lg">
+                <Building className="h-6 w-6" />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {managementCards.map((card) => {
+                const Icon = card.icon;
+                return (
+                  <button
+                    key={card.title}
+                    type="button"
+                    onClick={() => router.push(card.href)}
+                    className="group overflow-hidden rounded-xl border border-white/15 bg-white/10 text-left backdrop-blur active:scale-95"
+                  >
+                    {card.image ? (
+                      <img
+                        src={card.image}
+                        alt={card.title}
+                        className="h-16 w-full object-cover opacity-85 transition group-hover:opacity-100"
+                      />
+                    ) : (
+                      <div className="flex h-16 w-full items-center justify-center bg-gradient-to-br from-[#f0813d] to-[#9c4400]">
+                        <Icon className="h-7 w-7 text-white" />
+                      </div>
+                    )}
+                    <div className="p-2">
+                      <p className="truncate text-[11px] font-black text-white">{card.title}</p>
+                      <div className="mt-1 flex items-center text-[10px] font-bold text-white/65">
+                        Open
+                        <ChevronRight className="ml-0.5 h-3 w-3" />
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-black text-gray-900">Quick Management</h3>
+              <p className="text-xs font-medium text-gray-500">
+                Trainer, amenity and notification functions are available here too.
+              </p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {managementCards.map((card) => {
+              const Icon = card.icon;
+              return (
+                <button
+                  key={card.href}
+                  type="button"
+                  onClick={() => router.push(card.href)}
+                  className="flex w-full items-center gap-3 rounded-2xl border border-gray-200 bg-white p-3 text-left shadow-sm transition hover:border-[#f0813d]/30 hover:shadow-lg active:scale-95"
+                >
+                  <div className="relative h-14 w-16 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-[#f0813d] to-[#9c4400]">
+                    {card.image ? (
+                      <img
+                        src={card.image}
+                        alt={card.title}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center">
+                        <Icon className="h-6 w-6 text-white" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <Icon className="h-4 w-4 text-[#f0813d]" />
+                      <p className="truncate text-sm font-black text-gray-900">{card.title}</p>
+                    </div>
+                    <p className="mt-1 line-clamp-2 text-xs font-medium text-gray-500">
+                      {card.description}
+                    </p>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-gray-400" />
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
         {/* Basic Info */}
         <div className="bg-white rounded-xl p-4 shadow-sm space-y-4">
           <h3 className="font-semibold text-gray-900">Basic Information</h3>
@@ -274,7 +419,7 @@ export default function GymSettingsPage() {
           <div className="flex flex-col items-center py-4 border-b border-gray-100">
             <div className="mb-3">
               <div className="relative group">
-                <div className="w-24 h-24 rounded-2xl overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold shadow-lg">
+                <div className="w-24 h-24 rounded-2xl overflow-hidden bg-gradient-to-br from-[#f0813d] to-[#9c4400] flex items-center justify-center text-white font-bold shadow-lg">
                   {(formData.newLogoBase64 || formData.logoUrl) ? (
                     <img
                       src={formData.newLogoBase64 || formData.logoUrl}
@@ -286,7 +431,7 @@ export default function GymSettingsPage() {
                   )}
                 </div>
                 <label htmlFor="logo-upload" className="absolute -bottom-2 -right-2 w-8 h-8 bg-white rounded-full shadow-lg border border-gray-200 flex items-center justify-center cursor-pointer hover:bg-gray-50 active:scale-95 transition-all group">
-                  <Plus className="w-4 h-4 text-blue-600" />
+                  <Plus className="w-4 h-4 text-[#f0813d]" />
                   <input
                     id="logo-upload"
                     type="file"
@@ -322,7 +467,7 @@ export default function GymSettingsPage() {
                       updateForm("newLogoBase64", null);
                       updateForm("logoUrl", "");
                     }}
-                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full shadow-lg flex items-center justify-center hover:bg-red-600 active:scale-95 transition-all"
+                    className=" icon-badge absolute -top-2 -right-2 w-6 h-6 bg-[#f0813d] rounded-full shadow-lg flex items-center justify-center hover:bg-[#9c4400] active:scale-95 transition-all"
                   >
                     <X className="w-3 h-3 text-white" />
                   </button>
@@ -367,7 +512,7 @@ export default function GymSettingsPage() {
               </label>
               <input
                 type="tel"
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#F97316]/50 focus:border-[#F97316]/50"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d]"
                 placeholder="Enter 10-digit phone number"
                 value={formData.phone}
                 onChange={(e) => {
@@ -388,7 +533,7 @@ export default function GymSettingsPage() {
               </label>
               <input
                 type="email"
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#F97316]/50 focus:border-[#F97316]/50"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d]"
                 placeholder="example@email.com"
                 value={formData.email}
                 onChange={(e) => updateForm("email", e.target.value)}
@@ -429,7 +574,7 @@ export default function GymSettingsPage() {
                   <label className="text-xs text-gray-500">Start</label>
                   <input
                     type="time"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#F97316]/50 focus:border-[#F97316]/50"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d]"
                     value={formData.weekdayMorningStart}
                     onChange={(e) => updateForm("weekdayMorningStart", e.target.value)}
                   />
@@ -438,7 +583,7 @@ export default function GymSettingsPage() {
                   <label className="text-xs text-gray-500">End</label>
                   <input
                     type="time"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#F97316]/50 focus:border-[#F97316]/50"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d]"
                     value={formData.weekdayMorningEnd}
                     onChange={(e) => updateForm("weekdayMorningEnd", e.target.value)}
                   />
@@ -454,7 +599,7 @@ export default function GymSettingsPage() {
                   <label className="text-xs text-gray-500">Start</label>
                   <input
                     type="time"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#F97316]/50 focus:border-[#F97316]/50"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d]"
                     value={formData.weekdayEveningStart}
                     onChange={(e) => updateForm("weekdayEveningStart", e.target.value)}
                   />
@@ -463,7 +608,7 @@ export default function GymSettingsPage() {
                   <label className="text-xs text-gray-500">End</label>
                   <input
                     type="time"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#F97316]/50 focus:border-[#F97316]/50"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d]"
                     value={formData.weekdayEveningEnd}
                     onChange={(e) => updateForm("weekdayEveningEnd", e.target.value)}
                   />
@@ -484,7 +629,7 @@ export default function GymSettingsPage() {
                   type="button"
                   onClick={() => updateForm("sundayOff", !formData.sundayOff)}
                   className={`w-11 h-6 rounded-full transition ${
-                    formData.sundayOff ? "bg-orange-500" : "bg-gray-300"
+                    formData.sundayOff ? "bg-[#f0813d]" : "bg-gray-300"
                   }`}
                 >
                   <div
@@ -504,7 +649,7 @@ export default function GymSettingsPage() {
                   <label className="text-xs text-gray-500">Start</label>
                   <input
                     type="time"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#F97316]/50 focus:border-[#F97316]/50"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d]"
                     value={formData.weekendMorningStart}
                     onChange={(e) => updateForm("weekendMorningStart", e.target.value)}
                   />
@@ -513,7 +658,7 @@ export default function GymSettingsPage() {
                   <label className="text-xs text-gray-500">End</label>
                   <input
                     type="time"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#F97316]/50 focus:border-[#F97316]/50"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d]"
                     value={formData.weekendMorningEnd}
                     onChange={(e) => updateForm("weekendMorningEnd", e.target.value)}
                   />
@@ -529,7 +674,7 @@ export default function GymSettingsPage() {
                   <label className="text-xs text-gray-500">Start</label>
                   <input
                     type="time"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#F97316]/50 focus:border-[#F97316]/50"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d]"
                     value={formData.weekendEveningStart}
                     onChange={(e) => updateForm("weekendEveningStart", e.target.value)}
                   />
@@ -538,7 +683,7 @@ export default function GymSettingsPage() {
                   <label className="text-xs text-gray-500">End</label>
                   <input
                     type="time"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#F97316]/50 focus:border-[#F97316]/50"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d]"
                     value={formData.weekendEveningEnd}
                     onChange={(e) => updateForm("weekendEveningEnd", e.target.value)}
                   />
@@ -556,7 +701,7 @@ export default function GymSettingsPage() {
               type="button"
               onClick={() => updateForm("qrEnabled", !formData.qrEnabled)}
               className={`w-12 h-6 rounded-full transition ${
-                formData.qrEnabled ? "bg-green-500" : "bg-gray-300"
+                formData.qrEnabled ? "bg-[#f0813d]" : "bg-gray-300"
               }`}
             >
               <div
@@ -603,7 +748,7 @@ export default function GymSettingsPage() {
                 </div>
                 <button
                   type="button"
-                  className="text-sm text-blue-600 font-medium"
+                  className="text-sm text-[#f0813d] font-medium"
                 >
                   Generate New QR
                 </button>

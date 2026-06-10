@@ -44,15 +44,15 @@ const MEAL_TYPE_LABELS = {
 };
 
 const MEAL_ICONS = {
-  early_morning: <Coffee className="w-4 h-4 text-amber-400" />,
-  breakfast: <Egg className="w-4 h-4 text-yellow-400" />,
-  mid_morning: <Apple className="w-4 h-4 text-emerald-400" />,
-  lunch: <Sun className="w-4 h-4 text-orange-400" />,
-  pre_workout: <Flame className="w-4 h-4 text-red-500" />,
-  post_workout: <Dumbbell className="w-4 h-4 text-lime-400" />,
-  evening_snack: <Cookie className="w-4 h-4 text-yellow-600" />,
-  dinner: <Utensils className="w-4 h-4 text-indigo-400" />,
-  bedtime: <Moon className="w-4 h-4 text-purple-400" />,
+  early_morning: <Coffee className="w-4 h-4 text-[#f0813d]" />,
+  breakfast: <Egg className="w-4 h-4 text-[#f0813d]" />,
+  mid_morning: <Apple className="w-4 h-4 text-[#f0813d]" />,
+  lunch: <Sun className="w-4 h-4 text-[#f0813d]" />,
+  pre_workout: <Flame className="w-4 h-4 text-[#f0813d]" />,
+  post_workout: <Dumbbell className="w-4 h-4 text-[#f0813d]" />,
+  evening_snack: <Cookie className="w-4 h-4 text-[#f0813d]" />,
+  dinner: <Utensils className="w-4 h-4 text-[#f0813d]" />,
+  bedtime: <Moon className="w-4 h-4 text-[#f0813d]" />,
 };
 
 export default function DietPage() {
@@ -233,12 +233,12 @@ export default function DietPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#090A0C] text-white pb-24 font-sans">
+      <div className="min-h-screen bg-[#1a1c1c] text-white pb-24 font-sans">
         <Header title="Diet Schedule" showBack={false} />
         <div className="flex flex-col items-center justify-center h-[500px] px-6 space-y-6">
           <div className="relative flex items-center justify-center">
-            <div className="w-16 h-16 rounded-full border-4 border-t-[#C8FF00] border-r-transparent border-b-[#FF7A00] border-l-transparent animate-spin"></div>
-            <Activity className="absolute w-6 h-6 text-[#C8FF00] animate-pulse" />
+            <div className="w-16 h-16 rounded-full border-4 border-t-[#f0813d] border-r-transparent border-b-[#9c4400] border-l-transparent animate-spin"></div>
+            <Activity className="absolute w-6 h-6 text-[#f0813d] animate-pulse" />
           </div>
           <div className="text-center space-y-2">
             <h3 className="font-heading font-bold text-xl text-zinc-200">Loading meals & macro splits...</h3>
@@ -252,16 +252,16 @@ export default function DietPage() {
   // Show inactive membership message with premium locked screen
   if (!membershipActive) {
     return (
-      <div className="min-h-screen bg-[#090A0C] text-white pb-24 font-sans">
+      <div className="min-h-screen bg-[#1a1c1c] text-white pb-24 font-sans">
         <Header title="Diet Plan" showBack={false} />
         <main className="px-5 py-8 flex flex-col justify-center min-h-[70vh]">
           <div className="glass-panel p-8 text-center border border-white/6 shadow-[0_20px_50px_rgba(0,0,0,0.8)] relative overflow-hidden">
             <div className="absolute inset-0 bg-cover bg-center opacity-10 brightness-[0.2]" style={{ backgroundImage: `url('https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=600&q=80')` }}></div>
             
-            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#FF7A00] via-[#C8FF00] to-[#FF7A00]"></div>
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#9c4400] via-[#f0813d] to-[#9c4400]"></div>
             
-            <div className="w-20 h-20 bg-zinc-900 border-2 border-[#FF7A00] rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_rgba(255,122,0,0.25)] relative z-10">
-              <Lock className="w-8 h-8 text-[#FF7A00]" />
+            <div className="w-20 h-20 bg-zinc-900 border-2 border-[#9c4400] rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_rgba(156,68,0,0.25)] relative z-10">
+              <Lock className="w-8 h-8 text-white" />
             </div>
             
             <h2 className="text-2xl font-heading font-black text-white mb-2 relative z-10">Premium Locked</h2>
@@ -299,28 +299,28 @@ export default function DietPage() {
   const waterRemaining = Math.max(3000 - water, 0);
 
   return (
-    <div className="min-h-screen bg-[#090A0C] text-white pb-24 font-sans selection:bg-[#C8FF00] selection:text-black">
+    <div className="min-h-screen bg-[#1a1c1c] text-white pb-24 font-sans selection:bg-[#f0813d] selection:text-black">
       <Header title="My Diet" showBack={false} />
 
       <main className="px-4 py-4 space-y-6">
         
         {/* Can Edit Self Plan Banner */}
         {canEditDietPlan && (
-          <div className="relative overflow-hidden rounded-2xl border border-violet-500/30 bg-gradient-to-br from-violet-950/70 to-fuchsia-950/50 p-5 shadow-[0_8px_32px_rgba(139,92,246,0.15)] hover:scale-[1.01] transition-transform duration-300">
+          <div className="relative overflow-hidden rounded-2xl border border-[#f0813d]/30 bg-gradient-to-br from-orange-950/70 to-orange-950/50 p-5 shadow-[0_8px_32px_rgba(240,129,61,0.15)] hover:scale-[1.01] transition-transform duration-300">
             <div className="absolute top-0 right-0 p-4 opacity-15">
-              <Sparkles className="w-16 h-16 text-violet-400" />
+              <Sparkles className="w-16 h-16 text-[#f0813d]" />
             </div>
             <div className="flex items-center justify-between relative z-10">
               <div className="space-y-1">
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-400/20 text-violet-300 border border-violet-400/30 uppercase tracking-widest">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#f0813d]/20 text-[#f0813d] border border-[#f0813d]/30 uppercase tracking-widest">
                   Custom Mode
                 </span>
                 <p className="text-xl font-heading font-extrabold text-white">Design Custom Diet</p>
-                <p className="text-xs text-violet-300">Insert custom dishes & timeline macros</p>
+                <p className="text-xs text-[#f0813d]">Insert custom dishes & timeline macros</p>
               </div>
               <button
                 onClick={() => router.push("/diet/create")}
-                className="px-4 py-2.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-[0_4px_12px_rgba(139,92,246,0.3)] active:scale-95 transition-all"
+                className="px-4 py-2.5 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-[0_4px_12px_rgba(240,129,61,0.3)] active:scale-95 transition-all"
               >
                 Assemble
               </button>
@@ -330,14 +330,14 @@ export default function DietPage() {
 
         {/* Diet Plan Overview Header Card */}
         {dietPlan ? (
-          <div className="relative overflow-hidden rounded-3xl border border-white/5 bg-gradient-to-br from-[#111214] to-[#0A0B0D] p-6 shadow-xl">
+          <div className="relative overflow-hidden rounded-3xl border border-white/5 bg-gradient-to-br from-[#2d2926] to-[#1a1c1c] p-6 shadow-xl">
             {/* Soft decorative glow background */}
-            <div className="absolute -top-12 -right-12 w-32 h-32 bg-[#C8FF00] rounded-full filter blur-[60px] opacity-10"></div>
+            <div className="absolute -top-12 -right-12 w-32 h-32 bg-[#f0813d] rounded-full filter blur-[60px] opacity-10"></div>
             
             <div className="flex items-start justify-between relative z-10">
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#C8FF00] animate-pulse"></span>
+                  <span className="w-2 h-2 rounded-full bg-[#f0813d] animate-pulse"></span>
                   <span className="text-[10px] tracking-widest font-extrabold uppercase text-zinc-500">Assigned Routine</span>
                 </div>
                 <h2 className="text-2xl font-heading font-black text-white tracking-tight leading-tight">{dietPlan.title}</h2>
@@ -346,22 +346,22 @@ export default function DietPage() {
                 )}
               </div>
               <div className="w-12 h-12 bg-zinc-800/80 border border-white/10 rounded-2xl flex items-center justify-center shadow-lg">
-                <Apple className="w-6 h-6 text-[#C8FF00]" />
+                <Apple className="w-6 h-6 text-white" />
               </div>
             </div>
 
             <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs text-zinc-500 font-medium">
               <span>Assigned: {new Date(dietPlan.assignedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
               {selectedDay && dietPlan.days[selectedDay] && (
-                <span className="text-[#C8FF00] font-bold bg-[#C8FF00]/10 px-2.5 py-1 rounded-xl border border-[#C8FF00]/20">
+                <span className="text-[#f0813d] font-bold bg-[#f0813d]/10 px-2.5 py-1 rounded-xl border border-[#f0813d]/20">
                   🔥 {getDayCalories()} kcal planned
                 </span>
               )}
             </div>
           </div>
         ) : (
-          <div className="rounded-3xl border border-white/5 bg-[#111214] p-6 text-center shadow-xl relative overflow-hidden">
-            <div className="absolute -top-12 -left-12 w-32 h-32 bg-[#FF7A00] rounded-full filter blur-[50px] opacity-10"></div>
+          <div className="rounded-3xl border border-white/5 bg-[#2d2926] p-6 text-center shadow-xl relative overflow-hidden">
+            <div className="absolute -top-12 -left-12 w-32 h-32 bg-[#9c4400] rounded-full filter blur-[50px] opacity-10"></div>
             <Apple className="w-10 h-10 text-zinc-600 mx-auto mb-3" />
             <h3 className="text-lg font-heading font-bold text-zinc-200">No Custom Diet Active</h3>
             <p className="text-xs text-zinc-500 mt-1 max-w-[80%] mx-auto mb-4">
@@ -378,7 +378,7 @@ export default function DietPage() {
 
         {/* Figma High-Fidelity Hydration Widget (Inspired by Screen 3 on First Image) */}
         <div className="glass-panel p-5 border border-white/5 shadow-xl relative overflow-hidden">
-          <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-[#C8FF00]/5 rounded-full filter blur-[50px] pointer-events-none"></div>
+          <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-[#f0813d]/5 rounded-full filter blur-[50px] pointer-events-none"></div>
           
           <div className="flex items-center justify-between gap-6 relative z-10">
             {/* Water Liquid gauge circle */}
@@ -408,12 +408,12 @@ export default function DietPage() {
             {/* Hydration details and actions matching Figma exactly */}
             <div className="flex-1 space-y-4">
               <div className="space-y-1">
-                <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Hydration Tracker</span>
+                <span className="text-[9px] font-black text-[#f0813d] uppercase tracking-widest">Hydration Tracker</span>
                 <h3 className="font-heading font-black text-white text-[24px] leading-tight">
                   {water}<span className="text-sm font-bold text-zinc-500">ml</span>
                 </h3>
                 <p className="text-[11px] text-zinc-400 font-bold leading-normal">
-                  You need <span className="text-[#C8FF00] font-black">{waterRemaining}ml</span> more for today.
+                  You need <span className="text-[#f0813d] font-black">{waterRemaining}ml</span> more for today.
                 </p>
                 <div className="inline-flex items-center gap-1 bg-white/5 border border-white/5 rounded-lg px-2 py-0.5 mt-1">
                   <span className="text-[9px] font-extrabold text-zinc-500 uppercase tracking-wide">Goal:</span>
@@ -425,7 +425,7 @@ export default function DietPage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => addWater(250)}
-                  className="flex-1 py-3 bg-[#C8FF00] text-black font-bold rounded-xl text-xs uppercase tracking-wider hover:opacity-90 active-scale shadow-[0_4px_12px_rgba(200,255,0,0.2)] flex items-center justify-center gap-1"
+                  className="flex-1 py-3 bg-[#f0813d] text-black font-bold rounded-xl text-xs uppercase tracking-wider hover:opacity-90 active-scale shadow-[0_4px_12px_rgba(240,129,61,0.2)] flex items-center justify-center gap-1"
                 >
                   <Plus className="w-3.5 h-3.5 stroke-[3px]" /> 250ml
                 </button>
@@ -461,8 +461,8 @@ export default function DietPage() {
                     onClick={() => setSelectedDay(dayNum)}
                     className={`flex flex-col items-center justify-center min-w-[62px] py-3 rounded-2xl font-bold transition-all duration-300 active-scale border ${
                       isSelected
-                        ? "bg-[#C8FF00] text-black border-[#C8FF00] shadow-[0_0_15px_rgba(200,255,0,0.35)]"
-                        : "bg-[#111214] border-white/5 text-zinc-400 hover:text-white hover:border-white/10"
+                        ? "bg-[#f0813d] text-black border-[#f0813d] shadow-[0_0_15px_rgba(240,129,61,0.35)]"
+                        : "bg-[#2d2926] border-white/5 text-zinc-400 hover:text-white hover:border-white/10"
                     }`}
                   >
                     <span className="text-[9px] tracking-widest font-black uppercase opacity-60 mb-0.5">
@@ -485,14 +485,14 @@ export default function DietPage() {
         {dietPlan && selectedDay && dietPlan.days[selectedDay] && (
           <div className="space-y-4">
             <div className="flex items-center justify-between px-1 mb-1">
-              <h4 className="text-xs font-extrabold tracking-widest text-[#C8FF00] uppercase flex items-center gap-1.5">
+              <h4 className="text-xs font-extrabold tracking-widest text-[#f0813d] uppercase flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5" />
                 {DAY_NAMES[selectedDay]}&apos;s Macro Timeline
               </h4>
             </div>
 
             {dietPlan.days[selectedDay].meals.length > 0 ? (
-              <div className="relative pl-6 space-y-8 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-gradient-to-b before:from-[#C8FF00]/55 before:via-[#FF7A00]/45 before:to-zinc-850">
+              <div className="relative pl-6 space-y-8 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-gradient-to-b before:from-[#f0813d]/55 before:via-[#9c4400]/45 before:to-zinc-850">
                 {dietPlan.days[selectedDay].meals
                   .sort((a, b) => {
                     const order = ['early_morning', 'breakfast', 'mid_morning', 'lunch', 'pre_workout', 'post_workout', 'evening_snack', 'dinner', 'bedtime'];
@@ -506,15 +506,15 @@ export default function DietPage() {
                     return (
                       <div key={meal.id} className="relative group animate-slideUp">
                         {/* Glowing node point on timeline */}
-                        <div className="absolute -left-[27.5px] top-1.5 w-4.5 h-4.5 rounded-full bg-[#090A0C] border-2 border-[#FF7A00] shadow-[0_0_8px_rgba(255,122,0,0.5)] flex items-center justify-center transition-all duration-300 group-hover:scale-125 group-hover:border-[#C8FF00]">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#FF7A00] group-hover:bg-[#C8FF00]"></span>
+                        <div className="absolute -left-[27.5px] top-1.5 w-4.5 h-4.5 rounded-full bg-[#1a1c1c] border-2 border-[#9c4400] shadow-[0_0_8px_rgba(156,68,0,0.5)] flex items-center justify-center transition-all duration-300 group-hover:scale-125 group-hover:border-[#f0813d]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#9c4400] group-hover:bg-[#f0813d]"></span>
                         </div>
 
                         {/* Meal Glass container */}
                         <div className="glass-panel p-4.5 border border-white/5 hover:border-white/10 shadow-lg relative overflow-hidden transition-all duration-300">
                           
                           {/* Inner glowing accent */}
-                          <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[#FF7A00] to-orange-600 opacity-60"></div>
+                          <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-[#9c4400] to-[#f0813d] opacity-60"></div>
                           
                           <div className="flex items-start justify-between mb-3.5 pl-1.5">
                             <div className="space-y-1">
@@ -527,13 +527,13 @@ export default function DietPage() {
                                 </h3>
                               </div>
                               {meal.meal_time && (
-                                <p className="text-[11px] text-[#FF7A00] font-bold flex items-center gap-1">
+                                <p className="text-[11px] text-[#9c4400] font-bold flex items-center gap-1">
                                   <Clock className="w-3 h-3" /> {meal.meal_time}
                                 </p>
                               )}
                             </div>
                             {mealTotalCalories > 0 && (
-                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#FF7A00]/10 border border-[#FF7A00]/25 text-[#FF7A00] tracking-tight">
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#9c4400]/10 border border-[#9c4400]/25 text-[#9c4400] tracking-tight">
                                 {mealTotalCalories} kcal
                               </span>
                             )}
@@ -567,14 +567,14 @@ export default function DietPage() {
                                   {/* Figma inspired dynamic inline macro split indicators */}
                                   <div className="pt-1.5 border-t border-white/5 space-y-1">
                                     <div className="flex items-center justify-between text-[9px] font-bold text-zinc-500">
-                                      <span>Protein: <span className="text-[#FF7A00]">20g</span></span>
-                                      <span>Carbs: <span className="text-[#C8FF00]">18g</span></span>
-                                      <span>Fat: <span className="text-blue-400">11g</span></span>
+                                      <span>Protein: <span className="text-[#9c4400]">20g</span></span>
+                                      <span>Carbs: <span className="text-[#f0813d]">18g</span></span>
+                                      <span>Fat: <span className="text-[#f0813d]">11g</span></span>
                                     </div>
                                     <div className="h-1 w-full bg-zinc-800 rounded-full flex overflow-hidden">
-                                      <div className="h-full bg-[#FF7A00] rounded-l-full" style={{ width: "40%" }}></div>
-                                      <div className="h-full bg-[#C8FF00]" style={{ width: "35%" }}></div>
-                                      <div className="h-full bg-blue-400 rounded-r-full" style={{ width: "25%" }}></div>
+                                      <div className="h-full bg-[#9c4400] rounded-l-full" style={{ width: "40%" }}></div>
+                                      <div className="h-full bg-[#f0813d]" style={{ width: "35%" }}></div>
+                                      <div className="h-full bg-[#f0813d] rounded-r-full" style={{ width: "25%" }}></div>
                                     </div>
                                   </div>
                                 </div>
@@ -596,16 +596,16 @@ export default function DietPage() {
           )}
 
         {/* Premium Nutrition/Health Tip Banner */}
-        <div className="relative overflow-hidden rounded-2xl border border-amber-500/20 bg-gradient-to-r from-amber-950/20 to-orange-950/20 p-4 shadow-md">
+        <div className="relative overflow-hidden rounded-2xl border border-[#f0813d]/20 bg-gradient-to-r from-orange-950/20 to-orange-950/20 p-4 shadow-md">
           <div className="absolute top-0 right-0 p-3 opacity-10">
-            <Sparkle className="w-10 h-10 text-amber-300" />
+            <Sparkle className="w-10 h-10 text-[#f0813d]" />
           </div>
           <div className="flex items-start gap-3">
-            <div className="p-2 bg-amber-400/10 border border-amber-400/30 rounded-xl mt-0.5">
-              <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+            <div className="p-2 bg-[#f0813d]/10 border border-[#f0813d]/30 rounded-xl mt-0.5">
+              <Sparkles className="w-4 h-4 text-[#f0813d] animate-pulse" />
             </div>
             <div className="space-y-1">
-              <p className="font-heading font-black text-amber-300 text-xs uppercase tracking-widest">Figma Macro Tip</p>
+              <p className="font-heading font-black text-[#f0813d] text-xs uppercase tracking-widest">Figma Macro Tip</p>
               <p className="text-[11px] text-zinc-400 leading-relaxed">
                 Aim to distribute protein evenly. Keep hydration levels locked at 3.0L to accelerate protein processing, fat storage mobilization, and amino acid delivery speeds.
               </p>

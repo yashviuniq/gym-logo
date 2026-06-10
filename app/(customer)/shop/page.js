@@ -113,7 +113,7 @@ export default function CustomerShopPage() {
     setProcessing(false);
   };
 
-  if (loading) return (<div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100"><Header title="Shop" /><div className="flex items-center justify-center py-20"><div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div></div></div>);
+  if (loading) return (<div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100"><Header title="Shop" /><div className="flex items-center justify-center py-20"><div className="w-12 h-12 border-4 border-[#f0813d] border-t-transparent rounded-full animate-spin"></div></div></div>);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-gray-100 mb-17 safe-area-inset-bottom">
@@ -121,12 +121,12 @@ export default function CustomerShopPage() {
       <main className="px-3 py-2 space-y-3">
 
         {/* Points banner */}
-        <div className="bg-gradient-to-r from-amber-400 to-orange-500 rounded-2xl p-4 text-white flex items-center justify-between">
+        <div className="bg-gradient-to-r from-[#f0813d] to-[#f0813d] rounded-2xl p-4 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Star className="w-6 h-6" />
-            <div><p className="text-xs text-amber-100">Your Points</p><p className="text-2xl font-black">{memberPoints.toLocaleString()}</p></div>
+            <div><p className="text-xs text-orange-100">Your Points</p><p className="text-2xl font-black">{memberPoints.toLocaleString()}</p></div>
           </div>
-          <div className="text-right text-xs text-amber-100">
+          <div className="text-right text-xs text-orange-100">
             <p>1 pt = ₹{ratio}</p>
             <p className="font-bold text-white">= ₹{(memberPoints * ratio).toLocaleString()} value</p>
           </div>
@@ -138,9 +138,9 @@ export default function CustomerShopPage() {
             { key: "cart", label: "Cart", icon: <ShoppingCart className="w-4 h-4" /> },
             { key: "history", label: "Orders", icon: <History className="w-4 h-4" /> }].map(t => (
             <button key={t.key} onClick={() => { setTab(t.key); setOrderSuccess(null); }}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-semibold transition-all ${tab === t.key ? "bg-blue-500 text-white shadow-md" : "text-gray-500"}`}>
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-semibold transition-all ${tab === t.key ?"bg-[#f0813d] text-white shadow-md" :"text-gray-500"}`}>
               {t.icon} {t.label}
-              {t.key === "cart" && cartCount > 0 && <span className={`px-1.5 rounded-full text-xs ${tab === "cart" ? "bg-white/30" : "bg-blue-100 text-blue-600"}`}>{cartCount}</span>}
+              {t.key === "cart" && cartCount > 0 && <span className={`px-1.5 rounded-full text-xs ${tab === "cart" ? "bg-white/30" : "bg-orange-100 text-[#f0813d]"}`}>{cartCount}</span>}
             </button>
           ))}
         </div>
@@ -151,7 +151,7 @@ export default function CustomerShopPage() {
           <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
             {categories.map(c => (
               <button key={c} onClick={() => setSelectedCategory(c)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium border capitalize whitespace-nowrap ${selectedCategory === c ? "border-blue-400 bg-blue-50 text-blue-700" : "border-gray-200 text-gray-500 bg-white"}`}>
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium border capitalize whitespace-nowrap ${selectedCategory === c ? "border-[#f0813d] bg-orange-50 text-[#f0813d]" : "border-gray-200 text-gray-500 bg-white"}`}>
                 {c}</button>
             ))}
           </div>
@@ -174,14 +174,14 @@ export default function CustomerShopPage() {
                         <p className="text-lg font-black text-gray-800">₹{item.price}</p>
                         {inCart === 0 ? (
                           <button onClick={() => addToCart(item.id)}
-                            className="w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center active:scale-90 transition-transform">
+                            className=" icon-badge w-8 h-8 bg-[#f0813d] text-white rounded-lg flex items-center justify-center active:scale-90 transition-transform">
                             <Plus className="w-4 h-4" />
                           </button>
                         ) : (
                           <div className="flex items-center gap-1">
                             <button onClick={() => removeFromCart(item.id)} className="w-7 h-7 bg-gray-100 rounded-lg flex items-center justify-center"><Minus className="w-3.5 h-3.5" /></button>
                             <span className="text-sm font-bold w-6 text-center">{inCart}</span>
-                            <button onClick={() => addToCart(item.id)} className="w-7 h-7 bg-blue-500 text-white rounded-lg flex items-center justify-center"><Plus className="w-3.5 h-3.5" /></button>
+                            <button onClick={() => addToCart(item.id)} className="w-7 h-7 bg-[#f0813d] text-white rounded-lg flex items-center justify-center"><Plus className="w-3.5 h-3.5" /></button>
                           </div>
                         )}
                       </div>
@@ -197,28 +197,28 @@ export default function CustomerShopPage() {
         {tab === "cart" && (<>
           {orderSuccess ? (
             <div className="flex flex-col items-center py-10">
-              <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-4"><CheckCircle className="w-8 h-8 text-emerald-500" /></div>
-              <h3 className="font-bold text-gray-900 text-lg mb-1">Order Placed!</h3>
-              <p className="text-gray-500 text-sm mb-4">Total: ₹{orderSuccess.final_amount}</p>
-              {orderSuccess.points_used > 0 && <p className="text-amber-600 text-sm font-medium">-{orderSuccess.points_used} points used (₹{orderSuccess.points_discount} off)</p>}
-              <button onClick={() => { setTab("shop"); setOrderSuccess(null); }} className="mt-4 px-6 py-2.5 bg-blue-500 text-white rounded-xl text-sm font-semibold">Continue Shopping</button>
+              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mb-4"><CheckCircle className="w-8 h-8 text-[#f0813d]" /></div>
+              <h3 className="font-bold text-white text-lg mb-1">Order Placed!</h3>
+              <p className="text-white text-sm mb-4">Total: ₹{orderSuccess.final_amount}</p>
+              {orderSuccess.points_used > 0 && <p className="text-white text-sm font-medium">-{orderSuccess.points_used} points used (₹{orderSuccess.points_discount} off)</p>}
+              <button onClick={() => { setTab("shop"); setOrderSuccess(null); }} className="mt-4 px-6 py-2.5 bg-[#f0813d] text-white rounded-xl text-sm font-semibold">Continue Shopping</button>
             </div>
           ) : cartItems.length === 0 ? (
             <div className="flex flex-col items-center py-16"><ShoppingCart className="w-12 h-12 text-gray-300 mb-3" /><p className="text-gray-500 text-sm">Cart is empty</p>
-              <button onClick={() => setTab("shop")} className="mt-3 text-blue-500 text-sm font-medium">Browse items</button></div>
+              <button onClick={() => setTab("shop")} className="mt-3 text-[#f0813d] text-sm font-medium">Browse items</button></div>
           ) : (<>
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-50">
               {cartItems.map(item => (
                 <div key={item.id} className="flex items-center gap-3 px-4 py-3">
                   <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0"><Package className="w-5 h-5 text-gray-400" /></div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm text-gray-800 truncate">{item.name}</p>
-                    <p className="text-xs text-gray-400">₹{item.price} × {item.qty}</p>
+                    <p className="font-semibold text-sm text-white truncate">{item.name}</p>
+                    <p className="text-xs text-white">₹{item.price} × {item.qty}</p>
                   </div>
                   <div className="flex items-center gap-1">
                     <button onClick={() => removeFromCart(item.id)} className="w-7 h-7 bg-gray-100 rounded-lg flex items-center justify-center"><Minus className="w-3.5 h-3.5" /></button>
                     <span className="text-sm font-bold w-6 text-center">{item.qty}</span>
-                    <button onClick={() => addToCart(item.id)} className="w-7 h-7 bg-blue-500 text-white rounded-lg flex items-center justify-center"><Plus className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => addToCart(item.id)} className="w-7 h-7 bg-[#f0813d] text-white rounded-lg flex items-center justify-center"><Plus className="w-3.5 h-3.5" /></button>
                   </div>
                   <p className="font-bold text-gray-800 w-16 text-right">₹{(item.price * item.qty).toFixed(0)}</p>
                 </div>
@@ -227,16 +227,16 @@ export default function CustomerShopPage() {
 
             {/* Points discount */}
             {memberPoints > 0 && (
-              <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl border border-amber-200 p-4">
+              <div className="bg-gradient-to-r from-orange-50 to-orange-50 rounded-2xl border border-orange-200 p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm font-bold text-amber-800 flex items-center gap-1.5"><Star className="w-4 h-4" /> Use Points for Discount</p>
-                  <p className="text-xs text-amber-600">{memberPoints} pts available</p>
+                  <p className="text-sm font-bold text-orange-800 flex items-center gap-1.5"><Star className="w-4 h-4" /> Use Points for Discount</p>
+                  <p className="text-xs text-[#f0813d]">{memberPoints} pts available</p>
                 </div>
                 <input type="range" min={0} max={maxPointsUsable} value={pointsToUse} onChange={e => setPointsToUse(parseInt(e.target.value))}
-                  className="w-full accent-amber-500" />
+                  className="w-full accent-[#f0813d]" />
                 <div className="flex justify-between mt-1 text-xs">
-                  <span className="text-amber-600">Using {pointsToUse} points</span>
-                  <span className="font-bold text-amber-800">-₹{pointsDiscount.toFixed(0)} off</span>
+                  <span className="text-[#f0813d]">Using {pointsToUse} points</span>
+                  <span className="font-bold text-orange-800">-₹{pointsDiscount.toFixed(0)} off</span>
                 </div>
               </div>
             )}
@@ -244,12 +244,12 @@ export default function CustomerShopPage() {
             {/* Summary */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-2">
               <div className="flex justify-between text-sm"><span className="text-gray-500">Subtotal</span><span className="font-medium">₹{subtotal.toFixed(0)}</span></div>
-              {pointsToUse > 0 && <div className="flex justify-between text-sm"><span className="text-amber-600">Points Discount</span><span className="font-medium text-amber-600">-₹{pointsDiscount.toFixed(0)}</span></div>}
+              {pointsToUse > 0 && <div className="flex justify-between text-sm"><span className="text-[#f0813d]">Points Discount</span><span className="font-medium text-[#f0813d]">-₹{pointsDiscount.toFixed(0)}</span></div>}
               <div className="flex justify-between text-base font-bold border-t border-gray-100 pt-2"><span>Total</span><span>₹{total.toFixed(0)}</span></div>
             </div>
 
             <button onClick={handleCheckout} disabled={processing}
-              className="w-full py-3.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-bold text-sm active:scale-95 transition-transform disabled:opacity-50 shadow-md flex items-center justify-center gap-2">
+              className="w-full py-3.5 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white rounded-xl font-bold text-sm active:scale-95 transition-transform disabled:opacity-50 shadow-md flex items-center justify-center gap-2">
               {processing ? "Processing..." : <><ShoppingCart className="w-4 h-4" /> Place Order — ₹{total.toFixed(0)}</>}
             </button>
           </>)}
@@ -268,7 +268,7 @@ export default function CustomerShopPage() {
                     <p className="text-base font-black text-gray-800">₹{order.total}</p>
                   </div>
                   <div className="text-xs text-gray-500">{(order.items || []).map((i, idx) => <span key={idx}>{i.name} ×{i.qty}{idx < order.items.length - 1 ? ", " : ""}</span>)}</div>
-                  {order.points_used > 0 && <p className="text-xs text-amber-600 mt-1">🌟 {order.points_used} points used (₹{order.points_discount} off)</p>}
+                  {order.points_used > 0 && <p className="text-xs text-[#f0813d] mt-1">🌟 {order.points_used} points used (₹{order.points_discount} off)</p>}
                 </div>
               ))}
             </div>

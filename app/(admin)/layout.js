@@ -9,10 +9,12 @@ import {
   CalendarCheck,
   CreditCard,
   ShoppingBag,
+  BookOpen,
   Settings,
 } from "lucide-react";
 
 import BottomNav from "@/components/layout/BottomNav";
+import RoleShell from "@/components/layout/RoleShell";
 import RouteProtection from "@/components/shared/RouteProtection";
 import { runStartupCleanup } from "@/lib/receiptCleanup";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -23,6 +25,7 @@ const desktopNavItems = [
   { href: "/attendance", label: "Attendance", icon: CalendarCheck },
   { href: "/finance", label: "Finance", icon: CreditCard },
   { href: "/admin/shop", label: "Shop", icon: ShoppingBag },
+  { href: "/admin/knowledge", label: "Knowledge", icon: BookOpen },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -77,7 +80,15 @@ export default function AdminLayout({ children }) {
     runStartupCleanup();
   }, []);
 
-  const navRole = role === "trainer" ? "admin" : role || "admin";
+  const navRole = role || "admin";
+
+  if (role === "trainer") {
+    return (
+      <RouteProtection>
+        <RoleShell role="trainer">{children}</RoleShell>
+      </RouteProtection>
+    );
+  }
 
   return (
     <RouteProtection>

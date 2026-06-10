@@ -25,11 +25,11 @@ import {
 } from "lucide-react";
 
 const STATUS_CONFIG = {
-  new: { label: "New", color: "bg-blue-100 text-blue-700", dot: "bg-blue-500" },
-  contacted: { label: "Contacted", color: "bg-orange-100 text-orange-700", dot: "bg-orange-500" },
-  follow_up: { label: "Follow-Up", color: "bg-purple-100 text-purple-700", dot: "bg-purple-500" },
-  joined: { label: "Joined", color: "bg-green-100 text-green-700", dot: "bg-green-500" },
-  not_interested: { label: "Not Interested", color: "bg-red-100 text-red-700", dot: "bg-red-500" },
+  new: { label: "New", color: "bg-orange-100 text-[#f0813d]", dot: "bg-[#f0813d]" },
+  contacted: { label: "Contacted", color: "bg-orange-100 text-[#f0813d]", dot: "bg-[#f0813d]" },
+  follow_up: { label: "Follow-Up", color: "bg-orange-100 text-[#f0813d]", dot: "bg-[#f0813d]" },
+  joined: { label: "Joined", color: "bg-orange-100 text-[#f0813d]", dot: "bg-[#f0813d]" },
+  not_interested: { label: "Not Interested", color: "bg-orange-100 text-[#f0813d]", dot: "bg-[#f0813d]" },
 };
 
 const PLAN_OPTIONS = ["Monthly", "Quarterly", "Half-Yearly", "Yearly", "PT", "Other"];
@@ -184,7 +184,7 @@ export default function InquiriesPage() {
       <div className="min-h-screen bg-gray-50 pb-24">
         <Header title="Inquiries" />
         <div className="flex items-center justify-center h-96">
-          <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-10 h-10 border-4 border-[#f0813d] border-t-transparent rounded-full animate-spin"></div>
         </div>
       </div>
     );
@@ -199,9 +199,9 @@ export default function InquiriesPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           <StatCard icon={<Users className="w-5 h-5" />} label="Total" value={stats.total} color="blue" />
           <StatCard icon={<UserCheck className="w-5 h-5" />} label="Joined" value={stats.joined} color="green" />
-          <StatCard icon={<Clock className="w-5 h-5" />} label="Pending F/U" value={stats.pendingFollowUps} color="purple" />
+          <StatCard icon={<Clock className="w-5 h-5" />} label="Pending F/U" value={stats.pendingFollowUps} color="orange" />
           <StatCard icon={<AlertTriangle className="w-5 h-5" />} label="Overdue" value={stats.overdueFollowUps} color="red" />
-          <StatCard icon={<TrendingUp className="w-5 h-5" />} label="Conversion" value={`${stats.conversionRate}%`} color="emerald" />
+          <StatCard icon={<TrendingUp className="w-5 h-5" />} label="Conversion" value={`${stats.conversionRate}%`} color="orange" />
         </div>
 
         {/* Quick Action Buttons */}
@@ -209,14 +209,14 @@ export default function InquiriesPage() {
           {!isViewOnly && (
             <button
               onClick={() => router.push("/inquiries/add")}
-              className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 active:scale-95 transition-all shadow-sm"
+              className="flex items-center gap-2 px-4 py-2.5 bg-[#f0813d] text-white rounded-xl text-sm font-semibold hover:bg-[#f0813d] active:scale-95 transition-all shadow-sm"
             >
               <Plus className="w-4 h-4" /> New Inquiry
             </button>
           )}
           <button
             onClick={() => router.push("/inquiries/follow-ups")}
-            className="flex items-center gap-2 px-4 py-2.5 bg-purple-600 text-white rounded-xl text-sm font-semibold hover:bg-purple-700 active:scale-95 transition-all shadow-sm"
+            className="flex items-center gap-2 px-4 py-2.5 bg-[#f0813d] text-white rounded-xl text-sm font-semibold hover:bg-[#f0813d] active:scale-95 transition-all shadow-sm"
           >
             <PhoneCall className="w-4 h-4" /> Follow-Up Calls
           </button>
@@ -230,7 +230,7 @@ export default function InquiriesPage() {
               <input
                 type="text"
                 placeholder="Search by name or phone..."
-                className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] outline-none"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -239,12 +239,12 @@ export default function InquiriesPage() {
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-medium border transition ${
                 showFilters || hasActiveFilters
-                  ? "bg-blue-50 border-blue-300 text-blue-700"
+                  ? "bg-orange-50 border-[#f0813d] text-[#f0813d]"
                   : "bg-white border-gray-200 text-gray-600"
               }`}
             >
               <Filter className="w-4 h-4" />
-              {hasActiveFilters && <span className="w-2 h-2 bg-blue-500 rounded-full"></span>}
+              {hasActiveFilters && <span className="w-2 h-2 bg-[#f0813d] rounded-full"></span>}
             </button>
           </div>
 
@@ -273,14 +273,14 @@ export default function InquiriesPage() {
               <div className="flex items-center justify-between">
                 <p className="text-sm font-semibold text-gray-700">Advanced Filters</p>
                 {hasActiveFilters && (
-                  <button onClick={clearFilters} className="text-xs text-blue-600 font-medium">Clear All</button>
+                  <button onClick={clearFilters} className="text-xs text-[#f0813d] font-medium">Clear All</button>
                 )}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-gray-500 mb-1 block">Plan</label>
                   <select
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#f0813d]"
                     value={filterPlan}
                     onChange={(e) => setFilterPlan(e.target.value)}
                   >
@@ -293,7 +293,7 @@ export default function InquiriesPage() {
                 <div>
                   <label className="text-xs text-gray-500 mb-1 block">Sort By</label>
                   <select
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#f0813d]"
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
                   >
@@ -334,14 +334,14 @@ export default function InquiriesPage() {
         <div className="space-y-3">
           {paginated.length === 0 ? (
             <div className="bg-white rounded-xl p-12 text-center border border-gray-100">
-              <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Users className="w-8 h-8 text-blue-400" />
+              <div className="w-16 h-16 bg-orange-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Users className="w-8 h-8 text-white" />
               </div>
               <p className="text-gray-500 font-medium">No inquiries found</p>
               <p className="text-sm text-gray-400 mt-1">Add your first inquiry to get started</p>
               <button
                 onClick={() => router.push("/inquiries/add")}
-                className="mt-4 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg font-medium"
+                className="mt-4 px-4 py-2 bg-[#f0813d] text-white text-sm rounded-lg font-medium"
               >
                 + Add Inquiry
               </button>
@@ -360,7 +360,7 @@ export default function InquiriesPage() {
                 <div
                   key={inquiry.id}
                   className={`bg-white rounded-xl border p-4 transition hover:shadow-md ${
-                    isOverdue ? "border-red-200 bg-red-50/30" : "border-gray-100"
+                    isOverdue ? "border-orange-200 bg-orange-50/30" : "border-gray-100"
                   }`}
                 >
                   <div className="flex items-start justify-between mb-3">
@@ -371,14 +371,14 @@ export default function InquiriesPage() {
                           {sc.label}
                         </span>
                         {isOverdue && (
-                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-[#f0813d]">
                             Overdue
                           </span>
                         )}
                       </div>
                       <div className="flex items-center gap-2 mt-1">
                         <Phone className="w-3.5 h-3.5 text-gray-400" />
-                        <a href={`tel:${inquiry.phone}`} className="text-sm text-blue-600 font-medium">{inquiry.phone}</a>
+                        <a href={`tel:${inquiry.phone}`} className="text-sm text-[#f0813d] font-medium">{inquiry.phone}</a>
                       </div>
                     </div>
                   </div>
@@ -390,7 +390,7 @@ export default function InquiriesPage() {
                     </div>
                     <div>
                       <p className="text-gray-400">Follow-Up</p>
-                      <p className={`font-medium ${isOverdue ? "text-red-600" : "text-gray-700"}`}>
+                      <p className={`font-medium ${isOverdue ? "text-[#f0813d]" : "text-gray-700"}`}>
                         {formatDate(inquiry.follow_up_date)}
                       </p>
                     </div>
@@ -417,7 +417,7 @@ export default function InquiriesPage() {
                     {!isViewOnly && inquiry.status !== "joined" && (
                       <button
                         onClick={() => handleStatusChange(inquiry.id, "joined")}
-                        className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-green-700 bg-green-100 rounded-lg hover:bg-green-200 transition"
+                        className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-[#f0813d] bg-orange-100 rounded-lg hover:bg-orange-200 transition"
                       >
                         <UserCheck className="w-3.5 h-3.5" /> Mark Joined
                       </button>
@@ -425,14 +425,14 @@ export default function InquiriesPage() {
                     {!isViewOnly && inquiry.status !== "contacted" && inquiry.status !== "joined" && (
                       <button
                         onClick={() => handleStatusChange(inquiry.id, "contacted")}
-                        className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-orange-700 bg-orange-100 rounded-lg hover:bg-orange-200 transition"
+                        className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-[#f0813d] bg-orange-100 rounded-lg hover:bg-orange-200 transition"
                       >
                         <PhoneCall className="w-3.5 h-3.5" /> Contacted
                       </button>
                     )}
                     <button
                       onClick={() => setDeleteConfirm(inquiry.id)}
-                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition ml-auto"
+                      className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-[#f0813d] bg-orange-50 rounded-lg hover:bg-orange-100 transition ml-auto"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -482,7 +482,7 @@ export default function InquiriesPage() {
               </button>
               <button
                 onClick={() => handleDelete(deleteConfirm)}
-                className="flex-1 py-2.5 bg-red-600 text-white rounded-xl font-medium"
+                className="flex-1 py-2.5 bg-[#f0813d] text-white rounded-xl font-medium"
               >
                 Delete
               </button>
@@ -496,11 +496,11 @@ export default function InquiriesPage() {
 
 function StatCard({ icon, label, value, color }) {
   const colors = {
-    blue: "bg-blue-50 text-blue-600",
-    green: "bg-green-50 text-green-600",
-    purple: "bg-purple-50 text-purple-600",
-    red: "bg-red-50 text-red-600",
-    emerald: "bg-emerald-50 text-emerald-600",
+    blue: "bg-orange-50 text-[#f0813d]",
+    green: "bg-orange-50 text-[#f0813d]",
+    orange: "bg-orange-50 text-[#f0813d]",
+    red: "bg-orange-50 text-[#f0813d]",
+    orange: "bg-orange-50 text-[#f0813d]",
   };
   return (
     <div className="bg-white rounded-xl border border-gray-100 p-3 space-y-1">

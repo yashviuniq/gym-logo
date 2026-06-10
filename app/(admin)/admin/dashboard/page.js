@@ -20,7 +20,7 @@ import {
   useExcelExport,
 } from "@/components/dashboard";
 import {
-  Users,
+  Dumbbell,
   CheckCircle,
   AlertTriangle,
   Calendar,
@@ -313,11 +313,11 @@ export default function AdminDashboard() {
 
   if (!selectedGym && gyms.length > 0) {
     return (
-      <div className="min-h-screen bg-[#090A0C] text-white safe-area-inset-bottom">
+      <div className="min-h-screen bg-[#1a1c1c] text-white safe-area-inset-bottom">
         <Header title="Select Gym" showBack={false} />
         <main className="px-4 py-4 space-y-4">
           <div className="text-center mb-6 pt-2">
-            <div className="w-16 h-16 bg-gradient-to-br from-[#C8FF00] to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-[0_0_20px_rgba(200,255,0,0.2)]">
+            <div className="w-16 h-16 bg-gradient-to-br from-[#f0813d] to-[#f0813d] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-[0_0_20px_rgba(240,129,61,0.2)]">
               <Building className="w-8 h-8 text-black" />
             </div>
             <h2 className="text-xl font-heading font-extrabold text-white tracking-tight">
@@ -335,18 +335,18 @@ export default function AdminDashboard() {
               >
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center flex-shrink-0 border border-white/10">
-                    <Building className="w-5 h-5 text-[#C8FF00] drop-shadow-[0_0_8px_rgba(200,255,0,0.3)]" />
+                    <Building className="w-5 h-5 text-[#f0813d] drop-shadow-[0_0_8px_rgba(240,129,61,0.3)]" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-heading font-bold text-white text-base truncate">{gym.name}</h3>
                     <p className="text-xs text-zinc-400 truncate mt-0.5">
                       {gym.address || "No address"}
                     </p>
-                    <span className="inline-block text-[10px] font-bold px-2 py-0.5 bg-[#C8FF00]/10 text-[#C8FF00] rounded-full mt-1 border border-[#C8FF00]/20 tracking-wider">
+                    <span className="inline-block text-[10px] font-bold px-2 py-0.5 bg-[#f0813d]/10 text-[#f0813d] rounded-full mt-1 border border-[#f0813d]/20 tracking-wider">
                       {gym.timezone || "UTC"}
                     </span>
                   </div>
-                  <div className="w-8 h-8 bg-white/5 hover:bg-[#C8FF00]/10 text-zinc-400 hover:text-[#C8FF00] rounded-full flex items-center justify-center flex-shrink-0 border border-white/5 transition-colors">
+                  <div className="w-8 h-8 bg-white/5 hover:bg-[#f0813d]/10 text-zinc-400 hover:text-[#f0813d] rounded-full flex items-center justify-center flex-shrink-0 border border-white/5 transition-colors">
                     <ArrowRight className="w-4 h-4" />
                   </div>
                 </div>
@@ -362,11 +362,11 @@ export default function AdminDashboard() {
 
   if (gyms.length === 0 && !selectedGym) {
     return (
-      <div className="min-h-screen bg-[#090A0C] text-white safe-area-inset-bottom">
+      <div className="min-h-screen bg-[#1a1c1c] text-white safe-area-inset-bottom">
         <Header title="Dashboard" showBack={false} />
         <main className="px-4 py-4">
           <div className="text-center py-12">
-            <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-[0_0_30px_rgba(239,68,68,0.25)] border border-red-500/20">
+            <div className="w-20 h-20 bg-gradient-to-br from-[#f0813d] to-[#f0813d] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-[0_0_30px_rgba(239,68,68,0.25)] border border-[#f0813d]/20">
               <Building className="w-10 h-10 text-white" />
             </div>
             <h2 className="text-lg font-heading font-bold text-white mb-2">No Gym Assigned</h2>
@@ -406,7 +406,7 @@ export default function AdminDashboard() {
               <button
                 onClick={handleExportWholeDashboardExcel}
                 disabled={exportingExcel}
-                className="px-4 py-2 btn-premium-lime text-sm font-bold rounded-xl active-scale flex items-center gap-2 disabled:opacity-60"
+                className="px-4 py-2 btn-premium-primary text-sm font-bold rounded-xl active-scale flex items-center gap-2 disabled:opacity-60"
                 style={{ minHeight: "36px" }}
               >
                 <Download className="w-3.5 h-3.5" />
@@ -435,7 +435,7 @@ export default function AdminDashboard() {
               <KPICard
                 title="Total Members"
                 value={stats.totalMembers}
-                icon={<Users className="w-4 h-4" />}
+                icon={<Dumbbell className="w-5 h-5 text-[#1a1c1c]" />}
                 color="blue"
                 onClick={() => router.push("/members")}
               />
@@ -450,7 +450,7 @@ export default function AdminDashboard() {
                 title="Expired"
                 value={stats.expiredMembers}
                 icon={<AlertTriangle className="w-4 h-4" />}
-                color="amber"
+                color="orange"
                 onClick={() => router.push("/members?filter=expired")}
               />
             </>
@@ -460,7 +460,7 @@ export default function AdminDashboard() {
               title="Today"
               value={stats.todayAttendance}
               icon={<Calendar className="w-4 h-4" />}
-              color="indigo"
+              color="orange"
               onClick={() => router.push("/attendance")}
             />
           )}

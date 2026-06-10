@@ -3,10 +3,13 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useNotification } from "@/contexts/NotificationContext";
+import { useTheme } from "@/components/shared/ThemeProvider";
+import { ArrowLeft, Bell, Moon, Sun } from "lucide-react";
 
 export default function Header({ title, showBack = true, gymLogo = null }) {
   const router = useRouter();
   const { unreadCount, clearUnread, items } = useNotification();
+  const { theme, toggleTheme } = useTheme();
 
   const [open, setOpen] = useState(false);
   const [localLogo, setLocalLogo] = useState(null);
@@ -66,43 +69,62 @@ export default function Header({ title, showBack = true, gymLogo = null }) {
   const displayLogo = gymLogo || localLogo;
 
   return (
-    <header className="sticky top-0 bg-white/75 backdrop-blur-2xl border-b border-[#ececec] z-50">
+    <header className="sticky top-0 bg-gradient-to-r from-[#f0813d] to-[#9c4400] border-b border-[#9c4400]/20 z-50 app-header overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_34%)] pointer-events-none" />
+      <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/70 to-transparent pointer-events-none" />
       <div className="flex items-center justify-between px-4 py-4 relative">
         <div className="flex items-center gap-3">
           {showBack && (
             <button
               onClick={() => router.back()}
-              className="p-2.5 bg-[#fafafa] hover:bg-white border border-[#ececec] rounded-2xl text-[#1a1c1c] transition-all active-scale flex items-center justify-center text-lg font-bold shadow-sm"
+              className="header-action p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-2xl text-white transition-all active-scale flex items-center justify-center text-lg font-bold shadow-sm backdrop-blur-md"
               style={{ width: '40px', height: '40px' }}
               aria-label="Go back"
             >
-              ←
+              <ArrowLeft className="w-5 h-5" />
             </button>
           )}
           {displayLogo && (
             <img
               src={displayLogo}
               alt="Gym Logo"
-              className="h-11 w-11 rounded-2xl object-cover border border-[#ececec] shadow-[0_6px_18px_rgba(0,0,0,0.06)]"
+              className="h-11 w-11 rounded-2xl object-cover border border-white/35 shadow-[0_8px_20px_rgba(0,0,0,0.16)]"
             />
           )}
-          <h1 className="text-xl font-black tracking-tight text-[#1a1c1c] font-heading">{title}</h1>
+          <h1 className="text-xl font-black tracking-tight text-white font-heading drop-shadow-[0_2px_10px_rgba(0,0,0,0.18)]">{title}</h1>
         </div>
         
-        <button
-          className="relative p-2.5 bg-[#fafafa] hover:bg-white border border-[#ececec] rounded-2xl text-[#1a1c1c] transition-all active-scale cursor-pointer flex items-center justify-center shadow-sm"
-          style={{ width: '40px', height: '40px' }}
-          aria-label="Notifications"
-          onClick={toggleOpen}
-          type="button"
-        >
-          <span className="text-lg leading-none" role="img" aria-label="bell">🔔</span>
-          {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-[#f0813d] text-white text-[10px] font-extrabold rounded-full px-1.5 py-[2px] min-w-[18px] text-center shadow-[0_0_10px_rgba(240,129,61,0.3)]">
-              {unreadCount > 99 ? '99+' : unreadCount}
-            </span>
-          )}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            className="header-action relative p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-2xl text-white transition-all active-scale cursor-pointer flex items-center justify-center shadow-sm backdrop-blur-md"
+            style={{ width: '40px', height: '40px' }}
+            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            onClick={toggleTheme}
+            type="button"
+            title={theme === "dark" ? "Light mode" : "Dark mode"}
+          >
+            {theme === "dark" ? (
+              <Sun className="w-5 h-5" />
+            ) : (
+              <Moon className="w-5 h-5" />
+            )}
+          </button>
+
+          <button
+            className="header-action relative p-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-2xl text-white transition-all active-scale cursor-pointer flex items-center justify-center shadow-sm backdrop-blur-md"
+            style={{ width: '40px', height: '40px' }}
+            aria-label="Notifications"
+            onClick={toggleOpen}
+            type="button"
+          >
+            <Bell className="w-5 h-5" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-[#f0813d] text-white text-[10px] font-extrabold rounded-full px-1.5 py-[2px] min-w-[18px] text-center shadow-[0_0_10px_rgba(240,129,61,0.3)]">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
+          </button>
+        </div>
 
         {open && (
           <div className="absolute right-4 top-16 w-80 bg-white border border-[#ececec] rounded-3xl shadow-[0_24px_60px_rgba(0,0,0,0.08)] backdrop-blur-2xl z-[60] overflow-hidden animate-slideUp">

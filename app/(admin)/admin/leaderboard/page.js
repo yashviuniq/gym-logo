@@ -15,17 +15,17 @@ import {
 
 // ─── Challenge Type Config ───────────────────────────────────
 const CHALLENGE_TYPES = {
-  streak: { label: "Longest Streak", icon: <Flame className="w-4 h-4" />, color: "text-orange-500", bg: "bg-orange-50", unit: "days" },
-  total_days: { label: "Most Days", icon: <Calendar className="w-4 h-4" />, color: "text-blue-500", bg: "bg-blue-50", unit: "days" },
-  consistency: { label: "Consistency %", icon: <Percent className="w-4 h-4" />, color: "text-emerald-500", bg: "bg-emerald-50", unit: "%" },
-  custom: { label: "Custom", icon: <Dumbbell className="w-4 h-4" />, color: "text-purple-500", bg: "bg-purple-50", unit: "" },
+  streak: { label: "Longest Streak", icon: <Flame className="w-4 h-4" />, color: "text-[#f0813d]", bg: "bg-orange-50", unit: "days" },
+  total_days: { label: "Most Days", icon: <Calendar className="w-4 h-4" />, color: "text-[#f0813d]", bg: "bg-orange-50", unit: "days" },
+  consistency: { label: "Consistency %", icon: <Percent className="w-4 h-4" />, color: "text-[#f0813d]", bg: "bg-orange-50", unit: "%" },
+  custom: { label: "Custom", icon: <Dumbbell className="w-4 h-4" />, color: "text-[#f0813d]", bg: "bg-orange-50", unit: "" },
 };
 
 // ─── Avatar ──────────────────────────────────────────────────
 function MemberAvatar({ name, image, size = "w-10 h-10" }) {
   const initials = (name || "?").split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
   if (image) return <img src={image} alt={name} className={`${size} rounded-full object-cover`} />;
-  const colors = ["from-blue-400 to-indigo-500", "from-emerald-400 to-teal-500", "from-violet-400 to-purple-500", "from-pink-400 to-rose-500", "from-cyan-400 to-blue-500", "from-amber-400 to-orange-500"];
+  const colors = ["from-[#f0813d] to-[#f0813d]", "from-[#f0813d] to-[#f0813d]", "from-[#f0813d] to-[#f0813d]", "from-[#f0813d] to-[#f0813d]", "from-[#f0813d] to-[#f0813d]", "from-[#f0813d] to-[#f0813d]"];
   return (
     <div className={`${size} rounded-full bg-gradient-to-br ${colors[(name || "").charCodeAt(0) % colors.length]} flex items-center justify-center text-white font-bold text-sm`}>
       {initials}
@@ -36,8 +36,8 @@ function MemberAvatar({ name, image, size = "w-10 h-10" }) {
 // ─── Status Badge ────────────────────────────────────────────
 function StatusBadge({ status }) {
   const config = {
-    active: { bg: "bg-green-100 text-green-700", label: "Active" },
-    upcoming: { bg: "bg-blue-100 text-blue-700", label: "Upcoming" },
+    active: { bg: "bg-orange-100 text-[#f0813d]", label: "Active" },
+    upcoming: { bg: "bg-orange-100 text-[#f0813d]", label: "Upcoming" },
     ended: { bg: "bg-gray-100 text-gray-600", label: "Ended" },
   };
   const c = config[status] || config.ended;
@@ -91,7 +91,7 @@ function CreateChallengeModal({ open, onClose, onCreate }) {
             <input
               type="text" value={title} onChange={e => setTitle(e.target.value)}
               placeholder="e.g. January Streak Challenge"
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d]"
             />
           </div>
 
@@ -102,7 +102,7 @@ function CreateChallengeModal({ open, onClose, onCreate }) {
               value={description} onChange={e => setDescription(e.target.value)}
               placeholder="What's this challenge about?"
               rows={2}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 resize-none"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d] resize-none"
             />
           </div>
 
@@ -115,7 +115,7 @@ function CreateChallengeModal({ open, onClose, onCreate }) {
                   key={key}
                   onClick={() => setType(key)}
                   className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all ${
-                    type === key ? "border-blue-400 bg-blue-50 text-blue-700" : "border-gray-200 text-gray-600"
+                    type === key ? "border-[#f0813d] bg-orange-50 text-[#f0813d]" : "border-gray-200 text-gray-600"
                   }`}
                 >
                   {cfg.icon}
@@ -132,7 +132,7 @@ function CreateChallengeModal({ open, onClose, onCreate }) {
               <input
                 type="text" value={customUnit} onChange={e => setCustomUnit(e.target.value)}
                 placeholder="e.g. kg, reps, minutes"
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d]"
               />
             </div>
           )}
@@ -146,7 +146,7 @@ function CreateChallengeModal({ open, onClose, onCreate }) {
                   key={d}
                   onClick={() => setDuration(d)}
                   className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
-                    duration === d ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-600"
+                    duration === d ? "bg-[#f0813d] text-white" : "bg-gray-100 text-gray-600"
                   }`}
                 >
                   {d}d
@@ -160,7 +160,7 @@ function CreateChallengeModal({ open, onClose, onCreate }) {
             <label className="text-sm font-medium text-gray-700 mb-1 block">Start Date</label>
             <input
               type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d]"
             />
             <p className="text-xs text-gray-400 mt-1">Ends: {endDate}</p>
           </div>
@@ -169,7 +169,7 @@ function CreateChallengeModal({ open, onClose, onCreate }) {
           <button
             onClick={handleCreate}
             disabled={!title.trim() || saving}
-            className="w-full py-3 bg-blue-500 text-white rounded-xl font-semibold text-sm active:scale-95 transition-transform disabled:opacity-50"
+            className="w-full py-3 bg-[#f0813d] text-white rounded-xl font-semibold text-sm active:scale-95 transition-transform disabled:opacity-50"
           >
             {saving ? "Creating..." : "Create Challenge"}
           </button>
@@ -198,7 +198,7 @@ function UpdateScoreModal({ open, onClose, onSave, member, currentScore, unit })
             <label className="text-sm font-medium text-gray-700 mb-1 block">Score {unit ? `(${unit})` : ""}</label>
             <input
               type="number" value={score} onChange={e => setScore(parseFloat(e.target.value) || 0)}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#f0813d]/20"
             />
           </div>
           <div>
@@ -206,12 +206,12 @@ function UpdateScoreModal({ open, onClose, onSave, member, currentScore, unit })
             <input
               type="text" value={notes} onChange={e => setNotes(e.target.value)}
               placeholder="Optional"
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#f0813d]/20"
             />
           </div>
           <div className="flex gap-2">
             <button onClick={onClose} className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm font-medium">Cancel</button>
-            <button onClick={() => { onSave(score, notes); onClose(); }} className="flex-1 py-2.5 bg-blue-500 text-white rounded-xl text-sm font-medium">Save</button>
+            <button onClick={() => { onSave(score, notes); onClose(); }} className="flex-1 py-2.5 bg-[#f0813d] text-white rounded-xl text-sm font-medium">Save</button>
           </div>
         </div>
       </div>
@@ -401,7 +401,7 @@ export default function AdminLeaderboardPage() {
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
         <Header title="Leaderboard" />
         <div className="flex flex-col items-center justify-center py-20">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+          <div className="w-12 h-12 border-4 border-[#f0813d] border-t-transparent rounded-full animate-spin mb-4"></div>
         </div>
       </div>
     );
@@ -417,7 +417,7 @@ export default function AdminLeaderboardPage() {
           <button
             onClick={() => setActiveTab("streaks")}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-              activeTab === "streaks" ? "bg-blue-500 text-white shadow-md" : "text-gray-500"
+              activeTab === "streaks" ? "bg-[#f0813d] text-white shadow-md" : "text-gray-500"
             }`}
           >
             <Flame className="w-4 h-4" /> Streaks
@@ -425,12 +425,12 @@ export default function AdminLeaderboardPage() {
           <button
             onClick={() => { setActiveTab("challenges"); if (challenges.length === 0) fetchChallenges(); }}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-              activeTab === "challenges" ? "bg-blue-500 text-white shadow-md" : "text-gray-500"
+              activeTab === "challenges" ? "bg-[#f0813d] text-white shadow-md" : "text-gray-500"
             }`}
           >
             <Zap className="w-4 h-4" /> Challenges
             {challenges.filter(c => c.status === "active").length > 0 && (
-              <span className={`px-1.5 rounded-full text-xs ${activeTab === "challenges" ? "bg-white/30" : "bg-blue-100 text-blue-600"}`}>
+              <span className={`px-1.5 rounded-full text-xs ${activeTab === "challenges" ? "bg-white/30" : "bg-orange-100 text-[#f0813d]"}`}>
                 {challenges.filter(c => c.status === "active").length}
               </span>
             )}
@@ -447,7 +447,7 @@ export default function AdminLeaderboardPage() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input type="text" placeholder="Search members..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400" />
+                  className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d]" />
               </div>
               <div className="flex gap-2">
                 <div className="flex gap-1 flex-1 p-1 bg-white rounded-xl border border-gray-100">
@@ -457,15 +457,15 @@ export default function AdminLeaderboardPage() {
                     { key: "monthly", label: "Month", icon: <Calendar className="w-3 h-3" /> },
                   ].map(t => (
                     <button key={t.key} onClick={() => setSortBy(t.key)}
-                      className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${sortBy === t.key ? "bg-blue-500 text-white" : "text-gray-500"}`}>
+                      className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${sortBy === t.key ?"bg-[#f0813d] text-white" :"text-gray-500"}`}>
                       {t.icon} {t.label}
                     </button>
                   ))}
                 </div>
                 <button onClick={() => setShowHidden(!showHidden)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold border flex items-center gap-1 ${showHidden ? "bg-amber-50 border-amber-200 text-amber-700" : "bg-white border-gray-200 text-gray-500"}`}>
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold border flex items-center gap-1 ${showHidden ? "bg-orange-50 border-orange-200 text-[#f0813d]" : "bg-white border-gray-200 text-gray-500"}`}>
                   {showHidden ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                  {hiddenMembers.length > 0 && <span className="bg-amber-200 text-amber-800 px-1.5 rounded-full text-xs">{hiddenMembers.length}</span>}
+                  {hiddenMembers.length > 0 && <span className="bg-orange-200 text-orange-800 px-1.5 rounded-full text-xs">{hiddenMembers.length}</span>}
                 </button>
               </div>
             </div>
@@ -504,7 +504,7 @@ export default function AdminLeaderboardPage() {
                             <Users className="w-3.5 h-3.5" /> Profile
                           </button>
                           <button onClick={() => setConfirmAction({ type: isHidden ? "show" : "hide", memberId: member.id, memberName: member.full_name })}
-                            className={`px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-1 border ${isHidden ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-amber-50 border-amber-200 text-amber-700"}`}>
+                            className={`px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-1 border ${isHidden ? "bg-orange-50 border-orange-200 text-[#f0813d]" : "bg-orange-50 border-orange-200 text-[#f0813d]"}`}>
                             {isHidden ? <><Eye className="w-3.5 h-3.5" /> Show</> : <><EyeOff className="w-3.5 h-3.5" /> Hide</>}
                           </button>
                         </div>
@@ -524,7 +524,7 @@ export default function AdminLeaderboardPage() {
           <>
             {/* Create button */}
             <button onClick={() => setShowCreateModal(true)}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-semibold text-sm active:scale-95 transition-transform shadow-md shadow-blue-200/40">
+              className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white rounded-xl font-semibold text-sm active:scale-95 transition-transform shadow-md shadow-orange-200/40">
               <Plus className="w-4 h-4" /> Create New Challenge
             </button>
 
@@ -568,12 +568,12 @@ export default function AdminLeaderboardPage() {
                           <div className="flex gap-1 flex-shrink-0">
                             {challenge.status === "active" && (
                               <button onClick={e => { e.stopPropagation(); handleEndChallenge(challenge.id); }}
-                                className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
+                                className=" icon-badge w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center text-[#f0813d]">
                                 <CheckCircle className="w-4 h-4" />
                               </button>
                             )}
                             <button onClick={e => { e.stopPropagation(); setConfirmAction({ type: "deleteChallenge", id: challenge.id, name: challenge.title }); }}
-                              className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center text-red-500">
+                              className=" icon-badge w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center text-[#f0813d]">
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
@@ -581,7 +581,7 @@ export default function AdminLeaderboardPage() {
                         {/* Progress bar */}
                         {challenge.status === "active" && (
                           <div className="mt-3 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full transition-all" style={{ width: `${progress}%` }} />
+                            <div className="h-full bg-gradient-to-r from-[#f0813d] to-[#f0813d] rounded-full transition-all" style={{ width: `${progress}%` }} />
                           </div>
                         )}
                       </div>
@@ -591,7 +591,7 @@ export default function AdminLeaderboardPage() {
                         <div className="border-t border-gray-100">
                           {challengeLoading ? (
                             <div className="flex items-center justify-center py-8">
-                              <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                              <div className="w-8 h-8 border-3 border-[#f0813d] border-t-transparent rounded-full animate-spin"></div>
                             </div>
                           ) : challengeLeaderboard.length === 0 ? (
                             <div className="text-center py-8">
@@ -612,7 +612,7 @@ export default function AdminLeaderboardPage() {
                                     </span>
                                     {challenge.challenge_type === "custom" && (
                                       <button onClick={() => setScoreModal({ member: m, score: m.score })}
-                                        className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center text-blue-500">
+                                        className=" icon-badge w-7 h-7 rounded-lg bg-orange-50 flex items-center justify-center text-[#f0813d]">
                                         <Edit3 className="w-3.5 h-3.5" />
                                       </button>
                                     )}
@@ -661,8 +661,8 @@ export default function AdminLeaderboardPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-5 max-w-sm w-full shadow-xl">
             <div className="flex items-center gap-3 mb-3">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${confirmAction.type === "deleteChallenge" ? "bg-red-100" : "bg-blue-100"}`}>
-                <AlertTriangle className={`w-5 h-5 ${confirmAction.type === "deleteChallenge" ? "text-red-500" : "text-blue-500"}`} />
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${confirmAction.type ==="deleteChallenge" ?"bg-orange-100" :"bg-orange-100"}`}>
+                <AlertTriangle className={`w-5 h-5 ${confirmAction.type === "deleteChallenge" ? "text-white" : "text-white"}`} />
               </div>
               <h3 className="font-bold text-gray-900">
                 {confirmAction.type === "deleteChallenge" ? "Delete Challenge" : confirmAction.type === "hide" ? "Hide Member" : "Show Member"}
@@ -678,7 +678,7 @@ export default function AdminLeaderboardPage() {
               <button onClick={() => {
                 if (confirmAction.type === "deleteChallenge") handleDeleteChallenge(confirmAction.id);
                 else toggleHideMember(confirmAction.memberId, confirmAction.memberName, confirmAction.type === "hide");
-              }} className={`flex-1 py-2.5 rounded-xl text-sm font-medium text-white ${confirmAction.type === "deleteChallenge" ? "bg-red-500" : "bg-blue-500"}`}>
+              }} className={`flex-1 py-2.5 rounded-xl text-sm font-medium text-white ${confirmAction.type === "deleteChallenge" ? "bg-[#f0813d]" : "bg-[#f0813d]"}`}>
                 Confirm
               </button>
             </div>

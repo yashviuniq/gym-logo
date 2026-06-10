@@ -199,17 +199,17 @@ export default function AmenitiesSettingsPage() {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-2">
           <div className="bg-white rounded-xl p-3 shadow-sm text-center">
-            <Package className="w-5 h-5 text-blue-600 mx-auto mb-1" />
+            <Package className="w-5 h-5 text-[#f0813d] mx-auto mb-1" />
             <p className="text-xl font-bold text-gray-900">{amenities.length}</p>
             <p className="text-[10px] text-gray-500">Total</p>
           </div>
           <div className="bg-white rounded-xl p-3 shadow-sm text-center">
-            <CheckCircle className="w-5 h-5 text-green-600 mx-auto mb-1" />
+            <CheckCircle className="w-5 h-5 text-[#f0813d] mx-auto mb-1" />
             <p className="text-xl font-bold text-gray-900">{activeCount}</p>
             <p className="text-[10px] text-gray-500">Active</p>
           </div>
           <div className="bg-white rounded-xl p-3 shadow-sm text-center">
-            <Users className="w-5 h-5 text-purple-600 mx-auto mb-1" />
+            <Users className="w-5 h-5 text-[#f0813d] mx-auto mb-1" />
             <p className="text-xl font-bold text-gray-900">
               {amenities.reduce((sum, a) => sum + a.subscribers, 0)}
             </p>
@@ -226,12 +226,12 @@ export default function AmenitiesSettingsPage() {
               placeholder="Search amenities..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              className="w-full pl-9 pr-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#f0813d]/20 focus:border-transparent outline-none"
             />
           </div>
           <button
             onClick={openAddModal}
-            className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:shadow-lg transition-all duration-200 active:scale-95 flex items-center gap-2"
+            className="px-4 py-2.5 bg-gradient-to-r from-[#f0813d] to-[#9c4400] text-white rounded-xl font-medium hover:shadow-lg transition-all duration-200 active:scale-95 flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
             Add
@@ -241,13 +241,13 @@ export default function AmenitiesSettingsPage() {
         {/* Amenities List */}
         {loading ? (
           <div className="bg-white rounded-xl p-12 shadow-sm text-center">
-            <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto" />
+            <Loader2 className="w-8 h-8 text-[#f0813d] animate-spin mx-auto" />
             <p className="text-gray-500 text-sm mt-3">Loading amenities...</p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="bg-white rounded-xl p-12 shadow-sm text-center">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Package className="w-8 h-8 text-blue-500" />
+            <div className="w-16 h-16 bg-gradient-to-br from-[#f0813d]/10 to-[#f0813d]/15 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Package className="w-8 h-8 text-white" />
             </div>
             <h3 className="font-semibold text-gray-900 mb-1">
               {search ? "No results" : "No Amenities Yet"}
@@ -260,7 +260,7 @@ export default function AmenitiesSettingsPage() {
             {!search && (
               <button
                 onClick={openAddModal}
-                className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium"
+                className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-[#9c4400] text-white rounded-lg text-sm font-medium"
               >
                 <Plus className="w-4 h-4" />
                 Create Amenity
@@ -278,7 +278,7 @@ export default function AmenitiesSettingsPage() {
                   <div
                     className={`w-11 h-11 rounded-xl flex items-center justify-center text-white shadow-sm flex-shrink-0 ${
                       amenity.is_active
-                        ? "bg-gradient-to-br from-blue-500 to-indigo-600"
+                        ? "bg-gradient-to-br from-[#f0813d] to-[#9c4400]"
                         : "bg-gradient-to-br from-gray-400 to-gray-500"
                     }`}
                   >
@@ -293,7 +293,7 @@ export default function AmenitiesSettingsPage() {
                       <span
                         className={`px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1 ${
                           amenity.is_active
-                            ? "bg-emerald-50 text-emerald-700"
+                            ? "bg-[#f0813d]/10 text-[#9c4400]"
                             : "bg-gray-100 text-gray-600"
                         }`}
                       >
@@ -311,7 +311,7 @@ export default function AmenitiesSettingsPage() {
                       </p>
                     )}
                     <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-500">
-                      <span className="flex items-center gap-1 font-semibold text-green-700">
+                      <span className="flex items-center gap-1 font-semibold text-[#9c4400]">
                         <IndianRupee className="w-3 h-3" />
                         ₹{amenity.cost.toLocaleString("en-IN")}
                       </span>
@@ -325,7 +325,7 @@ export default function AmenitiesSettingsPage() {
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button
                       onClick={() => openEditModal(amenity)}
-                      className="p-2 hover:bg-blue-50 rounded-lg text-blue-600 transition-colors"
+                      className="p-2 hover:bg-[#f0813d]/10 rounded-lg text-[#f0813d] transition-colors"
                       title="Edit"
                     >
                       <Edit2 className="w-4 h-4" />
@@ -334,8 +334,8 @@ export default function AmenitiesSettingsPage() {
                       onClick={() => toggleStatus(amenity)}
                       className={`p-2 rounded-lg transition-colors ${
                         amenity.is_active
-                          ? "hover:bg-amber-50 text-amber-600"
-                          : "hover:bg-emerald-50 text-emerald-600"
+                          ? "hover:bg-[#f0813d]/10 text-[#f0813d]"
+                          : "hover:bg-[#f0813d]/10 text-[#f0813d]"
                       }`}
                       title={amenity.is_active ? "Deactivate" : "Activate"}
                     >
@@ -347,7 +347,7 @@ export default function AmenitiesSettingsPage() {
                     </button>
                     <button
                       onClick={() => handleDelete(amenity)}
-                      className="p-2 hover:bg-red-50 rounded-lg text-red-500 transition-colors"
+                      className="p-2 hover:bg-[#f0813d]/10 rounded-lg text-[#f0813d] transition-colors"
                       title="Delete"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -369,7 +369,7 @@ export default function AmenitiesSettingsPage() {
           />
           <div className="relative w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden animate-slideUp">
             {/* Modal Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-5 flex items-center justify-between">
+            <div className="bg-gradient-to-r from-[#f0813d] to-[#9c4400] p-5 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-white/20 rounded-lg">
                   <Package className="w-5 h-5 text-white" />
@@ -378,7 +378,7 @@ export default function AmenitiesSettingsPage() {
                   <h2 className="text-lg font-bold text-white">
                     {editingAmenity ? "Edit Amenity" : "Add Amenity"}
                   </h2>
-                  <p className="text-blue-100 text-sm opacity-90">
+                  <p className="text-white/75 text-sm opacity-90">
                     {editingAmenity ? "Update amenity details" : "Create a new gym amenity"}
                   </p>
                 </div>
@@ -402,7 +402,7 @@ export default function AmenitiesSettingsPage() {
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   placeholder="e.g., Locker, Towel, Parking"
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#f0813d]/20 focus:border-transparent outline-none text-sm"
                   autoFocus
                 />
               </div>
@@ -418,7 +418,7 @@ export default function AmenitiesSettingsPage() {
                   }
                   placeholder="Optional description"
                   rows={2}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm resize-none"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#f0813d]/20 focus:border-transparent outline-none text-sm resize-none"
                 />
               </div>
 
@@ -440,7 +440,7 @@ export default function AmenitiesSettingsPage() {
                       }
                     }}
                     placeholder="0"
-                    className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
+                    className="w-full pl-9 pr-3 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#f0813d]/20 focus:border-transparent outline-none text-sm"
                   />
                 </div>
               </div>
@@ -458,7 +458,7 @@ export default function AmenitiesSettingsPage() {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-[#f0813d] to-[#9c4400] text-white rounded-xl font-medium hover:shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {saving ? (
                   <Loader2 className="w-4 h-4 animate-spin" />

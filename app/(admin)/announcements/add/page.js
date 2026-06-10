@@ -220,14 +220,14 @@ export default function AddAnnouncementPage() {
         </div>
 
         {/* Info Note */}
-        <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+        <div className="bg-orange-50 rounded-xl p-4 border border-orange-200">
           <div className="flex items-start gap-3">
             <span className="text-xl">📢</span>
             <div>
-              <p className="text-sm font-medium text-blue-900">
+              <p className="text-sm font-medium text-orange-900">
                 Instant Push Notifications
               </p>
-              <p className="text-xs text-blue-700 mt-1">
+              <p className="text-xs text-[#f0813d] mt-1">
                 This announcement will be sent as a push notification to all registered app users immediately.
               </p>
             </div>
@@ -238,7 +238,7 @@ export default function AddAnnouncementPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3 bg-indigo-800 cursor-pointer text-white rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+          className="w-full py-3 bg-orange-800 cursor-pointer text-white rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
         >
           {loading ? "Creating..." : "Create Announcement"}
         </button>

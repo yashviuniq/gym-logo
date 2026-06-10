@@ -18,6 +18,7 @@ import {
   User,
   Building
 } from "lucide-react";
+import SSLogo from "@/components/shared/SSLogo";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -138,8 +139,7 @@ export default function LoginPage() {
         // Save trainer login timestamp (used to detect credential changes by admin)
         localStorage.setItem("trainer_login_at", Date.now().toString());
         
-        // Trainers now use the same admin dashboard
-        router.push("/admin/dashboard");
+        router.push("/trainer/dashboard");
       } else {
         // Member login through member_credentials table
         const loginType = isEmailLogin ? "email" : "phone";
@@ -205,12 +205,15 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 overflow-hidden">
+    <div className="min-h-screen bg-[#050505] overflow-hidden">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute top-60 -left-40 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-40 right-1/4 w-60 h-60 bg-purple-500/10 rounded-full blur-3xl"></div>
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-42"
+          style={{ backgroundImage: "url('/bgimages/loginbgdesktop.png')" }}
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,#050505_0%,rgba(5,5,5,0.92)_42%,rgba(156,68,0,0.28)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_20%,rgba(240,129,61,0.22),transparent_30%),linear-gradient(180deg,rgba(5,5,5,0.2),#050505_92%)]" />
         
         {/* Grid Pattern */}
         <div className="absolute inset-0 opacity-5">
@@ -225,32 +228,28 @@ export default function LoginPage() {
       <main className="relative z-10 min-h-screen flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-md">
           {/* Logo and Header */}
-          <div className="text-center mb-12">
+          <div className="text-center mb-10">
             <div className="mb-6 flex justify-center">
-              <img 
-                src="/icons/logo2.png" 
-                alt="SFit.ai Logo" 
-                className="w-42 h-24 rounded-3xl shadow-2xl object-cover border-4 border-white/10"
-              />
+              <SSLogo size="lg" />
             </div>
-            <h1 className="text-4xl font-bold text-white mb-2">SFit.ai</h1>
-            <p className="text-lg text-gray-400 mb-6">Fitness Management</p>
+            <h1 className="text-4xl font-black text-white mb-2">Welcome Back</h1>
+            <p className="text-lg text-gray-400 mb-6">SS Fitness command access</p>
             
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
-              <Shield className="w-4 h-4 text-blue-400" />
+              <Shield className="w-4 h-4 text-[#f0813d]" />
               <span className="text-sm font-medium text-white/90">Secure Login</span>
             </div>
           </div>
 
           {/* Login Card */}
-          <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-2xl">
+          <div className="bg-[#0d0d0d]/86 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-[0_28px_80px_rgba(0,0,0,0.55)]">
             {/* User Type Selector */}
             <div className="grid grid-cols-3 gap-2 mb-6">
               <button
                 onClick={() => setUserType("admin")}
                 className={`py-3 rounded-lg text-xs font-medium transition-all flex flex-col items-center justify-center gap-1 ${
                   userType === "admin"
-                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg"
+                    ? "bg-[#f0813d] text-black shadow-lg shadow-[#f0813d]/20"
                     : "bg-white/5 text-gray-400 hover:bg-white/10"
                 }`}
               >
@@ -261,7 +260,7 @@ export default function LoginPage() {
                 onClick={() => setUserType("trainer")}
                 className={`py-3 rounded-lg text-xs font-medium transition-all flex flex-col items-center justify-center gap-1 ${
                   userType === "trainer"
-                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg"
+                    ? "bg-[#f0813d] text-black shadow-lg shadow-[#f0813d]/20"
                     : "bg-white/5 text-gray-400 hover:bg-white/10"
                 }`}
               >
@@ -272,7 +271,7 @@ export default function LoginPage() {
                 onClick={() => setUserType("member")}
                 className={`py-3 rounded-lg text-xs font-medium transition-all flex flex-col items-center justify-center gap-1 ${
                   userType === "member"
-                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg"
+                    ? "bg-[#f0813d] text-black shadow-lg shadow-[#f0813d]/20"
                     : "bg-white/5 text-gray-400 hover:bg-white/10"
                 }`}
               >
@@ -297,7 +296,7 @@ export default function LoginPage() {
                 <div className="relative">
                   <input
                     type="text"
-                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 outline-none transition-all text-sm"
+                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-[#f0813d]/50 focus:border-[#f0813d]/50 outline-none transition-all text-sm"
                     placeholder="Enter email or phone number"
                     value={emailOrPhone}
                     onChange={(e) => setEmailOrPhone(e.target.value)}
@@ -321,7 +320,7 @@ export default function LoginPage() {
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
-                    className="w-full pl-10 pr-12 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 outline-none transition-all text-sm"
+                    className="w-full pl-10 pr-12 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-[#f0813d]/50 focus:border-[#f0813d]/50 outline-none transition-all text-sm"
                     placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -347,9 +346,9 @@ export default function LoginPage() {
 
               {/* Error Message */}
               {error && (
-                <div className="bg-red-500/20 backdrop-blur-sm rounded-lg p-3 border border-red-500/30 flex items-start gap-2">
-                  <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-red-200">{error}</p>
+                <div className="bg-[#f0813d]/20 backdrop-blur-sm rounded-lg p-3 border border-[#f0813d]/30 flex items-start gap-2">
+                  <AlertCircle className="w-5 h-5 text-[#f0813d] flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-orange-200">{error}</p>
                 </div>
               )}
 
@@ -357,7 +356,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3.5 mt-5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-lg hover:shadow-xl hover:shadow-blue-500/25 active:scale-95 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full py-3.5 mt-5 bg-[#f0813d] text-black font-black rounded-lg hover:bg-white hover:shadow-xl hover:shadow-[#f0813d]/25 active:scale-95 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
@@ -380,10 +379,10 @@ export default function LoginPage() {
             <div className="mt-6 pt-6 border-t border-white/10">
               <div className="text-center space-y-3">
                 <p className="text-sm text-gray-400">
-                  Don't have an account?{" "}
+                  Don&apos;t have an account?{" "}
                   <button
                     onClick={() => setShowContactModal(true)}
-                    className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
+                    className="text-[#f0813d] hover:text-[#f0813d] font-medium transition-colors"
                   >
                     Contact Admin
                   </button>
@@ -420,7 +419,7 @@ export default function LoginPage() {
           <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 max-w-md w-full border border-white/10 shadow-2xl animate-scale-in">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#f0813d] to-[#f0813d] flex items-center justify-center">
                   <Building className="w-6 h-6 text-white" />
                 </div>
                 <div>
@@ -440,14 +439,14 @@ export default function LoginPage() {
               {/* Email */}
               <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                    <Mail className="w-5 h-5 text-blue-400" />
+                  <div className="w-10 h-10 rounded-lg bg-[#f0813d]/20 flex items-center justify-center">
+                    <Mail className="w-5 h-5 text-white" />
                   </div>
                   <div className="flex-1">
                     <p className="text-xs text-gray-400 mb-1">Email Address</p>
                     <a 
                       href="mailto:shaibyasolutions@gmail.com"
-                      className="text-white font-medium hover:text-blue-400 transition-colors"
+                      className="text-white font-medium hover:text-[#f0813d] transition-colors"
                     >
                       shaibyasolutions@gmail.com
                     </a>
@@ -458,14 +457,14 @@ export default function LoginPage() {
               {/* Phone */}
               <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
-                    <Smartphone className="w-5 h-5 text-green-400" />
+                  <div className="w-10 h-10 rounded-lg bg-[#f0813d]/20 flex items-center justify-center">
+                    <Smartphone className="w-5 h-5 text-white" />
                   </div>
                   <div className="flex-1">
                     <p className="text-xs text-gray-400 mb-1">Phone Number</p>
                     <a 
                       href="tel:+917498341146"
-                      className="text-white font-medium hover:text-green-400 transition-colors"
+                      className="text-white font-medium hover:text-[#f0813d] transition-colors"
                     >
                       +91 7498341146
                     </a>
@@ -482,7 +481,7 @@ export default function LoginPage() {
 
             <button
               onClick={() => setShowContactModal(false)}
-              className="w-full mt-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-lg hover:shadow-xl hover:shadow-blue-500/25 active:scale-95 transition-all"
+              className="w-full mt-4 py-3 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white font-semibold rounded-lg hover:shadow-xl hover:shadow-[#f0813d]/25 active:scale-95 transition-all"
             >
               Close
             </button>

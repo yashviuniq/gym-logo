@@ -10,8 +10,8 @@ export default function StatCard({ title, value, change, icon }) {
         {change && (
           <span
             className={`text-xs font-medium px-2 py-1 rounded-full ${isPositive
-                ? "bg-green-100 text-green-700"
-                : "bg-red-100 text-red-700"
+                ? "bg-orange-100 text-[#f0813d]"
+                : "bg-orange-100 text-[#f0813d]"
               }`}
           >
             {change}

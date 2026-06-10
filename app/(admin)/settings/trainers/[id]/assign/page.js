@@ -587,8 +587,8 @@ export default function AssignMembersPage({ params }) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl p-8 text-center max-w-sm w-full shadow-lg">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle className="w-8 h-8 text-green-600" />
+          <div className="w-16 h-16 bg-[#f0813d]/15 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CheckCircle className="w-8 h-8 text-white" />
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">Assignments Saved!</h2>
           <p className="text-gray-500">Redirecting back...</p>
@@ -602,7 +602,7 @@ export default function AssignMembersPage({ params }) {
       <div className="min-h-screen bg-gray-50 pb-24">
         <Header title="Assign Members" />
         <div className="flex items-center justify-center py-20">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#9c4400]"></div>
         </div>
       </div>
     );
@@ -623,10 +623,10 @@ export default function AssignMembersPage({ params }) {
               </h3>
               <p className="text-sm text-gray-500">
                 {newConfiguredCount > 0 && (
-                  <span className="text-green-600 mr-1">+{newConfiguredCount} new</span>
+                  <span className="text-[#f0813d] mr-1">+{newConfiguredCount} new</span>
                 )}
                 {unassignCount > 0 && (
-                  <span className="text-red-600 mr-1">-{unassignCount} removed</span>
+                  <span className="text-[#f0813d] mr-1">-{unassignCount} removed</span>
                 )}
                 <span>{allMembers.length} total members in gym</span>
               </p>
@@ -642,7 +642,7 @@ export default function AssignMembersPage({ params }) {
             placeholder="Search members..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+            className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#f0813d]/20 focus:border-transparent bg-white"
           />
         </div>
 
@@ -672,13 +672,13 @@ export default function AssignMembersPage({ params }) {
                     onClick={() => toggleMemberExpand(member.id)}
                     className={`bg-white rounded-xl p-4 shadow-sm cursor-pointer transition-all ${
                       isExpanded
-                        ? "ring-2 ring-blue-500 rounded-b-none"
+                        ? "ring-2 ring-[#f0813d] rounded-b-none"
                         : isMarkedForUnassign
-                        ? "ring-2 ring-red-400 bg-red-50 opacity-60"
+                        ? "ring-2 ring-[#f0813d]/40 bg-[#f0813d]/10 opacity-60"
                         : isConfigured
-                        ? "ring-2 ring-green-500 bg-green-50"
+                        ? "ring-2 ring-[#f0813d] bg-[#f0813d]/10"
                         : isAssigned
-                        ? "ring-1 ring-blue-200 bg-blue-50/30"
+                        ? "ring-1 ring-[#f0813d]/20 bg-[#f0813d]/10"
                         : "hover:bg-gray-50"
                     }`}
                   >
@@ -687,11 +687,11 @@ export default function AssignMembersPage({ params }) {
                       <div
                         className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
                           isMarkedForUnassign
-                            ? "bg-red-500"
+                            ? "bg-[#f0813d]"
                             : isConfigured
-                            ? "bg-green-600"
+                            ? "bg-[#9c4400]"
                             : isAssigned
-                            ? "bg-blue-600"
+                            ? "bg-[#9c4400]"
                             : "border-2 border-gray-300"
                         }`}
                       >
@@ -716,22 +716,22 @@ export default function AssignMembersPage({ params }) {
                         <div className="flex items-center gap-2 flex-wrap">
                           <h4 className="font-medium text-gray-900 truncate">{member.name}</h4>
                           {isMarkedForUnassign && (
-                            <span className="px-1.5 py-0.5 bg-red-100 text-red-700 text-xs rounded-full">
+                            <span className="px-1.5 py-0.5 bg-[#f0813d]/15 text-[#9c4400] text-xs rounded-full">
                               Will Remove
                             </span>
                           )}
                           {isAssigned && !isMarkedForUnassign && (
-                            <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">
+                            <span className="px-1.5 py-0.5 bg-[#f0813d]/15 text-[#9c4400] text-xs rounded-full">
                               Assigned
                             </span>
                           )}
                           {isConfigured && (
-                            <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">
+                            <span className="px-1.5 py-0.5 bg-[#f0813d]/15 text-[#9c4400] text-xs rounded-full">
                               Configured
                             </span>
                           )}
                           {assignedToOtherTrainers?.length > 0 && (
-                            <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-xs rounded-full flex items-center gap-1">
+                            <span className="px-1.5 py-0.5 bg-[#f0813d]/15 text-[#9c4400] text-xs rounded-full flex items-center gap-1">
                               <AlertCircle className="w-3 h-3" />
                               {assignedToOtherTrainers.join(", ")}
                             </span>
@@ -741,19 +741,19 @@ export default function AssignMembersPage({ params }) {
                           <Phone className="w-3 h-3" />
                           <span>{member.phone}</span>
                           {isConfigured && config.planId && (
-                            <span className="text-green-600 font-medium">
+                            <span className="text-[#f0813d] font-medium">
                               · {trainerPlans.find((p) => p.id === config.planId)?.name}
                             </span>
                           )}
                           {isAssigned && existingAssignments[member.id]?.planName && !isMarkedForUnassign && (
-                            <span className="text-blue-600 font-medium">
+                            <span className="text-[#f0813d] font-medium">
                               · {existingAssignments[member.id].planName}
                             </span>
                           )}
                           <span
                             className={`px-1.5 py-0.5 rounded-full ${
                               member.status === "active"
-                                ? "bg-green-100 text-green-700"
+                                ? "bg-[#f0813d]/15 text-[#9c4400]"
                                 : "bg-gray-100 text-gray-600"
                             }`}
                           >
@@ -814,17 +814,17 @@ export default function AssignMembersPage({ params }) {
               <div className="flex items-center justify-between mb-3">
                 <div className="text-sm text-gray-600">
                   {newConfiguredCount > 0 && (
-                    <span className="text-green-600 mr-2">+{newConfiguredCount} new</span>
+                    <span className="text-[#f0813d] mr-2">+{newConfiguredCount} new</span>
                   )}
                   {unassignCount > 0 && (
-                    <span className="text-red-600">-{unassignCount} removed</span>
+                    <span className="text-[#f0813d]">-{unassignCount} removed</span>
                   )}
                 </div>
               </div>
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-3 bg-gradient-to-r from-[#f0813d] to-[#9c4400] text-white rounded-xl font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {saving ? (
                   <>
@@ -911,16 +911,16 @@ function MemberConfigPanel({
     .reduce((sum, [, slots]) => sum + slots.length, 0);
 
   return (
-    <div className="bg-white border-2 border-blue-500 border-t-0 rounded-b-xl shadow-sm overflow-hidden">
+    <div className="bg-white border-2 border-[#f0813d] border-t-0 rounded-b-xl shadow-sm overflow-hidden">
       {/* Already assigned info */}
       {isAssigned && existingAssignment && (
-        <div className="p-4 bg-blue-50 border-b border-blue-100">
+        <div className="p-4 bg-[#f0813d]/10 border-b border-[#f0813d]/10">
           <div className="flex items-center gap-2 mb-1">
-            <Check className="w-4 h-4 text-blue-600" />
-            <span className="text-sm font-semibold text-blue-800">Already Assigned</span>
+            <Check className="w-4 h-4 text-[#f0813d]" />
+            <span className="text-sm font-semibold text-[#9c4400]">Already Assigned</span>
           </div>
           {existingAssignment.planName && (
-            <p className="text-xs text-blue-600">
+            <p className="text-xs text-[#f0813d]">
               Plan: {existingAssignment.planName} · ₹
               {(existingAssignment.planPrice || 0).toLocaleString("en-IN")}
               {existingAssignment.planDuration && (
@@ -947,7 +947,7 @@ function MemberConfigPanel({
             <button
               type="button"
               onClick={() => router.push(`/settings/trainers/${trainerId}?tab=plans`)}
-              className="text-xs text-orange-600 font-medium flex items-center gap-1 hover:text-orange-700 px-2 py-1 bg-orange-50 rounded-lg"
+              className="text-xs text-[#f0813d] font-medium flex items-center gap-1 hover:text-[#9c4400] px-2 py-1 bg-[#f0813d]/10 rounded-lg"
             >
               <Plus className="w-3 h-3" />
               Create Plan
@@ -957,7 +957,7 @@ function MemberConfigPanel({
 
           {plansLoading ? (
             <div className="flex items-center justify-center py-6">
-              <Loader2 className="w-5 h-5 text-orange-500 animate-spin" />
+              <Loader2 className="w-5 h-5 text-[#f0813d] animate-spin" />
               <span className="ml-2 text-sm text-gray-500">Loading plans...</span>
             </div>
           ) : trainerPlans.length === 0 ? (
@@ -967,7 +967,7 @@ function MemberConfigPanel({
               <button
                 type="button"
                 onClick={() => router.push(`/settings/trainers/${trainerId}?tab=plans`)}
-                className="mt-2 text-xs text-orange-600 font-medium flex items-center gap-1 mx-auto hover:text-orange-700"
+                className="mt-2 text-xs text-[#f0813d] font-medium flex items-center gap-1 mx-auto hover:text-[#9c4400]"
               >
                 <Plus className="w-3 h-3" />
                 Create a plan first
@@ -993,14 +993,14 @@ function MemberConfigPanel({
                     }}
                     className={`p-3 rounded-xl border-2 cursor-pointer transition-all ${
                       isSelected
-                        ? "border-orange-500 bg-gradient-to-r from-orange-50 to-amber-50 shadow-sm"
+                        ? "border-[#f0813d] bg-gradient-to-r from-[#f0813d]/10 to-[#f0813d]/10 shadow-sm"
                         : "border-gray-100 bg-gray-50/50 hover:border-gray-300"
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <div
                         className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                          isSelected ? "border-orange-500 bg-orange-500" : "border-gray-300 bg-white"
+                          isSelected ? "border-[#f0813d] bg-[#f0813d]" : "border-gray-300 bg-white"
                         }`}
                       >
                         {isSelected && <Check className="w-3 h-3 text-white" />}
@@ -1008,7 +1008,7 @@ function MemberConfigPanel({
                       <div
                         className={`w-9 h-9 rounded-lg flex items-center justify-center text-white flex-shrink-0 ${
                           isSelected
-                            ? "bg-gradient-to-br from-orange-500 to-amber-600"
+                            ? "bg-gradient-to-br from-[#f0813d] to-[#9c4400]"
                             : "bg-gradient-to-br from-gray-400 to-gray-500"
                         }`}
                       >
@@ -1036,17 +1036,17 @@ function MemberConfigPanel({
             <div className="mt-3 space-y-3">
               <div className="bg-gray-50 rounded-xl p-3 space-y-2">
                 <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
-                  <CalendarDays className="w-4 h-4 text-orange-500" />
+                  <CalendarDays className="w-4 h-4 text-[#f0813d]" />
                   Start Date
                 </div>
                 <input
                   type="date"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] outline-none text-sm"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#f0813d]/20 outline-none text-sm"
                   value={resolvedStartDate}
                   onChange={(e) => onUpdateConfig({ customStartDate: e.target.value })}
                 />
                 {selectedPlan && (
-                  <p className="text-xs text-blue-600">
+                  <p className="text-xs text-[#f0813d]">
                     Validity: {new Date(`${resolvedStartDate}T00:00:00`).toLocaleDateString("en-IN")} to {(() => {
                       const endDate = new Date(`${resolvedStartDate}T00:00:00`);
                       endDate.setDate(endDate.getDate() + selectedPlan.duration_days);
@@ -1072,7 +1072,7 @@ function MemberConfigPanel({
                       onUpdateConfig(updates);
                     }}
                     className={`w-10 h-5 rounded-full transition ${
-                      useCustomPrice ? "bg-[#F97316]" : "bg-gray-300"
+                      useCustomPrice ? "bg-[#f0813d]" : "bg-gray-300"
                     }`}
                   >
                     <div
@@ -1087,7 +1087,7 @@ function MemberConfigPanel({
                     type="text"
                     inputMode="decimal"
                     pattern="[0-9]*\.?[0-9]*"
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] outline-none text-sm"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#f0813d]/20 outline-none text-sm"
                     placeholder="Enter custom price"
                     value={customPrice}
                     onChange={(e) => {
@@ -1102,14 +1102,14 @@ function MemberConfigPanel({
 
               <div className="bg-gray-50 rounded-xl p-3 space-y-2">
                 <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
-                  <Tag className="w-4 h-4 text-green-600" />
+                  <Tag className="w-4 h-4 text-[#f0813d]" />
                   Amount Received
                 </div>
                 <input
                   type="text"
                   inputMode="decimal"
                   pattern="[0-9]*\.?[0-9]*"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] outline-none text-sm"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#f0813d]/20 outline-none text-sm"
                   placeholder="Enter amount received"
                   value={amountReceived}
                   onChange={(e) => {
@@ -1125,12 +1125,12 @@ function MemberConfigPanel({
               {pendingAmount > 0 && (
                 <div className="bg-gray-50 rounded-xl p-3 space-y-2">
                   <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
-                    <CalendarDays className="w-4 h-4 text-blue-600" />
+                    <CalendarDays className="w-4 h-4 text-[#f0813d]" />
                     Next Due Date
                   </div>
                   <input
                     type="date"
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#F97316] outline-none text-sm"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#f0813d]/20 outline-none text-sm"
                     value={nextPaymentDate}
                     onChange={(e) => onUpdateConfig({ nextPaymentDate: e.target.value })}
                     min={resolvedStartDate}
@@ -1139,22 +1139,22 @@ function MemberConfigPanel({
               )}
 
               {/* Payment Split */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-3">
-                <p className="text-xs font-semibold text-blue-800 mb-2">Payment Summary:</p>
+              <div className="bg-gradient-to-r from-[#f0813d]/10 to-[#f0813d]/10 border border-[#f0813d]/10 rounded-xl p-3">
+                <p className="text-xs font-semibold text-[#9c4400] mb-2">Payment Summary:</p>
                 <div className="flex items-center gap-3">
-                  <div className="flex-1 bg-white rounded-lg p-2 text-center border border-blue-100">
+                  <div className="flex-1 bg-white rounded-lg p-2 text-center border border-[#f0813d]/10">
                     <p className="text-[10px] text-gray-500 uppercase">Collected</p>
-                    <p className="text-sm font-bold text-blue-700">₹{receivedAmountValue.toLocaleString("en-IN")}</p>
+                    <p className="text-sm font-bold text-[#9c4400]">₹{receivedAmountValue.toLocaleString("en-IN")}</p>
                   </div>
                   <div className="text-gray-400 text-xs">+</div>
-                  <div className="flex-1 bg-white rounded-lg p-2 text-center border border-orange-100">
+                  <div className="flex-1 bg-white rounded-lg p-2 text-center border border-[#f0813d]/10">
                     <p className="text-[10px] text-gray-500 uppercase">Remaining</p>
-                    <p className="text-sm font-bold text-orange-700">₹{pendingAmount.toLocaleString("en-IN")}</p>
+                    <p className="text-sm font-bold text-[#9c4400]">₹{pendingAmount.toLocaleString("en-IN")}</p>
                   </div>
                   <div className="text-gray-400 text-xs">=</div>
-                  <div className="flex-1 bg-white rounded-lg p-2 text-center border border-green-100">
+                  <div className="flex-1 bg-white rounded-lg p-2 text-center border border-[#f0813d]/10">
                     <p className="text-[10px] text-gray-500 uppercase">Contract</p>
-                    <p className="text-sm font-bold text-green-700">₹{planTotalAmount.toLocaleString("en-IN")}</p>
+                    <p className="text-sm font-bold text-[#9c4400]">₹{planTotalAmount.toLocaleString("en-IN")}</p>
                   </div>
                 </div>
               </div>
@@ -1172,7 +1172,7 @@ function MemberConfigPanel({
                       onClick={() => onUpdateConfig({ paymentMode: mode })}
                       className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all border ${
                         paymentMode === mode
-                          ? "border-blue-500 bg-blue-50 text-blue-700"
+                          ? "border-[#f0813d] bg-[#f0813d]/10 text-[#9c4400]"
                           : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
                       }`}
                     >
@@ -1193,7 +1193,7 @@ function MemberConfigPanel({
             <CalendarDays className="w-4 h-4" />
             Select Schedule
             {totalSelections > 0 && (
-              <span className="ml-auto text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
+              <span className="ml-auto text-xs bg-[#f0813d]/15 text-[#9c4400] px-2 py-0.5 rounded-full font-medium">
                 {totalSelections} slot{totalSelections > 1 ? "s" : ""} selected
               </span>
             )}
@@ -1213,9 +1213,9 @@ function MemberConfigPanel({
                     onClick={() => setActiveDay(isActive ? "" : day)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all relative ${
                       isActive
-                        ? "bg-blue-600 text-white shadow-sm"
+                        ? "bg-[#9c4400] text-white shadow-sm"
                         : dayCount > 0
-                        ? "bg-blue-50 text-blue-700 border border-blue-200"
+                        ? "bg-[#f0813d]/10 text-[#9c4400] border border-[#f0813d]/20"
                         : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }`}
                   >
@@ -1223,7 +1223,7 @@ function MemberConfigPanel({
                     {dayCount > 0 && (
                       <span
                         className={`ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold ${
-                          isActive ? "bg-white text-blue-600" : "bg-blue-600 text-white"
+                          isActive ? "bg-white text-[#f0813d]" : "bg-[#9c4400] text-white"
                         }`}
                       >
                         {dayCount}
@@ -1246,7 +1246,7 @@ function MemberConfigPanel({
 
               {fetchingSlots ? (
                 <div className="flex items-center justify-center py-6">
-                  <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+                  <Loader2 className="w-5 h-5 text-[#f0813d] animate-spin" />
                   <span className="ml-2 text-sm text-gray-500">Checking availability...</span>
                 </div>
               ) : activeDaySlots.length === 0 ? (
@@ -1277,12 +1277,12 @@ function MemberConfigPanel({
                         }}
                         className={`px-2 py-2 rounded-lg text-xs font-medium transition-all text-center ${
                           isSlotSelected
-                            ? "bg-blue-600 text-white shadow-md scale-[1.02]"
+                            ? "bg-[#9c4400] text-white shadow-md scale-[1.02]"
                             : isMemberSlot
-                            ? "bg-green-50 text-green-700 border-2 border-green-300 hover:bg-green-100"
+                            ? "bg-[#f0813d]/10 text-[#9c4400] border-2 border-[#f0813d]/30 hover:bg-[#f0813d]/15"
                             : hasAssignedMembers
-                            ? "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100"
-                            : "bg-white text-gray-700 border border-gray-200 hover:border-blue-300 hover:bg-blue-50"
+                            ? "bg-[#f0813d]/10 text-[#9c4400] border border-[#f0813d]/20 hover:bg-[#f0813d]/15"
+                            : "bg-white text-gray-700 border border-gray-200 hover:border-[#f0813d]/30 hover:bg-[#f0813d]/10"
                         }`}
                         title={
                           hasAssignedMembers
@@ -1299,7 +1299,7 @@ function MemberConfigPanel({
                           </span>
                         )}
                         {isMemberSlot && !isSlotSelected && (
-                          <span className="block text-[9px] text-green-600 mt-0.5">Current</span>
+                          <span className="block text-[9px] text-[#f0813d] mt-0.5">Current</span>
                         )}
                       </button>
                     );
@@ -1313,10 +1313,10 @@ function MemberConfigPanel({
                   <span className="w-2.5 h-2.5 rounded-sm bg-white border border-gray-200" /> Available
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="w-2.5 h-2.5 rounded-sm bg-amber-50 border border-amber-200" /> Assigned (shared)
+                  <span className="w-2.5 h-2.5 rounded-sm bg-[#f0813d]/10 border border-[#f0813d]/20" /> Assigned (shared)
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="w-2.5 h-2.5 rounded-sm bg-blue-600" /> Selected
+                  <span className="w-2.5 h-2.5 rounded-sm bg-[#9c4400]" /> Selected
                 </span>
               </div>
             </div>
@@ -1324,13 +1324,13 @@ function MemberConfigPanel({
 
           {/* Selected Slots Summary */}
           {totalSelections > 0 && (
-            <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl">
-              <p className="text-xs font-semibold text-blue-800 mb-1.5">Selected Schedule:</p>
+            <div className="p-3 bg-[#f0813d]/10 border border-[#f0813d]/10 rounded-xl">
+              <p className="text-xs font-semibold text-[#9c4400] mb-1.5">Selected Schedule:</p>
               <div className="space-y-1">
                 {Object.entries(selectedSlots)
                   .filter(([, slots]) => slots.length > 0)
                   .map(([day, slots]) => (
-                    <p key={day} className="text-xs text-blue-700">
+                    <p key={day} className="text-xs text-[#9c4400]">
                       <span className="font-medium">{day}:</span> {slots.join(", ")}
                     </p>
                   ))}
@@ -1351,7 +1351,7 @@ function MemberConfigPanel({
         {isAssigned ? (
           <button
             onClick={onUnassign}
-            className="flex-1 px-4 py-2.5 bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 text-red-600 rounded-xl font-medium text-sm flex items-center justify-center gap-2 hover:from-red-100 hover:to-rose-100 transition-colors"
+            className="flex-1 px-4 py-2.5 bg-gradient-to-r from-[#f0813d]/10 to-[#f0813d]/10 border border-[#f0813d]/20 text-[#f0813d] rounded-xl font-medium text-sm flex items-center justify-center gap-2 hover:from-[#f0813d]/15 hover:to-[#f0813d]/15 transition-colors"
           >
             <X className="w-4 h-4" />
             Unassign
@@ -1359,7 +1359,7 @@ function MemberConfigPanel({
         ) : (
           <button
             onClick={onConfirm}
-            className="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
+            className="flex-1 px-4 py-2.5 bg-gradient-to-r from-[#f0813d] to-[#9c4400] text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
           >
             <Check className="w-4 h-4" />
             Confirm

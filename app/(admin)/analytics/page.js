@@ -244,7 +244,7 @@ export default function AnalyticsPage() {
       );
 
       const total = planStats.reduce((sum, p) => sum + p.members, 0);
-      const colors = ["bg-blue-500", "bg-green-500", "bg-purple-500", "bg-orange-500", "bg-pink-500"];
+      const colors = ["bg-[#f0813d]", "bg-[#f0813d]", "bg-[#f0813d]", "bg-[#f0813d]", "bg-[#f0813d]"];
 
       const formattedPlans = planStats
         .map((stat, index) => ({
@@ -316,7 +316,7 @@ export default function AnalyticsPage() {
         <div className="p-6">
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f0813d] mx-auto mb-4"></div>
               <p className="text-gray-600">Loading analytics data...</p>
             </div>
           </div>
@@ -435,9 +435,9 @@ export default function AnalyticsPage() {
             )}
 
             {/* Quick Insights */}
-            <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl p-4 text-white">
+            <div className="bg-gradient-to-br from-[#f0813d] to-[#f0813d] rounded-xl p-4 text-white">
               <h3 className="font-semibold mb-3">💡 Quick Insights</h3>
-              <ul className="space-y-2 text-sm text-purple-100">
+              <ul className="space-y-2 text-sm text-orange-100">
                 <li>• Total Members: {stats.totalMembers}</li>
                 <li>• Active Members: {stats.activeMembers}</li>
                 <li>• Retention Rate: {stats.retentionRate}%</li>
@@ -460,7 +460,7 @@ export default function AnalyticsPage() {
                   {memberGrowth.map((day, i) => (
                     <div key={i} className="flex-1 flex flex-col items-center">
                       <div
-                        className="w-full bg-blue-500 rounded-t"
+                        className="w-full bg-[#f0813d] rounded-t"
                         style={{
                           height: `${(day.value / maxMemberGrowth) * 100}%`,
                           minHeight: day.value > 0 ? "8px" : "0",
@@ -490,7 +490,7 @@ export default function AnalyticsPage() {
                   <h3 className="font-semibold text-gray-900">
                     ⚠️ Drop-off Alert
                   </h3>
-                  <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">
+                  <span className="text-xs bg-orange-100 text-[#f0813d] px-2 py-1 rounded-full">
                     {dropoffMembers.length} members
                   </span>
                 </div>
@@ -504,8 +504,8 @@ export default function AnalyticsPage() {
                         <div
                           className={`w-10 h-10 rounded-full flex items-center justify-center ${
                             member.status === "critical"
-                              ? "bg-red-100 text-red-600"
-                              : "bg-yellow-100 text-yellow-600"
+                              ? "bg-orange-100 text-[#f0813d]"
+                              : "bg-orange-100 text-[#f0813d]"
                           }`}
                         >
                           {member.name.charAt(0)}
@@ -523,8 +523,8 @@ export default function AnalyticsPage() {
                       <p
                         className={`font-semibold ${
                           member.status === "critical"
-                            ? "text-red-600"
-                            : "text-yellow-600"
+                            ? "text-[#f0813d]"
+                            : "text-[#f0813d]"
                         }`}
                       >
                         {member.daysMissed} days
@@ -556,7 +556,7 @@ export default function AnalyticsPage() {
                           {day.value}
                         </span>
                         <div
-                          className="w-full bg-green-500 rounded-t"
+                          className="w-full bg-[#f0813d] rounded-t"
                           style={{
                             height: `${(day.value / maxAttendance) * 100}%`,
                             minHeight: day.value > 0 ? "8px" : "0",
@@ -572,15 +572,15 @@ export default function AnalyticsPage() {
 
                 {/* Attendance Stats */}
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-green-50 rounded-xl p-4">
-                    <p className="text-green-600 text-sm">Avg Daily</p>
-                    <p className="text-2xl font-bold text-green-700">
+                  <div className="bg-orange-50 rounded-xl p-4">
+                    <p className="text-[#f0813d] text-sm">Avg Daily</p>
+                    <p className="text-2xl font-bold text-[#f0813d]">
                       {Math.round(attendanceData.reduce((sum, d) => sum + d.value, 0) / attendanceData.length)}
                     </p>
                   </div>
-                  <div className="bg-blue-50 rounded-xl p-4">
-                    <p className="text-blue-600 text-sm">Peak Day</p>
-                    <p className="text-2xl font-bold text-blue-700">
+                  <div className="bg-orange-50 rounded-xl p-4">
+                    <p className="text-[#f0813d] text-sm">Peak Day</p>
+                    <p className="text-2xl font-bold text-[#f0813d]">
                       {attendanceData.reduce((max, d) => d.value > max.value ? d : max, attendanceData[0]).label}
                     </p>
                   </div>
@@ -625,7 +625,7 @@ export default function AnalyticsPage() {
                     </div>
                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-green-500 rounded-full"
+                        className="h-full bg-[#f0813d] rounded-full"
                         style={{ width: `${slot.percentage}%` }}
                       ></div>
                     </div>
@@ -635,17 +635,17 @@ export default function AnalyticsPage() {
             </div>
 
             {/* Consistency Score */}
-            <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-xl p-4 text-white">
+            <div className="bg-gradient-to-br from-[#f0813d] to-[#f0813d] rounded-xl p-4 text-white">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-green-100 text-sm">Consistency Score</p>
+                  <p className="text-orange-100 text-sm">Consistency Score</p>
                   <p className="text-3xl font-bold">78%</p>
                 </div>
                 <div className="w-16 h-16 rounded-full border-4 border-white/30 flex items-center justify-center">
                   <span className="text-2xl">📊</span>
                 </div>
               </div>
-              <p className="text-sm text-green-100 mt-2">
+              <p className="text-sm text-orange-100 mt-2">
                 78% of active members visit 3+ times per week
               </p>
             </div>
@@ -673,7 +673,7 @@ export default function AnalyticsPage() {
                         </div>
                         <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
+                            className="h-full bg-gradient-to-r from-[#f0813d] to-[#f0813d] rounded-full"
                             style={{
                               width: canViewFinance ? `${(month.revenue / maxRevenue) * 100}%` : '0%',
                             }}
@@ -686,15 +686,15 @@ export default function AnalyticsPage() {
 
                 {/* Revenue Stats */}
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-blue-50 rounded-xl p-4">
-                    <p className="text-blue-600 text-sm">Total Revenue</p>
-                    <p className="text-2xl font-bold text-blue-700">
+                  <div className="bg-orange-50 rounded-xl p-4">
+                    <p className="text-[#f0813d] text-sm">Total Revenue</p>
+                    <p className="text-2xl font-bold text-[#f0813d]">
                       {formatRevenue(revenueData.reduce((sum, d) => sum + d.revenue, 0))}
                     </p>
                   </div>
-                  <div className="bg-purple-50 rounded-xl p-4">
-                    <p className="text-purple-600 text-sm">Avg Monthly</p>
-                    <p className="text-2xl font-bold text-purple-700">
+                  <div className="bg-orange-50 rounded-xl p-4">
+                    <p className="text-[#f0813d] text-sm">Avg Monthly</p>
+                    <p className="text-2xl font-bold text-[#f0813d]">
                       {formatRevenue(Math.round(revenueData.reduce((sum, d) => sum + d.revenue, 0) / revenueData.length))}
                     </p>
                   </div>

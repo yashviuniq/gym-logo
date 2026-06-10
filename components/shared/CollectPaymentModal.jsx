@@ -135,10 +135,10 @@ export default function CollectPaymentModal({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-green-600 to-emerald-600 p-4 flex items-center justify-between">
+        <div className="bg-gradient-to-r from-[#f0813d] to-[#f0813d] p-4 flex items-center justify-between">
           <div>
             <h2 className="text-lg font-bold text-white">Collect Payment</h2>
-            <p className="text-green-100 text-sm">{member?.name}</p>
+            <p className="text-orange-100 text-sm">{member?.name}</p>
           </div>
           <button 
             onClick={onClose} 
@@ -151,8 +151,8 @@ export default function CollectPaymentModal({
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           {/* Current Due Amount */}
           {member?.balance > 0 && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
-              <p className="text-sm text-amber-800">
+            <div className="bg-orange-50 border border-orange-200 rounded-xl p-3">
+              <p className="text-sm text-orange-800">
                 <span className="font-medium">Outstanding Balance:</span>{" "}
                 <span className="text-lg font-bold">₹{member.balance?.toLocaleString()}</span>
               </p>
@@ -177,7 +177,7 @@ export default function CollectPaymentModal({
                     setFormData(prev => ({ ...prev, amount: value }));
                   }
                 }}
-                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent text-lg font-semibold"
+                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#f0813d] focus:border-transparent text-lg font-semibold"
                 placeholder="0.00"
                 required
               />
@@ -186,7 +186,7 @@ export default function CollectPaymentModal({
               <button
                 type="button"
                 onClick={() => setFormData(prev => ({ ...prev, amount: member.balance.toString() }))}
-                className="mt-2 text-sm text-green-600 hover:text-green-700 font-medium"
+                className="mt-2 text-sm text-[#f0813d] hover:text-[#f0813d] font-medium"
               >
                 Collect full amount (₹{member.balance.toLocaleString()})
               </button>
@@ -208,7 +208,7 @@ export default function CollectPaymentModal({
                     onClick={() => setFormData(prev => ({ ...prev, mode: mode.value }))}
                     className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${
                       formData.mode === mode.value
-                        ? "border-green-500 bg-green-50 text-green-700"
+                        ? "border-[#f0813d] bg-orange-50 text-[#f0813d]"
                         : "border-gray-200 text-gray-600 hover:border-gray-300"
                     }`}
                   >
@@ -228,7 +228,7 @@ export default function CollectPaymentModal({
             <textarea
               value={formData.notes}
               onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#f0813d] focus:border-transparent resize-none"
               rows={2}
               placeholder="Add any notes about this payment..."
             />
@@ -246,7 +246,7 @@ export default function CollectPaymentModal({
             <button
               type="submit"
               disabled={loading || !formData.amount}
-              className="flex-1 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 py-3 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white rounded-xl font-medium hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>

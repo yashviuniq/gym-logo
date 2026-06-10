@@ -140,8 +140,8 @@ export default function AddPaymentPage() {
         {/* Progress Steps */}
         <div className="bg-white rounded-xl p-4 mx-1">
           <div className="flex items-center justify-between">
-            <div className={`flex items-center gap-2 ${step === 1 ? "text-blue-600" : "text-gray-400"}`}>
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${step === 1 ? "bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200" : "bg-gray-100"}`}>
+            <div className={`flex items-center gap-2 ${step === 1 ? "text-[#f0813d]" : "text-gray-400"}`}>
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${step === 1 ?"bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200" :"bg-gray-100"}`}>
                 <User className="w-4 h-4" />
               </div>
               <div>
@@ -152,8 +152,8 @@ export default function AddPaymentPage() {
             
             <div className="flex-1 h-0.5 mx-4 bg-gray-200"></div>
             
-            <div className={`flex items-center gap-2 ${step === 2 ? "text-blue-600" : "text-gray-400"}`}>
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${step === 2 ? "bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200" : "bg-gray-100"}`}>
+            <div className={`flex items-center gap-2 ${step === 2 ? "text-[#f0813d]" : "text-gray-400"}`}>
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${step === 2 ?"bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200" :"bg-gray-100"}`}>
                 <CreditCard className="w-4 h-4" />
               </div>
               <div>
@@ -176,7 +176,7 @@ export default function AddPaymentPage() {
                 <input
                   type="text"
                   placeholder="Search by name or phone number..."
-                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm placeholder:text-gray-400"
+                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] outline-none transition-all text-sm placeholder:text-gray-400"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   autoFocus
@@ -188,14 +188,14 @@ export default function AddPaymentPage() {
             {loading && !members.length ? (
               <div className="flex items-center justify-center py-12">
                 <div className="relative">
-                  <div className="w-12 h-12 border-4 border-blue-500/20 border-t-blue-600 rounded-full animate-spin"></div>
-                  <div className="absolute inset-0 w-12 h-12 border-4 border-transparent border-t-blue-500 rounded-full animate-spin animation-delay-200"></div>
+                  <div className="w-12 h-12 border-4 border-[#f0813d]/20 border-t-[#f0813d] rounded-full animate-spin"></div>
+                  <div className="absolute inset-0 w-12 h-12 border-4 border-transparent border-t-[#f0813d] rounded-full animate-spin animation-delay-200"></div>
                 </div>
               </div>
             ) : filteredMembers.length === 0 ? (
               <div className="bg-white rounded-xl p-8 text-center mx-1">
                 <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <User className="w-8 h-8 text-gray-400" />
+                  <User className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-base font-semibold text-gray-900 mb-2">
                   No members found
@@ -222,7 +222,7 @@ export default function AddPaymentPage() {
                     <div className="flex items-center gap-3">
                       {/* Avatar */}
                       <div className="flex-shrink-0">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-sm">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#f0813d] to-[#f0813d] flex items-center justify-center text-white font-bold text-lg shadow-sm">
                           {member.name.charAt(0).toUpperCase()}
                         </div>
                       </div>
@@ -245,12 +245,12 @@ export default function AddPaymentPage() {
                         {/* Due Amount */}
                         {member.dueAmount > 0 && (
                           <div className="mt-3 flex items-center gap-2">
-                            <div className="w-8 h-8 bg-gradient-to-br from-red-50 to-red-100 rounded-lg flex items-center justify-center">
-                              <AlertCircle className="w-4 h-4 text-red-600" />
+                            <div className="w-8 h-8 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg flex items-center justify-center">
+                              <AlertCircle className="w-4 h-4 text-white" />
                             </div>
                             <div>
                               <p className="text-xs text-gray-500">Pending Payment</p>
-                              <p className="text-sm font-semibold text-red-600">
+                              <p className="text-sm font-semibold text-[#f0813d]">
                                 ₹{member.dueAmount}
                               </p>
                             </div>
@@ -271,7 +271,7 @@ export default function AddPaymentPage() {
             {/* Selected Member Card */}
             <div className="bg-white rounded-xl p-4 mx-1 border border-gray-200 shadow-sm">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-sm">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#f0813d] to-[#f0813d] flex items-center justify-center text-white font-bold text-lg shadow-sm">
                   {selectedMember.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -287,7 +287,7 @@ export default function AddPaymentPage() {
                     </div>
                     <button
                       onClick={() => setStep(1)}
-                      className="text-sm text-blue-600 font-medium px-2 py-1 hover:bg-blue-50 rounded-lg transition-colors"
+                      className="text-sm text-[#f0813d] font-medium px-2 py-1 hover:bg-orange-50 rounded-lg transition-colors"
                     >
                       Change
                     </button>
@@ -295,12 +295,12 @@ export default function AddPaymentPage() {
 
                   {selectedMember.dueAmount > 0 && (
                     <div className="mt-3 flex items-center gap-2">
-                      <div className="w-8 h-8 bg-gradient-to-br from-red-50 to-red-100 rounded-lg flex items-center justify-center">
-                        <AlertCircle className="w-4 h-4 text-red-600" />
+                      <div className="w-8 h-8 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg flex items-center justify-center">
+                        <AlertCircle className="w-4 h-4 text-white" />
                       </div>
                       <div>
                         <p className="text-xs text-gray-500">Due Amount</p>
-                        <p className="text-sm font-semibold text-red-600">
+                        <p className="text-sm font-semibold text-[#f0813d]">
                           ₹{selectedMember.dueAmount}
                         </p>
                       </div>
@@ -328,7 +328,7 @@ export default function AddPaymentPage() {
                     type="text"
                     inputMode="decimal"
                     pattern="[0-9]*\.?[0-9]*"
-                    className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl text-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl text-2xl font-bold outline-none focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d]"
                     placeholder="0.00"
                     value={formData.amount}
                     onChange={(e) => {
@@ -364,7 +364,7 @@ export default function AddPaymentPage() {
                       onClick={() => updateForm("type", type.value)}
                       className={`py-3 rounded-lg text-sm font-medium capitalize transition-all ${
                         formData.type === type.value
-                          ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
+                          ? "bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white shadow-md"
                           : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                       }`}
                     >
@@ -396,7 +396,7 @@ export default function AddPaymentPage() {
                         onClick={() => updateForm("mode", mode.value)}
                         className={`py-3 rounded-lg text-sm font-medium transition-all flex flex-col items-center gap-1 ${
                           formData.mode === mode.value
-                            ? "bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 text-blue-700"
+                            ? "bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200 text-[#f0813d]"
                             : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                         }`}
                       >
@@ -417,7 +417,7 @@ export default function AddPaymentPage() {
                   </div>
                 </label>
                 <textarea
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-sm"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] resize-none text-sm"
                   rows={3}
                   placeholder="Add any additional notes about this payment..."
                   value={formData.notes}
@@ -438,7 +438,7 @@ export default function AddPaymentPage() {
                 <button
                   onClick={handleSubmit}
                   disabled={!formData.amount || loading}
-                  className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium disabled:opacity-50 hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white rounded-xl font-medium disabled:opacity-50 hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
                   style={{ minHeight: '44px' }}
                 >
                   {loading ? (

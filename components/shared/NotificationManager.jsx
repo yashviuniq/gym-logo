@@ -185,7 +185,7 @@ export default function NotificationManager() {
             <div className="flex flex-row gap-2">
               <button
                 onClick={requestPermission}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                className="flex-1 px-4 py-2 bg-[#f0813d] text-white text-sm font-medium rounded-lg hover:bg-[#f0813d] transition-colors"
               >
                 Enable
               </button>

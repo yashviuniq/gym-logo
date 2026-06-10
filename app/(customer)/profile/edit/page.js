@@ -108,22 +108,22 @@ export default function EditProfilePage() {
 
   if (fetching) {
     return (
-      <div className="min-h-screen bg-gray-50 pb-24">
+      <div className="min-h-screen bg-[#1a1c1c] text-white pb-24">
         <Header title="Edit Profile" />
         <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-8 h-8 border-4 border-[#f0813d] border-t-transparent rounded-full animate-spin"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-[#1a1c1c] text-white pb-24 animate-fadeIn font-sans selection:bg-[#f0813d] selection:text-black">
       <Header title="Edit Profile" />
 
       <form onSubmit={handleSubmit} className="px-4 py-4 space-y-4">
         {/* Profile Photo */}
-        <div className="bg-white rounded-xl p-6 shadow-sm flex flex-col items-center">
+        <div className="rounded-3xl border border-white/6 bg-[#2d2926] p-6 shadow-lg flex flex-col items-center">
           <ProfileImageUpload
             currentImage={formData.profileImage}
             onImageChange={handleImageChange}
@@ -134,14 +134,14 @@ export default function EditProfilePage() {
         </div>
 
         {/* Form Fields */}
-        <div className="bg-white rounded-xl p-4 shadow-sm space-y-4">
+        <div className="rounded-3xl border border-white/6 bg-[#2d2926] p-4 shadow-lg space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-zinc-300 mb-1">
               Full Name
             </label>
             <input
               type="text"
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-3 border border-white/8 bg-zinc-950/50 text-white placeholder-zinc-500 rounded-xl outline-none focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d]"
               value={formData.name}
               onChange={(e) => updateForm("name", e.target.value)}
               required
@@ -149,27 +149,27 @@ export default function EditProfilePage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-zinc-300 mb-1">
               Phone Number
             </label>
             <input
               type="tel"
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none bg-gray-50"
+              className="w-full px-4 py-3 border border-white/8 rounded-xl outline-none bg-zinc-950/40 text-zinc-500"
               value={formData.phone}
               disabled
             />
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-xs text-zinc-500 mt-1">
               Contact admin to change phone number
             </p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-zinc-300 mb-1">
               Email
             </label>
             <input
               type="email"
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-3 border border-white/8 bg-zinc-950/50 text-white placeholder-zinc-500 rounded-xl outline-none focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d]"
               value={formData.email}
               onChange={(e) => updateForm("email", e.target.value)}
               placeholder="Enter your email"
@@ -182,14 +182,14 @@ export default function EditProfilePage() {
           <button
             type="button"
             onClick={() => router.back()}
-            className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium active:scale-95 transition-transform"
+            className="flex-1 py-3 bg-white/5 text-zinc-300 rounded-xl font-medium border border-white/8 active:scale-95 transition-transform"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium disabled:opacity-50 active:scale-95 transition-transform"
+            className="flex-1 py-3 bg-gradient-to-r from-[#f0813d] to-[#9c4400] text-white rounded-xl font-medium disabled:opacity-50 active:scale-95 transition-transform"
           >
             {loading ? "Saving..." : "Save Changes"}
           </button>

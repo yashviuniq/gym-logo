@@ -206,7 +206,7 @@ export default function AddPaymentPage() {
                 <p className="font-semibold text-gray-900">{member.name}</p>
                 <p className="text-sm text-gray-500">{member.phone}</p>
                 {member.dueAmount > 0 && (
-                  <p className="text-sm font-semibold text-red-500">
+                  <p className="text-sm font-semibold text-[#f0813d]">
                     Due: ₹{member.dueAmount}
                   </p>
                 )}

@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import Header from "@/components/layout/Header";
 import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/contexts/ToastContext";
+import { ChefHat, Image as ImageIcon, Upload } from "lucide-react";
 
 const DAY_NAMES = ["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const DIET_HERO_IMAGE = "https://inkbd.com/wp-content/uploads/2024/08/Quick-and-Tasty-Mediterranean-Diet-Recipes-for-Weight-Loss-1.jpg";
 const MEAL_TYPES = [
   { value: "early_morning", label: "Early Morning" },
   { value: "breakfast", label: "Breakfast" },
@@ -33,6 +35,7 @@ export default function CreateMemberDietPlanPage() {
     description: "",
   });
   const [days, setDays] = useState({});
+  const [coverPreview, setCoverPreview] = useState(DIET_HERO_IMAGE);
 
   useEffect(() => {
     checkAccessAndFetchData();
@@ -399,12 +402,18 @@ export default function CreateMemberDietPlanPage() {
     });
   };
 
+  const handleCoverUpload = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setCoverPreview(URL.createObjectURL(file));
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 pb-24">
         <Header title="Create Diet Plan" />
         <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#f0813d]"></div>
         </div>
       </div>
     );
@@ -425,7 +434,7 @@ export default function CreateMemberDietPlanPage() {
             </p>
             <button
               onClick={() => router.push("/profile/renew")}
-              className="px-6 py-3 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 transition"
+              className="px-6 py-3 bg-[#f0813d] text-white rounded-lg font-medium hover:bg-[#f0813d] transition"
             >
               Renew Membership
             </button>
@@ -441,12 +450,12 @@ export default function CreateMemberDietPlanPage() {
         <Header title="Create Diet Plan" />
         <main className="px-4 py-4">
           <div className="bg-white rounded-xl p-6 shadow-sm text-center">
-            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="text-4xl">🚫</span>
             </div>
             <h2 className="text-xl font-bold text-gray-900 mb-2">Access Not Granted</h2>
             <p className="text-gray-500 mb-4">
-              You don't have permission to create your own diet plan. Please contact your gym administrator.
+              You do not have permission to create your own diet plan. Please contact your gym administrator.
             </p>
             <button
               onClick={() => router.push("/diet")}
@@ -468,9 +477,38 @@ export default function CreateMemberDietPlanPage() {
 
       <main className="px-4 py-4">
         <form onSubmit={handleSubmit} className="space-y-4">
+          <section className="relative overflow-hidden rounded-2xl border border-orange-200 bg-[#1a1c1c] shadow-xl">
+            <img
+              src={coverPreview}
+              alt="Diet plan cover preview"
+              className="absolute inset-0 h-full w-full object-cover opacity-60"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/20" />
+            <div className="relative p-5">
+              <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/15 px-3 py-1 text-xs font-bold text-white backdrop-blur">
+                <ChefHat className="h-3.5 w-3.5" />
+                Personal nutrition
+              </div>
+              <h2 className="max-w-[15rem] text-2xl font-black leading-tight text-white">
+                Design a plan you can actually follow.
+              </h2>
+              <p className="mt-2 max-w-[18rem] text-sm font-medium text-white/80">
+                Add meals, times, quantities, calories, and your own cover image preview.
+              </p>
+              <label className="mt-5 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-black text-[#1a1c1c] shadow-lg active:scale-95">
+                <Upload className="h-5 w-5" />
+                Upload Food Image
+                <input type="file" accept="image/*" onChange={handleCoverUpload} className="hidden" />
+              </label>
+            </div>
+          </section>
+
           {/* Basic Info */}
           <div className="bg-white rounded-xl p-4 shadow-sm space-y-4">
-            <h3 className="font-semibold text-gray-900">Plan Details</h3>
+            <div className="flex items-center gap-2">
+              <ImageIcon className="h-4 w-4 text-[#f0813d]" />
+              <h3 className="font-black text-gray-900">Plan Details</h3>
+            </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -478,7 +516,7 @@ export default function CreateMemberDietPlanPage() {
               </label>
               <input
                 type="text"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] outline-none"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 required
@@ -491,7 +529,7 @@ export default function CreateMemberDietPlanPage() {
                 Description
               </label>
               <textarea
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none resize-none"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] outline-none resize-none"
                 rows={2}
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -511,7 +549,7 @@ export default function CreateMemberDietPlanPage() {
                   onClick={() => setSelectedDay(dayNum)}
                   className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition ${
                     selectedDay === dayNum
-                      ? "bg-green-600 text-white"
+                      ? "bg-[#f0813d] text-white"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
                 >
@@ -533,7 +571,7 @@ export default function CreateMemberDietPlanPage() {
               <button
                 type="button"
                 onClick={() => addMealToDay(selectedDay)}
-                className="px-3 py-1.5 text-sm bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition font-medium"
+                className="px-3 py-1.5 text-sm bg-orange-100 text-[#f0813d] rounded-lg hover:bg-orange-200 transition font-medium"
               >
                 + Add Meal
               </button>
@@ -543,7 +581,7 @@ export default function CreateMemberDietPlanPage() {
               <div className="text-center py-8 text-gray-500">
                 <span className="text-4xl block mb-2">🍽️</span>
                 <p>No meals added for {DAY_NAMES[selectedDay]}</p>
-                <p className="text-sm mt-1">Click "Add Meal" to get started</p>
+                <p className="text-sm mt-1">Click Add Meal to get started</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -553,7 +591,7 @@ export default function CreateMemberDietPlanPage() {
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex-1 grid grid-cols-2 gap-2">
                         <select
-                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
+                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] outline-none"
                           value={meal.meal_type}
                           onChange={(e) => updateMeal(selectedDay, mealIndex, "meal_type", e.target.value)}
                         >
@@ -564,7 +602,7 @@ export default function CreateMemberDietPlanPage() {
                         </select>
                         <input
                           type="time"
-                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
+                          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] outline-none"
                           value={meal.meal_time}
                           onChange={(e) => updateMeal(selectedDay, mealIndex, "meal_time", e.target.value)}
                         />
@@ -572,7 +610,7 @@ export default function CreateMemberDietPlanPage() {
                       <button
                         type="button"
                         onClick={() => removeMeal(selectedDay, mealIndex)}
-                        className="ml-2 p-2 text-red-500 hover:bg-red-50 rounded-lg"
+                        className="ml-2 p-2 text-[#f0813d] hover:bg-orange-50 rounded-lg"
                       >
                         ✕
                       </button>
@@ -581,7 +619,7 @@ export default function CreateMemberDietPlanPage() {
                     {/* Instructions */}
                     <input
                       type="text"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-3 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-3 focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] outline-none"
                       placeholder="Instructions (optional)"
                       value={meal.instructions}
                       onChange={(e) => updateMeal(selectedDay, mealIndex, "instructions", e.target.value)}
@@ -594,7 +632,7 @@ export default function CreateMemberDietPlanPage() {
                         <button
                           type="button"
                           onClick={() => addItemToMeal(selectedDay, mealIndex)}
-                          className="text-xs text-green-600 hover:text-green-700"
+                          className="text-xs text-[#f0813d] hover:text-[#f0813d]"
                         >
                           + Add Item
                         </button>
@@ -604,21 +642,21 @@ export default function CreateMemberDietPlanPage() {
                         <div key={itemIndex} className="flex gap-2 items-center bg-gray-50 p-2 rounded-lg">
                           <input
                             type="text"
-                            className="flex-1 px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
+                            className="flex-1 px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] outline-none"
                             placeholder="Food name"
                             value={item.food_name}
                             onChange={(e) => updateMealItem(selectedDay, mealIndex, itemIndex, "food_name", e.target.value)}
                           />
                           <input
                             type="text"
-                            className="w-20 px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
+                            className="w-20 px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] outline-none"
                             placeholder="Qty"
                             value={item.quantity}
                             onChange={(e) => updateMealItem(selectedDay, mealIndex, itemIndex, "quantity", e.target.value)}
                           />
                           <input
                             type="number"
-                            className="w-16 px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
+                            className="w-16 px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] outline-none"
                             placeholder="Cal"
                             value={item.calories}
                             onChange={(e) => updateMealItem(selectedDay, mealIndex, itemIndex, "calories", e.target.value)}
@@ -626,7 +664,7 @@ export default function CreateMemberDietPlanPage() {
                           <button
                             type="button"
                             onClick={() => removeMealItem(selectedDay, mealIndex, itemIndex)}
-                            className="p-1 text-red-500 hover:bg-red-50 rounded"
+                            className="p-1 text-[#f0813d] hover:bg-orange-50 rounded"
                           >
                             ✕
                           </button>
@@ -643,7 +681,7 @@ export default function CreateMemberDietPlanPage() {
           <button
             type="submit"
             disabled={saving}
-            className="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-semibold hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-4 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white rounded-xl font-semibold hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? (
               <span className="flex items-center justify-center gap-2">

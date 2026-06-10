@@ -393,7 +393,7 @@ export default function AssignDietPlanModal({ member, memberId, memberName, gymI
                             onClick={() => setMode("select")}
                             className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
                                 mode === "select"
-                                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
+                                    ? "bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white shadow-md"
                                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                             }`}
                         >
@@ -403,7 +403,7 @@ export default function AssignDietPlanModal({ member, memberId, memberName, gymI
                             onClick={() => setMode("create")}
                             className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
                                 mode === "create"
-                                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
+                                    ? "bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white shadow-md"
                                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                             }`}
                         >
@@ -420,7 +420,7 @@ export default function AssignDietPlanModal({ member, memberId, memberName, gymI
                         <>
                             {loadingPlans ? (
                                 <div className="flex items-center justify-center py-8">
-                                    <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                                    <div className="w-8 h-8 border-4 border-[#f0813d] border-t-transparent rounded-full animate-spin"></div>
                                 </div>
                             ) : dietPlans.length === 0 ? (
                                 <div className="text-center py-8">
@@ -433,7 +433,7 @@ export default function AssignDietPlanModal({ member, memberId, memberName, gymI
                                     </p>
                                     <button
                                         onClick={() => setMode("create")}
-                                        className="mt-4 px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-medium flex items-center gap-2 mx-auto"
+                                        className="mt-4 px-6 py-2.5 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white rounded-lg font-medium flex items-center gap-2 mx-auto"
                                     >
                                         <Plus className="w-4 h-4" />
                                         Create Custom Plan
@@ -451,7 +451,7 @@ export default function AssignDietPlanModal({ member, memberId, memberName, gymI
                                             onClick={() => setSelectedPlan(plan.id)}
                                             className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
                                                 selectedPlan === plan.id
-                                                    ? "border-blue-600 bg-blue-50"
+                                                    ? "border-[#f0813d] bg-orange-50"
                                                     : "border-gray-200 hover:border-gray-300 bg-white"
                                             }`}
                                         >
@@ -462,7 +462,7 @@ export default function AssignDietPlanModal({ member, memberId, memberName, gymI
                                                             {plan.title}
                                                         </p>
                                                         {plan.is_template && (
-                                                            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">
+                                                            <span className="px-2 py-0.5 bg-orange-100 text-[#f0813d] text-xs rounded-full">
                                                                 Template
                                                             </span>
                                                         )}
@@ -474,7 +474,7 @@ export default function AssignDietPlanModal({ member, memberId, memberName, gymI
                                                     )}
                                                 </div>
                                                 {selectedPlan === plan.id && (
-                                                    <span className="text-indigo-600 text-xl">
+                                                    <span className="text-[#f0813d] text-xl">
                                                         ✓
                                                     </span>
                                                 )}
@@ -497,7 +497,7 @@ export default function AssignDietPlanModal({ member, memberId, memberName, gymI
                                     </label>
                                     <input
                                         type="text"
-                                        className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
+                                        className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] outline-none transition-all text-sm"
                                         value={formData.title}
                                         onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                                         required
@@ -510,7 +510,7 @@ export default function AssignDietPlanModal({ member, memberId, memberName, gymI
                                         Description (Optional)
                                     </label>
                                     <textarea
-                                        className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none text-sm"
+                                        className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] outline-none transition-all resize-none text-sm"
                                         rows={2}
                                         value={formData.description}
                                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -518,8 +518,8 @@ export default function AssignDietPlanModal({ member, memberId, memberName, gymI
                                     />
                                 </div>
 
-                                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                                    <p className="text-xs text-amber-700">
+                                <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                                    <p className="text-xs text-[#f0813d]">
                                         <strong>Note:</strong> This diet plan will be created exclusively for {actualMemberName} and won't appear in the general diet plans list.
                                     </p>
                                 </div>
@@ -539,9 +539,9 @@ export default function AssignDietPlanModal({ member, memberId, memberName, gymI
                                             onClick={() => setActiveDay(dayNum)}
                                             className={`flex-shrink-0 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                                                 activeDay === dayNum
-                                                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white"
+                                                    ? "bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white"
                                                     : days[dayNum]?.meals?.length > 0
-                                                        ? "bg-green-100 text-green-700 border border-green-200"
+                                                        ? "bg-orange-100 text-[#f0813d] border border-orange-200"
                                                         : "bg-gray-100 text-gray-600"
                                             }`}
                                         >
@@ -563,7 +563,7 @@ export default function AssignDietPlanModal({ member, memberId, memberName, gymI
                                     <button
                                         type="button"
                                         onClick={() => addMealToDay(activeDay)}
-                                        className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium flex items-center gap-1 hover:bg-blue-100 transition-colors"
+                                        className="px-3 py-1.5 bg-orange-50 text-[#f0813d] rounded-lg text-xs font-medium flex items-center gap-1 hover:bg-orange-100 transition-colors"
                                     >
                                         <Plus className="w-3.5 h-3.5" />
                                         Add Meal
@@ -586,7 +586,7 @@ export default function AssignDietPlanModal({ member, memberId, memberName, gymI
                                                         <select
                                                             value={meal.meal_type}
                                                             onChange={(e) => updateMeal(activeDay, mealIndex, "meal_type", e.target.value)}
-                                                            className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                                            className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#f0813d]"
                                                         >
                                                             <option value="">Select Meal Type</option>
                                                             {MEAL_TYPES.map((type) => (
@@ -599,13 +599,13 @@ export default function AssignDietPlanModal({ member, memberId, memberName, gymI
                                                             type="time"
                                                             value={meal.meal_time || ""}
                                                             onChange={(e) => updateMeal(activeDay, mealIndex, "meal_time", e.target.value)}
-                                                            className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                                            className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#f0813d]"
                                                         />
                                                     </div>
                                                     <button
                                                         type="button"
                                                         onClick={() => removeMeal(activeDay, mealIndex)}
-                                                        className="ml-2 p-2 text-red-500 hover:bg-red-50 rounded-lg"
+                                                        className="ml-2 p-2 text-[#f0813d] hover:bg-orange-50 rounded-lg"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
@@ -626,7 +626,7 @@ export default function AssignDietPlanModal({ member, memberId, memberName, gymI
                                                         <button
                                                             type="button"
                                                             onClick={() => addItemToMeal(activeDay, mealIndex)}
-                                                            className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                                                            className="text-xs text-[#f0813d] hover:text-[#f0813d] flex items-center gap-1"
                                                         >
                                                             <Plus className="w-3 h-3" />
                                                             Add Item
@@ -659,7 +659,7 @@ export default function AssignDietPlanModal({ member, memberId, memberName, gymI
                                                             <button
                                                                 type="button"
                                                                 onClick={() => removeMealItem(activeDay, mealIndex, itemIndex)}
-                                                                className="p-1 text-red-500 hover:bg-red-50 rounded"
+                                                                className="p-1 text-[#f0813d] hover:bg-orange-50 rounded"
                                                             >
                                                                 <X className="w-3.5 h-3.5" />
                                                             </button>
@@ -688,7 +688,7 @@ export default function AssignDietPlanModal({ member, memberId, memberName, gymI
                         type="button"
                         onClick={mode === "select" ? handleAssign : handleCreateCustomPlan}
                         disabled={loading || (mode === "select" && (!selectedPlan || loadingPlans))}
-                        className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition"
+                        className="flex-1 py-3 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition"
                     >
                         {loading 
                             ? (mode === "select" ? "Assigning..." : "Creating...") 

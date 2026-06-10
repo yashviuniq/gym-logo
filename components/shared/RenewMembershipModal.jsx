@@ -506,12 +506,12 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
                         const startDate = startDateStr ? new Date(startDateStr + 'T00:00:00') : null;
                         const endDate = endDateStr ? new Date(endDateStr + 'T00:00:00') : null;
                         return (
-                            <div className="bg-blue-50 rounded-xl p-3">
-                                <p className="text-sm text-blue-600 mb-1">New Validity Period</p>
-                                <p className="font-semibold text-blue-900">
+                            <div className="bg-orange-50 rounded-xl p-3">
+                                <p className="text-sm text-[#f0813d] mb-1">New Validity Period</p>
+                                <p className="font-semibold text-orange-900">
                                     {startDate ? startDate.toLocaleDateString("en-IN") : ""} → {endDate ? endDate.toLocaleDateString("en-IN") : ""}
                                 </p>
-                                <p className="text-xs text-blue-600 mt-1">
+                                <p className="text-xs text-[#f0813d] mt-1">
                                     +{plan.duration_days} days extension
                                 </p>
                             </div>
@@ -590,7 +590,7 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
 
                                
                                 {paymentAmount && parseFloat(paymentAmount) < finalPrice && (
-                                    <p className="text-sm text-orange-500 mt-1">
+                                    <p className="text-sm text-[#f0813d] mt-1">
                                         Due amount: ₹{dueForMembership}
                                     </p>
                                 )}
@@ -668,8 +668,8 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
 
                     {/* Summary */}
                     {selectedPlan && paymentAmount && (
-                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-3">
-                            <p className="text-sm text-green-600 mb-2">Renewal Summary</p>
+                        <div className="bg-gradient-to-r from-orange-50 to-orange-50 rounded-xl p-3">
+                            <p className="text-sm text-[#f0813d] mb-2">Renewal Summary</p>
                             <div className="space-y-1 text-sm">
                                 <div className="flex justify-between">
                                     <span className="text-gray-600">Plan Price:</span>
@@ -681,19 +681,19 @@ export default function RenewMembershipModal({ member, gymId, gymData, onClose, 
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-gray-600">Current Due:</span>
-                                    <span className="font-medium text-orange-600">₹{dueForMembership}</span>
+                                    <span className="font-medium text-[#f0813d]">₹{dueForMembership}</span>
                                 </div>
                                 {(member.dueAmount > 0 || member.balance > 0) && (
                                     <div className="flex justify-between">
                                         <span className="text-gray-600">Previous Balance:</span>
-                                        <span className="font-medium text-orange-600">₹{member.dueAmount || member.balance || 0}</span>
+                                        <span className="font-medium text-[#f0813d]">₹{member.dueAmount || member.balance || 0}</span>
                                     </div>
                                 )}
-                                <div className="flex justify-between pt-2 border-t border-green-200">
+                                <div className="flex justify-between pt-2 border-t border-orange-200">
                                     <span className="font-semibold text-gray-900">Total Balance:</span>
                                     <span className={`font-bold ${(dueForMembership + (member.dueAmount || member.balance || 0)) > 0
-                                            ? "text-red-600"
-                                            : "text-green-600"
+                                            ? "text-[#f0813d]"
+                                            : "text-[#f0813d]"
                                         }`}>
                                         ₹{dueForMembership + (member.dueAmount || member.balance || 0)}
                                     </span>

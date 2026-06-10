@@ -128,7 +128,7 @@ export default function TransactionsPage() {
       <div className="min-h-screen bg-gray-50 pb-24">
         <Header title="All Transactions" />
         <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#f0813d]"></div>
         </div>
       </div>
     );
@@ -142,7 +142,7 @@ export default function TransactionsPage() {
           <p className="text-gray-500">Please select a gym first</p>
           <button
             onClick={() => router.push("/admin/dashboard")}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg"
+            className="mt-4 px-4 py-2 bg-[#f0813d] text-white rounded-lg"
           >
             Go to Dashboard
           </button>
@@ -162,7 +162,7 @@ export default function TransactionsPage() {
             <p className="text-sm text-gray-500">
               Total ({filteredTransactions.length} transactions)
             </p>
-            <p className="text-2xl font-bold text-green-600">
+            <p className="text-2xl font-bold text-[#f0813d]">
               ₹{totalAmount.toLocaleString()}
             </p>
           </div>
@@ -223,24 +223,24 @@ export default function TransactionsPage() {
               >
                 <div className="flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    collectorDisplayName !== "—" ? "bg-purple-100" : "bg-green-100"
+                    collectorDisplayName !== "—" ? "bg-orange-100" : "bg-orange-100"
                   }`}>
-                    <span className={`font-bold ${collectorDisplayName !== "—" ? "text-purple-600" : "text-green-600"}`}>₹</span>
+                    <span className={`font-bold ${collectorDisplayName !== "—" ? "text-[#f0813d]" : "text-[#f0813d]"}`}>₹</span>
                   </div>
                   <div>
                     <p className="font-medium text-gray-900">{txn.name}</p>
                     <p className="text-xs text-gray-500 capitalize">
                       {txn.type.replace("_", " ")} • {txn.mode} • {formatDate(txn.date)}
                     </p>
-                    <p className="text-xs text-violet-700 font-medium mt-0.5">
+                    <p className="text-xs text-[#f0813d] font-medium mt-0.5">
                       {collectorLine}
                     </p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold text-green-600">+₹{txn.amount}</p>
+                  <p className="font-semibold text-[#f0813d]">+₹{txn.amount}</p>
                   {txn.status === "partial" && (
-                    <span className="text-xs text-orange-500">Partial</span>
+                    <span className="text-xs text-[#f0813d]">Partial</span>
                   )}
                 </div>
               </div>

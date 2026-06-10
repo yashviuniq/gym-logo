@@ -42,7 +42,7 @@ export default function WorkoutPlansSettingsPage() {
     <Suspense fallback={
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom flex flex-col items-center justify-center">
         <div className="relative">
-          <div className="w-14 h-14 border-4 border-blue-500/20 border-t-blue-600 rounded-full animate-spin"></div>
+          <div className="w-14 h-14 border-4 border-[#f0813d]/20 border-t-[#9c4400] rounded-full animate-spin"></div>
         </div>
         <p className="mt-6 text-gray-600 font-medium text-sm">Loading...</p>
       </div>
@@ -177,11 +177,11 @@ function WorkoutPlansContent() {
   const getLevelColor = (level) => {
     switch (level?.toLowerCase()) {
       case "beginner":
-        return "bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-200 text-emerald-700";
+        return "bg-gradient-to-br from-[#f0813d]/10 to-[#f0813d]/15 border border-[#f0813d]/20 text-[#9c4400]";
       case "intermediate":
-        return "bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200 text-amber-700";
+        return "bg-gradient-to-br from-[#f0813d]/10 to-[#f0813d]/15 border border-[#f0813d]/20 text-[#9c4400]";
       case "advanced":
-        return "bg-gradient-to-br from-red-50 to-red-100 border border-red-200 text-red-700";
+        return "bg-gradient-to-br from-[#f0813d]/10 to-[#f0813d]/15 border border-[#f0813d]/20 text-[#9c4400]";
       default:
         return "bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 text-gray-700";
     }
@@ -191,8 +191,8 @@ function WorkoutPlansContent() {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 safe-area-inset-bottom flex flex-col items-center justify-center">
         <div className="relative">
-          <div className="w-14 h-14 border-4 border-blue-500/20 border-t-blue-600 rounded-full animate-spin"></div>
-          <div className="absolute inset-0 w-14 h-14 border-4 border-transparent border-t-blue-500 rounded-full animate-spin animation-delay-200"></div>
+          <div className="w-14 h-14 border-4 border-[#f0813d]/20 border-t-[#9c4400] rounded-full animate-spin"></div>
+          <div className="absolute inset-0 w-14 h-14 border-4 border-transparent border-t-[#f0813d] rounded-full animate-spin animation-delay-200"></div>
         </div>
         <p className="mt-6 text-gray-600 font-medium text-sm">Loading workout plans...</p>
       </div>
@@ -212,8 +212,8 @@ function WorkoutPlansContent() {
                 <p className="text-xs text-gray-500 font-medium">Total Plans</p>
                 <p className="text-xl font-bold text-gray-900 mt-0.5">{workoutPlans.length}</p>
               </div>
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg flex items-center justify-center">
-                <Dumbbell className="w-5 h-5 text-blue-600" />
+              <div className="w-10 h-10 bg-gradient-to-br from-[#f0813d]/10 to-[#f0813d]/15 rounded-lg flex items-center justify-center">
+                <Dumbbell className="w-5 h-5 text-white" />
               </div>
             </div>
           </div>
@@ -222,12 +222,12 @@ function WorkoutPlansContent() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-medium">Beginner</p>
-                <p className="text-xl font-bold text-emerald-600 mt-0.5">
+                <p className="text-xl font-bold text-[#f0813d] mt-0.5">
                   {workoutPlans.filter(p => p.level?.toLowerCase() === "beginner").length}
                 </p>
               </div>
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-lg flex items-center justify-center">
-                <Target className="w-5 h-5 text-emerald-600" />
+              <div className="w-10 h-10 bg-gradient-to-br from-[#f0813d]/10 to-[#f0813d]/15 rounded-lg flex items-center justify-center">
+                <Target className="w-5 h-5 text-white" />
               </div>
             </div>
           </div>
@@ -236,12 +236,12 @@ function WorkoutPlansContent() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-medium">Intermediate</p>
-                <p className="text-xl font-bold text-amber-600 mt-0.5">
+                <p className="text-xl font-bold text-[#f0813d] mt-0.5">
                   {workoutPlans.filter(p => p.level?.toLowerCase() === "intermediate").length}
                 </p>
               </div>
-              <div className="w-10 h-10 bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-amber-600" />
+              <div className="w-10 h-10 bg-gradient-to-br from-[#f0813d]/10 to-[#f0813d]/15 rounded-lg flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-white" />
               </div>
             </div>
           </div>
@@ -250,12 +250,12 @@ function WorkoutPlansContent() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-medium">Advanced</p>
-                <p className="text-xl font-bold text-red-600 mt-0.5">
+                <p className="text-xl font-bold text-[#f0813d] mt-0.5">
                   {workoutPlans.filter(p => p.level?.toLowerCase() === "advanced").length}
                 </p>
               </div>
-              <div className="w-10 h-10 bg-gradient-to-br from-red-50 to-red-100 rounded-lg flex items-center justify-center">
-                <Dumbbell className="w-5 h-5 text-red-600" />
+              <div className="w-10 h-10 bg-gradient-to-br from-[#f0813d]/10 to-[#f0813d]/15 rounded-lg flex items-center justify-center">
+                <Dumbbell className="w-5 h-5 text-white" />
               </div>
             </div>
           </div>
@@ -271,7 +271,7 @@ function WorkoutPlansContent() {
             <input
               type="text"
               placeholder="Search plans by title, goal, or level..."
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm placeholder:text-gray-400"
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all text-sm placeholder:text-gray-400"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -281,7 +281,7 @@ function WorkoutPlansContent() {
           {!isViewOnly && (
             <button
               onClick={() => setShowAddModal(true)}
-              className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2"
+              className="w-full py-3 bg-gradient-to-r from-[#f0813d] to-[#9c4400] text-white font-medium rounded-lg hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2"
               style={{ minHeight: '44px' }}
             >
               <Plus className="w-5 h-5" />
@@ -295,7 +295,7 @@ function WorkoutPlansContent() {
           {filteredPlans.length === 0 ? (
             <div className="bg-white rounded-xl border border-gray-200 p-8 text-center mx-1">
               <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Dumbbell className="w-8 h-8 text-gray-400" />
+                <Dumbbell className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-base font-semibold text-gray-900 mb-2">
                 {searchQuery ? "No plans found" : "No workout plans yet"}
@@ -306,7 +306,7 @@ function WorkoutPlansContent() {
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="px-4 py-2 text-blue-600 text-sm font-medium hover:text-blue-700 active:scale-95 transition-transform"
+                  className="px-4 py-2 text-[#f0813d] text-sm font-medium hover:text-[#9c4400] active:scale-95 transition-transform"
                 >
                   Clear search
                 </button>
@@ -323,7 +323,7 @@ function WorkoutPlansContent() {
                   <div className="flex items-start gap-3">
                     {/* Plan Icon */}
                     <div className="flex-shrink-0">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#f0813d] to-[#9c4400] flex items-center justify-center">
                         <Dumbbell className="w-6 h-6 text-white" />
                       </div>
                     </div>
@@ -353,7 +353,7 @@ function WorkoutPlansContent() {
                               <span className="text-xs font-medium">{plan.level}</span>
                             </div>
                             {plan.is_template && (
-                              <div className="px-2.5 py-1.5 rounded-lg bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 text-purple-700 flex items-center gap-1.5">
+                              <div className="px-2.5 py-1.5 rounded-lg bg-gradient-to-br from-[#f0813d]/10 to-[#f0813d]/15 border border-[#f0813d]/20 text-[#9c4400] flex items-center gap-1.5">
                                 <span className="text-xs font-medium">Template</span>
                               </div>
                             )}
@@ -371,13 +371,13 @@ function WorkoutPlansContent() {
                           <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-100">
                             <div className={`w-6 h-6 rounded flex items-center justify-center ${
                               plan.creator.role === 'trainer'
-                                ? 'bg-purple-50'
-                                : 'bg-indigo-50'
+                                ? 'bg-[#f0813d]/10'
+                                : 'bg-[#f0813d]/10'
                             }`}>
                               <User className={`w-3 h-3 ${
                                 plan.creator.role === 'trainer'
-                                  ? 'text-purple-600'
-                                  : 'text-indigo-600'
+                                  ? 'text-[#f0813d]'
+                                  : 'text-[#f0813d]'
                               }`} />
                             </div>
                             <span className="text-gray-600 text-xs">
@@ -403,7 +403,7 @@ function WorkoutPlansContent() {
                               setEditingPlan(plan);
                               setShowAddModal(true);
                             }}
-                            className="flex-shrink-0 px-3 py-2 bg-blue-50 text-blue-700 text-xs font-medium rounded-lg active:bg-blue-100 transition-all flex items-center gap-2"
+                            className="flex-shrink-0 px-3 py-2 bg-[#f0813d]/10 text-[#9c4400] text-xs font-medium rounded-lg active:bg-[#f0813d]/15 transition-all flex items-center gap-2"
                             style={{ minHeight: '36px' }}
                           >
                             <Edit2 className="w-3.5 h-3.5" />
@@ -417,7 +417,7 @@ function WorkoutPlansContent() {
                               e.stopPropagation();
                               handleDelete(plan.id);
                             }}
-                            className="flex-shrink-0 px-3 py-2 bg-red-50 text-red-700 text-xs font-medium rounded-lg active:bg-red-100 transition-all flex items-center gap-2"
+                            className="flex-shrink-0 px-3 py-2 bg-[#f0813d]/10 text-[#9c4400] text-xs font-medium rounded-lg active:bg-[#f0813d]/15 transition-all flex items-center gap-2"
                             style={{ minHeight: '36px' }}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -765,7 +765,7 @@ function WorkoutPlanModal({ plan, gymId, onClose, onSave }) {
                 </label>
                 <input
                   type="text"
-                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all text-sm"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   required
@@ -779,7 +779,7 @@ function WorkoutPlanModal({ plan, gymId, onClose, onSave }) {
                     Goal
                   </label>
                   <select
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
+                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all text-sm"
                     value={formData.goal}
                     onChange={(e) => setFormData({ ...formData, goal: e.target.value })}
                   >
@@ -795,7 +795,7 @@ function WorkoutPlanModal({ plan, gymId, onClose, onSave }) {
                     Level
                   </label>
                   <select
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
+                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all text-sm"
                     value={formData.level}
                     onChange={(e) => setFormData({ ...formData, level: e.target.value })}
                   >
@@ -812,7 +812,7 @@ function WorkoutPlanModal({ plan, gymId, onClose, onSave }) {
                   Description
                 </label>
                 <textarea
-                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none text-sm"
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all resize-none text-sm"
                   rows={2}
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -829,7 +829,7 @@ function WorkoutPlanModal({ plan, gymId, onClose, onSave }) {
                   type="button"
                   onClick={() => setFormData({ ...formData, is_template: !formData.is_template })}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    formData.is_template ? "bg-gradient-to-r from-blue-600 to-indigo-600" : "bg-gray-300"
+                    formData.is_template ? "bg-gradient-to-r from-[#f0813d] to-[#9c4400]" : "bg-gray-300"
                   }`}
                 >
                   <span
@@ -860,7 +860,7 @@ function WorkoutPlanModal({ plan, gymId, onClose, onSave }) {
                           <h5 className="font-semibold text-gray-900 text-sm">{day.day_name || DAY_NAMES[dayNum]}</h5>
                           <input
                             type="text"
-                            className="px-2 py-1 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                            className="px-2 py-1 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all"
                             placeholder="Focus (e.g., Chest & Triceps)"
                             value={day.focus}
                             onChange={(e) => updateDayFocus(dayNum, e.target.value)}
@@ -869,7 +869,7 @@ function WorkoutPlanModal({ plan, gymId, onClose, onSave }) {
                         <button
                           type="button"
                           onClick={() => addExerciseToDay(dayNum)}
-                          className="px-2 py-1 text-xs bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:shadow-md active:scale-95 transition-all"
+                          className="px-2 py-1 text-xs bg-gradient-to-r from-[#f0813d] to-[#9c4400] text-white rounded-lg hover:shadow-md active:scale-95 transition-all"
                         >
                           + Add Exercise
                         </button>
@@ -883,7 +883,7 @@ function WorkoutPlanModal({ plan, gymId, onClose, onSave }) {
                                 <div className="col-span-3">
                                   <input
                                     type="text"
-                                    className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                    className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all"
                                     placeholder="Exercise name"
                                     value={exercise.exercise_name}
                                     onChange={(e) => updateExercise(dayNum, exerciseIndex, "exercise_name", e.target.value)}
@@ -892,7 +892,7 @@ function WorkoutPlanModal({ plan, gymId, onClose, onSave }) {
                                 <div>
                                   <input
                                     type="number"
-                                    className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                    className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all"
                                     placeholder="Sets"
                                     value={exercise.sets}
                                     onChange={(e) => updateExercise(dayNum, exerciseIndex, "sets", e.target.value)}
@@ -901,7 +901,7 @@ function WorkoutPlanModal({ plan, gymId, onClose, onSave }) {
                                 <div>
                                   <input
                                     type="text"
-                                    className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                    className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all"
                                     placeholder="Reps"
                                     value={exercise.reps}
                                     onChange={(e) => updateExercise(dayNum, exerciseIndex, "reps", e.target.value)}
@@ -910,7 +910,7 @@ function WorkoutPlanModal({ plan, gymId, onClose, onSave }) {
                                 <div className="flex items-center gap-1">
                                   <input
                                     type="text"
-                                    className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                    className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all"
                                     placeholder="Weight"
                                     value={exercise.weight}
                                     onChange={(e) => updateExercise(dayNum, exerciseIndex, "weight", e.target.value)}
@@ -918,7 +918,7 @@ function WorkoutPlanModal({ plan, gymId, onClose, onSave }) {
                                   <button
                                     type="button"
                                     onClick={() => removeExercise(dayNum, exerciseIndex)}
-                                    className="p-1 text-red-500 hover:bg-red-50 rounded-lg active:scale-95 transition-all"
+                                    className="p-1 text-[#f0813d] hover:bg-[#f0813d]/10 rounded-lg active:scale-95 transition-all"
                                     style={{ minHeight: '32px', minWidth: '32px' }}
                                   >
                                     <XCircle className="w-4 h-4" />
@@ -928,7 +928,7 @@ function WorkoutPlanModal({ plan, gymId, onClose, onSave }) {
                               <div className="mt-1">
                                 <input
                                   type="text"
-                                  className="w-full px-2 py-1 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                  className="w-full px-2 py-1 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all"
                                   placeholder="Notes (optional)"
                                   value={exercise.notes || ""}
                                   onChange={(e) => updateExercise(dayNum, exerciseIndex, "notes", e.target.value)}
@@ -937,7 +937,7 @@ function WorkoutPlanModal({ plan, gymId, onClose, onSave }) {
                               <div className="mt-1">
                                 <input
                                   type="number"
-                                  className="w-full px-2 py-1 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                  className="w-full px-2 py-1 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all"
                                   placeholder="Rest (seconds)"
                                   value={exercise.rest_seconds}
                                   onChange={(e) => updateExercise(dayNum, exerciseIndex, "rest_seconds", e.target.value)}
@@ -972,7 +972,7 @@ function WorkoutPlanModal({ plan, gymId, onClose, onSave }) {
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-medium hover:shadow-lg active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 py-3 bg-gradient-to-r from-[#f0813d] to-[#9c4400] text-white rounded-xl font-medium hover:shadow-lg active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ minHeight: '44px' }}
           >
             {loading ? (

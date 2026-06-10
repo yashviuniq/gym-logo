@@ -7,6 +7,8 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
+    "biometric:dev": "npm --prefix biometric-server run dev",
+    "biometric:start": "npm --prefix biometric-server start",
     "generate-icons": "node scripts/generate-icons.js"
   },
   "dependencies": {

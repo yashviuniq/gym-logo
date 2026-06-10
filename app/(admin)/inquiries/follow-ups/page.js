@@ -18,10 +18,10 @@ import {
 } from "lucide-react";
 
 const STATUS_CONFIG = {
-  new: { label: "New", color: "bg-blue-100 text-blue-700" },
-  contacted: { label: "Contacted", color: "bg-yellow-100 text-yellow-700" },
-  follow_up: { label: "Follow-Up", color: "bg-purple-100 text-purple-700" },
-  joined: { label: "Joined", color: "bg-green-100 text-green-700" },
+  new: { label: "New", color: "bg-orange-100 text-[#f0813d]" },
+  contacted: { label: "Contacted", color: "bg-orange-100 text-[#f0813d]" },
+  follow_up: { label: "Follow-Up", color: "bg-orange-100 text-[#f0813d]" },
+  joined: { label: "Joined", color: "bg-orange-100 text-[#f0813d]" },
   not_interested: { label: "Not Interested", color: "bg-gray-100 text-gray-600" },
 };
 
@@ -148,7 +148,7 @@ export default function FollowUpCallsPage() {
               <ChevronLeft size={20} />
             </button>
             <div className="text-center">
-              <p className={`font-semibold ${isToday && !showOverdue ? "text-blue-600" : "text-gray-800"}`}>
+              <p className={`font-semibold ${isToday && !showOverdue ? "text-[#f0813d]" : "text-gray-800"}`}>
                 {showOverdue ? "All Overdue" : displayDate}
               </p>
               {isToday && !showOverdue && <p className="text-xs text-gray-500">Today</p>}
@@ -166,7 +166,7 @@ export default function FollowUpCallsPage() {
             <button
               onClick={() => { setSelectedDate(today); setShowOverdue(false); }}
               className={`flex-1 py-2 rounded-lg text-xs font-medium transition ${
-                isToday && !showOverdue ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600"
+                isToday && !showOverdue ? "bg-[#f0813d] text-white" : "bg-gray-100 text-gray-600"
               }`}
             >
               Today
@@ -180,7 +180,7 @@ export default function FollowUpCallsPage() {
               }}
               className={`flex-1 py-2 rounded-lg text-xs font-medium transition ${
                 selectedDate === (() => { const t = new Date(); t.setDate(t.getDate() + 1); return t.toISOString().split("T")[0]; })() && !showOverdue
-                  ? "bg-blue-600 text-white"
+                  ? "bg-[#f0813d] text-white"
                   : "bg-gray-100 text-gray-600"
               }`}
             >
@@ -190,7 +190,7 @@ export default function FollowUpCallsPage() {
               <button
                 onClick={() => setShowOverdue(true)}
                 className={`flex-1 py-2 rounded-lg text-xs font-medium transition ${
-                  showOverdue ? "bg-red-600 text-white" : "bg-red-50 text-red-600"
+                  showOverdue ? "bg-[#f0813d] text-white" : "bg-orange-50 text-[#f0813d]"
                 }`}
               >
                 Overdue ({overdueCount})
@@ -206,7 +206,7 @@ export default function FollowUpCallsPage() {
           </p>
           <button
             onClick={() => router.push("/inquiries")}
-            className="text-sm text-blue-600 font-medium"
+            className="text-sm text-[#f0813d] font-medium"
           >
             All Inquiries →
           </button>
@@ -246,20 +246,20 @@ export default function FollowUpCallsPage() {
                 <div
                   key={inq.id}
                   className={`bg-white rounded-xl p-4 shadow-sm ${
-                    isOverdue ? "border-l-4 border-red-400" : ""
+                    isOverdue ? "border-l-4 border-[#f0813d]" : ""
                   }`}
                 >
                   {/* Header */}
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
-                        <User size={18} className="text-gray-500" />
+                        <User size={18} className="text-white" />
                       </div>
                       <div>
                         <p className="font-semibold text-gray-900 text-sm">{inq.full_name}</p>
                         <a
                           href={`tel:${inq.phone}`}
-                          className="text-xs text-blue-600 flex items-center gap-1"
+                          className="text-xs text-[#f0813d] flex items-center gap-1"
                         >
                           <Phone size={11} />
                           {inq.phone}
@@ -282,7 +282,7 @@ export default function FollowUpCallsPage() {
                       <Calendar size={12} /> Visited: {new Date(inq.visit_date + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
                     </span>
                     {isOverdue && (
-                      <span className="flex items-center gap-1 text-red-500 font-medium">
+                      <span className="flex items-center gap-1 text-[#f0813d] font-medium">
                         <AlertTriangle size={12} /> Overdue
                       </span>
                     )}
@@ -296,28 +296,28 @@ export default function FollowUpCallsPage() {
                   <div className="flex flex-wrap gap-2">
                     <a
                       href={`tel:${inq.phone}`}
-                      className="flex items-center gap-1 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-xs font-medium hover:bg-green-100 transition"
+                      className="flex items-center gap-1 px-3 py-1.5 bg-orange-50 text-[#f0813d] rounded-lg text-xs font-medium hover:bg-orange-100 transition"
                     >
                       <Phone size={13} /> Call
                     </a>
                     <button
                       onClick={() => quickAction(inq.id, "contacted")}
                       disabled={actionLoading === inq.id}
-                      className="flex items-center gap-1 px-3 py-1.5 bg-yellow-50 text-yellow-700 rounded-lg text-xs font-medium hover:bg-yellow-100 transition disabled:opacity-50"
+                      className="flex items-center gap-1 px-3 py-1.5 bg-orange-50 text-[#f0813d] rounded-lg text-xs font-medium hover:bg-orange-100 transition disabled:opacity-50"
                     >
                       <CheckCircle size={13} /> Contacted
                     </button>
                     <button
                       onClick={() => quickAction(inq.id, "reschedule")}
                       disabled={actionLoading === inq.id}
-                      className="flex items-center gap-1 px-3 py-1.5 bg-purple-50 text-purple-700 rounded-lg text-xs font-medium hover:bg-purple-100 transition disabled:opacity-50"
+                      className="flex items-center gap-1 px-3 py-1.5 bg-orange-50 text-[#f0813d] rounded-lg text-xs font-medium hover:bg-orange-100 transition disabled:opacity-50"
                     >
                       <Clock size={13} /> Reschedule
                     </button>
                     <button
                       onClick={() => quickAction(inq.id, "joined")}
                       disabled={actionLoading === inq.id}
-                      className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-100 transition disabled:opacity-50"
+                      className="flex items-center gap-1 px-3 py-1.5 bg-orange-50 text-[#f0813d] rounded-lg text-xs font-medium hover:bg-orange-100 transition disabled:opacity-50"
                     >
                       <UserPlus size={13} /> Joined
                     </button>

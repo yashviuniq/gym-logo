@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import { OWNER_PERMISSIONS } from "@/lib/constants/permissions";
+import { supabase } from "@/lib/supabaseClient";
 
 const AuthContext = createContext(null);
 
@@ -35,7 +36,25 @@ function readGymFromStorage() {
   if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem("selectedGym");
-    return raw ? JSON.parse(raw) : null;
+    if (raw) return JSON.parse(raw);
+
+    const userRaw = localStorage.getItem("gymUser");
+    if (!userRaw) return null;
+
+    const storedUser = JSON.parse(userRaw);
+    const storedGymId = storedUser?.role === "trainer"
+      ? storedUser.gym_id || storedUser.gymId
+      : null;
+
+    if (!storedGymId) return null;
+
+    const fallbackGym = {
+      id: storedGymId,
+      name: storedUser.gym_name || storedUser.gymName || "Trainer Gym",
+    };
+
+    localStorage.setItem("selectedGym", JSON.stringify(fallbackGym));
+    return fallbackGym;
   } catch {
     return null;
   }
@@ -75,6 +94,9 @@ export function AuthProvider({ children }) {
   const [selectedGym, setSelectedGymState] = useState(() => readGymFromStorage());
   const [isReady, setIsReady] = useState(() => typeof window !== "undefined");
   const pathname = usePathname();
+  const role = user?.role || null;
+  const userGymId = user?.gym_id || user?.gymId || null;
+  const userGymName = user?.gym_name || user?.gymName || "Trainer Gym";
 
   // On mount, mark ready (covers SSR hydration)
   useEffect(() => {
@@ -120,6 +142,45 @@ export function AuthProvider({ children }) {
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
+  useEffect(() => {
+    if (role !== "trainer" || !userGymId || selectedGym?.id) return;
+
+    let cancelled = false;
+
+    const fallbackGym = {
+      id: userGymId,
+      name: userGymName,
+    };
+
+    const hydrateTrainerGym = async () => {
+      try {
+        const { data } = await supabase
+          .from("gyms")
+          .select("id, name, address, timezone, created_at, logo_url, plan:plan_type")
+          .eq("id", userGymId)
+          .maybeSingle();
+
+        if (cancelled) return;
+
+        const gym = data?.id ? data : fallbackGym;
+        setSelectedGymState(gym);
+        localStorage.setItem("selectedGym", JSON.stringify(gym));
+      } catch (error) {
+        console.error("Error hydrating trainer gym:", error);
+        if (!cancelled) {
+          setSelectedGymState(fallbackGym);
+          localStorage.setItem("selectedGym", JSON.stringify(fallbackGym));
+        }
+      }
+    };
+
+    hydrateTrainerGym();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [role, userGymId, userGymName, selectedGym?.id]);
+
   const setSelectedGym = useCallback((gym) => {
     setSelectedGymState(gym);
     if (gym) {
@@ -142,7 +203,6 @@ export function AuthProvider({ children }) {
   }, []);
 
   // Derived values — computed once, shared everywhere
-  const role = user?.role || null;
   const permissions = useMemo(
     () => resolvePermissions(role, user?.permissions),
     [role, user?.permissions]
@@ -164,16 +224,27 @@ export function AuthProvider({ children }) {
     canManageAdmins: role === "superadmin",
   }), [role]);
 
+  const effectiveSelectedGym = useMemo(() => {
+    if (selectedGym?.id) return selectedGym;
+    if (role === "trainer" && userGymId) {
+      return {
+        id: userGymId,
+        name: userGymName,
+      };
+    }
+    return selectedGym;
+  }, [role, selectedGym, userGymId, userGymName]);
+
   const value = useMemo(() => ({
     user,
     role,
     permissions,
-    selectedGym,
+    selectedGym: effectiveSelectedGym,
     isReady,
     setSelectedGym,
     updateUser,
     ...derived,
-  }), [user, role, permissions, selectedGym, isReady, setSelectedGym, updateUser, derived]);
+  }), [user, role, permissions, effectiveSelectedGym, isReady, setSelectedGym, updateUser, derived]);
 
   return (
     <AuthContext.Provider value={value}>

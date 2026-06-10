@@ -9,6 +9,7 @@ import Header from "@/components/layout/Header";
 const RenewMembershipModal = dynamic(() => import("@/components/shared/RenewMembershipModal"), { ssr: false });
 const ShareReceiptModal = dynamic(() => import("@/components/shared/ShareReceiptModal"), { ssr: false });
 import { MembersPageSkeleton } from "@/components/shared/Skeleton";
+import RouteLoadingScreen from "@/components/shared/RouteLoadingScreen";
 import { useUserRole } from "@/lib/hooks/useUserRole";
 import {
   Users,
@@ -806,17 +807,17 @@ export default function MembersPage() {
     switch (status) {
       case "active":
         return {
-          color: "bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200",
-          text: "text-emerald-700",
-          dot: "bg-emerald-500",
+          color: "bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200",
+          text: "text-[#f0813d]",
+          dot: "bg-[#f0813d]",
           label: "Active",
           icon: <CheckCircle className="w-3.5 h-3.5" />,
         };
       case "expired":
         return {
-          color: "bg-gradient-to-br from-red-50 to-red-100 border-red-200",
-          text: "text-red-700",
-          dot: "bg-red-500",
+          color: "bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200",
+          text: "text-[#f0813d]",
+          dot: "bg-[#f0813d]",
           label: "Expired",
           icon: <Clock className="w-3.5 h-3.5" />,
         };
@@ -841,8 +842,8 @@ export default function MembersPage() {
 
   const getDaysRemainingColor = (days) => {
     if (days === null) return "text-gray-500";
-    if (days <= 0) return "text-red-600 font-semibold";
-    if (days <= 7) return "text-amber-600 font-semibold";
+    if (days <= 0) return "text-[#f0813d] font-semibold";
+    if (days <= 7) return "text-[#f0813d] font-semibold";
     return "text-gray-600";
   };
 
@@ -935,7 +936,7 @@ Best regards,
 
   // ─── Loading / no-gym states ─────────────────────────────────
   if (loading) {
-    return <MembersPageSkeleton />;
+    return <RouteLoadingScreen variant="members" />;
   }
 
   if (!selectedGym) {
@@ -944,7 +945,7 @@ Best regards,
         <Header title="Members" showBack={false} />
         <main className="px-4 py-4">
           <div className="text-center py-12">
-            <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <div className="w-20 h-20 bg-gradient-to-br from-[#f0813d] to-[#f0813d] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
               <Building className="w-10 h-10 text-white" />
             </div>
             <h2 className="text-lg font-bold text-gray-900 mb-2">
@@ -955,7 +956,7 @@ Best regards,
             </p>
             <button
               onClick={() => router.push("/admin/dashboard")}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold text-sm active:scale-95 transition-transform"
+              className="px-6 py-3 bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white rounded-xl font-semibold text-sm active:scale-95 transition-transform"
               style={{ minHeight: "44px" }}
             >
               Go to Dashboard
@@ -985,7 +986,7 @@ Best regards,
                 </p>
               </div>
               <div className="w-10 h-10 bg-[#f0813d]/10 rounded-lg flex items-center justify-center">
-                <Users className="w-5 h-5 text-blue-600" />
+                <Users className="w-5 h-5 text-white" />
               </div>
             </div>
           </div>
@@ -995,12 +996,12 @@ Best regards,
             <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[#f0813d]/10 to-transparent rounded-full blur-2xl" /><div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-medium">Active</p>
-                <p className="text-xl font-bold text-emerald-600 mt-0.5">
+                <p className="text-xl font-bold text-[#f0813d] mt-0.5">
                   {stats.active}
                 </p>
               </div>
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-lg flex items-center justify-center">
-                <CheckCircle className="w-5 h-5 text-emerald-600" />
+              <div className="w-10 h-10 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-white" />
               </div>
             </div>
           </div>
@@ -1010,12 +1011,12 @@ Best regards,
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-medium">Dues</p>
-                <p className="text-xl font-bold text-amber-600 mt-0.5">
+                <p className="text-xl font-bold text-[#f0813d] mt-0.5">
                   {stats.dues}
                 </p>
               </div>
-              <div className="w-10 h-10 bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg flex items-center justify-center">
-                <DollarSign className="w-5 h-5 text-amber-600" />
+              <div className="w-10 h-10 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg flex items-center justify-center">
+                <DollarSign className="w-5 h-5 text-white" />
               </div>
             </div>
           </div>
@@ -1025,12 +1026,12 @@ Best regards,
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500 font-medium">Expired</p>
-                <p className="text-xl font-bold text-red-600 mt-0.5">
+                <p className="text-xl font-bold text-[#f0813d] mt-0.5">
                   {stats.expired}
                 </p>
               </div>
-              <div className="w-10 h-10 bg-gradient-to-br from-red-50 to-red-100 rounded-lg flex items-center justify-center">
-                <AlertTriangle className="w-5 h-5 text-red-600" />
+              <div className="w-10 h-10 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-white" />
               </div>
             </div>
           </div>
@@ -1129,7 +1130,7 @@ Best regards,
               className="flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 active:bg-gray-100 active:scale-95 transition-all"
               style={{ minHeight: "62px" }}
             >
-              <div className="w-8 h-8 rounded-full bg-blue-100 text-[#f0813d] flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full bg-orange-100 text-[#f0813d] flex items-center justify-center">
                 <Plus className="w-4 h-4" />
               </div>
               <span className="text-[11px] font-medium text-gray-700">Add Member</span>
@@ -1151,9 +1152,9 @@ Best regards,
                   className="flex flex-col items-center justify-center gap-1.5 py-2.5 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 active:bg-gray-100 active:scale-95 transition-all disabled:opacity-50"
                   style={{ minHeight: "62px" }}
                 >
-                  <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-orange-100 text-[#f0813d] flex items-center justify-center">
                     {exportingType === "pdf" ? (
-                      <div className="w-4 h-4 border-2 border-emerald-300 border-t-emerald-700 rounded-full animate-spin"></div>
+                      <div className="w-4 h-4 border-2 border-[#f0813d] border-t-[#f0813d] rounded-full animate-spin"></div>
                     ) : (
                       <FileText className="w-4 h-4" />
                     )}
@@ -1177,7 +1178,7 @@ Best regards,
                 >
                   <div className="w-8 h-8 rounded-full bg-[#f0813d]/10 text-[#f0813d] flex items-center justify-center">
                     {exportingType === "excel" ? (
-                      <div className="w-4 h-4 border-2 border-blue-300 border-t-blue-700 rounded-full animate-spin"></div>
+                      <div className="w-4 h-4 border-2 border-[#f0813d] border-t-[#f0813d] rounded-full animate-spin"></div>
                     ) : (
                       <FileSpreadsheet className="w-4 h-4" />
                     )}
@@ -1199,7 +1200,7 @@ Best regards,
               }}
               className={`w-full py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
                 showMyMembers
-                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md"
+                  ? "bg-gradient-to-r from-[#f0813d] to-[#f0813d] text-white shadow-md"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
               style={{ minHeight: "40px" }}
@@ -1332,7 +1333,7 @@ Best regards,
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-10 h-10 bg-[#f0813d]/10 rounded-2xl flex items-center justify-center">
-                  <UserIcon className="w-4 h-4 text-[#f0813d]" />
+                  <UserIcon className="w-4 h-4 text-white" />
                 </div>
                 <div>
                   <p className="text-xs text-[#897267]">Plan</p>
@@ -1353,7 +1354,7 @@ Best regards,
             {member.dueAmount > 0 && (
               <div className="flex items-center gap-2">
                 <div className="w-10 h-10 bg-[#f0813d]/10 rounded-2xl flex items-center justify-center">
-                  <CreditCard className="w-4 h-4 text-[#f0813d]" />
+                  <CreditCard className="w-4 h-4 text-white" />
                 </div>
                 <div className="flex-1">
                   <p className="text-xs text-[#897267]">Pending Payment</p>
@@ -1383,7 +1384,7 @@ Best regards,
                 setSelectedMember(member);
                 setShowShareReceiptModal(true);
               }}
-              className="flex-shrink-0 px-3 py-2 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-xl active-scale"
+              className="flex-shrink-0 px-3 py-2 bg-orange-50 text-[#f0813d] text-xs font-bold rounded-xl active-scale"
             >
               <Share2 className="w-3.5 h-3.5 inline mr-1" />
               Receipt
@@ -1412,7 +1413,7 @@ Best regards,
             {!isTrainer && !isViewOnly && (
               <button
                 onClick={(e) => handleDeleteMember(e, member)}
-                className="flex-shrink-0 px-3 py-2 bg-red-50 text-red-600 text-xs font-bold rounded-xl active-scale"
+                className="flex-shrink-0 px-3 py-2 bg-orange-50 text-[#f0813d] text-xs font-bold rounded-xl active-scale"
               >
                 <Trash2 className="w-3.5 h-3.5 inline mr-1" />
                 Delete
@@ -1428,9 +1429,8 @@ Best regards,
 
         {/* Loading spinner for subsequent page/filter loads */}
         {membersLoading && members.length === 0 && !loading && (
-          <div className="text-center py-8">
-            <div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
-            <p className="text-sm text-gray-500 mt-3">Loading members...</p>
+          <div className="py-4">
+            <RouteLoadingScreen variant="members" compact />
           </div>
         )}
 
@@ -1438,7 +1438,7 @@ Best regards,
         {members.length === 0 && !membersLoading && (
           <div className="text-center py-8 px-4">
             <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Users className="w-8 h-8 text-gray-400" />
+              <Users className="w-8 h-8 text-white" />
             </div>
             <h3 className="text-base font-semibold text-gray-900 mb-2">
               {searchQuery || filterStatus !== "all"
@@ -1457,7 +1457,7 @@ Best regards,
                   setFilterStatus("all");
                   setCurrentPage(1);
                 }}
-                className="px-4 py-2 text-blue-600 text-sm font-medium hover:text-blue-700 active:scale-95 transition-transform"
+                className="px-4 py-2 text-[#f0813d] text-sm font-medium hover:text-[#f0813d] active:scale-95 transition-transform"
               >
                 Clear filters
               </button>

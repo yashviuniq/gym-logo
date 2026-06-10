@@ -82,7 +82,7 @@ export default function MemberPointsSection({ memberId, gymId, userId, initialPo
         onClick={() => { if (canEdit) setShowControls(!showControls); }}
       >
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-sm shadow-amber-200/50">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#f0813d] to-[#f0813d] flex items-center justify-center shadow-sm shadow-orange-200/50">
             <Star className="w-5 h-5 text-white" />
           </div>
           <div>
@@ -116,7 +116,7 @@ export default function MemberPointsSection({ memberId, gymId, userId, initialPo
                   key={amt}
                   onClick={() => updatePoints(amt)}
                   disabled={processing}
-                  className="flex-1 py-2 bg-emerald-50 border border-emerald-200 rounded-xl text-sm font-semibold text-emerald-700 active:scale-95 transition-transform disabled:opacity-50"
+                  className="flex-1 py-2 bg-orange-50 border border-orange-200 rounded-xl text-sm font-semibold text-[#f0813d] active:scale-95 transition-transform disabled:opacity-50"
                 >
                   +{amt}
                 </button>
@@ -132,7 +132,7 @@ export default function MemberPointsSection({ memberId, gymId, userId, initialPo
                   key={amt}
                   onClick={() => updatePoints(-amt)}
                   disabled={processing || points < amt}
-                  className="flex-1 py-2 bg-red-50 border border-red-200 rounded-xl text-sm font-semibold text-red-600 active:scale-95 transition-transform disabled:opacity-50"
+                  className="flex-1 py-2 bg-orange-50 border border-orange-200 rounded-xl text-sm font-semibold text-[#f0813d] active:scale-95 transition-transform disabled:opacity-50"
                 >
                   -{amt}
                 </button>
@@ -147,7 +147,7 @@ export default function MemberPointsSection({ memberId, gymId, userId, initialPo
               value={customAmount}
               onChange={(e) => setCustomAmount(e.target.value)}
               placeholder="Custom amount"
-              className="flex-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+              className="flex-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d]"
             />
             <button
               onClick={() => {
@@ -155,7 +155,7 @@ export default function MemberPointsSection({ memberId, gymId, userId, initialPo
                 if (amt && amt !== 0) updatePoints(amt);
               }}
               disabled={processing || !customAmount}
-              className="px-4 py-2.5 bg-blue-500 text-white rounded-xl text-sm font-medium active:scale-95 transition-transform disabled:opacity-50"
+              className="px-4 py-2.5 bg-[#f0813d] text-white rounded-xl text-sm font-medium active:scale-95 transition-transform disabled:opacity-50"
             >
               Apply
             </button>
@@ -167,7 +167,7 @@ export default function MemberPointsSection({ memberId, gymId, userId, initialPo
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="Reason (optional)"
-            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d]"
           />
         </div>
       )}
@@ -200,8 +200,8 @@ export default function MemberPointsSection({ memberId, gymId, userId, initialPo
                   <div
                     className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
                       h.points_change > 0
-                        ? "bg-emerald-50 text-emerald-500"
-                        : "bg-red-50 text-red-500"
+                        ? "bg-orange-50 text-[#f0813d]"
+                        : "bg-orange-50 text-[#f0813d]"
                     }`}
                   >
                     {h.points_change > 0 ? (
@@ -227,7 +227,7 @@ export default function MemberPointsSection({ memberId, gymId, userId, initialPo
                   <div className="text-right flex-shrink-0">
                     <p
                       className={`text-sm font-bold ${
-                        h.points_change > 0 ? "text-emerald-600" : "text-red-600"
+                        h.points_change > 0 ? "text-[#f0813d]" : "text-[#f0813d]"
                       }`}
                     >
                       {h.points_change > 0 ? "+" : ""}

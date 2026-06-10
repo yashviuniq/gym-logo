@@ -127,29 +127,29 @@ export default function AddInquiryPage() {
         {/* Full Name */}
         <div className="bg-white rounded-xl p-4 shadow-sm space-y-2">
           <label className="block text-sm font-semibold text-gray-800">
-            Full Name <span className="text-red-500">*</span>
+            Full Name <span className="text-[#f0813d]">*</span>
           </label>
           <input
             type="text"
-            className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-gray-900 ${
-              errors.full_name ? "border-red-400" : "border-gray-200"
+            className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] outline-none transition text-gray-900 ${
+              errors.full_name ? "border-[#f0813d]" : "border-gray-200"
             }`}
             placeholder="Enter full name"
             value={formData.full_name}
             onChange={(e) => updateForm("full_name", e.target.value)}
           />
-          {errors.full_name && <p className="text-xs text-red-500">{errors.full_name}</p>}
+          {errors.full_name && <p className="text-xs text-[#f0813d]">{errors.full_name}</p>}
         </div>
 
         {/* Phone */}
         <div className="bg-white rounded-xl p-4 shadow-sm space-y-2">
           <label className="block text-sm font-semibold text-gray-800">
-            Phone Number <span className="text-red-500">*</span>
+            Phone Number <span className="text-[#f0813d]">*</span>
           </label>
           <input
             type="tel"
-            className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-gray-900 ${
-              errors.phone ? "border-red-400" : "border-gray-200"
+            className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] outline-none transition text-gray-900 ${
+              errors.phone ? "border-[#f0813d]" : "border-gray-200"
             }`}
             placeholder="10-digit phone number"
             value={formData.phone}
@@ -160,24 +160,24 @@ export default function AddInquiryPage() {
             maxLength={10}
             inputMode="tel"
           />
-          {errors.phone && <p className="text-xs text-red-500">{errors.phone}</p>}
+          {errors.phone && <p className="text-xs text-[#f0813d]">{errors.phone}</p>}
         </div>
 
         {/* Visit Date */}
         <div className="bg-white rounded-xl p-4 shadow-sm space-y-2">
           <label className="block text-sm font-semibold text-gray-800">
-            Visit Date <span className="text-red-500">*</span>
+            Visit Date <span className="text-[#f0813d]">*</span>
           </label>
           <input
             type="date"
-            className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-gray-900 ${
-              errors.visit_date ? "border-red-400" : "border-gray-200"
+            className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] outline-none transition text-gray-900 ${
+              errors.visit_date ? "border-[#f0813d]" : "border-gray-200"
             }`}
             value={formData.visit_date}
             onChange={(e) => updateForm("visit_date", e.target.value)}
             max={new Date().toISOString().split("T")[0]}
           />
-          {errors.visit_date && <p className="text-xs text-red-500">{errors.visit_date}</p>}
+          {errors.visit_date && <p className="text-xs text-[#f0813d]">{errors.visit_date}</p>}
         </div>
 
         {/* Follow-Up Date */}
@@ -185,14 +185,14 @@ export default function AddInquiryPage() {
           <label className="block text-sm font-semibold text-gray-800">Follow-Up Date</label>
           <input
             type="date"
-            className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-gray-900 ${
-              errors.follow_up_date ? "border-red-400" : "border-gray-200"
+            className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] outline-none transition text-gray-900 ${
+              errors.follow_up_date ? "border-[#f0813d]" : "border-gray-200"
             }`}
             value={formData.follow_up_date}
             onChange={(e) => updateForm("follow_up_date", e.target.value)}
             min={formData.visit_date || undefined}
           />
-          {errors.follow_up_date && <p className="text-xs text-red-500">{errors.follow_up_date}</p>}
+          {errors.follow_up_date && <p className="text-xs text-[#f0813d]">{errors.follow_up_date}</p>}
           <p className="text-xs text-gray-500">Must be on or after visit date</p>
         </div>
 
@@ -207,7 +207,7 @@ export default function AddInquiryPage() {
                 onClick={() => updateForm("interested_plan", formData.interested_plan === plan ? "" : plan)}
                 className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
                   formData.interested_plan === plan
-                    ? "bg-blue-600 text-white"
+                    ? "bg-[#f0813d] text-white"
                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
               >
@@ -242,7 +242,7 @@ export default function AddInquiryPage() {
         <div className="bg-white rounded-xl p-4 shadow-sm space-y-2">
           <label className="block text-sm font-semibold text-gray-800">Notes / Remarks</label>
           <textarea
-            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-gray-900 resize-none"
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] outline-none transition text-gray-900 resize-none"
             rows={3}
             placeholder="Additional notes..."
             value={formData.notes}
@@ -262,7 +262,7 @@ export default function AddInquiryPage() {
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-semibold disabled:opacity-50 hover:bg-blue-700 active:scale-[0.98] transition shadow-sm"
+            className="flex-1 py-3 bg-[#f0813d] text-white rounded-xl font-semibold disabled:opacity-50 hover:bg-[#f0813d] active:scale-[0.98] transition shadow-sm"
           >
             {loading ? "Saving..." : "Save Inquiry"}
           </button>

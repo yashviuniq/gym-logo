@@ -61,7 +61,7 @@ export default function AnnouncementDetailPage() {
       <div className="min-h-screen bg-gray-50 pb-24">
         <Header title="Announcement" showBack={true} />
         <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#f0813d]"></div>
         </div>
       </div>
     );
@@ -101,7 +101,7 @@ export default function AnnouncementDetailPage() {
                 <span
                   className={`px-3 py-1 rounded-full text-sm font-medium ${
                     announcement.status === "active"
-                      ? "bg-green-100 text-green-700"
+                      ? "bg-orange-100 text-[#f0813d]"
                       : "bg-gray-100 text-gray-600"
                   }`}
                 >
@@ -141,7 +141,7 @@ export default function AnnouncementDetailPage() {
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => router.push(`/announcements/${announcement.id}/edit`)}
-            className="py-3 bg-blue-50 text-blue-600 rounded-xl font-semibold hover:bg-blue-100 transition"
+            className="py-3 bg-orange-50 text-[#f0813d] rounded-xl font-semibold hover:bg-orange-100 transition"
           >
             ✏️ Edit
           </button>

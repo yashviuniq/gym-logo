@@ -130,9 +130,9 @@ export default function ResolvePendingPaymentModal({ payment, member, onClose, o
 
                 <form onSubmit={handleResolvePayment} className="p-6 space-y-6">
                     {/* Payment Details */}
-                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                    <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
                         <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center text-white text-xl">
+                            <div className="w-10 h-10 bg-[#f0813d] rounded-full flex items-center justify-center text-white text-xl">
                                 ⚠️
                             </div>
                             <div className="flex-1">
@@ -140,7 +140,7 @@ export default function ResolvePendingPaymentModal({ payment, member, onClose, o
                                 <p className="text-sm text-gray-600 mt-1">
                                     Created: {new Date(payment.created_at).toLocaleDateString("en-IN")}
                                 </p>
-                                <p className="text-lg font-bold text-amber-700 mt-2">
+                                <p className="text-lg font-bold text-[#f0813d] mt-2">
                                     ₹{payment.amount}
                                 </p>
                             </div>
@@ -157,7 +157,7 @@ export default function ResolvePendingPaymentModal({ payment, member, onClose, o
                     {/* Amount Input */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Received Amount <span className="text-red-500">*</span>
+                            Received Amount <span className="text-[#f0813d]">*</span>
                         </label>
                         <input
                             type="text"
@@ -171,7 +171,7 @@ export default function ResolvePendingPaymentModal({ payment, member, onClose, o
                                 }
                             }}
                             required
-                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition"
+                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#f0813d] focus:border-[#f0813d] outline-none transition"
                             placeholder="Enter received amount"
                         />
                         <p className="text-xs text-gray-500 mt-1">
@@ -182,7 +182,7 @@ export default function ResolvePendingPaymentModal({ payment, member, onClose, o
                     {/* Payment Mode */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Payment Method <span className="text-red-500">*</span>
+                            Payment Method <span className="text-[#f0813d]">*</span>
                         </label>
                         <div className="grid grid-cols-3 gap-3">
                             {["cash", "upi", "card"].map((mode) => (
@@ -192,7 +192,7 @@ export default function ResolvePendingPaymentModal({ payment, member, onClose, o
                                     onClick={() => setPaymentMode(mode)}
                                     className={`py-3 rounded-xl font-medium transition ${
                                         paymentMode === mode
-                                            ? "bg-orange-500 text-white"
+                                            ? "bg-[#f0813d] text-white"
                                             : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                                     }`}
                                 >
@@ -204,8 +204,8 @@ export default function ResolvePendingPaymentModal({ payment, member, onClose, o
 
                     {/* Partial Payment Warning */}
                     {parseFloat(receivedAmount) < payment.amount && (
-                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                            <p className="text-sm text-blue-800">
+                        <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
+                            <p className="text-sm text-orange-800">
                                 <span className="font-semibold">Note:</span> Partial payment will add ₹
                                 {(payment.amount - parseFloat(receivedAmount || 0)).toFixed(2)} to member's outstanding balance.
                             </p>
@@ -224,7 +224,7 @@ export default function ResolvePendingPaymentModal({ payment, member, onClose, o
                         </button>
                         <button
                             type="submit"
-                            className="flex-1 py-3 px-4 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 py-3 px-4 bg-[#f0813d] text-white rounded-xl font-semibold hover:bg-[#f0813d] transition disabled:opacity-50 disabled:cursor-not-allowed"
                             disabled={loading}
                         >
                             {loading ? "Processing..." : "Resolve Payment"}

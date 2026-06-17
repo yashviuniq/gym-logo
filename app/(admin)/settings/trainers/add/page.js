@@ -33,7 +33,7 @@ import {
 export default function AddTrainerPage() {
   const router = useRouter();
   const { canCreateTrainer, loading: roleLoading } = useUserRole();
-  const { selectedGym } = useAuthContext();
+  const { selectedGym, user } = useAuthContext();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -122,9 +122,16 @@ export default function AddTrainerPage() {
     setError("");
 
     try {
-      // Get current user
-      const { data: authData } = await supabase.auth.getUser();
-      const createdBy = authData?.user?.id;
+      let createdBy = user?.id || null;
+      if (createdBy) {
+        const { data: creatorProfile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("id", createdBy)
+          .maybeSingle();
+
+        createdBy = creatorProfile?.id || null;
+      }
 
       const availableDays = formData.availableDays.length > 0 ? formData.availableDays : null;
       const availableTimeSlots = formData.availableDays.length > 0 ? formData.availableTimeSlots : null;

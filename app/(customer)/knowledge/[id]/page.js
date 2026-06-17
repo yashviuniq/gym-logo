@@ -52,7 +52,7 @@ function estimateReadTime(content = "") {
 export default function ArticleDetailPage() {
   const { id } = useParams();
   const router = useRouter();
-  const { user } = useAuthContext();
+  const { user, selectedGym } = useAuthContext();
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -71,7 +71,10 @@ export default function ArticleDetailPage() {
 
       try {
         const response = await fetch(`/api/knowledge/${id}`, {
-          headers: { "x-user-id": String(userId) },
+          headers: {
+            "x-user-id": String(userId),
+            ...((selectedGym?.id || user?.gym_id) ? { "x-gym-id": String(selectedGym?.id || user?.gym_id) } : {}),
+          },
         });
         const json = await response.json();
 
@@ -88,7 +91,7 @@ export default function ArticleDetailPage() {
     }
 
     fetchPost();
-  }, [id, user]);
+  }, [id, selectedGym?.id, user]);
 
   const config = categoryConfig[post?.category] || {
     label: "Knowledge",

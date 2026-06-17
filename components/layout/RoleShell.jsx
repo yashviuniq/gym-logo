@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
   Apple,
@@ -15,6 +16,7 @@ import {
   Users,
 } from "lucide-react";
 import BottomNav from "@/components/layout/BottomNav";
+import SSLogo from "@/components/shared/SSLogo";
 
 const memberNavItems = [
   { href: "/user/dashboard", label: "Home", icon: Home },
@@ -38,21 +40,117 @@ const trainerNavItems = [
 
 function DesktopNav({ role }) {
   const pathname = usePathname();
+  const [gymLogo, setGymLogo] = useState(null);
+  const [gymName, setGymName] = useState("");
   const navItems = role === "trainer" ? trainerNavItems : memberNavItems;
   const homePath = navItems[0]?.href;
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchGym = async (gymId) => {
+      if (!gymId) return false;
+      const { supabase } = await import("@/lib/supabaseClient");
+      const { data } = await supabase
+        .from("gyms")
+        .select("name, logo_url")
+        .eq("id", gymId)
+        .maybeSingle();
+
+      if (!cancelled && data) {
+        setGymName(data.name || "");
+        if (data.logo_url) setGymLogo(data.logo_url);
+        return Boolean(data.logo_url);
+      }
+
+      return false;
+    };
+
+    const resolveGymBrand = async () => {
+      const storedGym = localStorage.getItem("selectedGym");
+      if (storedGym) {
+        try {
+          const gym = JSON.parse(storedGym);
+          setGymName(gym.name || "");
+          if (gym.logo_url) {
+            setGymLogo(gym.logo_url);
+            return;
+          }
+          if (await fetchGym(gym.id)) return;
+        } catch (error) {
+          console.error("Error parsing selectedGym", error);
+        }
+      }
+
+      const storedUser = localStorage.getItem("gymUser");
+      if (storedUser) {
+        try {
+          const user = JSON.parse(storedUser);
+          setGymName(user.gym_name || user.gymName || "");
+          const savedLogo = user.gym_logo || user.gymLogo || user.logo_url;
+          if (savedLogo) {
+            setGymLogo(savedLogo);
+            return;
+          }
+          if (await fetchGym(user.gym_id || user.gymId)) return;
+        } catch (error) {
+          console.error("Error parsing gymUser", error);
+        }
+      }
+
+      const storedMember = localStorage.getItem("member");
+      if (storedMember) {
+        try {
+          const member = JSON.parse(storedMember);
+          const savedLogo = member.gym_logo || member.gymLogo || member.logo_url;
+          if (savedLogo) {
+            setGymLogo(savedLogo);
+            return;
+          }
+          if (await fetchGym(member.gym_id || member.gymId)) return;
+
+          const { supabase } = await import("@/lib/supabaseClient");
+          const { data } = await supabase
+            .from("members")
+            .select("gym_id")
+            .eq("id", member.id)
+            .maybeSingle();
+          await fetchGym(data?.gym_id);
+        } catch (error) {
+          console.error("Error fetching member gym logo", error);
+        }
+      }
+    };
+
+    resolveGymBrand();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
-    <header className="hidden md:block sticky top-0 z-40 border-b border-[#eadbd1] bg-[#fffaf6]/92 px-6 py-4 backdrop-blur-xl shadow-[0_10px_30px_rgba(26,28,28,0.04)]">
+    <header className="hidden md:block sticky top-0 z-40 border-b-[5px] border-black bg-white px-6 py-4 shadow-[0_8px_0_rgba(0,0,0,0.08)]">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-6">
         <Link href={homePath} className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f0813d] text-lg font-black text-black">
-            SS
-          </div>
-          <div>
-            <p className="text-sm font-black uppercase tracking-widest text-[#1a1c1c]">
-              {role === "trainer" ? "Trainer Portal" : "Member Portal"}
+          {gymLogo ? (
+            <img
+              src={gymLogo}
+              alt={gymName ? `${gymName} logo` : "Gym logo"}
+              className="h-11 w-11 rounded-2xl border-2 border-black bg-white object-cover shadow-[4px_4px_0_rgba(0,0,0,1)]"
+            />
+          ) : (
+            <SSLogo size="sm" showWordmark={false} />
+          )}
+          <div className="flex min-w-0 items-center gap-2">
+            <p className="truncate text-sm font-black uppercase tracking-widest text-[#1a1c1c]">
+              {gymName || (role === "trainer" ? "Trainer Portal" : "Member Portal")}
             </p>
-            <p className="text-xs font-semibold text-[#897267]">Hybrid web and mobile dashboard</p>
+            <img
+              src="/icons/ss-hexagon.svg"
+              alt="SS hexagon"
+              className="h-6 w-6 shrink-0"
+            />
           </div>
         </Link>
 

@@ -221,12 +221,12 @@ export default function SettingsPage() {
       <Header title="Settings" showBack={false} />
 
       <main className="px-3 py-3 space-y-4">
-        <section className="relative mx-1 overflow-hidden rounded-2xl border border-[#f0813d]/20 bg-[#1a1c1c] p-5 shadow-xl">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(240,129,61,0.38),transparent_32%),linear-gradient(135deg,rgba(255,255,255,0.08),transparent_45%)]" />
+        <section className="relative mx-1 overflow-hidden rounded-2xl border border-[#9c4400]/20 bg-gradient-to-br from-[#f0813d] via-[#d76621] to-[#9c4400] p-5 shadow-xl shadow-orange-200/60">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.28),transparent_32%),linear-gradient(135deg,rgba(255,255,255,0.14),transparent_45%)]" />
           <div className="relative">
             <div className="mb-5 flex items-start justify-between gap-3">
               <div>
-                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-bold text-white/85">
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/35 bg-white/20 px-3 py-1 text-xs font-bold text-white">
                   <Sparkles className="h-3.5 w-3.5" />
                   Advanced admin suite
                 </div>
@@ -234,7 +234,7 @@ export default function SettingsPage() {
                   Control every gym operation from one hub.
                 </h1>
               </div>
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-[#1a1c1c] shadow-lg">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-[#9c4400] shadow-lg">
                 <SettingsIcon className="h-6 w-6" />
               </div>
             </div>

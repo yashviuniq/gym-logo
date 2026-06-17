@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { ToastProvider } from "@/contexts/ToastContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -20,6 +20,20 @@ const NotificationManager = dynamic(
 );
 
 export default function ClientProviders({ children }) {
+  const [enableNotifications, setEnableNotifications] = useState(false);
+
+  useEffect(() => {
+    const startNotifications = () => setEnableNotifications(true);
+
+    if ("requestIdleCallback" in window) {
+      const idleId = window.requestIdleCallback(startNotifications, { timeout: 2500 });
+      return () => window.cancelIdleCallback(idleId);
+    }
+
+    const timerId = window.setTimeout(startNotifications, 1200);
+    return () => window.clearTimeout(timerId);
+  }, []);
+
   return (
     <ToastProvider>
       <AuthProvider>
@@ -28,7 +42,7 @@ export default function ClientProviders({ children }) {
             <SessionRestoration />
             <NumberScrollPrevention />
             <PWASetup />
-            <NotificationManager />
+            {enableNotifications && <NotificationManager />}
             <Suspense fallback={null}>
               <RouteTransitionOverlay />
             </Suspense>

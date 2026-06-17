@@ -32,6 +32,8 @@ export default function TrainerDashboardPage() {
   const [loading, setLoading] = useState(false);
   const [dashboardData, setDashboardData] = useState({
     trainer: getStoredTrainer(),
+    gymName: "Gym",
+    gymLogo: null,
     assignedMembers: [],
     dietPlans: 0,
     workoutPlans: 0,
@@ -57,6 +59,7 @@ export default function TrainerDashboardPage() {
         earningsResult,
         dietActivityResult,
         workoutActivityResult,
+        gymResult,
       ] = await Promise.all([
         supabase
           .from("gym_trainers")
@@ -123,6 +126,11 @@ export default function TrainerDashboardPage() {
           .eq("assigned_by_trainer_id", user.id)
           .order("assigned_at", { ascending: false })
           .limit(3),
+        supabase
+          .from("gyms")
+          .select("name, logo_url")
+          .eq("id", user.gym_id)
+          .maybeSingle(),
       ]);
 
       if (trainerRowResult.error) throw trainerRowResult.error;
@@ -154,6 +162,8 @@ export default function TrainerDashboardPage() {
           specialization: trainerRowResult.data?.specialization || "Trainer",
           isActive: trainerRowResult.data?.is_active !== false,
         },
+        gymName: gymResult.data?.name || user.gym_name || user.gymName || "Gym",
+        gymLogo: gymResult.data?.logo_url || null,
         assignedMembers,
         dietPlans: dietPlansResult.count || 0,
         workoutPlans: workoutPlansResult.count || 0,
@@ -194,11 +204,11 @@ export default function TrainerDashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#1a1c1c] text-white pb-28 animate-fadeIn font-sans">
-      <Header title="Trainer Dashboard" showBack={false} />
+      <Header title="Trainer Dashboard" showBack={false} gymLogo={dashboardData.gymLogo} />
 
       <main className="px-4 py-5 space-y-6">
         <section className="flex justify-between items-center px-1">
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-1.5 text-zinc-500 font-extrabold text-[10px] tracking-widest uppercase">
               <span>
                 {new Date().toLocaleDateString("en-US", {
@@ -215,6 +225,16 @@ export default function TrainerDashboardPage() {
             <h1 className="mt-1 text-2xl font-black tracking-tight text-white">
               Hello, <span className="text-[#f0813d]">{dashboardData.trainer?.name || "Trainer"}</span>
             </h1>
+            <div className="mt-2 flex items-center gap-2">
+              <img
+                src="/icons/ss-hexagon.svg"
+                alt="SS hexagon"
+                className="h-8 w-8 shrink-0"
+              />
+              <p className="truncate text-xs font-black uppercase tracking-widest text-zinc-400">
+                {dashboardData.gymName}
+              </p>
+            </div>
           </div>
           <button
             onClick={() => router.push("/settings")}

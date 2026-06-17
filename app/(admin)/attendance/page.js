@@ -23,10 +23,17 @@ import {
   History
 } from "lucide-react";
 
+const toLocalDateInputValue = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export default function AttendancePage() {
   const router = useRouter();
   const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split("T")[0]
+    toLocalDateInputValue(new Date())
   );
   const [activeTab, setActiveTab] = useState("today");
   const [showMarkModal, setShowMarkModal] = useState(false);
@@ -37,8 +44,6 @@ export default function AttendancePage() {
   const [rawAttendance, setRawAttendance] = useState([]);
   const [rawMembers, setRawMembers] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const getTodayString = () => new Date().toISOString().split("T")[0];
 
   const getRelativeDateLabel = (dateString) => {
     const today = new Date();
@@ -188,7 +193,7 @@ export default function AttendancePage() {
       const last7Days = Array.from({ length: 7 }, (_, i) => {
         const date = new Date();
         date.setDate(date.getDate() - i);
-        return date.toISOString().split('T')[0];
+        return toLocalDateInputValue(date);
       });
 
       const historyPromises = last7Days.map(async (date) => {
@@ -389,36 +394,36 @@ export default function AttendancePage() {
 
       <main className="px-3 md:px-8 lg:px-12 py-3 md:py-6 space-y-4 max-w-7xl mx-auto w-full">
         {/* Date Selector - Premium Calendar Band */}
-        <section className="mx-1 overflow-hidden rounded-[1.75rem] border border-orange-100 bg-white shadow-[0_18px_45px_rgba(26,28,28,0.08)]">
-          <div className="relative overflow-hidden bg-[#1a1c1c] p-4 text-white">
-            <div className="absolute right-0 top-0 h-24 w-24 rounded-full bg-[#f0813d]/25 blur-2xl" />
+        <section className="mx-1 overflow-hidden rounded-[1.75rem] border border-[#f0813d]/30 bg-white shadow-[0_18px_45px_rgba(26,28,28,0.08)]">
+          <div className="relative overflow-hidden bg-gradient-to-br from-[#f0813d] to-[#9c4400] p-4 text-white">
+            <div className="absolute right-0 top-0 h-24 w-24 rounded-full bg-white/25 blur-2xl" />
             <div className="relative flex items-center justify-between gap-4">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#f0813d]">
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/80">
                   Attendance calendar
                 </p>
                 <h2 className="mt-1 text-2xl font-black tracking-tight">
                   {getRelativeDateLabel(selectedDate)}
                 </h2>
-                <p className="mt-1 text-xs font-bold text-white/55">
+                <p className="mt-1 text-xs font-bold text-white/75">
                   {formattedSelectedDate}
                 </p>
               </div>
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/10">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/25 bg-white/15">
                 <Calendar className="h-7 w-7 text-white" />
               </div>
             </div>
             <div className="relative mt-4 grid grid-cols-3 gap-2">
-              <div className="rounded-2xl bg-white/10 p-3">
-                <p className="text-[9px] font-black uppercase tracking-wide text-white/45">Records</p>
+              <div className="rounded-2xl bg-white/15 p-3">
+                <p className="text-[9px] font-black uppercase tracking-wide text-white/70">Records</p>
                 <p className="mt-1 text-lg font-black">{todayStats.total}</p>
               </div>
-              <div className="rounded-2xl bg-white/10 p-3">
-                <p className="text-[9px] font-black uppercase tracking-wide text-white/45">Active</p>
-                <p className="mt-1 text-lg font-black text-[#f0813d]">{todayStats.checkedIn}</p>
+              <div className="rounded-2xl bg-white/15 p-3">
+                <p className="text-[9px] font-black uppercase tracking-wide text-white/70">Active</p>
+                <p className="mt-1 text-lg font-black text-white">{todayStats.checkedIn}</p>
               </div>
-              <div className="rounded-2xl bg-white/10 p-3">
-                <p className="text-[9px] font-black uppercase tracking-wide text-white/45">Closed</p>
+              <div className="rounded-2xl bg-white/15 p-3">
+                <p className="text-[9px] font-black uppercase tracking-wide text-white/70">Closed</p>
                 <p className="mt-1 text-lg font-black">{todayStats.checkedOut}</p>
               </div>
             </div>
@@ -430,13 +435,13 @@ export default function AttendancePage() {
               helper="Use the arrows, presets, or exact date picker to review attendance."
               onChange={setSelectedDate}
               presets={[
-                { label: "Today", getValue: getTodayString },
+                { label: "Today", getValue: () => toLocalDateInputValue(new Date()) },
                 {
                   label: "Yesterday",
                   getValue: () => {
                     const date = new Date();
                     date.setDate(date.getDate() - 1);
-                    return date.toISOString().split("T")[0];
+                    return toLocalDateInputValue(date);
                   },
                 },
                 {
@@ -444,7 +449,7 @@ export default function AttendancePage() {
                   getValue: () => {
                     const date = new Date();
                     date.setDate(date.getDate() - 7);
-                    return date.toISOString().split("T")[0];
+                    return toLocalDateInputValue(date);
                   },
                 },
               ]}

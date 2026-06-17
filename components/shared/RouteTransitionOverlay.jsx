@@ -8,21 +8,47 @@ function isModifiedClick(event) {
   return event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0;
 }
 
+function getLoadingVariant(pathname) {
+  if (pathname.includes("/members")) return "members";
+  if (pathname.includes("/settings/trainers")) return "trainers";
+  if (pathname.includes("/settings/amenities")) return "amenities";
+  if (pathname.includes("/settings/notifications")) return "notifications";
+  if (pathname.includes("/finance")) return "finance";
+  if (pathname.includes("/knowledge")) return "knowledge";
+  if (pathname.includes("/shop")) return "shop";
+  return "default";
+}
+
 export default function RouteTransitionOverlay() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isNavigating, setIsNavigating] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(false);
   const [loadingVariant, setLoadingVariant] = useState("default");
 
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
+    const timeout = window.setTimeout(() => {
       setIsNavigating(false);
-    });
+      setShowOverlay(false);
+    }, 120);
 
-    return () => window.cancelAnimationFrame(frame);
+    return () => window.clearTimeout(timeout);
   }, [pathname, searchParams]);
 
   useEffect(() => {
+    const beginNavigation = (url) => {
+      const nextUrl = new URL(url, window.location.href);
+      if (nextUrl.origin !== window.location.origin) return;
+
+      const currentPath = `${window.location.pathname}${window.location.search}`;
+      const nextPath = `${nextUrl.pathname}${nextUrl.search}`;
+      if (currentPath === nextPath) return;
+
+      setLoadingVariant(getLoadingVariant(nextUrl.pathname));
+      setIsNavigating(true);
+      setShowOverlay(true);
+    };
+
     const handleClick = (event) => {
       if (isModifiedClick(event)) return;
 
@@ -33,40 +59,42 @@ export default function RouteTransitionOverlay() {
       const href = link.getAttribute("href");
       if (!href || target === "_blank" || href.startsWith("#")) return;
 
-      const nextUrl = new URL(href, window.location.href);
-      if (nextUrl.origin !== window.location.origin) return;
-
-      const currentPath = `${window.location.pathname}${window.location.search}`;
-      const nextPath = `${nextUrl.pathname}${nextUrl.search}`;
-      if (currentPath === nextPath) return;
-
-      if (nextUrl.pathname.includes("/members")) {
-        setLoadingVariant("members");
-      } else if (nextUrl.pathname.includes("/settings/trainers")) {
-        setLoadingVariant("trainers");
-      } else if (nextUrl.pathname.includes("/settings/amenities")) {
-        setLoadingVariant("amenities");
-      } else if (nextUrl.pathname.includes("/settings/notifications")) {
-        setLoadingVariant("notifications");
-      } else if (nextUrl.pathname.includes("/finance")) {
-        setLoadingVariant("finance");
-      } else if (nextUrl.pathname.includes("/knowledge")) {
-        setLoadingVariant("knowledge");
-      } else if (nextUrl.pathname.includes("/shop")) {
-        setLoadingVariant("shop");
-      } else {
-        setLoadingVariant("default");
-      }
-
-      setIsNavigating(true);
+      beginNavigation(href);
     };
 
-    const handlePageShow = () => setIsNavigating(false);
+    const originalPushState = window.history.pushState;
+    const originalReplaceState = window.history.replaceState;
+
+    window.history.pushState = function patchedPushState(...args) {
+      if (args[2]) beginNavigation(args[2]);
+      return originalPushState.apply(this, args);
+    };
+
+    window.history.replaceState = function patchedReplaceState(...args) {
+      if (args[2]) beginNavigation(args[2]);
+      return originalReplaceState.apply(this, args);
+    };
+
+    const handlePopState = () => {
+      setLoadingVariant(getLoadingVariant(window.location.pathname));
+      setIsNavigating(true);
+      setShowOverlay(true);
+    };
+
+    const handlePageShow = () => {
+      setIsNavigating(false);
+      setShowOverlay(false);
+    };
+
     document.addEventListener("click", handleClick, true);
+    window.addEventListener("popstate", handlePopState);
     window.addEventListener("pageshow", handlePageShow);
 
     return () => {
+      window.history.pushState = originalPushState;
+      window.history.replaceState = originalReplaceState;
       document.removeEventListener("click", handleClick, true);
+      window.removeEventListener("popstate", handlePopState);
       window.removeEventListener("pageshow", handlePageShow);
     };
   }, []);
@@ -76,12 +104,15 @@ export default function RouteTransitionOverlay() {
 
     const timeout = window.setTimeout(() => {
       setIsNavigating(false);
-    }, 12000);
+      setShowOverlay(false);
+    }, 6000);
 
-    return () => window.clearTimeout(timeout);
+    return () => {
+      window.clearTimeout(timeout);
+    };
   }, [isNavigating]);
 
-  if (!isNavigating) return null;
+  if (!isNavigating || !showOverlay) return null;
 
   return (
     <div className="fixed inset-0 z-[9999]">

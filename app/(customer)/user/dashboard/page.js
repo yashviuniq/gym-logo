@@ -48,6 +48,8 @@ export default function CustomerDashboard() {
   const [announcements, setAnnouncements] = useState([]);
   const [dashboardData, setDashboardData] = useState({
     name: "Member",
+    gymName: "Gym",
+    gymLogo: null,
     membership: {
       plan: "No Plan",
       daysLeft: 0,
@@ -98,6 +100,12 @@ export default function CustomerDashboard() {
         .single();
 
       if (memberError) throw memberError;
+
+      const { data: gymData } = await supabase
+        .from("gyms")
+        .select("name, logo_url")
+        .eq("id", memberDetails.gym_id)
+        .maybeSingle();
 
       const activeMembership = memberDetails.memberships?.find((membership) => {
         if (membership.status !== "active") return false;
@@ -270,6 +278,8 @@ export default function CustomerDashboard() {
 
       setDashboardData({
         name: memberDetails.full_name?.split(" ")[0] || "Member",
+        gymName: gymData?.name || "Gym",
+        gymLogo: gymData?.logo_url || null,
         membership: {
           plan: membershipPlan,
           daysLeft,
@@ -357,11 +367,11 @@ export default function CustomerDashboard() {
 
   return (
     <div className="min-h-screen bg-[#1a1c1c] text-white pb-28 animate-fadeIn font-sans selection:bg-[#f0813d] selection:text-black">
-      <Header title="Gym Core Dashboard" showBack={false} />
+      <Header title="Gym Core Dashboard" showBack={false} gymLogo={dashboardData.gymLogo} />
 
       <main className="px-4 py-5 space-y-6">
         <div className="flex justify-between items-center px-1">
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-1.5 text-zinc-500 font-extrabold text-[10px] tracking-widest uppercase">
               <span>
                 {new Date().toLocaleDateString("en-US", {
@@ -376,6 +386,16 @@ export default function CustomerDashboard() {
             <h2 className="text-2xl font-black font-heading tracking-tight text-white mt-1">
               Hello, <span className="text-[#f0813d]">{dashboardData.name}</span>
             </h2>
+            <div className="mt-2 flex items-center gap-2">
+              <img
+                src="/icons/ss-hexagon.svg"
+                alt="SS hexagon"
+                className="h-8 w-8 shrink-0"
+              />
+              <p className="truncate text-xs font-black uppercase tracking-widest text-zinc-400">
+                {dashboardData.gymName}
+              </p>
+            </div>
           </div>
 
           <div className="flex items-center gap-3">

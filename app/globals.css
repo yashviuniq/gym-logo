@@ -218,22 +218,26 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .app-header {
-  box-shadow: 0 14px 34px rgba(156, 68, 0, 0.2);
+  background: #ffffff !important;
+  color: #000000 !important;
+  border-color: #000000 !important;
+  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.08);
 }
 
 .app-header .header-action {
-  background: rgba(255, 255, 255, 0.15) !important;
-  color: #ffffff !important;
-  border-color: rgba(255, 255, 255, 0.25) !important;
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+  box-shadow: 3px 3px 0 #000000;
 }
 
 .app-header .header-action:hover {
-  background: rgba(255, 255, 255, 0.25) !important;
+  background: #ffffff !important;
 }
 
 .app-header .header-action svg {
-  color: #ffffff !important;
-  stroke: #ffffff !important;
+  color: #000000 !important;
+  stroke: #000000 !important;
 }
 
 .glass-card {
@@ -461,7 +465,6 @@ h1, h2, h3, h4, h5, h6 {
   transform: translateY(-2px);
 }
 
-html[data-theme="dark"] .app-header,
 html[data-theme="dark"] .glass-panel,
 html[data-theme="dark"] .glass-card,
 html[data-theme="dark"] .glass-card-primary,
@@ -572,13 +575,13 @@ html[data-theme="dark"] .mobile-view-container {
   stroke: #ffffff;
 }
 
-:is(div, button, a)[class*="items-center"][class*="justify-center"][class*="w-"][class*="h-"]:not([class*="w-full"]):not([class*="h-full"]):not([class*="flex-1"]):has(svg) {
+:is(div, button, a)[class*="items-center"][class*="justify-center"][class*="w-"][class*="h-"]:not(.header-action):not([class*="w-full"]):not([class*="h-full"]):not([class*="flex-1"]):has(svg) {
   background: #1a1c1c !important;
   color: #ffffff !important;
   border-color: rgba(26, 28, 28, 0.16) !important;
 }
 
-:is(div, button, a)[class*="items-center"][class*="justify-center"][class*="w-"][class*="h-"]:not([class*="w-full"]):not([class*="h-full"]):not([class*="flex-1"]):has(svg) svg {
+:is(div, button, a)[class*="items-center"][class*="justify-center"][class*="w-"][class*="h-"]:not(.header-action):not([class*="w-full"]):not([class*="h-full"]):not([class*="flex-1"]):has(svg) svg {
   color: #ffffff !important;
   stroke: #ffffff !important;
 }
@@ -983,9 +986,18 @@ form :is(input, textarea, select):disabled {
   box-shadow: 0 14px 34px rgba(26, 28, 28, 0.07) !important;
 }
 
-.member-light-theme .app-header,
+.member-light-theme .app-header {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border-color: #000000 !important;
+}
+
 .member-light-theme .app-header .text-white,
-.member-light-theme .app-header svg,
+.member-light-theme .app-header svg {
+  color: #000000 !important;
+  stroke: #000000 !important;
+}
+
 .member-light-theme .bg-\[\#f0813d\].text-white,
 .member-light-theme .bg-\[\#9c4400\].text-white,
 .member-light-theme .from-\[\#f0813d\].text-white,

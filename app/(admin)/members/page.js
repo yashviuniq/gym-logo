@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { memo, useCallback, useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 
 const PAGE_SIZE = 20;
+const MEMBER_FILTERS = new Set(["all", "active", "expired", "renewal", "inactive"]);
 
 function MemberAvatar({ name, profileImage }) {
   const [imageFailed, setImageFailed] = useState(false);
@@ -49,6 +50,8 @@ function MemberAvatar({ name, profileImage }) {
       <img
         src={profileImage}
         alt={name}
+        loading="lazy"
+        decoding="async"
         className="w-14 h-14 rounded-2xl object-cover shadow-sm"
         onError={() => setImageFailed(true)}
       />
@@ -126,6 +129,230 @@ const sortRenewalMembers = (memberList) => {
   return [...activeMembers, ...expiredMembers];
 };
 
+const getStatusConfig = (status) => {
+  switch (status) {
+    case "active":
+      return {
+        color: "bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200",
+        text: "text-[#f0813d]",
+        label: "Active",
+        icon: <CheckCircle className="w-3.5 h-3.5" />,
+      };
+    case "expired":
+      return {
+        color: "bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200",
+        text: "text-[#f0813d]",
+        label: "Expired",
+        icon: <Clock className="w-3.5 h-3.5" />,
+      };
+    case "inactive":
+    default:
+      return {
+        color: "bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200",
+        text: "text-gray-700",
+        label: "Inactive",
+        icon: <AlertTriangle className="w-3.5 h-3.5" />,
+      };
+  }
+};
+
+const getDaysRemainingColor = (days) => {
+  if (days === null) return "text-gray-500";
+  if (days <= 0) return "text-[#f0813d] font-semibold";
+  if (days <= 7) return "text-[#f0813d] font-semibold";
+  return "text-gray-600";
+};
+
+const MemberCard = memo(function MemberCard({
+  member,
+  canViewFinance,
+  isTrainer,
+  isViewOnly,
+  onOpen,
+  onCredentials,
+  onShareReceipt,
+  onRenewalReminder,
+  onRenew,
+  onDelete,
+}) {
+  const statusConfig = getStatusConfig(member.status);
+  const canShowRenewReminder =
+    member.status === "expired" ||
+    member.status === "renewal" ||
+    (member.daysRemaining !== null && member.daysRemaining <= 7);
+
+  return (
+    <div
+      onClick={() => onOpen(member.id)}
+      className="relative overflow-hidden bg-white rounded-[28px] p-5 border border-[#ececec] shadow-[0_10px_35px_rgba(0,0,0,0.06)] hover:shadow-[0_18px_45px_rgba(0,0,0,0.10)] active:scale-[0.99] transition-all duration-300 cursor-pointer mx-1"
+    >
+      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#f0813d]/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+
+      <div className="flex items-start gap-4 relative z-10">
+        <div className="flex-shrink-0">
+          <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-[0_10px_25px_rgba(55,104,248,0.18)] border-2 border-white">
+            <MemberAvatar name={member.name} profileImage={member.profileImage} />
+          </div>
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-3 mb-2">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-black text-[#1a1c1c] text-[18px] tracking-tight leading-tight break-words">
+                {member.name}
+              </h3>
+
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#f0813d] mt-2">
+                Premium Gym Member
+              </p>
+
+              <div className="flex flex-col gap-1 mt-2">
+                <div className="flex items-center gap-1">
+                  <Phone className="w-3 h-3 text-[#897267]" />
+                  <span className="text-[#5f5e5e] text-xs break-all">
+                    {member.phone}
+                  </span>
+                </div>
+
+                {member.email && (
+                  <div className="flex items-center gap-1">
+                    <Mail className="w-3 h-3 text-[#897267]" />
+                    <span className="text-[#5f5e5e] text-xs break-all">
+                      {member.email}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col items-end gap-2">
+              <div className={`px-3 py-1.5 rounded-full border ${statusConfig.color} ${statusConfig.text} flex items-center gap-1.5 shadow-sm`}>
+                <div className={statusConfig.text}>{statusConfig.icon}</div>
+                <span className="text-[11px] font-black uppercase tracking-wide">
+                  {statusConfig.label}
+                </span>
+              </div>
+
+              <ChevronRight className="w-4 h-4 text-[#897267]" />
+            </div>
+          </div>
+
+          {member.daysRemaining !== null && (
+            <div className="flex items-center gap-2 mt-2">
+              <Calendar className="w-4 h-4 text-[#897267]" />
+              <span className={`text-xs ${getDaysRemainingColor(member.daysRemaining)}`}>
+                {member.daysRemaining > 0
+                  ? `${member.daysRemaining} days remaining`
+                  : "Membership expired"}
+              </span>
+            </div>
+          )}
+
+          <div className="mt-4 space-y-3 pt-4 border-t border-[#f1f1f1]">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 bg-[#f0813d]/10 rounded-2xl flex items-center justify-center">
+                  <UserIcon className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <p className="text-xs text-[#897267]">Plan</p>
+                  <p className="text-sm font-bold text-[#1a1c1c]">
+                    {member.plan}
+                  </p>
+                </div>
+              </div>
+
+              <div className="text-right">
+                <p className="text-xs text-[#897267]">Valid Till</p>
+                <p className="text-sm font-bold text-[#1a1c1c]">
+                  {member.validTill}
+                </p>
+              </div>
+            </div>
+
+            {member.dueAmount > 0 && (
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 bg-[#f0813d]/10 rounded-2xl flex items-center justify-center">
+                  <CreditCard className="w-4 h-4 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs text-[#897267]">Pending Payment</p>
+                  <p className="text-sm font-black text-[#f0813d]">
+                    {canViewFinance ? `₹${member.dueAmount}` : "*****"}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex space-x-2 overflow-x-auto mt-4 pt-4 border-t border-[#f1f1f1] pb-1 -mx-1 px-1 no-scrollbar">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onCredentials(member.id);
+              }}
+              className="flex-shrink-0 px-3 py-2 bg-[#f0813d]/10 text-[#f0813d] text-xs font-bold rounded-xl active-scale"
+            >
+              <Key className="w-3.5 h-3.5 inline mr-1" />
+              Login
+            </button>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onShareReceipt(member);
+              }}
+              className="flex-shrink-0 px-3 py-2 bg-orange-50 text-[#f0813d] text-xs font-bold rounded-xl active-scale"
+            >
+              <Share2 className="w-3.5 h-3.5 inline mr-1" />
+              Receipt
+            </button>
+
+            {canShowRenewReminder && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRenewalReminder(member);
+                }}
+                className="flex-shrink-0 px-3 py-2 bg-[#f0813d]/10 text-[#f0813d] text-xs font-bold rounded-xl active-scale"
+              >
+                <MessageCircle className="w-3.5 h-3.5 inline mr-1" />
+                Remind
+              </button>
+            )}
+
+            {(member.status === "expired" || member.status === "renewal") && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRenew(member);
+                }}
+                className="flex-shrink-0 px-3 py-2 bg-[#1a1c1c] text-white text-xs font-bold rounded-xl active-scale"
+              >
+                <RefreshCw className="w-3.5 h-3.5 inline mr-1" />
+                Renew
+              </button>
+            )}
+
+            {!isTrainer && !isViewOnly && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(member);
+                }}
+                className="flex-shrink-0 px-3 py-2 bg-orange-50 text-[#f0813d] text-xs font-bold rounded-xl active-scale"
+              >
+                <Trash2 className="w-3.5 h-3.5 inline mr-1" />
+                Delete
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});
+
 export default function MembersPage() {
   const router = useRouter();
   const { canViewFinance, isTrainer, isViewOnly, user, isReady, selectedGym: authGym } = useAuthContext();
@@ -161,6 +388,18 @@ export default function MembersPage() {
 
   // Refresh trigger for manual refreshes (delete, renew, etc.)
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  useEffect(() => {
+    const filterParam = new URLSearchParams(window.location.search).get("filter");
+    if (filterParam && MEMBER_FILTERS.has(filterParam)) {
+      setFilterStatus(filterParam);
+      if (filterParam !== "expired") {
+        setExpiredStartDate("");
+        setExpiredEndDate("");
+      }
+      setCurrentPage(1);
+    }
+  }, []);
 
   // gym now comes from AuthContext
 
@@ -353,7 +592,7 @@ export default function MembersPage() {
   }, [expiredStartDate, expiredEndDate, filterStatus]);
 
   // ─── Refresh handler for mutations (delete, renew) ───────────
-  const refreshData = () => setRefreshTrigger((t) => t + 1);
+  const refreshData = useCallback(() => setRefreshTrigger((t) => t + 1), []);
 
   // ─── Export Members PDF (fetches its own data directly) ──────
   const exportMembersPDF = async () => {
@@ -803,53 +1042,7 @@ export default function MembersPage() {
   };
 
   // ─── Helper functions ────────────────────────────────────────
-  const getStatusConfig = (status) => {
-    switch (status) {
-      case "active":
-        return {
-          color: "bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200",
-          text: "text-[#f0813d]",
-          dot: "bg-[#f0813d]",
-          label: "Active",
-          icon: <CheckCircle className="w-3.5 h-3.5" />,
-        };
-      case "expired":
-        return {
-          color: "bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200",
-          text: "text-[#f0813d]",
-          dot: "bg-[#f0813d]",
-          label: "Expired",
-          icon: <Clock className="w-3.5 h-3.5" />,
-        };
-      case "inactive":
-        return {
-          color: "bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200",
-          text: "text-gray-700",
-          dot: "bg-gray-500",
-          label: "Inactive",
-          icon: <AlertTriangle className="w-3.5 h-3.5" />,
-        };
-      default:
-        return {
-          color: "bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200",
-          text: "text-gray-700",
-          dot: "bg-gray-500",
-          label: "Inactive",
-          icon: <AlertTriangle className="w-3.5 h-3.5" />,
-        };
-    }
-  };
-
-  const getDaysRemainingColor = (days) => {
-    if (days === null) return "text-gray-500";
-    if (days <= 0) return "text-[#f0813d] font-semibold";
-    if (days <= 7) return "text-[#f0813d] font-semibold";
-    return "text-gray-600";
-  };
-
-  const handleRenewalReminder = (e, member) => {
-    e.stopPropagation();
-
+  const handleRenewalReminder = useCallback((member) => {
     const gymName = selectedGym?.name || "Our Gym";
     const validTillText = member.validTill || "your membership expiry date";
     const statusLine =
@@ -882,33 +1075,43 @@ Best regards,
     const phone = `${member.phone || ""}`.replace(/\D/g, "");
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/91${phone}?text=${encodedMessage}`);
-  };
+  }, [selectedGym?.name]);
 
   // ─── Event handlers ──────────────────────────────────────────
-  const handleFilterChange = (newStatus) => {
+  const handleFilterChange = useCallback((newStatus) => {
     setFilterStatus(newStatus);
     if (newStatus !== "expired") {
       setExpiredStartDate("");
       setExpiredEndDate("");
     }
     setCurrentPage(1);
-  };
+  }, []);
 
-  const handleRenewClick = (e, member) => {
-    e.stopPropagation();
+  const handleOpenMember = useCallback((memberId) => {
+    router.push(`/members/${memberId}`);
+  }, [router]);
+
+  const handleOpenCredentials = useCallback((memberId) => {
+    router.push(`/members/${memberId}/credentials`);
+  }, [router]);
+
+  const handleShareReceipt = useCallback((member) => {
+    setSelectedMember(member);
+    setShowShareReceiptModal(true);
+  }, []);
+
+  const handleRenewClick = useCallback((member) => {
     setSelectedMember(member);
     setShowRenewModal(true);
-  };
+  }, []);
 
-  const handleRenewal = () => {
+  const handleRenewal = useCallback(() => {
     setShowRenewModal(false);
     setSelectedMember(null);
     refreshData();
-  };
+  }, [refreshData]);
 
-  const handleDeleteMember = async (e, member) => {
-    e.stopPropagation();
-
+  const handleDeleteMember = useCallback(async (member) => {
     if (isTrainer || isViewOnly) {
       return;
     }
@@ -932,7 +1135,7 @@ Best regards,
       console.error("Error deleting member:", error);
       alert("Failed to delete member. Please try again.");
     }
-  };
+  }, [isTrainer, isViewOnly, refreshData]);
 
   // ─── Loading / no-gym states ─────────────────────────────────
   if (loading) {
@@ -968,8 +1171,16 @@ Best regards,
   }
 
   // ─── Main render ─────────────────────────────────────────────
+  const filterTabs = [
+    { id: "all", label: "All Members", count: stats.total },
+    { id: "active", label: "Active", count: stats.active },
+    { id: "expired", label: "Expired", count: stats.expired },
+    { id: "renewal", label: "Renewal", count: stats.renewal },
+    { id: "inactive", label: "Inactive" },
+  ];
+
   return (
-    
+
     <div className="min-h-screen bg-[#f6f3f1] text-[#1a1c1c] safe-area-inset-bottom">
       <Header title="Members" showBack={false} />
 
@@ -1100,25 +1311,33 @@ Best regards,
   className="w-full pl-11 pr-4 py-3 bg-[#f5f5f5] border border-[#ececec] rounded-2xl focus:ring-2 focus:ring-[#f0813d]/20 focus:border-[#f0813d] outline-none transition-all text-sm text-[#1a1c1c] placeholder:text-[#8b8b8b] shadow-inner"
 />
 <div className="flex gap-2 overflow-x-auto no-scrollbar pt-3">
-  <button className="px-4 py-2 rounded-2xl bg-[#f0813d] text-white text-xs font-black tracking-wide shadow-[0_8px_20px_rgba(240,129,61,0.25)] whitespace-nowrap">
-    All Members
-  </button>
+  {filterTabs.map((tab) => {
+    const isActiveFilter = filterStatus === tab.id;
 
-  <button className="px-4 py-2 rounded-2xl bg-[#f5f5f5] border border-[#ececec] text-[#5f5e5e] text-xs font-bold whitespace-nowrap">
-    Active
-  </button>
-
-  <button className="px-4 py-2 rounded-2xl bg-[#f5f5f5] border border-[#ececec] text-[#5f5e5e] text-xs font-bold whitespace-nowrap">
-    Expired
-  </button>
-
-  <button className="px-4 py-2 rounded-2xl bg-[#f5f5f5] border border-[#ececec] text-[#5f5e5e] text-xs font-bold whitespace-nowrap">
-    Renewal
-  </button>
-
-  <button className="px-4 py-2 rounded-2xl bg-[#f5f5f5] border border-[#ececec] text-[#5f5e5e] text-xs font-bold whitespace-nowrap">
-    Premium
-  </button>
+    return (
+      <button
+        key={tab.id}
+        type="button"
+        onClick={() => handleFilterChange(tab.id)}
+        className={`px-4 py-2 rounded-2xl text-xs whitespace-nowrap transition-all active:scale-95 ${
+          isActiveFilter
+            ? "bg-[#f0813d] text-white font-black tracking-wide shadow-[0_8px_20px_rgba(240,129,61,0.25)]"
+            : "bg-[#f5f5f5] border border-[#ececec] text-[#5f5e5e] font-bold hover:bg-white"
+        }`}
+      >
+        {tab.label}
+        {typeof tab.count === "number" && (
+          <span
+            className={`ml-2 rounded-full px-2 py-0.5 text-[10px] ${
+              isActiveFilter ? "bg-white/20 text-white" : "bg-white text-[#897267]"
+            }`}
+          >
+            {tab.count}
+          </span>
+        )}
+      </button>
+    );
+  })}
 </div>
           </div>
 
@@ -1250,181 +1469,21 @@ Best regards,
     </p>
   </div>
 </div>
-            {members.map((member) => {
-  const statusConfig = getStatusConfig(member.status);
-  const canShowRenewReminder =
-    member.status === "expired" ||
-    member.status === "renewal" ||
-    (member.daysRemaining !== null && member.daysRemaining <= 7);
-
-  return (
-    <div
-      key={member.id}
-      onClick={() => router.push(`/members/${member.id}`)}
-      className="relative overflow-hidden bg-white rounded-[28px] p-5 border border-[#ececec] shadow-[0_10px_35px_rgba(0,0,0,0.06)] hover:shadow-[0_18px_45px_rgba(0,0,0,0.10)] active:scale-[0.99] transition-all duration-300 cursor-pointer mx-1"
-    >
-      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#f0813d]/10 to-transparent rounded-full blur-3xl pointer-events-none" />
-
-      <div className="flex items-start gap-4 relative z-10">
-        <div className="flex-shrink-0">
-          <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-[0_10px_25px_rgba(55,104,248,0.18)] border-2 border-white">
-            <MemberAvatar name={member.name} profileImage={member.profileImage} />
-          </div>
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-3 mb-2">
-            <div className="flex-1 min-w-0">
-              <h3 className="font-black text-[#1a1c1c] text-[18px] tracking-tight leading-tight break-words">
-                {member.name}
-              </h3>
-
-              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#f0813d] mt-2">
-                Premium Gym Member
-              </p>
-
-              <div className="flex flex-col gap-1 mt-2">
-                <div className="flex items-center gap-1">
-                  <Phone className="w-3 h-3 text-[#897267]" />
-                  <span className="text-[#5f5e5e] text-xs break-all" >
-                    {member.phone}
-                  </span>
-                </div>
-
-                {member.email && (
-                  <div className="flex items-center gap-1">
-                    <Mail className="w-3 h-3 text-[#897267]" />
-                    <span className="text-[#5f5e5e] text-xs break-all">
-                      {member.email}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="flex flex-col items-end gap-2">
-              <div
-                
-  className={`px-3 py-1.5 rounded-full border ${statusConfig.color} ${statusConfig.text} flex items-center gap-1.5 shadow-sm`}
-> 
-              
-                <div className={statusConfig.text}>{statusConfig.icon}</div>
-                <span className="text-[11px] font-black uppercase tracking-wide">
-                  {statusConfig.label}
-                </span>
-              </div>
-
-              <ChevronRight className="w-4 h-4 text-[#897267]" />
-            </div>
-          </div>
-
-          {member.daysRemaining !== null && (
-            <div className="flex items-center gap-2 mt-2">
-              <Calendar className="w-4 h-4 text-[#897267]" />
-              <span className={`text-xs ${getDaysRemainingColor(member.daysRemaining)}`}>
-                {member.daysRemaining > 0
-                  ? `${member.daysRemaining} days remaining`
-                  : "Membership expired"}
-              </span>
-            </div>
-          )}
-
-          <div className="mt-4 space-y-3 pt-4 border-t border-[#f1f1f1]">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-10 h-10 bg-[#f0813d]/10 rounded-2xl flex items-center justify-center">
-                  <UserIcon className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <p className="text-xs text-[#897267]">Plan</p>
-                  <p className="text-sm font-bold text-[#1a1c1c]">
-                    {member.plan}
-                  </p>
-                </div>
-              </div>
-
-              <div className="text-right">
-                <p className="text-xs text-[#897267]">Valid Till</p>
-                <p className="text-sm font-bold text-[#1a1c1c]">
-                  {member.validTill}
-                </p>
-              </div>
-            </div>
-
-            {member.dueAmount > 0 && (
-              <div className="flex items-center gap-2">
-                <div className="w-10 h-10 bg-[#f0813d]/10 rounded-2xl flex items-center justify-center">
-                  <CreditCard className="w-4 h-4 text-white" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs text-[#897267]">Pending Payment</p>
-                  <p className="text-sm font-black text-[#f0813d]">
-                    {canViewFinance ? `₹${member.dueAmount}` : "*****"}
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="flex space-x-2 overflow-x-auto mt-4 pt-4 border-t border-[#f1f1f1] pb-1 -mx-1 px-1 no-scrollbar">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                router.push(`/members/${member.id}/credentials`);
-              }}
-              className="flex-shrink-0 px-3 py-2 bg-[#f0813d]/10 text-[#f0813d] text-xs font-bold rounded-xl active-scale"
-            >
-              <Key className="w-3.5 h-3.5 inline mr-1" />
-              Login
-            </button>
-
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedMember(member);
-                setShowShareReceiptModal(true);
-              }}
-              className="flex-shrink-0 px-3 py-2 bg-orange-50 text-[#f0813d] text-xs font-bold rounded-xl active-scale"
-            >
-              <Share2 className="w-3.5 h-3.5 inline mr-1" />
-              Receipt
-            </button>
-
-            {canShowRenewReminder && (
-              <button
-                onClick={(e) => handleRenewalReminder(e, member)}
-                className="flex-shrink-0 px-3 py-2 bg-[#f0813d]/10 text-[#f0813d] text-xs font-bold rounded-xl active-scale"
-              >
-                <MessageCircle className="w-3.5 h-3.5 inline mr-1" />
-                Remind
-              </button>
-            )}
-
-            {(member.status === "expired" || member.status === "renewal") && (
-              <button
-                onClick={(e) => handleRenewClick(e, member)}
-                className="flex-shrink-0 px-3 py-2 bg-[#1a1c1c] text-white text-xs font-bold rounded-xl active-scale"
-              >
-                <RefreshCw className="w-3.5 h-3.5 inline mr-1" />
-                Renew
-              </button>
-            )}
-
-            {!isTrainer && !isViewOnly && (
-              <button
-                onClick={(e) => handleDeleteMember(e, member)}
-                className="flex-shrink-0 px-3 py-2 bg-orange-50 text-[#f0813d] text-xs font-bold rounded-xl active-scale"
-              >
-                <Trash2 className="w-3.5 h-3.5 inline mr-1" />
-                Delete
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-})}
+            {members.map((member) => (
+              <MemberCard
+                key={member.id}
+                member={member}
+                canViewFinance={canViewFinance}
+                isTrainer={isTrainer}
+                isViewOnly={isViewOnly}
+                onOpen={handleOpenMember}
+                onCredentials={handleOpenCredentials}
+                onShareReceipt={handleShareReceipt}
+                onRenewalReminder={handleRenewalReminder}
+                onRenew={handleRenewClick}
+                onDelete={handleDeleteMember}
+              />
+            ))}
         </div>
 
         {/* Loading spinner for subsequent page/filter loads */}

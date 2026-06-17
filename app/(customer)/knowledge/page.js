@@ -66,7 +66,7 @@ function CategoryIcon({ category, className = "w-5 h-5" }) {
 
 export default function KnowledgePage() {
   const router = useRouter();
-  const { user } = useAuthContext();
+  const { user, selectedGym } = useAuthContext();
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [posts, setPosts] = useState([]);
@@ -93,7 +93,10 @@ export default function KnowledgePage() {
 
       try {
         const response = await fetch(`/api/knowledge?${params.toString()}`, {
-          headers: { "x-user-id": String(userId) },
+          headers: {
+            "x-user-id": String(userId),
+            ...((selectedGym?.id || user?.gym_id) ? { "x-gym-id": String(selectedGym?.id || user?.gym_id) } : {}),
+          },
           signal: controller.signal,
         });
         const json = await response.json();
@@ -115,7 +118,7 @@ export default function KnowledgePage() {
 
     fetchPosts();
     return () => controller.abort();
-  }, [activeCategory, searchQuery, user]);
+  }, [activeCategory, searchQuery, selectedGym?.id, user]);
 
   const featuredPosts = useMemo(
     () => posts.filter((post) => post.is_featured).slice(0, 5),

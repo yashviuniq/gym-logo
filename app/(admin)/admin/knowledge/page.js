@@ -64,7 +64,7 @@ function getCategoryLabel(category) {
 }
 
 export default function AdminKnowledgePage() {
-  const { user, role } = useAuthContext();
+  const { user, role, selectedGym } = useAuthContext();
   const [posts, setPosts] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -106,7 +106,10 @@ export default function AdminKnowledgePage() {
 
     try {
       const response = await fetch("/api/knowledge?admin=1", {
-        headers: { "x-user-id": String(userId) },
+        headers: {
+          "x-user-id": String(userId),
+          ...(selectedGym?.id ? { "x-gym-id": String(selectedGym.id) } : {}),
+        },
       });
       const json = await response.json();
 
@@ -121,7 +124,7 @@ export default function AdminKnowledgePage() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [selectedGym?.id, user]);
 
   useEffect(() => {
     fetchPosts();
@@ -173,6 +176,7 @@ export default function AdminKnowledgePage() {
         headers: {
           "Content-Type": "application/json",
           "x-user-id": String(userId),
+          ...(selectedGym?.id ? { "x-gym-id": String(selectedGym.id) } : {}),
         },
         body: JSON.stringify({
           title: form.title,
@@ -207,7 +211,10 @@ export default function AdminKnowledgePage() {
     try {
       const response = await fetch(`/api/knowledge/${post.id}`, {
         method: "DELETE",
-        headers: { "x-user-id": String(userId) },
+        headers: {
+          "x-user-id": String(userId),
+          ...(selectedGym?.id ? { "x-gym-id": String(selectedGym.id) } : {}),
+        },
       });
       const json = await response.json();
 
@@ -231,6 +238,7 @@ export default function AdminKnowledgePage() {
         headers: {
           "Content-Type": "application/json",
           "x-user-id": String(userId),
+          ...(selectedGym?.id ? { "x-gym-id": String(selectedGym.id) } : {}),
         },
         body: JSON.stringify({ status: nextStatus }),
       });
